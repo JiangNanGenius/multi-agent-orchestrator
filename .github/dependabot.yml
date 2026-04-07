@@ -1,0 +1,43 @@
+# Dependabot 自动依赖更新配置
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # Python (pip) 依赖
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "P2-nice-to-have"
+    commit-message:
+      prefix: "chore(deps):"
+    open-pull-requests-limit: 5
+
+  # npm 依赖
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "P2-nice-to-have"
+    commit-message:
+      prefix: "chore(deps):"
+    open-pull-requests-limit: 3
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci(deps):"
+    open-pull-requests-limit: 5

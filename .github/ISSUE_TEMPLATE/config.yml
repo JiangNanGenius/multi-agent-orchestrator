@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 社区讨论
+    url: https://github.com/cft0808/edict/discussions
+    about: 功能讨论、使用心得和一般性问题请移步 Discussions
+  - name: 📖 文档
+    url: https://github.com/cft0808/edict/blob/main/docs/getting-started.md
+    about: 快速上手指南和常见问题

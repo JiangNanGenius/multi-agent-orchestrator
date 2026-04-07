@@ -1,0 +1,44 @@
+# PR 路径 → 自动标签映射
+# 配合 .github/workflows/auto-label.yml 使用
+
+dashboard:
+  - changed-files:
+    - any-glob-to-any-file: 'dashboard/**'
+
+agents:
+  - changed-files:
+    - any-glob-to-any-file: 'agents/**'
+
+edict-backend:
+  - changed-files:
+    - any-glob-to-any-file: 'edict/backend/**'
+
+edict-frontend:
+  - changed-files:
+    - any-glob-to-any-file: 'edict/frontend/**'
+
+scripts:
+  - changed-files:
+    - any-glob-to-any-file: 'scripts/**'
+
+docker:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'docker/**'
+
+ci:
+  - changed-files:
+    - any-glob-to-any-file: '.github/**'
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'docs/**'
+      - '*.md'
+      - '!CHANGELOG.md'
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file: 'tests/**'

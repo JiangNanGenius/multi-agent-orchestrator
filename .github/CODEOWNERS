@@ -1,0 +1,38 @@
+# 三省六部 · Edict — 代码所有权定义
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# 当 PR 涉及以下路径时，GitHub 会自动请求对应 owner 做 review。
+# 配合分支保护规则中的 "Require review from Code Owners"，
+# 确保核心代码的变更必须经过维护者审批。
+
+# ── 全局默认 ──────────────────────────────────────────
+# 未匹配其他规则的文件，默认由维护者 review
+*                       @cft0808
+
+# ── 核心后端 ──────────────────────────────────────────
+/dashboard/server.py    @cft0808
+/dashboard/court_discuss.py @cft0808
+/agents/                @cft0808
+/edict/backend/         @cft0808
+
+# ── 数据与配置 ────────────────────────────────────────
+/data/                  @cft0808
+requirements.txt        @cft0808
+
+# ── 脚本与自动化 ──────────────────────────────────────
+/scripts/               @cft0808
+install.sh              @cft0808
+start.sh                @cft0808
+
+# ── 部署基础设施 ──────────────────────────────────────
+Dockerfile              @cft0808
+docker-compose.yml      @cft0808
+/docker/                @cft0808
+
+# ── CI/CD 与仓库配置 ─────────────────────────────────
+/.github/               @cft0808
+
+# ── 以下路径欢迎社区贡献者自主 review ────────────────
+# /docs/                可由任何 Committer review
+# /examples/            可由任何 Committer review
+# README*.md            可由任何 Committer review
