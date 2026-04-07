@@ -32,6 +32,8 @@
 
 > 本公开仓库为**脱敏整理版本**，已排除本地运行态数据、环境变量文件、审查记录和部分机器侧生成内容，适合公开展示架构设计、核心代码组织方式与界面能力。
 
+> **主要引用说明：** 本项目的公开整理与当前展示版本，主要引用并参考了 [`wanikua/danghuangshang`][4] 的公开实现思路、组织方式与许可要求；同时结合 [`cft0808/edict`][5] 的现有代码基础进行了现代化整理、命名收口与公开发布改写。相关引用已在本文档与仓库说明中明确保留。
+
 ---
 
 ## 为什么这个项目值得关注
@@ -266,6 +268,19 @@ multi-agent-orchestrator/
 
 ---
 
+## Attribution
+
+为了遵循上游开源项目的许可要求，并准确说明当前公开版本的来源关系，这里单独保留引用与致谢说明。
+
+| 类型 | 项目 | 说明 |
+| --- | --- | --- |
+| **主要引用来源** | [`wanikua/danghuangshang`][4] | 当前公开版 README、产品化展示表达、来源保留要求与部分组织思路的首要参考来源 |
+| **代码整理基础** | [`cft0808/edict`][5] | 本次公开整理所基于的现有工程代码与界面演化基础 |
+
+本项目当前公开版本由 **JiangNanGenius** 整理与发布。在继续修改、分发或二次开发时，请继续保留 MIT License，并显式注明对 `wanikua/danghuangshang` 与 `cft0808/edict` 的来源引用和致谢信息。[4] [5]
+
+---
+
 ## Author
 
 本项目公开版仓库作者署名为 **JiangNanGenius**。
@@ -298,3 +313,5 @@ multi-agent-orchestrator/
 [1]: ./docs/task-dispatch-architecture.md "Task Dispatch Architecture"
 [2]: ./docs/getting-started.md "Getting Started"
 [3]: ./dashboard/dashboard.html "Dashboard UI"
+[4]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
+[5]: https://github.com/cft0808/edict "cft0808/edict"

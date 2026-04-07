@@ -43,6 +43,18 @@ Multi-Agent Orchestrator is a structured collaboration system for complex AI wor
 
 **MIT License**
 
+## Primary Attribution
+
+The primary referenced upstream project for this public release is **wanikua/danghuangshang**:
+
+- https://github.com/wanikua/danghuangshang
+
+This repository also includes a codebase modernization and public-release cleanup based on **cft0808/edict**:
+
+- https://github.com/cft0808/edict
+
+Please retain MIT License notices and explicit attribution to both upstream references when redistributing or further modifying this public release.
+
 ## Notes
 
 This public release should exclude local runtime data, real environment variables, internal review notes, lock files, and any machine-specific generated artifacts before publishing.
