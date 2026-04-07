@@ -1,235 +1,259 @@
-∏# 🤝 参与贡献
+# Contributing to Multi-Agent Orchestrator
 
-<p align="center">
-  <strong>三省六部欢迎各路英雄好汉 ⚔️</strong><br>
-  <sub>无论是修一个 typo 还是设计一个新的 Agent 角色，我们都万分感谢</sub>
-</p>
+Thank you for your interest in contributing to **Multi-Agent Orchestrator**. This repository is maintained as a public, sanitized release of a production-oriented multi-agent orchestration system. Contributions that improve clarity, reliability, developer experience, documentation quality, and public usability are all welcome.
+
+This guide explains how to report issues, propose changes, prepare pull requests, and keep contributions aligned with the repository's public-release standards.
 
 ---
 
-## 📋 贡献方式
+## Contribution Scope
 
-### 🐛 报告 Bug
+We welcome contributions across both documentation and code. In particular, high-value contributions usually fall into one of the following categories.
 
-请使用 [Bug Report](.github/ISSUE_TEMPLATE/bug_report.md) 模板提交 Issue，包含：
-- OpenClaw 版本（`openclaw --version`）
-- Python 版本（`python3 --version`）
-- 操作系统
-- 复现步骤（越详细越好）
-- 期望行为 vs 实际行为
-- 截图（如果涉及看板 UI）
+| Area | What is welcome |
+| --- | --- |
+| Documentation | README improvements, architecture clarification, onboarding guides, translations, screenshots, and examples |
+| Dashboard | UI polish, accessibility, filtering, state presentation, and monitoring improvements |
+| Backend orchestration | Task models, dispatch logic, validation rules, service structure, and testability improvements |
+| Developer tooling | Local setup, scripts, build flow, release hygiene, and automation support |
+| Testing | Regression checks, frontend build verification, API tests, and task-flow validation |
+| Sanitized release quality | Removal of legacy references, sensitive material checks, and public-repo consistency improvements |
 
-### 💡 功能建议
+If you are unsure whether a change fits the project direction, open an issue first and describe the motivation, expected behavior, and impact.
 
-使用 [Feature Request](.github/ISSUE_TEMPLATE/feature_request.md) 模板。
+---
 
-我们推荐用"旨意"的格式来描述你的需求 —— 就像给皇上写奏折一样 😄
+## Before You Start
 
-### 🔧 提交 Pull Request
+Please read the repository documentation before opening a pull request. The following files are especially useful for understanding project intent and public-release boundaries.
+
+| File | Purpose |
+| --- | --- |
+| `README.md` | Project overview, architecture positioning, and public release notes |
+| `README_EN.md` | English overview for external readers |
+| `docs/task-dispatch-architecture.md` | Core orchestration architecture and task lifecycle |
+| `docs/getting-started.md` | Local setup and development orientation |
+| `SECURITY.md` | Security reporting expectations |
+
+Because this is a **public sanitized repository**, contributors must not commit secrets, local runtime data, machine-side logs, webhook credentials, or private review notes.
+
+---
+
+## Reporting Bugs
+
+If you find a bug, please open an issue with enough context to reproduce it. Clear bug reports help maintainers verify whether the problem belongs to frontend behavior, dashboard services, backend orchestration, data assumptions, or local environment differences.
+
+A strong bug report should include the following information.
+
+| Item | Description |
+| --- | --- |
+| Environment | OS, Python version, Node version if relevant |
+| Component | Dashboard, frontend, backend, scripts, or docs |
+| Reproduction steps | A minimal sequence that triggers the issue |
+| Expected behavior | What should have happened |
+| Actual behavior | What actually happened |
+| Logs or screenshots | Only if they do not expose secrets or private data |
+
+When reporting UI bugs, screenshots are welcome, but please make sure they do not reveal tokens, private endpoints, runtime data, or local machine identifiers.
+
+---
+
+## Proposing Features
+
+Feature requests are welcome, especially when they improve orchestration clarity, governance, observability, developer experience, or public usability. A good feature proposal should explain the problem first, then the proposed solution, and finally the expected trade-offs.
+
+We recommend describing feature requests through the following structure.
+
+| Section | What to include |
+| --- | --- |
+| Problem | What limitation exists today |
+| Proposal | What change you want to introduce |
+| Value | Why the change is useful |
+| Scope | Which modules are affected |
+| Risks | What complexity or compatibility cost may be introduced |
+
+This makes it easier to review whether a feature should be handled as a documentation improvement, UI enhancement, architectural change, or optional extension.
+
+---
+
+## Pull Request Workflow
+
+For most contributions, the standard fork-and-pull workflow is recommended.
 
 ```bash
-# 1. Fork 本仓库
-# 2. 克隆你的 Fork
-git clone https://github.com/<your-username>/edict.git
-cd edict
+# 1. Fork the repository on GitHub
 
-# 3. 创建功能分支
-git checkout -b feat/my-awesome-feature
+# 2. Clone your fork
+git clone https://github.com/<your-username>/multi-agent-orchestrator.git
+cd multi-agent-orchestrator
 
-# 4. 开发 & 测试
-python3 dashboard/server.py  # 启动看板验证
+# 3. Create a feature branch
+git checkout -b feat/my-change
 
-# 5. 提交
+# 4. Make your changes
+
+# 5. Run the relevant checks
+python3 -m py_compile dashboard/server.py
+
+# 6. Commit
 git add .
-git commit -m "feat: 添加了一个很酷的功能"
+git commit -m "feat: improve dashboard task filtering"
 
-# 6. 推送 & 创建 PR
-git push origin feat/my-awesome-feature
+# 7. Push and open a pull request
+git push origin feat/my-change
 ```
+
+If your contribution changes user-facing behavior, please explain the previous behavior, the new behavior, and how reviewers can verify the difference.
 
 ---
 
-## 🏗️ 开发环境
+## Local Development
 
-### 前置条件
-- [OpenClaw](https://openclaw.ai) 已安装
-- Python 3.9+
-- macOS / Linux
+The repository can be explored in more than one way depending on whether you want to inspect the dashboard, work on frontend code, or extend backend orchestration.
 
-### 本地启动
+### Quick dashboard run
 
 ```bash
-# 安装
-./install.sh
-
-# 启动数据刷新（后台运行）
-bash scripts/run_loop.sh &
-
-# 启动看板服务器
-python3 dashboard/server.py
-
-# 打开浏览器
-open http://127.0.0.1:7891
+bash start.sh
 ```
 
-> 💡 **看板开箱即用**：`server.py` 内嵌 `dashboard/dashboard.html`，Docker 镜像包含预构建 React 前端
+Then open:
 
-### 项目结构速览
+```text
+http://127.0.0.1:7891
+```
 
-| 目录/文件 | 说明 | 改动频率 |
-|----------|------|--------|
-| `dashboard/dashboard.html` | 看板前端（单文件，零依赖，开箱即用） | 🔥 高 |
-| `dashboard/server.py` | API 服务器（stdlib，~2200 行） | 🔥 高 |
-| `agents/*/SOUL.md` | 12 个 Agent 人格模板 | 🔶 中 |
-| `dashboard/court_discuss.py` | 朝堂议政引擎（多官员 LLM 讨论） | 🔶 中 |
-| `scripts/kanban_update.py` | 看板 CLI + 数据清洗 + 状态机校验（~350 行） | 🔶 中 |
-| `scripts/*.py` | 数据同步 / 自动化脚本 | 🔶 中 |
-| `tests/test_e2e_kanban.py` | E2E 看板测试（24 断言） | 🔶 中 |
-| `install.sh` | 安装脚本 | 🟢 低 |
+### Module-level development
+
+| Module | Suggested action |
+| --- | --- |
+| Dashboard service | `python3 dashboard/server.py` |
+| Frontend | Work inside `edict/frontend/` and run the local build flow |
+| Backend | Extend services and orchestration logic in `edict/backend/` |
+| Scripts | Run task-refresh or sync scripts inside `scripts/` as needed |
+
+If you add new developer instructions, please update the relevant documentation so that public users can follow the same workflow.
 
 ---
 
-## 🏛️ 贡献者阶梯
+## Public Repository Hygiene
 
-我们采用渐进式权限模型，让社区成员能够逐步承担更多责任：
+This repository is published publicly, so every contribution must respect the public-release boundary. The most important rule is simple: **do not commit private or sensitive material**.
 
-| 角色 | 条件 | 权限 |
-|------|------|------|
-| **🌱 Contributor** | 任何人 | Fork → PR → 等待 review |
-| **🏷️ Triage** | 3+ merged PRs | 管理 Issue 标签、分配、关闭重复 Issue |
-| **⚔️ Committer** | 5+ merged PRs + 活跃参与 review | Write 权限，可 merge 非核心路径的 PR |
-| **👑 Maintainer** | 长期信任 + 架构理解 | 可 merge 核心路径，参与架构决策 |
+The following table summarizes what must be excluded from pull requests.
 
-### 晋升流程
+| Must not be committed | Why |
+| --- | --- |
+| `.env` files with real values | They may contain secrets or private endpoints |
+| Local runtime data | They may reveal private tasks, logs, or state |
+| Machine-side logs | They may expose tokens, paths, or operational traces |
+| Real webhooks or credentials | They are security-sensitive |
+| Internal audit or review notes | They are not part of the public release |
 
-1. 维护者会主动邀请活跃贡献者晋升
-2. 也可以在 Issue 中自荐，说明你的贡献记录
-3. 所有晋升决定公开透明
-
-> **核心路径**（需 Maintainer review）：`dashboard/server.py`、`agents/`、`edict/backend/`、`scripts/`、`data/`
->
-> **开放路径**（Committer 可自主 merge）：`docs/`、`examples/`、`README*.md`、UI 样式调整
+If you need to demonstrate a configuration pattern, use placeholders or example values instead.
 
 ---
 
-## 📝 Commit 规范
+## Testing Expectations
 
-我们使用 [Conventional Commits](https://www.conventionalcommits.org/)：
+The project does not require the exact same checks for every change, but contributions should be validated proportionally to their scope.
 
-```
-feat:     ✨ 新功能
-fix:      🐛 修复 Bug
-docs:     📝 文档更新
-style:    🎨 代码格式（不影响逻辑）
-refactor: ♻️ 代码重构
-perf:     ⚡ 性能优化
-test:     ✅ 测试
-chore:    🔧 杂项维护
-ci:       👷 CI/CD 配置
-```
+| Change type | Recommended validation |
+| --- | --- |
+| Documentation-only | Check links, headings, formatting, and consistency |
+| Dashboard change | Run the dashboard locally and verify the affected UI |
+| Backend change | Run syntax checks and relevant local behavior verification |
+| Script change | Execute the script safely with test or placeholder inputs |
+| Release hygiene change | Re-scan for legacy references, sensitive material, and broken links |
 
-示例：
-```
-feat: 添加奏折导出为 PDF 功能
-fix: 修复模型切换后 Gateway 未重启的问题
-docs: 更新 README 截图
-```
-
----
-
-## 🎯 特别欢迎的贡献方向
-
-### 🎨 看板 UI
-- 深色/浅色主题切换
-- 响应式布局优化
-- 动画效果增强
-- 可访问性（a11y）改进
-
-### 🤖 新 Agent 角色
-- 适合特定行业/场景的专职 Agent
-- 新的 SOUL.md 人格模板
-- Agent 间协作模式创新
-
-### 📦 Skills 生态
-- 各部门专用技能包
-- MCP 集成技能
-- 数据处理 / 代码分析 / 文档生成专项技能
-
-### 🔗 第三方集成
-- Notion / Jira / Linear 同步
-- GitHub Issues / PR 联动
-- Slack / Discord 消息渠道
-- Webhook 扩展
-
-### 🌐 国际化
-- 日文 / 韩文 / 西班牙文翻译
-- 看板 UI 多语言支持
-
-### 📱 移动端
-- 响应式适配
-- PWA 支持
-- 移动端操作优化
-
----
-
-## 🧪 测试
+Typical examples:
 
 ```bash
-# 编译检查
 python3 -m py_compile dashboard/server.py
 python3 -m py_compile scripts/kanban_update.py
-
-# E2E 看板测试（9 场景 17 断言）
 python3 tests/test_e2e_kanban.py
-
-# 验证数据同步
-python3 scripts/refresh_live_data.py
-python3 scripts/sync_agent_config.py
-
-# 启动服务器验证 API
-python3 dashboard/server.py &
-curl -s http://localhost:7891/api/live-status | python3 -m json.tool | head -20
 ```
 
----
-
-## 📏 代码风格
-
-- **Python**: PEP 8，使用 pathlib 处理路径
-- **TypeScript/React**: 函数组件 + Hooks，CSS 变量命名以 `--` 开头
-- **CSS**: 使用 CSS 变量（`--bg`, `--text`, `--acc` 等），BEM 风格的 class 名
-- **Markdown**: 标题使用 `#`，列表使用 `-`，代码块标注语言
+If a check cannot be run in your environment, mention that clearly in the pull request description.
 
 ---
 
-## 🙏 行为准则
+## Commit Message Convention
 
-本项目采用 [Contributor Covenant](CODE_OF_CONDUCT.md) 行为准则。参与本项目即表示你同意遵守其条款。
+This repository follows **Conventional Commits**.
 
-简要原则：
-- 保持友善和建设性
-- 尊重不同的观点和经验
-- 接受建设性的批评
-- 专注于对社区最有利的事情
-- 对其他社区成员表示同理心
+| Type | Meaning |
+| --- | --- |
+| `feat` | New functionality |
+| `fix` | Bug fix |
+| `docs` | Documentation update |
+| `refactor` | Internal restructuring without behavior change |
+| `test` | Test-related change |
+| `chore` | Maintenance work |
+| `ci` | CI or automation change |
 
-**我们对骚扰行为零容忍。** 详见 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
+Examples:
+
+```text
+feat: add archive view filters
+fix: correct task status normalization in dashboard
+/docs: rewrite public attribution section
+refactor: simplify dispatch role mapping
+```
+
+Please keep commit messages concise, specific, and review-friendly.
 
 ---
 
-## � 安全漏洞
+## Code Style
 
-发现安全问题？请**不要**通过公开 Issue 报告。详见 [SECURITY.md](SECURITY.md)。
+Use clear, maintainable, and minimal changes whenever possible. Contributions should preserve the current codebase style rather than introducing unnecessary formatting churn.
+
+| Language / Area | Style expectation |
+| --- | --- |
+| Python | Follow PEP 8 and prefer readable, explicit logic |
+| TypeScript / React | Prefer functional components and predictable state handling |
+| CSS | Keep naming and variables consistent with the existing UI layer |
+| Markdown | Use clear headings, readable tables, and accurate links |
+
+For larger refactors, explain the rationale in the pull request so reviewers can separate behavior changes from structural cleanup.
 
 ---
 
-## �📬 联系方式
+## Documentation and Attribution
 
-- GitHub Issues: [提交问题](https://github.com/cft0808/edict/issues)
-- GitHub Discussions: [社区讨论](https://github.com/cft0808/edict/discussions)
+This repository retains explicit attribution to upstream referenced projects. When editing README files, public metadata, or other user-facing materials, please preserve the attribution structure and avoid removing required acknowledgements.
+
+At the current stage, the repository explicitly retains attribution to the following upstream projects.
+
+| Type | Project |
+| --- | --- |
+| Primary referenced source | `wanikua/danghuangshang` |
+| Engineering baseline for public cleanup | `cft0808/edict` |
+
+If you modify these sections, keep the wording accurate and avoid creating ambiguity about authorship, repository lineage, or license scope.
 
 ---
 
-<p align="center">
-  <sub>感谢每一位贡献者，你们是三省六部的基石 ⚔️</sub>
-</p>
+## Code of Conduct
+
+By participating in this project, you agree to follow the repository's [Code of Conduct](CODE_OF_CONDUCT.md). Please keep discussions respectful, constructive, and focused on improving the project.
+
+---
+
+## Security
+
+If you discover a security issue, please **do not** report it publicly in an issue. Follow the instructions in [SECURITY.md](SECURITY.md).
+
+---
+
+## Contact and Project Links
+
+For public collaboration, please use the current repository links rather than historical project links.
+
+| Channel | Link |
+| --- | --- |
+| Issues | https://github.com/JiangNanGenius/multi-agent-orchestrator/issues |
+| Repository | https://github.com/JiangNanGenius/multi-agent-orchestrator |
+
+Thank you for helping improve **Multi-Agent Orchestrator** in a way that is cleaner, safer, and more useful for public users.

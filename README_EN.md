@@ -1,503 +1,448 @@
-<h1 align="center">⚔️ Edict · Multi-Agent Orchestration</h1>
-
-<p align="center">
-  <strong>I modeled an AI multi-agent system after China's 1,300-year-old imperial governance.<br>Turns out, ancient bureaucracy understood separation of powers better than modern AI frameworks.</strong>
-</p>
-
-<p align="center">
-  <sub>12 AI agents (11 business roles + 1 compatibility role) form the Three Departments & Six Ministries: Crown Prince triages, Planning proposes, Review vetoes, Dispatch assigns, Ministries execute.<br>Built-in <b>institutional review gates</b> that CrewAI doesn't have. A <b>real-time dashboard</b> that AutoGen doesn't have.</sub>
-</p>
-
-<p align="center">
-  <a href="#-demo">🎬 Demo</a> ·
-  <a href="#-quick-start">🚀 Quick Start</a> ·
-  <a href="#-architecture">🏛️ Architecture</a> ·
-  <a href="#-features">📋 Features</a> ·
-  <a href="README.md">中文</a> ·
-  <a href="README_JA.md">日本語</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a>
-</p>
+# Multi-Agent Orchestrator
 
-<p align="center">
-  <img src="https://img.shields.io/badge/OpenClaw-Required-blue?style=flat-square" alt="OpenClaw">
-  <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/Agents-12_Specialized-8B5CF6?style=flat-square" alt="Agents">
-  <img src="https://img.shields.io/badge/Dashboard-Real--time-F59E0B?style=flat-square" alt="Dashboard">
-  <img src="https://img.shields.io/badge/License-MIT-22C55E?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/Zero_Deps-stdlib_only-EC4899?style=flat-square" alt="Zero Dependencies">
-</p>
+> **A public, deployment-ready multi-agent orchestration repository with Chinese as the default operating language and English as an available companion language.**
+>
+> This repository is designed for governed task execution rather than loose multi-agent chatting. It emphasizes **observable workflow stages, role-based coordination, dashboard visibility, reusable agent templates, and clean public-release boundaries**.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/WeChat-cft0808-07C160?style=for-the-badge&logo=wechat&logoColor=white" alt="WeChat">
-</p>
+## Project Overview
 
----
+**Multi-Agent Orchestrator** is a production-oriented orchestration framework for complex tasks. Instead of placing multiple agents into a single undifferentiated conversation, it routes work through a structured pipeline that includes **task intake, central preprocessing, planning, review, dispatch, specialist execution, and result archiving**. This makes the system easier to monitor, intervene in, audit, and extend.
 
-## 🎬 Demo
+This public repository has been prepared as a **sanitized release**. It keeps the dashboard, backend, frontend, agent templates, and deployment-facing documentation, while removing private environment material, local runtime traces, sensitive review artifacts, and other content that should not be exposed in a public repository.
 
-<p align="center">
-  <video src="docs/Agent_video_Pippit_20260225121727.mp4" width="100%" autoplay muted loop playsinline controls>
-    Your browser does not support video playback. See the GIF below or <a href="docs/Agent_video_Pippit_20260225121727.mp4">download the video</a>.
-  </video>
-  <br>
-  <sub>🎥 Full demo: AI Multi-Agent collaboration with Three Departments & Six Ministries</sub>
-</p>
-
-<details>
-<summary>📸 GIF Preview (loads faster)</summary>
-<p align="center">
-  <img src="docs/demo.gif" alt="Edict Demo" width="100%">
-  <br>
-  <sub>Issue edict → Crown Prince triage → Planning → Review → Ministries execute → Report back (30s)</sub>
-</p>
-</details>
+| Dimension | Current public-release policy |
+| --- | --- |
+| Public repository name | **multi-agent-orchestrator** |
+| Default deployment language | **Chinese** |
+| Dashboard language | Chinese by default, English available |
+| Agent template strategy | Chinese-first templates, English deployment guide available |
+| Public release requirement | Keep the MIT License and attribution notes; never commit sensitive data |
+| Docker support policy | **Docker images, container orchestration, and related maintenance are not provided** |
 
-> 🐳 **No OpenClaw?** Run `docker run -p 7891:7891 cft0808/edict` to try the full dashboard with simulated data.
+## Project Workflow Diagram
 
----
+The following diagram summarizes the public repository’s default governed execution path. It condenses the relationship between task intake, governance, review, dispatch, specialist execution, archiving, and final delivery into one shared visual reference so that deployment-stage readers, secondary developers, and public visitors can establish the same mental model quickly.
 
-## 💡 The Idea
+![Multi-Agent Orchestrator Workflow Diagram](docs/readme-workflow.png)
 
-Most multi-agent frameworks let AI agents talk freely, producing opaque results you can't audit or intervene in. **Edict** takes a radically different approach — borrowing the governance system that ran China for 1,400 years:
+> The main path shown in this diagram is **Task Intake → Control Center → Planning Center → Review Center → Dispatch Center → Specialist Execution → Result Archive → Final Delivery**. The review stage can send work back to planning for revision, while the dispatch stage continues to supervise execution progress and aggregate outputs.[1]
 
-```
-You (Emperor) → Crown Prince (Triage) → Planning Dept → Review Dept → Dispatch Dept → 6 Ministries → Report Back
-   皇上              太子               中书省          门下省         尚书省           六部          回奏
-```
+## Main Guidance for Deployment-Stage AI
 
-This isn't a cute metaphor. It's **real separation of powers** for AI:
+If this repository is being deployed with the help of an AI system, **treat `README.md` as the highest-priority deployment document**. The Chinese README is the authoritative operational entry point because this repository is intentionally deployed and run in Chinese by default.
 
-- **Crown Prince (太子)** triages messages — casual chat gets auto-replied, real commands become tasks
-- **Planning (中书省)** breaks your command into actionable sub-tasks
-- **Review (门下省)** audits the plan — can reject and force re-planning
-- **Dispatch (尚书省)** assigns approved tasks to specialist ministries
-- **7 Ministries** execute in parallel, each with distinct expertise
-- **Data sanitization** auto-strips file paths, metadata, and junk from task titles
-- Everything flows through a **real-time dashboard** you can monitor and intervene
+The English README is provided to help external readers, collaborators, and international reviewers understand the repository boundaries. It should not override the Chinese-first deployment policy.
 
----
+### Core deployment rules
 
-## 🤔 Why Edict?
+| Rule | Explanation |
+| --- | --- |
+| Chinese remains the default | Do not switch the whole public system to English unless the deployer explicitly requests it |
+| Public UI must use the formal center / specialist naming system | Legacy role names and historic labels must not appear in the default interface |
+| AI-assisted deployment comes first | Let deployment-stage AI inspect the environment, plan commands, and flag risks before choosing an execution path |
+| Installation scripts are execution tools, not the primary narrative | Keep `install.sh` and `install.ps1`, but present them as callable entry points after the AI has assessed the environment |
+| Dashboard verification comes first | Deployment should validate the dashboard, task flow, state visibility, and archive views before claiming success |
+| Docker is out of scope | Do not treat Dockerfiles, container manifests, or legacy image notes as a supported deployment path |
+| English support is additive | English is an optional companion layer, not a replacement for the default Chinese deployment |
+| Agent templates stay Chinese-first | If English prompts are needed, generate them as deployment supplements instead of replacing the Chinese originals |
 
-> **"Instead of one AI doing everything wrong, 9 specialized agents check each other's work."**
+## Public Positioning
 
-| | CrewAI | MetaGPT | AutoGen | **Edict** |
-|---|:---:|:---:|:---:|:---:|
-| **Built-in review/veto** | ❌ | ⚠️ | ⚠️ | **✅ Dedicated reviewer** |
-| **Real-time Kanban** | ❌ | ❌ | ❌ | **✅ 10-panel dashboard** |
-| **Task intervention** | ❌ | ❌ | ❌ | **✅ Stop / Cancel / Resume** |
-| **Full audit trail** | ⚠️ | ⚠️ | ❌ | **✅ Memorial archive** |
-| **Agent health monitoring** | ❌ | ❌ | ❌ | **✅ Heartbeat detection** |
-| **Hot-swap LLM models** | ❌ | ❌ | ❌ | **✅ From the dashboard** |
-| **Skill management** | ❌ | ❌ | ❌ | **✅ View / Add skills** |
-| **News aggregation** | ❌ | ❌ | ❌ | **✅ Daily digest + webhook** |
-| **Setup complexity** | Med | High | Med | **Low · One-click / Docker** |
+This repository is not just a mock interface. It is intended to remain a **workable base project** for public demonstration, internal adaptation, secondary development, and AI-assisted deployment. It can be used to study architecture, run a demonstration system, extend a governed workflow platform, or serve as a structured starting point for more specialized orchestration products.
 
-> **Core differentiator: Institutional review + Full observability + Real-time intervention**
+| Use case | Description |
+| --- | --- |
+| Architecture reference | Study staged task governance and role-based orchestration |
+| Demo system | Present task flow, monitoring, and archive capabilities |
+| Secondary development base | Extend the public repository into a domain-specific system |
+| AI deployment entry | Give an AI a reliable, structured understanding of repository boundaries |
 
-<details>
-<summary><b>🔍 Why the "Review Department" is the killer feature (click to expand)</b></summary>
+## Public Repository Information and Collaboration Entry
 
-<br>
+To help public visitors, deployment-stage AI, and future contributors keep the same mental model, this repository should be treated as a **public-release, production-style orchestration foundation** with explicit upstream attribution, rather than as a one-off demo package.
 
-CrewAI and AutoGen agents work in a **"done, ship it"** mode — no one checks output quality. It's like a company with no QA department where engineers push code straight to production.
+| Repository metadata | Current public wording |
+| --- | --- |
+| Repository name | `multi-agent-orchestrator` |
+| Display title | **Multi-Agent Orchestrator** |
+| Short repository description | A production-style multi-agent orchestration system for governed task execution, dispatch, execution visibility, and dashboard-based operations |
+| Default public language | Chinese-first, with English as a switchable companion layer |
+| Author | **JiangNanGenius** |
+| License | **MIT License** |
 
-Edict's **Review Department (门下省)** exists specifically for this:
+If you plan to keep maintaining this repository publicly, it is recommended to keep the GitHub About text, README positioning, repository topics, and release notes aligned so that the repository homepage and its main documentation do not drift apart again.
 
-- 📋 **Audit plan quality** — Is the Planning Department's decomposition complete and sound?
-- 🚫 **Veto subpar output** — Not a warning. A hard reject that forces re-planning.
-- 🔄 **Mandatory rework loop** — Nothing passes until it meets standards.
+| Public collaboration entry | Current recommendation |
+| --- | --- |
+| Issues | Use the current public repository issue tracker as the central place for problem reports |
+| Security Advisories | Use GitHub private security reporting for vulnerability disclosure |
+| Pull Requests | Follow the standard fork + feature branch workflow |
+| Public-facing documentation updates | Keep README files, `CONTRIBUTING.md`, and `SECURITY.md` aligned |
 
-This isn't an optional plugin — **it's part of the architecture**. Every command must pass through Review. No exceptions.
+### What this repository is not optimized for
 
-This is why Edict produces reliable results on complex tasks: there's a mandatory quality gate before anything reaches execution. Emperor Taizong figured this out 1,300 years ago — **unchecked power inevitably produces errors**.
+| Scenario | Why it is not the default fit |
+| --- | --- |
+| Expecting a one-command full OpenClaw production installation from scratch | This public repository assumes you already have a basically usable OpenClaw runtime |
+| Expecting officially maintained Docker, Compose, or Kubernetes delivery flows | Containerization is not the current public delivery story for this repository |
+| Expecting English-first UI and English SOUL as the primary shipped baseline | The default deployment experience remains Chinese-first, with English as a companion layer |
+| Expecting internal logs, runtime snapshots, or real operational data to be published directly | Public release boundaries require continuous sanitization before publishing |
+| Expecting legacy compatibility fields to become the final public UI wording | Compatibility values belong in mapping layers, not in the default public presentation |
 
-</details>
+> **Recommended framing:** treat this repository as a public, productizable orchestration foundation that attaches to an existing environment, not as an all-in-one runtime bootstrap package.
 
----
+## Default Architecture Terminology
 
-## ✨ Features
+This public release uses a **modern Chinese architecture vocabulary** for default user-facing behavior. Historical aliases may still exist internally for compatibility with legacy data, older task records, or mapping logic, but such aliases must not be shown as the default public wording.
 
-### 🏛️ Twelve-Department Agent Architecture
-- **Crown Prince** (太子) message triage — auto-reply casual chat, create tasks for real commands
-- **Three Departments** (Planning · Review · Dispatch) for governance
-- **Seven Ministries** (Finance · Docs · Engineering · Compliance · Infrastructure · HR + Briefing) for execution
-- Strict permission matrix — who can message whom is enforced
-- Each agent: own workspace, own skills, own LLM model
-- **Data sanitization** — auto-strips file paths, metadata, invalid prefixes from titles/remarks
-
-### 📋 Command Center Dashboard (10 Panels)
-
-| Panel | Description |
-|-------|------------|
-| 📋 **Edicts Kanban** | Task cards by state, filters, search, heartbeat badges, stop/cancel/resume |
-| 🔭 **Department Monitor** | Pipeline visualization, distribution charts, health cards |
-| 📜 **Memorial Archive** | Auto-generated archives with 5-phase timeline |
-| 📜 **Edict Templates** | 9 presets with parameter forms, cost estimates, one-click dispatch |
-| 👥 **Officials Overview** | Token leaderboard, activity stats |
-| 📰 **Daily Briefing** | Auto-curated news, subscription management, Feishu push |
-| ⚙️ **Model Config** | Per-agent LLM switching, automatic Gateway restart |
-| 🛠️ **Skills Config** | View installed skills, add new ones |
-| 💬 **Sessions** | Live session monitoring with channel labels |
-| 🎬 **Court Ceremony** | Immersive daily opening animation with stats |
-
----
-
-## 🖼️ Screenshots
-
-### Edicts Kanban
-![Kanban](docs/screenshots/01-kanban-main.png)
-
-<details>
-<summary>📸 More screenshots</summary>
-
-### Agent Monitor
-![Monitor](docs/screenshots/02-monitor.png)
-
-### Task Detail
-![Detail](docs/screenshots/03-task-detail.png)
-
-### Model Config
-![Models](docs/screenshots/04-model-config.png)
-
-### Skills
-![Skills](docs/screenshots/05-skills-config.png)
-
-### Officials
-![Officials](docs/screenshots/06-official-overview.png)
-
-### Sessions
-![Sessions](docs/screenshots/07-sessions.png)
-
-### Memorials Archive
-![Memorials](docs/screenshots/08-memorials.png)
-
-### Command Templates
-![Templates](docs/screenshots/09-templates.png)
-
-### Daily Briefing
-![Briefing](docs/screenshots/10-morning-briefing.png)
-
-### Court Ceremony
-![Ceremony](docs/screenshots/11-ceremony.png)
-
-</details>
-
----
-
-## 🚀 Quick Start
-
-### Docker
-
-```bash
-docker run -p 7891:7891 cft0808/edict
-```
-Open http://localhost:7891
-
-### Full Install
-
-**Prerequisites:** [OpenClaw](https://openclaw.ai) · Python 3.9+ · macOS/Linux
-
-```bash
-git clone https://github.com/cft0808/edict.git
-cd edict
-chmod +x install.sh && ./install.sh
-```
-
-The installer automatically:
-- Creates workspaces for all departments (`~/.openclaw/workspace-*`, including Crown Prince/HR/Briefing)
-- Writes SOUL.md personality files for each department
-- Registers agents + permission matrix in `openclaw.json`
-- Initializes data directory + first sync
-- Restarts Gateway
-
-### Launch
-
-```bash
-# Option 1: One-click launch (recommended)
-chmod +x start.sh && ./start.sh
-
-# Option 2: Manual launch
-bash scripts/run_loop.sh &      # Data sync loop
-python3 dashboard/server.py     # Dashboard server
-
-# Open browser
-open http://127.0.0.1:7891
-```
-
-<details>
-<summary><b>🖥️ Production deployment (systemd)</b></summary>
-
-```bash
-# Install systemd service
-sudo cp edict.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable edict
-sudo systemctl start edict
-
-# Or use management script
-bash edict.sh start    # Start
-bash edict.sh status   # Check status
-bash edict.sh restart  # Restart
-bash edict.sh stop     # Stop
-```
-
-</details>
-
-> 📖 See [Getting Started Guide](docs/getting-started.md) for detailed walkthrough.
-
----
-
-## 🏛️ Architecture
-
-```
-                           ┌───────────────────────────────────┐
-                           │         👑 Emperor (You)           │
-                           │     Feishu · Telegram · Signal     │
-                           └─────────────────┬─────────────────┘
-                                             │ Issue edict
-                           ┌─────────────────▼─────────────────┐
-                           │     👑 Crown Prince (太子)          │
-                           │   Triage: chat → reply / cmd → task │
-                           └─────────────────┬─────────────────┘
-                                             │ Forward edict
-                           ┌─────────────────▼─────────────────┐
-                           │      📜 Planning Dept (中书省)      │
-                           │     Receive → Plan → Decompose      │
-                           └─────────────────┬─────────────────┘
-                                             │ Submit for review
-                           ┌─────────────────▼─────────────────┐
-                           │       🔍 Review Dept (门下省)       │
-                           │     Audit → Approve / Reject 🚫     │
-                           └─────────────────┬─────────────────┘
-                                             │ Approved ✅
-                           ┌─────────────────▼─────────────────┐
-                           │      📮 Dispatch Dept (尚书省)      │
-                           │   Assign → Coordinate → Collect     │
-                           └───┬──────┬──────┬──────┬──────┬───┘
-                               │      │      │      │      │
-                         ┌─────▼┐ ┌───▼───┐ ┌▼─────┐ ┌───▼─┐ ┌▼─────┐
-                         │💰 Fin.│ │📝 Docs│ │⚔️ Eng.│ │⚖️ Law│ │🔧 Ops│
-                         │ 户部  │ │ 礼部  │ │ 兵部  │ │ 刑部 │ │ 工部  │
-                         └──────┘ └──────┘ └──────┘ └─────┘ └──────┘
-                                                               ┌──────┐
-                                                               │📋 HR  │
-                                                               │ 吏部  │
-                                                               └──────┘
-```
-
-### Agent Roles
-
-| Dept | Agent ID | Role | Expertise |
-|------|----------|------|-----------|
-| 👑 **Crown Prince** | `taizi` | Triage, summarize | Chat detection, intent extraction |
-| 📜 **Planning** | `zhongshu` | Receive, plan, decompose | Requirements, architecture |
-| 🔍 **Review** | `menxia` | Audit, gatekeep, veto | Quality, risk, standards |
-| 📮 **Dispatch** | `shangshu` | Assign, coordinate, collect | Scheduling, tracking |
-| 💰 **Finance** | `hubu` | Data, resources, accounting | Data processing, reports |
-| 📝 **Documentation** | `libu` | Docs, standards, reports | Tech writing, API docs |
-| ⚔️ **Engineering** | `bingbu` | Code, algorithms, checks | Development, code review |
-| ⚖️ **Compliance** | `xingbu` | Security, compliance, audit | Security scanning |
-| 🔧 **Infrastructure** | `gongbu` | CI/CD, deploy, tooling | Docker, pipelines |
-| 📋 **HR** | `libu_hr` | Agent management, training | Registration, permissions |
-| 🌅 **Briefing** | `zaochao` | Daily briefing, news | Scheduled reports, summaries |
-
-### Permission Matrix
-
-| From ↓ \ To → | Prince | Planning | Review | Dispatch | Ministries |
-|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Crown Prince** | — | ✅ | | | |
-| **Planning** | ✅ | — | ✅ | ✅ | |
-| **Review** | | ✅ | — | ✅ | |
-| **Dispatch** | | ✅ | ✅ | — | ✅ all |
-| **Ministries** | | | | ✅ | |
-
-### State Machine
-
-```
-Emperor → Prince Triage → Planning → Review → Assigned → Executing → ✅ Done
-                              ↑          │                       │
-                              └── Veto ──┘              Blocked ──
-```
-
----
-
-## 📁 Project Structure
-
-```
-edict/
-├── agents/                     # 12 agent personality templates (SOUL.md)
-│   ├── taizi/                  #   Crown Prince (triage)
-│   ├── zhongshu/               #   Planning Dept
-│   ├── menxia/                 #   Review Dept
-│   ├── shangshu/               #   Dispatch Dept
-│   ├── hubu/ libu/ bingbu/     #   Finance / Docs / Engineering
-│   ├── xingbu/ gongbu/         #   Compliance / Infrastructure
-│   ├── libu_hr/                #   HR Dept
-│   └── zaochao/                #   Morning Briefing
-├── dashboard/
-│   ├── dashboard.html          # Dashboard (single file, zero deps, works out of the box)
-│   ├── dist/                   # Pre-built React frontend (included in Docker image)
-│   ├── auth.py                 # Dashboard login authentication
-│   ├── court_discuss.py        # Court discussion (multi-agent LLM debate engine)
-│   └── server.py               # API server (stdlib, zero deps)
-├── edict/backend/              # Async backend services (SQLAlchemy + Redis)
-│   ├── app/models/
-│   │   ├── task.py             # Task model + state machine
-│   │   ├── audit.py            # Audit log model
-│   │   └── outbox.py           # Outbox message model
-│   ├── app/services/
-│   │   ├── event_bus.py        # Redis Streams EventBus
-│   │   └── task_service.py     # Task service layer
-│   └── app/workers/
-│       ├── dispatch_worker.py  # Parallel dispatch + retry + resource lock
-│       ├── orchestrator_worker.py  # DAG orchestrator
-│       └── outbox_relay.py     # Transactional Outbox Relay
+| Workflow stage | Public-facing default label | Description |
+| --- | --- | --- |
+| Task intake | 任务入口 | Receives and records incoming work |
+| Central preprocessing | 总控中心 | Organizes, triages, and advances tasks |
+| Planning | 规划中心 | Decomposes tasks and proposes execution plans |
+| Review | 评审中心 | Checks feasibility, risk, and quality |
+| Dispatch | 调度中心 | Assigns specialist work and supervises progress |
+| Specialist execution | 专业执行组 / 专家节点 | Performs concrete execution work |
+| Result retention | 结果报告 / 结果归档 | Aggregates outputs and preserves traceable results |
+
+## Repository Structure
+
+```text
+multi-agent-orchestrator/
+├── README.md
+├── README_EN.md
+├── README_JA.md
+├── LICENSE
+├── CONTRIBUTING.md
+├── SECURITY.md
+├── PUBLIC_REPO_METADATA.md
 ├── agents/
-│   ├── <agent_id>/SOUL.md      # Agent personality templates
-│   ├── GLOBAL.md               # Global agent config
-│   └── groups/                 # Agent groups (sansheng / liubu)
-├── scripts/                    # Data sync & automation scripts
-│   ├── kanban_update.py        #   Kanban CLI with data sanitization + state machine
-│   ├── agentrec_advisor.py     #   Agent model recommendation (merit + cost optimization)
-│   ├── linucb_router.py        #   LinUCB smart routing
-│   ├── refresh_watcher.py      #   Data change watcher
-│   └── ...                     #   fetch_morning_news, sync, etc.
-├── tests/
-│   ├── test_e2e_kanban.py      #   Kanban sanitization tests (17 assertions)
-│   └── test_state_machine_consistency.py  # State machine consistency tests
-├── data/                       # Runtime data (gitignored)
-├── docs/                       # Documentation + screenshots
-├── install.sh                  # One-click installer
-├── start.sh                    # One-click launch (Dashboard + data sync)
-├── edict.service               # systemd service config (production deploy)
-├── edict.sh                    # Service management (start/stop/restart/status)
-└── LICENSE                     # MIT
+├── dashboard/
+├── docs/
+└── edict/
 ```
 
----
+The source tree keeps several historical directory names for engineering continuity, including `edict/backend/` and `edict/frontend/`. These are **path names inside the repository**, not the public-facing product name.
 
-## 🔧 Technical Highlights
+| Path | Purpose | Current expectation |
+| --- | --- | --- |
+| `dashboard/` | Public dashboard entry, archive view, and runtime surfaces | Chinese default, English support available |
+| `edict/backend/` | Backend services, task models, orchestration logic | Deployment-oriented backend code |
+| `edict/frontend/` | Frontend source and build project | Source of the dashboard UI and static build |
+| `agents/` | Agent templates and role instructions | Chinese-first semantic layer |
+| `docs/` | Supplementary deployment and architecture documents | Public-facing support materials |
 
-| | |
-|---|---|
-| **React 18 Frontend** | TypeScript + Vite + Zustand, 13 components |
-| **stdlib Backend** | `server.py` on `http.server`, zero dependencies |
-| **EventBus** | Redis Streams pub/sub for decoupled service communication |
-| **Outbox Relay** | Transactional outbox pattern for reliable event delivery (at-least-once) |
-| **State Machine Audit** | Strict lifecycle transitions + full audit logging (`audit.py`) |
-| **Parallel Dispatch** | Dispatch Worker with parallel execution, exponential backoff retry, resource locking |
-| **DAG Orchestrator** | Task decomposition and dependency resolution via DAG |
-| **Agent Thinking Visible** | Real-time display of agent thinking, tool calls, results |
-| **One-click Install / Launch** | `install.sh` auto-configures, `start.sh` launches all services |
-| **systemd Production Deploy** | `edict.service` for daemon process, auto-restart on boot |
-| **15s Auto-sync** | Live data refresh with countdown |
-| **Dashboard Auth** | `auth.py` provides login authentication |
-| **Daily Ceremony** | Immersive opening animation |
+## Deployment Guide
 
----
+This section assumes that **your OpenClaw environment is already basically usable**. In other words, OpenClaw can already start, model credentials can already be configured, and your environment already has the minimum capability required to run agents. Under that assumption, this repository is not primarily about installing OpenClaw from scratch. The real deployment task is to connect this project’s **dashboard, backend, frontend, SOUL assets, and synchronization scripts** to an existing OpenClaw runtime.
 
-## 🗺️ Roadmap
+> **Current boundary:** this project **does not provide or maintain Docker images, `docker-compose` workflows, or containerized deployment support**. If Docker-related files still exist in the repository, treat them as historical leftovers rather than the recommended deployment path.
 
-> Full roadmap with contribution opportunities: [ROADMAP.md](ROADMAP.md)
+### 1. Clone the repository
 
-### Phase 1 — Core Architecture ✅
-- [x] Twelve-department agent architecture + permissions
-- [x] Crown Prince triage layer (chat vs task auto-routing)
-- [x] Real-time dashboard (10 panels)
-- [x] Task stop / cancel / resume
-- [x] Memorial archive (5-phase timeline)
-- [x] Edict template library (9 presets)
-- [x] Court ceremony animation
-- [x] Daily news + Feishu webhook push
-- [x] Hot-swap LLM models + skill management
-- [x] Officials overview + token stats
-- [x] Session monitoring
-- [x] Edict data sanitization (title/remark cleaning, dirty data rejection)
-- [x] Duplicate task overwrite protection
-- [x] E2E kanban tests (17 assertions)
+```bash
+git clone https://github.com/JiangNanGenius/multi-agent-orchestrator.git
+cd multi-agent-orchestrator
+```
 
-### Phase 2 — Institutional Depth 🚧
-- [ ] Imperial approval mode (human-in-the-loop)
-- [x] Merit/demerit ledger (agent scoring + model recommendation + cost optimization)
-- [x] EventBus (Redis Streams decoupled communication)
-- [x] Outbox Relay (transactional event delivery)
-- [x] State machine audit (strict lifecycle + audit logging)
-- [x] Parallel dispatch engine (exponential backoff retry + resource lock)
-- [x] DAG orchestrator (task decomposition + dependency resolution)
-- [x] Dashboard authentication (login auth)
-- [x] One-click launch / systemd production deploy
-- [ ] Express courier (inter-agent message visualization)
-- [ ] Imperial Archives (knowledge base + citation)
+### 2. Verify that the repository structure is complete
 
-### Phase 3 — Ecosystem
-- [ ] Docker Compose + demo image
-- [ ] Notion / Linear adapters
-- [ ] Annual review (yearly performance reports)
-- [ ] Mobile responsive + PWA
-- [ ] ClawHub marketplace listing
+Before continuing, it is worth confirming that the public release includes all expected top-level directories. This reduces the chance of discovering missing build artifacts or incomplete role materials only after the installation process has already started.
 
----
+```bash
+ls dashboard
+ls edict
+ls agents
+ls docs
+```
 
-## 🤝 Contributing
+| Directory | Purpose | What to verify during deployment |
+| --- | --- | --- |
+| `dashboard/` | Main public-facing entry after deployment | Whether it serves the latest built frontend assets |
+| `edict/backend/` | Backend services and task APIs | Whether task, scheduler, and agent data can be loaded correctly |
+| `edict/frontend/` | React frontend source | Whether the UI can be built successfully |
+| `agents/` | SOUL files, GLOBAL content, and group rules | Whether they can be synchronized into the OpenClaw workspaces |
+| `docs/` | Supplemental notes and progress records | Whether any public-facing documentation still needs cleanup |
 
-All contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md)
+### 3. Recommended path: let AI assess the environment first, then choose the minimal execution path
 
-- 🎨 **UI** — themes, responsiveness, animations
-- 🤖 **New agents** — specialized roles
-- 📦 **Skills** — ministry-specific packages
-- 🔗 **Integrations** — Notion · Jira · Linear · GitHub Issues
-- 🌐 **i18n** — Japanese · Korean · Spanish
-- 📱 **Mobile** — responsive, PWA
+If OpenClaw is already available in your environment, the **first-choice deployment path** is not to immediately run a repository script by hand. Instead, provide this README, the repository structure, and the current runtime status to a deployment-stage AI so it can determine whether the situation is a first-time attachment or an incremental update, and then choose the smallest safe set of actions.
 
----
+Before any command is executed, the AI should evaluate the following points:
 
-## � Examples
+| Checkpoint | What to confirm |
+| --- | --- |
+| Environment health | Whether OpenClaw starts correctly, models are configured, and existing workspaces are usable |
+| Deployment type | Whether this is a first-time repository attachment or only a frontend / SOUL / config / data refresh |
+| Risk surface | Whether there are stale workspaces, outdated symlinks, older agent registrations, or unfinished builds |
+| Execution entry | Whether a one-shot initialization script is appropriate or whether the incremental command path is safer |
 
-The `examples/` directory contains real end-to-end use cases:
+After that assessment is complete, only run a repository-level initialization script when the AI concludes that a one-shot setup is the right path for the current environment. In all other cases, prefer the incremental deployment path and avoid treating repository scripts as either the default entry or the primary deployment story.
 
-| Example | Command | Departments |
-|---------|---------|-------------|
-| [Competitive Analysis](examples/competitive-analysis.md) | "Analyze CrewAI vs AutoGen vs LangGraph" | Planning→Review→Finance+Engineering+Docs |
-| [Code Review](examples/code-review.md) | "Review this FastAPI code for security issues" | Planning→Review→Engineering+Compliance |
-| [Weekly Report](examples/weekly-report.md) | "Generate this week's engineering team report" | Planning→Review→Finance+Docs |
+When the AI explicitly recommends a one-shot initialization, `install.sh` or `install.ps1` can be used as conditional execution tools for that environment. They are retained for first-time attachment scenarios and similar clean-slate setups, not presented as the standard starting point for routine deployment or updates.
 
-Each case includes: Full command → Planning proposal → Review feedback → Ministry outputs → Final report.
+| Step | Effect |
+| --- | --- |
+| Create or complete workspaces | Prepares runtime directories for each agent |
+| Register agents | Makes the repository roles visible to the current OpenClaw environment |
+| Initialize data | Prepares the baseline files required by the dashboard and runtime views |
+| Create shared links | Connects shared resources such as `data/` and `scripts/` into workspaces |
+| Synchronize credentials | Copies already configured model credentials to other agents |
+| Build the frontend | Installs frontend dependencies and builds the UI inside `edict/frontend/` |
+| Run initial synchronization | Generates agent configuration, statistics, and dashboard data |
+| Restart the gateway | Reloads the runtime so the new configuration can take effect |
 
----
+### 4. If the AI recommends an incremental deployment update
 
-## 📄 License
+If your OpenClaw workspaces and agents already exist, and you only want to update the current repository’s frontend, SOUL assets, or dashboard data, you do not need to treat every update like a fresh installation. In that case, and when the AI confirms that a full initialization is unnecessary, an incremental deployment path is usually enough.
 
-[MIT](LICENSE) · Built by the [OpenClaw](https://openclaw.ai) community
+#### 4.1 Build the frontend
 
----
+```bash
+cd edict/frontend
+npm install
+npm run build
+cd ../..
+```
 
-## 📮 WeChat · Behind the Scenes
+After the build finishes, confirm that the static assets used by deployment have been refreshed. The direct deployment entry should prioritize the contents under `dashboard/dist/`.
 
-> *In ancient China, the “Dǐbào” (imperial gazette) delivered edicts across the empire. Today we have a WeChat account.*
+#### 4.2 Synchronize agent configuration and SOUL assets
 
-<p align="center">
-  <img src="docs/assets/wechat-qrcode.jpg" width="200" alt="WeChat QR · cft0808">
-  <br>
-  <b>Scan to follow · cft0808</b>
-</p>
+```bash
+python3 scripts/sync_agent_config.py
+```
 
-What you’ll find:
-- 🏛️ Architecture deep-dives — how 12 agents achieve separation of powers
-- 🔥 War stories — when agents fight, burn tokens, or go on strike
-- 💡 Token-saving tricks — run the full pipeline at 1/10 the cost
-- 🎭 Behind the SOUL.md — how to write prompts that make AI agents stay in character
+This step is especially important after you modify anything under `agents/`, adjust prompt structure, or change agent-to-workspace mappings.
 
----
+#### 4.3 Refresh statistics and dashboard live data
 
-## ⭐ Star History
+```bash
+python3 scripts/sync_officials_stats.py
+python3 scripts/refresh_live_data.py
+```
 
-[![Star History Chart](https://api.star-history.com/svg?repos=cft0808/edict&type=Date)](https://star-history.com/#cft0808/edict&Date)
+This keeps the dashboard closer to the current runtime state instead of leaving it on top of stale snapshots.
 
----
+#### 4.4 Restart the gateway
 
-<p align="center">
-  <strong>⚔️ Governing AI with the wisdom of ancient empires</strong><br>
-  <sub>以古制御新技，以智慧驾驭 AI</sub><br><br>
-  <a href="#-wechat--behind-the-scenes"><img src="https://img.shields.io/badge/WeChat_cft0808-Follow_for_updates-07C160?style=for-the-badge&logo=wechat&logoColor=white" alt="WeChat"></a>
-</p>
+```bash
+openclaw gateway restart
+```
+
+If your environment supports this command, run it after synchronization so that the updated roles, workspace materials, and runtime mappings are fully reloaded.
+
+### 5. Model credential prerequisite
+
+This repository does not generate new model credentials for you. The installation flow assumes that **your main OpenClaw agent already has a working model configuration**. The script then attempts to propagate that credential file to the other agents.
+
+| Situation | Recommended handling |
+| --- | --- |
+| At least one agent is already configured with a model | Let the AI decide whether a one-shot initialization script is appropriate or whether an incremental update path is safer |
+| No model configuration exists yet | Configure `control_center` or your current primary agent first, then return to the installation or incremental path |
+| Some agents still fail to call models after installation | Re-run the credential synchronization step through the initialization script if the AI recommends it, or let the AI inspect credential synchronization and workspace mapping |
+
+### 6. What to verify first after deployment
+
+After deployment, do not begin by renaming everything, changing the default language, or replacing business terminology. A safer order is to verify the runtime chain first and confirm that this repository actually works inside your existing OpenClaw environment.
+
+| Verification item | Expected result |
+| --- | --- |
+| The home page opens correctly | The root path serves the latest dashboard instead of an outdated fallback page |
+| Dashboard login and first-password-change flow work | The default `admin/admin` login works, and the first login forces a password change |
+| Task lists and task details work | Frontend and backend APIs are connected correctly |
+| The automation configuration panel is visible and saveable | Task-level automation management is active |
+| Automation action logs are visible | Log and status-summary flows are functioning |
+| Agents can read SOUL assets | Prompt materials are present and structurally usable |
+| Archive and demo data render normally | Synchronization and refresh scripts are functioning |
+
+### 7. Recommended first go-live strategy
+
+For the first production-like deployment, it is safer to keep the **default Chinese interface**, the **Chinese-first SOUL semantics**, and the **current public repository naming** unchanged. Once the dashboard, task flow, automation panel, SOUL assembly, and result archiving all run stably, you can then move on to branding changes, domain-specific terminology replacement, English adaptation, or deeper productization.
+
+### Common customization paths
+
+If you plan to evolve this repository further, it is usually safer to proceed in the order of **stabilize first, replace locally second, productize last**, rather than changing roles, terminology, frontend behavior, and external integrations all at once.
+
+| Goal | Recommended starting point | Minimum safe first move |
+| --- | --- | --- |
+| Replace visible branding or UI wording | `edict/frontend/`, `dashboard/` | Keep APIs and state transitions unchanged first; only update visible text and static assets |
+| Expand role sets or industry terminology | `agents/`, `scripts/sync_agent_config.py` | Add mappings and prompt material first, then synchronize; avoid replacing all historical templates at once |
+| Add new automation rules or external notification channels | `edict/backend/`, automation panels | Introduce data structures and fallback paths before exposing the feature in the UI |
+| Build stronger English business support | `edict/frontend/src/i18n.ts` and dashboard panels | Finish a switchable bilingual layer first, then decide whether separate English SOUL support is necessary |
+| Turn recurring work into reusable system capability | related `skills/`, `docs/`, and scripts | Treat it as a system-capability task, with validation and traceable updates |
+
+### Public documentation that should stay aligned
+
+To keep the repository homepage, deployment path, and execution reality from drifting apart again, it is worth reviewing the following files together whenever you make a substantial change:
+
+| Location | What should stay aligned |
+| --- | --- |
+| `README.md` / `README_EN.md` / `README_JA.md` | Project positioning, deployment path, workflow diagram, and version history |
+| `CONTRIBUTING.md` | Collaboration expectations, submission flow, and minimum validation steps |
+| `SECURITY.md` | Public release boundary, sanitization expectations, and vulnerability reporting path |
+| `PUBLIC_REPO_METADATA.md` | Repository About text, short description, topics, and public-facing framing |
+| `todo.md` | Traceable implementation notes for the current round of work |
+
+### 8. Minimum command set
+
+If you simply want to attach this repository to an OpenClaw environment that is already working, the shortest safe first-time path is to let deployment-stage AI inspect the environment first and then choose the execution entry.
+
+```bash
+git clone https://github.com/JiangNanGenius/multi-agent-orchestrator.git
+cd multi-agent-orchestrator
+# Let deployment-stage AI inspect the environment first,
+# then choose a one-shot initialization script or the incremental update path.
+```
+
+If you are updating an existing deployment, the following command set is the preferred path.
+
+```bash
+cd edict/frontend && npm install && npm run build && cd ../..
+python3 scripts/sync_agent_config.py
+python3 scripts/sync_officials_stats.py
+python3 scripts/refresh_live_data.py
+openclaw gateway restart
+```
+
+> **Recommendation:** treat AI-assisted deployment assessment as the standard entry for attaching this repository to an already usable OpenClaw environment. Only invoke an initialization script when that assessment indicates a clean one-shot setup is appropriate; otherwise prefer frontend builds, configuration synchronization, and data refreshes for iterative updates.
+
+## Quick Start
+
+If you are already familiar with the repository structure, you can jump straight into the deployment guide above. If you only want to browse the project quickly, start with `dashboard/`, `edict/backend/`, `edict/frontend/`, and `agents/`. For a first deployment, it is still safer to make the default Chinese version work first and customize later.
+
+### Continue module-by-module if needed
+
+| Module | Suggested next step |
+| --- | --- |
+| Dashboard | Inspect `dashboard/` and verify visible text, workflow stages, and archive panels |
+| Frontend source | Work inside `edict/frontend/`, install dependencies, and build the UI |
+| Backend | Inspect `edict/backend/` for task models and orchestration logic |
+| Agent templates | Review `agents/` only when customizing responsibilities or prompts |
+| Documentation | Read `docs/` for supplemental deployment notes |
+
+### Version Log
+
+| Version | Date | Notes |
+| --- | --- | --- |
+| `public-cleanup-v4` | 2026-04-08 | Added dashboard authentication notes, first-login password-change verification guidance, and documented the Feishu group-reply observability enhancement |
+| `public-cleanup-v3` | 2026-04-07 | Added an English deployment guide for environments where OpenClaw is already available, and aligned the deployment path with the Chinese README |
+| `public-cleanup-v2` | 2026-04-07 | Rewritten English README for the public repository, removed outdated public entry references, and aligned with the Chinese-default bilingual strategy |
+
+## Dashboard Language Strategy
+
+
+The dashboard is the most visible public surface of this project, so it is also the place where naming consistency matters most. The current language policy is intentionally simple: **Chinese is the default**, and **English is available as a switchable interface layer**.
+
+| Requirement | Current policy |
+| --- | --- |
+| Default dashboard language | Chinese |
+| English support | Available as a switchable companion language |
+| Internal compatibility aliases | Allowed in data or mapping layers only |
+| Public UI wording | Must use the modern naming system |
+| Public links | Must point to the current repository |
+
+If you keep extending dashboard bilingual support, use a centralized text-mapping layer for titles, filters, buttons, empty states, and modal content rather than scattering literal strings throughout the UI.
+
+## Agent Templates and English Deployment Support
+
+The repository keeps **Chinese-first agent templates** because the default deployment experience is Chinese. This is intentional. For English-language deployment targets, the recommended approach is to prepare **supplementary English prompt materials during deployment** instead of replacing the original Chinese templates inside the repository.
+
+| Topic | Policy |
+| --- | --- |
+| Default agent language | Chinese |
+| English agent prompts | Optional deployment supplement |
+| Replace Chinese source templates by default | Not recommended |
+| Recommended approach for English deployments | Keep the Chinese originals and generate an English prompt layer separately |
+
+## Public Release Hygiene
+
+Before publishing changes from a fork or derivative project, verify that your repository still respects the public-release boundary. A clean public release should preserve the license, keep required attribution, avoid reintroducing legacy public wording, and exclude secrets, runtime traces, machine-side logs, and private operational data.
+
+| Check item | Why it matters |
+| --- | --- |
+| No secrets or real environment values | Prevents credential exposure |
+| No private runtime snapshots or logs | Prevents accidental disclosure of operational data |
+| No legacy public wording in visible UI | Keeps the public product naming consistent |
+| Current repository links are used everywhere | Avoids sending users to outdated public entry points |
+| `README.md` remains deployment-readable | Helps both humans and AI deployers understand the repository correctly |
+
+### Recommended minimum validation before publishing
+
+Before pushing changes to a public repository, complete at least one validation round that is proportionate to the change scope rather than relying on text-only self-review.
+
+| Change type | Recommended minimum validation |
+| --- | --- |
+| Documentation-only updates | Check heading hierarchy, links, image paths, version notes, and alignment across the Chinese, English, and Japanese README files |
+| Dashboard or frontend changes | Run the build inside `edict/frontend/` and confirm that the critical screens still load correctly |
+| Python service or script changes | Run syntax checks and verify the safe execution path of the affected service or script |
+| Sanitization or public-release cleanup | Re-scan for secrets, webhooks, logs, runtime snapshots, private notes, and local machine paths |
+
+### Sanitization checklist before a public push
+
+Before any public push, verify again that none of the following materials are being committed by mistake. For an orchestration-oriented repository, this is not optional polish; it is part of the release boundary itself.
+
+| Material that must stay out of the public repository | Risk |
+| --- | --- |
+| Real `.env` files, API keys, webhooks, or database passwords | Immediate credential exposure |
+| Local runtime logs, task snapshots, or archived execution context | May reveal internal task content and operational semantics |
+| Machine-specific paths, caches, or temporary build waste | Exposes environment details and reduces repository hygiene |
+| Internal review notes, temporary TODO screenshots, or unsanitized demo data | Falls outside the public deliverable boundary |
+
+If you need to explain contribution paths to external collaborators, it is recommended to read [`CONTRIBUTING.md`](./CONTRIBUTING.md) together with [`SECURITY.md`](./SECURITY.md) so that collaboration entry points, minimum validation expectations, and sanitization boundaries remain aligned.
+
+## Troubleshooting Entry Points
+
+If you plan to connect this repository to an existing environment, or continue extending the public release into a more productized system, these are the issues worth checking first. Instead of repeatedly rerunning installation scripts, it is usually more effective to identify whether the problem belongs to **documentation wording, frontend build state, runtime configuration, or data synchronization**.
+
+| Symptom | Check first | Recommended action |
+| --- | --- | --- |
+| Frontend build fails | Whether `edict/frontend/` dependencies are complete, whether the Node version matches, and whether recent bilingual changes introduced type errors | Run a build regression first, then trace the most recent changed files |
+| Dashboard opens but shows empty content | Whether backend APIs, sync scripts, and stats refresh steps have actually been executed | Re-run config sync and data refresh first, then inspect API availability |
+| First-login or password-change flow behaves unexpectedly | Default account flow, auth state, and browser cache | Confirm the enforced first-login password-change path before checking forms and backend endpoints |
+| Agents are registered but cannot call a model | Whether the primary agent already has usable model credentials and whether auth sync was completed | Complete the primary auth setup first, then choose auth sync or rerun initialization |
+| Chinese or legacy wording still appears after switching to English | Whether the target panel already uses the locale layer and whether compatibility values are still leaking through directly | Check `edict/frontend/src/i18n.ts` and the affected panel component first |
+| Unsure whether a public push is still safe | Whether logs, snapshots, secrets, machine paths, or internal notes are still present | Re-run a full sanitization review against the public-release checklist |
+
+## Recommended Public Maintenance Cadence
+
+If you intend to maintain this repository publicly over time, treat documentation, UI, scripts, and repository metadata as one release chain rather than updating only one piece in isolation. This helps prevent the README, repository landing page, dashboard presentation, and actual execution path from drifting apart again.
+
+| Maintenance action | Recommended cadence | Purpose |
+| --- | --- | --- |
+| Sync the three README files | After every publicly visible change | Keep the public entry point, workflow diagram, and deployment strategy aligned |
+| Update `todo.md` traces | After each major refactor wave | Preserve enough context for the next cleanup or continuation round |
+| Recheck `CONTRIBUTING.md` / `SECURITY.md` | Whenever collaboration policy or release boundaries change | Keep contribution paths and sanitization expectations aligned |
+| Review the workflow diagram and directory summary | Whenever task flow or module boundaries change | Prevent the README architecture view from becoming stale |
+| Run one sanitization review before every public push | Before each push | Reduce the risk of leaking sensitive data, runtime context, or temporary files |
+
+> **Recommended maintenance principle:** first keep the repository **publicly readable, deployable, and reviewable**, and only then optimize how polished it looks. For an orchestration-oriented project, documentation consistency is part of product quality.
+
+## Attribution
+
+> **Primary referenced source:** the public organization style, repository presentation approach, and attribution treatment of this release primarily reference [`wanikua/danghuangshang`][1].
+
+This public release of **Multi-Agent Orchestrator** is organized and published by **JiangNanGenius**. If you continue modifying, redistributing, or extending this repository, please retain the **MIT License** and keep the attribution note to the primary referenced source.[1]
+
+| Type | Source | Description |
+| --- | --- | --- |
+| Primary referenced source | [`wanikua/danghuangshang`][1] | Important reference for public-facing structure, presentation treatment, and attribution strategy |
+
+## Author
+
+The public repository author is **JiangNanGenius**.
+
+## License
+
+This repository is released under the **MIT License**. See [`LICENSE`](./LICENSE).
+
+## Version Log
+
+| Version | Date | Notes |
+| --- | --- | --- |
+| `public-cleanup-v4` | 2026-04-08 | Added dashboard authentication notes, first-login password-change verification guidance, and documented the Feishu group-reply observability enhancement |
+| `public-cleanup-v2` | 2026-04-07 | Rewritten English README for the public repository, removed outdated public entry references, and aligned with the Chinese-default bilingual strategy |
+
+## References
+
+[1]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
