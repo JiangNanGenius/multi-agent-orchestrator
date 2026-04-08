@@ -2388,6 +2388,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         p = urlparse(self.path).path.rstrip('/')
+        # 公开探活端点，必须在认证检查前返回
+        if p == '/healthz':
+            task_data_dir = get_task_data_dir()
+            checks = {'dataDir': task_data_dir.is_dir(), 'tasksReadable': (task_data_dir / 'tasks_source.json').exists()}
+            checks['dataWritable'] = os.access(str(task_data_dir), os.W_OK)
+            all_ok = all(checks.values())
+            self.send_json({'status': 'ok' if all_ok else 'degraded', 'ts': now_iso(), 'checks': checks})
+            return
         # 认证状态端点（公开）
         if p == '/api/auth/status':
             token = extract_token(self.headers)
@@ -2401,12 +2409,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_file(idx)
             else:
                 self.send_file(BASE / 'dashboard.html')
-        elif p == '/healthz':
-            task_data_dir = get_task_data_dir()
-            checks = {'dataDir': task_data_dir.is_dir(), 'tasksReadable': (task_data_dir / 'tasks_source.json').exists()}
-            checks['dataWritable'] = os.access(str(task_data_dir), os.W_OK)
-            all_ok = all(checks.values())
-            self.send_json({'status': 'ok' if all_ok else 'degraded', 'ts': now_iso(), 'checks': checks})
         elif p == '/api/live-status':
             task_data_dir = get_task_data_dir()
             self.send_json(read_json(task_data_dir / 'live_status.json'))

@@ -1,4 +1,4 @@
-"""Orchestrator Worker — 消费事件总线，驱动任务状态机。
+"""核心编排器 Worker。
 
 监听 topic:
 - task.created → 自动派发给总控中心
@@ -7,7 +7,7 @@
 - task.stalled → 处理停滞任务（重试 → 升级 → 阻塞）
 
 附加定时任务:
-- _check_stalled → 每 60s 扫描 Doing 状态超时任务，发布 task.stalled 事件
+- _check_stalled → 每 60s 扫描 Doing / Next 状态超时任务，发布 task.stalled 事件
 
 这是系统的核心编排器，负责驱动中心与专家协作流程。
 得益于 Redis Streams ACK 机制：即使 worker 崩溃，未 ACK 的事件
@@ -23,7 +23,7 @@ from datetime import datetime, timezone, timedelta
 
 from ..config import get_settings
 from ..db import async_session
-from ..models.task import TaskState, STATE_AGENT_MAP, ORG_AGENT_MAP
+from ..models.task import Task, TaskState, STATE_AGENT_MAP, ORG_AGENT_MAP
 from ..services.event_bus import (
     EventBus,
     TOPIC_TASK_CREATED,
@@ -115,7 +115,14 @@ class OrchestratorWorker:
             if events:
                 log.info(f"Recovering {len(events)} stale events from {topic}")
                 for entry_id, event in events:
-                    await self._handle_event(topic, entry_id, event)
+                    try:
+                        await self._handle_event(topic, entry_id, event)
+                        await self.bus.ack(topic, GROUP, entry_id)
+                    except Exception as e:
+                        log.error(
+                            f"Error recovering stale event {entry_id} from {topic}: {e}",
+                            exc_info=True,
+                        )
 
     async def _poll_cycle(self):
         """一次轮询周期：多 topic 同时消费，按 task_id 分组并行处理。"""
@@ -157,7 +164,12 @@ class OrchestratorWorker:
         if topic == TOPIC_TASK_CREATED:
             await self._on_task_created(payload, trace_id)
         elif topic == TOPIC_TASK_STATUS:
-            await self._on_task_status(event_type, payload, trace_id)
+            await self._on_task_status(
+                event_type,
+                payload,
+                trace_id,
+                producer=event.get("producer", ""),
+            )
         elif topic == TOPIC_TASK_COMPLETED:
             await self._on_task_completed(payload, trace_id)
         elif topic == TOPIC_TASK_STALLED:
@@ -182,10 +194,18 @@ class OrchestratorWorker:
             },
         )
 
-    async def _on_task_status(self, event_type: str, payload: dict, trace_id: str):
+    async def _on_task_status(
+        self,
+        event_type: str,
+        payload: dict,
+        trace_id: str,
+        producer: str = "",
+    ):
         """状态变更 → 自动派发下一个 agent。"""
         task_id = payload.get("task_id")
         new_state_str = payload.get("to", "")
+        from_state_str = payload.get("from", "")
+        reason = payload.get("reason", "") or ""
 
         try:
             new_state = TaskState(new_state_str)
@@ -196,18 +216,25 @@ class OrchestratorWorker:
         # 如果新状态有对应 agent，自动派发
         agent = STATE_AGENT_MAP.get(new_state)
 
-        # 如果进入 Assigned 状态，需要查找目标专家
+        # 如果进入 Assigned 状态，需要区分“升级回调度中心”与“派发到专家执行”两类路径
         if new_state == TaskState.Assigned:
-            org = payload.get("assignee_org", "")
-            if org:
-                agent = ORG_AGENT_MAP.get(org, agent)
-            else:
-                # assignee_org 为空时，回退到调度中心手动分配
-                log.warning(
-                    f"Task {task_id} entering Assigned without assignee_org, "
-                    f"dispatching to dispatch_center for manual routing"
-                )
+            escalated_back_to_dispatch = (
+                from_state_str in {TaskState.Doing.value, TaskState.Next.value}
+                or (producer == "orchestrator" and "升级" in reason)
+            )
+            if escalated_back_to_dispatch:
                 agent = "dispatch_center"
+            else:
+                org = payload.get("assignee_org", "")
+                if org:
+                    agent = ORG_AGENT_MAP.get(org, agent)
+                else:
+                    # assignee_org 为空时，回退到调度中心手动分配
+                    log.warning(
+                        f"Task {task_id} entering Assigned without assignee_org, "
+                        f"dispatching to dispatch_center for manual routing"
+                    )
+                    agent = "dispatch_center"
 
         if agent:
             await self.bus.publish(
@@ -219,7 +246,10 @@ class OrchestratorWorker:
                     "task_id": task_id,
                     "agent": agent,
                     "state": new_state_str,
-                    "message": f"任务已流转到 {new_state_str}",
+                    "message": reason or f"任务已流转到 {new_state_str}",
+                    "assignee_org": payload.get("assignee_org", ""),
+                    "from": from_state_str,
+                    "to": new_state_str,
                 },
             )
 
@@ -238,94 +268,134 @@ class OrchestratorWorker:
         """
         task_id = payload.get("task_id")
         current_state = payload.get("state", "")
-        stall_count = int(payload.get("stall_count", 0))
-        escalation_level = int(payload.get("escalation_level", 0))
+        raw_stall_count = int(payload.get("stall_count", 0) or 0)
+        raw_escalation_level = int(payload.get("escalation_level", 0) or 0)
 
-        log.warning(
-            f"⏸️ Task {task_id} stalled! state={current_state} "
-            f"stall_count={stall_count} escalation={escalation_level} trace={trace_id}"
-        )
+        task_uuid = None
+        try:
+            task_uuid = uuid.UUID(str(task_id)) if task_id else None
+        except (TypeError, ValueError):
+            log.error(f"Invalid task_id in stalled event: {task_id}")
+            return
+        if task_uuid is None:
+            log.error("Missing task_id in stalled event")
+            return
 
-        # 策略 1: 重试 — 未超过重试次数时，重新派发同一 agent
-        if stall_count < MAX_STALL_RETRIES:
-            agent = STATE_AGENT_MAP.get(TaskState(current_state)) if current_state else None
-            if current_state in ("Doing", "Next"):
-                org = payload.get("assignee_org", "")
-                agent = ORG_AGENT_MAP.get(org, agent)
+        async with async_session() as session:
+            svc = TaskService(session)
+            task = await svc.get_task(task_uuid)
+            meta = dict(task.meta or {})
+            recovery = dict(meta.get("recovery") or {})
+            stall_count = max(raw_stall_count, int(recovery.get("stall_count", 0) or 0))
+            escalation_level = max(raw_escalation_level, int(recovery.get("escalation_level", 0) or 0))
+            assignee_org = payload.get("assignee_org") or task.assignee_org or task.org or ""
 
-            if agent:
-                log.info(f"🔄 Retrying task {task_id} → agent '{agent}' (attempt {stall_count + 1})")
-                await self.bus.publish(
-                    topic=TOPIC_TASK_DISPATCH,
-                    trace_id=trace_id,
-                    event_type="task.dispatch.retry",
-                    producer="orchestrator",
-                    payload={
-                        "task_id": task_id,
-                        "agent": agent,
-                        "state": current_state,
-                        "message": f"任务停滞重试 (第{stall_count + 1}次)",
+            log.warning(
+                f"⏸️ Task {task_id} stalled! state={current_state} "
+                f"stall_count={stall_count} escalation={escalation_level} trace={trace_id}"
+            )
+
+            # 策略 1: 重试 — 未超过重试次数时，重新派发同一 agent
+            if stall_count < MAX_STALL_RETRIES:
+                agent = STATE_AGENT_MAP.get(TaskState(current_state)) if current_state else None
+                if current_state in ("Doing", "Next"):
+                    agent = ORG_AGENT_MAP.get(assignee_org, agent)
+
+                if agent:
+                    now = datetime.now(timezone.utc)
+                    recovery.update({
                         "stall_count": stall_count + 1,
-                    },
-                )
-                return
+                        "escalation_level": escalation_level,
+                        "status": "retrying",
+                        "last_state": current_state,
+                        "last_retry_at": now.isoformat(),
+                    })
+                    meta["recovery"] = recovery
+                    task.meta = meta
+                    task.updated_at = now
+                    await session.commit()
 
-        # 策略 2: 升级 — 重试耗尽，向上级流转
-        if escalation_level < MAX_ESCALATION_LEVEL:
-            escalate_to = _ESCALATION_PATH.get(current_state)
-            if escalate_to:
-                escalate_agent = STATE_AGENT_MAP.get(escalate_to, "control_center")
-                log.info(
-                    f"⬆️ Escalating task {task_id}: {current_state} → {escalate_to.value} "
-                    f"(level {escalation_level + 1})"
-                )
-                await self.bus.publish(
-                    topic=TOPIC_TASK_ESCALATED,
-                    trace_id=trace_id,
-                    event_type="task.escalated",
-                    producer="orchestrator",
-                    payload={
-                        "task_id": task_id,
-                        "from_state": current_state,
-                        "to_state": escalate_to.value,
-                        "escalation_level": escalation_level + 1,
-                        "reason": f"任务在 {current_state} 停滞，升级处理",
-                    },
-                )
-                # 派发给上级 agent
-                await self.bus.publish(
-                    topic=TOPIC_TASK_DISPATCH,
-                    trace_id=trace_id,
-                    event_type="task.dispatch.escalation",
-                    producer="orchestrator",
-                    payload={
-                        "task_id": task_id,
-                        "agent": escalate_agent,
-                        "state": escalate_to.value,
-                        "message": f"下级停滞，需上级介入 (从 {current_state} 升级)",
-                        "escalation_level": escalation_level + 1,
-                    },
-                )
-                return
+                    log.info(f"🔄 Retrying task {task_id} → agent '{agent}' (attempt {stall_count + 1})")
+                    await self.bus.publish(
+                        topic=TOPIC_TASK_DISPATCH,
+                        trace_id=trace_id,
+                        event_type="task.dispatch.retry",
+                        producer="orchestrator",
+                        payload={
+                            "task_id": task_id,
+                            "agent": agent,
+                            "state": current_state,
+                            "message": f"任务停滞重试 (第{stall_count + 1}次)",
+                            "stall_count": stall_count + 1,
+                            "escalation_level": escalation_level,
+                        },
+                    )
+                    return
 
-        # 策略 3: 所有升级耗尽 → 标记 Blocked，等待人工介入
-        log.error(
-            f"🚨 Task {task_id} exhausted all recovery options! "
-            f"Marking as Blocked. Manual intervention required."
-        )
-        await self.bus.publish(
-            topic=TOPIC_TASK_STATUS,
-            trace_id=trace_id,
-            event_type="task.state.Blocked",
-            producer="orchestrator",
-            payload={
-                "task_id": task_id,
-                "from": current_state,
-                "to": TaskState.Blocked.value,
-                "reason": f"任务多次停滞（重试{MAX_STALL_RETRIES}次+升级{MAX_ESCALATION_LEVEL}级），需人工介入",
-                "assignee_org": payload.get("assignee_org", ""),
-            },
-        )
+            # 策略 2: 升级 — 重试耗尽，向上级流转
+            if escalation_level < MAX_ESCALATION_LEVEL:
+                escalate_to = _ESCALATION_PATH.get(current_state)
+                if escalate_to:
+                    next_level = escalation_level + 1
+                    reason = f"任务在 {current_state} 停滞，升级处理"
+                    recovery.update({
+                        "stall_count": 0,
+                        "escalation_level": next_level,
+                        "status": "escalated",
+                        "last_state": escalate_to.value,
+                        "last_escalated_from": current_state,
+                        "last_escalated_at": datetime.now(timezone.utc).isoformat(),
+                    })
+                    meta["recovery"] = recovery
+                    task.meta = meta
+                    await svc.transition_state(
+                        task_id=task_uuid,
+                        new_state=escalate_to,
+                        agent="orchestrator",
+                        reason=reason,
+                    )
+                    log.info(
+                        f"⬆️ Escalating task {task_id}: {current_state} → {escalate_to.value} "
+                        f"(level {next_level})"
+                    )
+                    await self.bus.publish(
+                        topic=TOPIC_TASK_ESCALATED,
+                        trace_id=trace_id,
+                        event_type="task.escalated",
+                        producer="orchestrator",
+                        payload={
+                            "task_id": task_id,
+                            "from_state": current_state,
+                            "to_state": escalate_to.value,
+                            "escalation_level": next_level,
+                            "reason": reason,
+                            "assignee_org": assignee_org,
+                        },
+                    )
+                    return
+
+            # 策略 3: 所有升级耗尽 → 标记 Blocked，等待人工介入
+            reason = f"任务多次停滞（重试{MAX_STALL_RETRIES}次+升级{MAX_ESCALATION_LEVEL}级），需人工介入"
+            recovery.update({
+                "stall_count": stall_count,
+                "escalation_level": escalation_level,
+                "status": "blocked",
+                "last_state": TaskState.Blocked.value,
+                "last_blocked_at": datetime.now(timezone.utc).isoformat(),
+            })
+            meta["recovery"] = recovery
+            task.meta = meta
+            task.block = reason
+            log.error(
+                f"🚨 Task {task_id} exhausted all recovery options! "
+                f"Marking as Blocked. Manual intervention required."
+            )
+            await svc.transition_state(
+                task_id=task_uuid,
+                new_state=TaskState.Blocked,
+                agent="orchestrator",
+                reason=reason,
+            )
 
     # ── 停滞任务检测器 ──
 
@@ -361,6 +431,7 @@ class OrchestratorWorker:
         for task in stalled_tasks:
             task_id = str(task.task_id)
             state = task.state.value if isinstance(task.state, TaskState) else str(task.state)
+            recovery = dict((task.meta or {}).get("recovery") or {})
             log.warning(
                 f"⏰ Detected stalled task {task_id} in state={state}, "
                 f"last updated {task.updated_at}"
@@ -374,8 +445,8 @@ class OrchestratorWorker:
                     "task_id": task_id,
                     "state": state,
                     "assignee_org": task.assignee_org or task.org or "",
-                    "stall_count": 0,
-                    "escalation_level": 0,
+                    "stall_count": int(recovery.get("stall_count", 0) or 0),
+                    "escalation_level": int(recovery.get("escalation_level", 0) or 0),
                     "last_updated": task.updated_at.isoformat() if task.updated_at else "",
                 },
             )

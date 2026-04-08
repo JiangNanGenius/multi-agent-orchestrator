@@ -77,16 +77,19 @@ STATE_ORG_MAP = {
     'Assigned': '调度中心', 'Next': '调度中心',
     'Doing': '执行中', 'Review': '调度中心', 'Done': '完成', 'Blocked': '阻塞',
     'PendingConfirm': '调度中心', 'Pending': '规划中心',
+    # 兼容历史三省状态命名，避免旧测试/旧脚本写回后 org 不联动
+    'Taizi': '总控中心', 'Zhongshu': '中书省', 'Menxia': '门下省', 'Shangshu': '尚书省',
 }
 
 _STATE_AGENT_MAP = {
     'ControlCenter': 'control_center',
-    'PlanCenter': 'plan_center',
-    'ReviewCenter': 'review_center',
+    'PlanCenter': 'plan_center', 'ReviewCenter': 'review_center',
     'Assigned': 'dispatch_center',
     'Review': 'dispatch_center',
     'Pending': 'plan_center',
     'PendingConfirm': 'dispatch_center',
+    # 兼容历史三省状态命名
+    'Taizi': 'control_center', 'Zhongshu': 'plan_center', 'Menxia': 'review_center', 'Shangshu': 'dispatch_center',
 }
 
 _ORG_AGENT_MAP = {

@@ -1,10 +1,13 @@
-"""Redis Streams 事件总线 — 可靠的事件发布/消费。
+"""Redis Streams 事件总线。
 
 核心能力：
 - publish: XADD 发布事件到 stream
-- subscribe: XREADGROUP 消费者组消费，带 ACK 保证from __future__ import annotations- 未 ACK 的事件在消费者崩溃后会被自动重新投递
+- consume: XREADGROUP 消费者组消费，带 ACK 保证
+- 未 ACK 的事件在消费者崩溃后会被自动重新投递
 - 解决旧架构 daemon 线程丢失导致派发永久中断的根因
 """
+
+from __future__ import annotations
 
 import json
 import logging

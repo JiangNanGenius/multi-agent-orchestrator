@@ -33,11 +33,11 @@ TERMINAL_STATES = {TaskState.Done, TaskState.Cancelled}
 STATE_TRANSITIONS = {
     TaskState.Pending: {TaskState.ControlCenter, TaskState.Cancelled},
     TaskState.ControlCenter: {TaskState.PlanCenter, TaskState.Cancelled},
-    TaskState.PlanCenter: {TaskState.ReviewCenter, TaskState.Cancelled, TaskState.Blocked},
+    TaskState.PlanCenter: {TaskState.ReviewCenter, TaskState.ControlCenter, TaskState.Cancelled, TaskState.Blocked},
     TaskState.ReviewCenter: {TaskState.Assigned, TaskState.PlanCenter, TaskState.Cancelled},
-    TaskState.Assigned: {TaskState.Doing, TaskState.Next, TaskState.Cancelled, TaskState.Blocked},
-    TaskState.Next: {TaskState.Doing, TaskState.Cancelled, TaskState.Blocked},
-    TaskState.Doing: {TaskState.Review, TaskState.Done, TaskState.Blocked, TaskState.Cancelled},
+    TaskState.Assigned: {TaskState.Doing, TaskState.Next, TaskState.ReviewCenter, TaskState.Cancelled, TaskState.Blocked},
+    TaskState.Next: {TaskState.Doing, TaskState.Assigned, TaskState.Cancelled, TaskState.Blocked},
+    TaskState.Doing: {TaskState.Assigned, TaskState.Review, TaskState.Done, TaskState.Blocked, TaskState.Cancelled},
     TaskState.Review: {TaskState.Done, TaskState.ReviewCenter, TaskState.Doing, TaskState.Cancelled, TaskState.PendingConfirm},
     TaskState.PendingConfirm: {TaskState.Done, TaskState.Review, TaskState.Cancelled},
     TaskState.Blocked: {

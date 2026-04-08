@@ -65,7 +65,7 @@ class TaskService:
             creator=creator,
             tags=tags or [],
             org=target_org,
-            official=creator,
+            owner=creator,
             now=description or "任务创建",
             target_dept=assignee_org or "",
             flow_log=[
@@ -74,7 +74,9 @@ class TaskService:
                     "to": initial_state.value,
                     "agent": "system",
                     "reason": "任务创建",
+                    "remark": "任务创建",
                     "ts": now.isoformat(),
+                    "at": now.isoformat(),
                 }
             ],
             progress_log=[],
@@ -139,12 +141,15 @@ class TaskService:
         task.updated_at = datetime.now(timezone.utc)
 
         # 在行锁保护下安全追加 flow_log
+        event_time = datetime.now(timezone.utc).isoformat()
         flow_entry = {
             "from": old_state.value,
             "to": new_state.value,
             "agent": agent,
             "reason": reason,
-            "ts": datetime.now(timezone.utc).isoformat(),
+            "remark": reason,
+            "ts": event_time,
+            "at": event_time,
         }
         if task.flow_log is None:
             task.flow_log = []
@@ -206,10 +211,14 @@ class TaskService:
         content: str,
     ) -> Task:
         task = await self._get_task(task_id)
+        event_time = datetime.now(timezone.utc).isoformat()
         entry = {
             "agent": agent,
+            "agentLabel": agent,
             "content": content,
-            "ts": datetime.now(timezone.utc).isoformat(),
+            "text": content,
+            "ts": event_time,
+            "at": event_time,
         }
         if task.progress_log is None:
             task.progress_log = []

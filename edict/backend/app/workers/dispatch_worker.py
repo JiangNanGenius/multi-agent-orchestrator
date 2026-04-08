@@ -1,4 +1,4 @@
-"""Dispatch Worker — 消费 task.dispatch 事件，执行 OpenClaw agent 调用。
+"""Agent 派发执行器。
 
 核心解决旧架构痛点：
 - 旧: daemon 线程 + subprocess.run → kill -9 丢失一切
@@ -6,10 +6,10 @@
 
 流程:
 1. 从 task.dispatch stream 消费事件
-2. 组装富上下文 (_build_agent_context)
+2. 组装富上下文并注入 SOUL、记忆和技能
 3. 调用 OpenClaw CLI: `openclaw agent --agent xxx -m "..."`
-4. 解析 agent 输出（kanban_update.py 调用结果）
-5. ACK 事件
+4. 解析 agent 输出与异常分类
+5. ACK 事件或交由重投递 / 死信链路处理
 """
 
 import asyncio
@@ -280,6 +280,7 @@ def _build_context_window_package(
     task_id: str,
     payload: dict,
     message: str,
+    soul_context: str,
     task_context: str,
     memory_context: str,
     skills_context: str,
@@ -291,7 +292,7 @@ def _build_context_window_package(
 
     if not settings.context_window_enabled:
         base_message = message
-        for part in (task_context, memory_context, skills_context):
+        for part in (soul_context, task_context, memory_context, skills_context):
             if part:
                 base_message = f"{base_message}\n\n---\n{part}"
         if reminder:
@@ -308,6 +309,7 @@ def _build_context_window_package(
 
     sections = {
         "message": message or "",
+        "soul_context": soul_context or "",
         "task_context": task_context or "",
         "memory_context": memory_context or "",
         "skills_context": skills_context or "",
@@ -381,10 +383,12 @@ def _build_context_window_package(
         budget = max(settings.context_window_archive_keep_chars, int(hard_limit * 0.82))
         kept_message = sections["message"]
         preserved = len(kept_message) + len(sections["reminder"])
-        remaining = max(budget - preserved, 1200)
-        task_budget = max(int(remaining * 0.35), 500)
-        memory_budget = max(int(remaining * 0.4), 500)
-        skills_budget = max(remaining - task_budget - memory_budget, 300)
+        remaining = max(budget - preserved, 1600)
+        soul_budget = max(int(remaining * 0.3), 600)
+        task_budget = max(int(remaining * 0.25), 500)
+        memory_budget = max(int(remaining * 0.3), 500)
+        skills_budget = max(remaining - soul_budget - task_budget - memory_budget, 300)
+        sections["soul_context"] = _safe_head_tail(sections["soul_context"], soul_budget)
         sections["task_context"] = _safe_head_tail(sections["task_context"], task_budget)
         sections["memory_context"] = _safe_head_tail(sections["memory_context"], memory_budget)
         sections["skills_context"] = _safe_head_tail(sections["skills_context"], skills_budget)
@@ -400,7 +404,7 @@ def _build_context_window_package(
         )
 
     final_message = sections["message"]
-    for key in ("task_context", "memory_context", "skills_context"):
+    for key in ("soul_context", "task_context", "memory_context", "skills_context"):
         if sections[key]:
             final_message = f"{final_message}\n\n---\n{sections[key]}"
     if sections["reminder"]:
@@ -507,6 +511,93 @@ async def _persist_context_window_state(task_id: str, context_window: dict) -> N
         log.warning(f"Failed to persist context window for {task_id}: {exc}")
 
 
+async def _hydrate_dispatch_payload(task_id: str, payload: dict | None) -> dict:
+    """用数据库中的任务快照补全派发 payload，避免事件载荷过薄导致上下文丢失。"""
+    merged = {}
+    if payload:
+        merged.update(payload)
+
+    if not task_id:
+        return merged
+
+    try:
+        task_uuid = uuid.UUID(str(task_id))
+    except (ValueError, TypeError):
+        return merged
+
+    try:
+        async with async_session() as session:
+            task = await session.get(Task, task_uuid)
+            if not task:
+                return merged
+            snapshot = task.to_dict()
+    except Exception as exc:
+        log.warning(f"Failed to hydrate dispatch payload for {task_id}: {exc}")
+        return merged
+
+    hydrated = dict(snapshot)
+    for key, value in merged.items():
+        if value is None:
+            continue
+        if isinstance(value, str) and value == "":
+            continue
+        if isinstance(value, (list, dict)) and not value:
+            continue
+        hydrated[key] = value
+
+    hydrated["task_id"] = str(task_id)
+    hydrated["meta"] = {
+        **dict(snapshot.get("meta") or {}),
+        **dict(merged.get("meta") or {}),
+    }
+    hydrated["context_window"] = hydrated["meta"].get(
+        "context_window",
+        merged.get("context_window") or snapshot.get("context_window") or {},
+    )
+    if not hydrated.get("org"):
+        hydrated["org"] = snapshot.get("org") or hydrated.get("assignee_org") or ""
+    if not hydrated.get("assignee_org"):
+        hydrated["assignee_org"] = snapshot.get("assignee_org") or ""
+    return hydrated
+
+
+async def _record_agent_heartbeat(
+    task_id: str,
+    agent: str,
+    trace_id: str,
+    status: str,
+) -> None:
+    """把派发心跳写入任务元数据并刷新 updated_at，避免长任务被误判停滞。"""
+    if not task_id:
+        return
+
+    try:
+        task_uuid = uuid.UUID(str(task_id))
+    except (ValueError, TypeError):
+        return
+
+    try:
+        async with async_session() as session:
+            task = await session.get(Task, task_uuid)
+            if not task:
+                return
+            meta = dict(task.meta or {})
+            heartbeat = dict(meta.get("heartbeat") or {})
+            now = datetime.now(timezone.utc)
+            heartbeat.update({
+                "agent": agent,
+                "trace_id": trace_id,
+                "status": status,
+                "at": now.isoformat(),
+            })
+            meta["heartbeat"] = heartbeat
+            task.meta = meta
+            task.updated_at = now
+            await session.commit()
+    except Exception as exc:
+        log.warning(f"Failed to record heartbeat for {task_id}/{agent}: {exc}")
+
+
 class DispatchWorker:
     """Agent 派发 Worker — 快慢 Agent 分桶并发控制。"""
 
@@ -584,10 +675,13 @@ class DispatchWorker:
         """执行一次 agent 派发（桶级并发控制）。"""
         payload = event.get("payload", {})
         task_id = payload.get("task_id", "")
+        payload = await _hydrate_dispatch_payload(task_id, payload)
+        task_id = payload.get("task_id", task_id)
         agent = payload.get("agent", "")
         message = payload.get("message", "")
         trace_id = event.get("trace_id", "")
         state = payload.get("state", "")
+        heartbeat_task: asyncio.Task | None = None
 
         # 去重：同一任务如果已在派发中，跳过并 ACK
         if task_id in self._inflight:
@@ -602,6 +696,7 @@ class DispatchWorker:
             log.info(f"🔄 Dispatching task {task_id} → agent '{agent}' state={state}")
 
             # 组装富上下文
+            soul_context = _build_soul_context(agent)
             task_context = _build_task_context(payload)
             reminder = _build_reminder(agent, payload)
             memory_context = _build_memory_context(agent, task_id, payload)
@@ -611,6 +706,7 @@ class DispatchWorker:
                 task_id=task_id,
                 payload=payload,
                 message=message,
+                soul_context=soul_context,
                 task_context=task_context,
                 memory_context=memory_context,
                 skills_context=skills_context,
@@ -635,12 +731,23 @@ class DispatchWorker:
                 trace_id=trace_id,
                 event_type="agent.dispatch.start",
                 producer="dispatcher",
-                payload={"task_id": task_id, "agent": agent},
+                payload={"task_id": task_id, "agent": agent, "status": "running"},
+            )
+            await _record_agent_heartbeat(task_id, agent, trace_id, status="running")
+            heartbeat_task = asyncio.create_task(
+                self._heartbeat_loop(task_id, agent, trace_id)
             )
 
             try:
                 start_time = time.monotonic()
-                result = await self._call_openclaw(agent, enriched_message, task_id, trace_id, payload)
+                result = await self._call_openclaw(
+                    agent,
+                    enriched_message,
+                    task_id,
+                    trace_id,
+                    payload,
+                    soul_context,
+                )
                 elapsed = time.monotonic() - start_time
 
                 # 记录执行时间（仅用于监控和告警）
@@ -686,6 +793,14 @@ class DispatchWorker:
                 )
 
                 if result.get("returncode") == 0:
+                    await self.bus.publish(
+                        topic=TOPIC_AGENT_HEARTBEAT,
+                        trace_id=trace_id,
+                        event_type="agent.dispatch.complete",
+                        producer="dispatcher",
+                        payload={"task_id": task_id, "agent": agent, "status": "completed"},
+                    )
+                    await _record_agent_heartbeat(task_id, agent, trace_id, status="completed")
                     log.info(f"✅ Agent '{agent}' completed task {task_id}")
                     await self.bus.ack(TOPIC_TASK_DISPATCH, GROUP, entry_id)
                     return
@@ -735,6 +850,14 @@ class DispatchWorker:
                     },
                 )
                 await self.bus.publish(
+                    topic=TOPIC_AGENT_HEARTBEAT,
+                    trace_id=trace_id,
+                    event_type="agent.dispatch.failed",
+                    producer="dispatcher",
+                    payload={"task_id": task_id, "agent": agent, "status": "failed"},
+                )
+                await _record_agent_heartbeat(task_id, agent, trace_id, status="failed")
+                await self.bus.publish(
                     topic="dead_letter",
                     trace_id=trace_id,
                     event_type="task.dispatch.dead_letter",
@@ -749,9 +872,36 @@ class DispatchWorker:
 
             except Exception as e:
                 log.error(f"❌ Dispatch failed: task {task_id} → {agent}: {e}", exc_info=True)
+                await self.bus.publish(
+                    topic=TOPIC_AGENT_HEARTBEAT,
+                    trace_id=trace_id,
+                    event_type="agent.dispatch.error",
+                    producer="dispatcher",
+                    payload={"task_id": task_id, "agent": agent, "status": "error"},
+                )
+                await _record_agent_heartbeat(task_id, agent, trace_id, status="error")
                 # 不 ACK → Redis 会重新投递给其他消费者
             finally:
+                if heartbeat_task:
+                    heartbeat_task.cancel()
+                    try:
+                        await heartbeat_task
+                    except asyncio.CancelledError:
+                        pass
                 self._inflight.discard(task_id)
+
+    async def _heartbeat_loop(self, task_id: str, agent: str, trace_id: str):
+        """长任务执行期间周期性刷新心跳，避免被停滞检测误杀。"""
+        while True:
+            await asyncio.sleep(60)
+            await self.bus.publish(
+                topic=TOPIC_AGENT_HEARTBEAT,
+                trace_id=trace_id,
+                event_type="agent.dispatch.pulse",
+                producer="dispatcher",
+                payload={"task_id": task_id, "agent": agent, "status": "running"},
+            )
+            await _record_agent_heartbeat(task_id, agent, trace_id, status="running")
 
     async def _call_openclaw(
         self,
@@ -760,6 +910,7 @@ class DispatchWorker:
         task_id: str,
         trace_id: str,
         payload: dict | None = None,
+        soul_context: str = "",
     ) -> dict:
         """异步调用 OpenClaw CLI — 在线程池中执行，带富上下文注入。"""
         settings = get_settings()
@@ -803,6 +954,7 @@ class DispatchWorker:
                 "block": payload.get("block", ""),
                 "meta": payload.get("meta", {}),
                 "context_window": payload.get("meta", {}).get("context_window", {}),
+                "soul_context": soul_context,
             }
             try:
                 fd, context_file = tempfile.mkstemp(suffix=".json", prefix=f"edict_ctx_{task_id}_")
