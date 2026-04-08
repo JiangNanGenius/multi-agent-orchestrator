@@ -1,5 +1,5 @@
 /**
- * Zustand Store — 多Agent智作中枢状态管理
+ * Zustand Store — 多Agent协作平台状态管理
  * HTTP 5s 轮询，无 WebSocket
  */
 
@@ -16,17 +16,18 @@ import {
   type SubConfig,
   type ChangeLogEntry,
   type SchedulerInfo,
+  type CollabAgentBusyResult,
 } from './api';
 
 // ── Pipeline Definition (PIPE) ──
 
 export const PIPE = [
   { key: 'Inbox',         dept: '任务入口',   deptEn: 'Inbox',              icon: '🗂️', action: '提交', actionEn: 'Submit' },
-  { key: 'ControlCenter', dept: '总控中心',   deptEn: 'Control Center',     icon: '🎛️', action: '统筹', actionEn: 'Coordinate' },
+  { key: 'ControlCenter', dept: '总控中心',   deptEn: 'Control Center',     icon: '🎛️', action: '协调', actionEn: 'Coordinate' },
   { key: 'PlanCenter',    dept: '规划中心',   deptEn: 'Plan Center',        icon: '🧭', action: '规划', actionEn: 'Plan' },
   { key: 'ReviewCenter',  dept: '评审中心',   deptEn: 'Review Center',      icon: '🔍', action: '核验', actionEn: 'Review' },
-  { key: 'Assigned',      dept: '调度中心',   deptEn: 'Dispatch Center',    icon: '📮', action: '派发', actionEn: 'Dispatch' },
-  { key: 'Doing',         dept: '专业执行组', deptEn: 'Execution Team',     icon: '⚙️', action: '执行', actionEn: 'Execute' },
+  { key: 'Assigned',      dept: '调度中心',   deptEn: 'Dispatch Center',    icon: '📮', action: '分派', actionEn: 'Dispatch' },
+  { key: 'Doing',         dept: '执行团队',   deptEn: 'Execution Team',     icon: '⚙️', action: '执行', actionEn: 'Execute' },
   { key: 'Review',        dept: '调度中心',   deptEn: 'Dispatch Center',    icon: '🧾', action: '汇总', actionEn: 'Summarize' },
   { key: 'Done',          dept: '结果归档',   deptEn: 'Result Archive',     icon: '✅', action: '归档', actionEn: 'Archive' },
 ] as const;
@@ -40,100 +41,100 @@ export const AGENT_ARCHITECTURE = {
   control_center: {
     label: '总控中心',
     labelEn: 'Control Center',
-    role: '全局统筹中心',
-    roleEn: 'Global Orchestration Hub',
-    rank: '核心中枢',
-    rankEn: 'Core Hub',
+    role: '全局协调与编排',
+    roleEn: 'Global Coordination & Orchestration',
+    rank: '核心协调层',
+    rankEn: 'Core Coordination Layer',
     emoji: '🎛️',
     color: '#e8a040',
   },
   plan_center: {
     label: '规划中心',
     labelEn: 'Plan Center',
-    role: '任务规划中心',
-    roleEn: 'Task Planning Center',
-    rank: '核心节点',
-    rankEn: 'Core Node',
+    role: '任务规划与拆解',
+    roleEn: 'Task Planning & Breakdown',
+    rank: '协调节点',
+    rankEn: 'Coordination Node',
     emoji: '🧭',
     color: '#a07aff',
   },
   review_center: {
     label: '评审中心',
     labelEn: 'Review Center',
-    role: '质量评审中心',
-    roleEn: 'Quality Review Center',
-    rank: '核心节点',
-    rankEn: 'Core Node',
+    role: '质量评审与把关',
+    roleEn: 'Quality Review & Assurance',
+    rank: '协调节点',
+    rankEn: 'Coordination Node',
     emoji: '🔍',
     color: '#6a9eff',
   },
   dispatch_center: {
     label: '调度中心',
     labelEn: 'Dispatch Center',
-    role: '调度协同中心',
-    roleEn: 'Dispatch Coordination Center',
-    rank: '核心节点',
-    rankEn: 'Core Node',
+    role: '任务分派与协同',
+    roleEn: 'Dispatch & Coordination',
+    rank: '协调节点',
+    rankEn: 'Coordination Node',
     emoji: '📮',
     color: '#6aef9a',
   },
   docs_specialist: {
     label: '文案专家',
     labelEn: 'Docs Specialist',
-    role: '内容文档专家',
-    roleEn: 'Content Documentation Specialist',
-    rank: '专业执行组',
-    rankEn: 'Execution Team',
+    role: '内容文档执行',
+    roleEn: 'Content Documentation Execution',
+    rank: '执行角色',
+    rankEn: 'Execution Role',
     emoji: '📝',
     color: '#f5c842',
   },
   data_specialist: {
     label: '数据专家',
     labelEn: 'Data Specialist',
-    role: '数据分析专家',
-    roleEn: 'Data Analysis Specialist',
-    rank: '专业执行组',
-    rankEn: 'Execution Team',
+    role: '数据分析执行',
+    roleEn: 'Data Analysis Execution',
+    rank: '执行角色',
+    rankEn: 'Execution Role',
     emoji: '💰',
     color: '#ff9a6a',
   },
   code_specialist: {
     label: '代码专家',
     labelEn: 'Code Specialist',
-    role: '工程实现专家',
-    roleEn: 'Engineering Implementation Specialist',
-    rank: '专业执行组',
-    rankEn: 'Execution Team',
+    role: '工程实现执行',
+    roleEn: 'Engineering Implementation Execution',
+    rank: '执行角色',
+    rankEn: 'Execution Role',
     emoji: '⚔️',
     color: '#44aaff',
   },
   audit_specialist: {
     label: '审计专家',
     labelEn: 'Audit Specialist',
-    role: '审计审核专家',
-    roleEn: 'Audit Review Specialist',
-    rank: '专业执行组',
-    rankEn: 'Execution Team',
+    role: '审计审核执行',
+    roleEn: 'Audit Review Execution',
+    rank: '执行角色',
+    rankEn: 'Execution Role',
     emoji: '⚖️',
     color: '#cc4444',
   },
   deploy_specialist: {
     label: '部署专家',
     labelEn: 'Deploy Specialist',
-    role: '部署运维专家',
-    roleEn: 'Deployment Operations Specialist',
-    rank: '专业执行组',
-    rankEn: 'Execution Team',
+    role: '部署运维执行',
+    roleEn: 'Deployment Operations Execution',
+    rank: '执行角色',
+    rankEn: 'Execution Role',
     emoji: '🔧',
     color: '#ff5270',
   },
   admin_specialist: {
     label: '管理专家',
     labelEn: 'Admin Specialist',
-    role: '系统管理专家',
-    roleEn: 'System Administration Specialist',
-    rank: '专业执行组',
-    rankEn: 'Execution Team',
+    role: '系统管理执行',
+    roleEn: 'System Administration Execution',
+    rank: '执行角色',
+    rankEn: 'Execution Role',
     emoji: '👔',
     color: '#9b59b6',
   },
@@ -153,7 +154,7 @@ export type AgentArchitectureId = keyof typeof AGENT_ARCHITECTURE;
 
 export const DEPT_COLOR: Record<string, string> = {
   '任务入口': '#ffd700',
-  '专业执行组': '#44aaff',
+  '执行团队': '#44aaff',
   '结果归档': '#2ecc8a',
   ...Object.fromEntries(
     Object.values(AGENT_ARCHITECTURE).map((meta) => [meta.label, meta.color])
@@ -233,6 +234,8 @@ export function normalizeFlowRemark(text: string): string {
   return text
     .replace(/结果报告/g, '结果归档')
     .replace(/Result report/g, 'Result archive')
+    .replace(/专业执行组/g, '执行团队')
+    .replace(/Execution Team/g, 'Execution Team')
     .replace(/Agent管理专家/g, '管理专家')
     .replace(/全网搜索简报/g, '全网搜索简报');
 }
@@ -428,11 +431,11 @@ export function getSchedulerSummary(t: Task, locale: Locale = 'zh'): { tone: 'ok
 
 export type TabKey =
   | 'tasks' | 'monitor' | 'agents' | 'models'
-  | 'skills' | 'sessions' | 'archives' | 'templates' | 'web_search' | 'court' | 'automation';
+  | 'skills' | 'sessions' | 'archives' | 'templates' | 'web_search' | 'collaboration' | 'automation';
 
 export const TAB_DEFS: { key: TabKey; label: string; labelEn: string; icon: string }[] = [
   { key: 'tasks',       label: '任务看板', icon: '📋', labelEn: 'Task Board' },
-  { key: 'court',       label: '协同讨论', icon: '🏛️', labelEn: 'Collaboration' },
+  { key: 'collaboration', label: '协同讨论', icon: '🏛️', labelEn: 'Collaboration' },
   { key: 'monitor',     label: '运行监控', icon: '🔌', labelEn: 'Runtime Monitor' },
   { key: 'automation',  label: '自动化中心', icon: '🧭', labelEn: 'Automation Center' },
   { key: 'agents',      label: 'Agent 总览', icon: '👔', labelEn: 'Agent Overview' },
@@ -594,7 +597,8 @@ interface AppStore {
   changeLog: ChangeLogEntry[];
   agentsOverviewData: AgentsOverviewData | null;
   agentsStatusData: AgentsStatusData | null;
-   searchBrief: SearchBrief | null;
+  collabAgentBusyData: CollabAgentBusyResult | null;
+  searchBrief: SearchBrief | null;
   subConfig: SubConfig | null;
 
   // UI State
@@ -626,6 +630,7 @@ interface AppStore {
   loadAgentConfig: () => Promise<void>;
   loadAgentsOverview: () => Promise<void>;
   loadAgentsStatus: () => Promise<void>;
+  loadCollabBusy: () => Promise<void>;
   loadWebSearch: () => Promise<void>;
   loadSubConfig: () => Promise<void>;
   loadAll: () => Promise<void>;
@@ -639,6 +644,7 @@ export const useStore = create<AppStore>((set, get) => ({
   changeLog: [],
   agentsOverviewData: null,
   agentsStatusData: null,
+  collabAgentBusyData: null,
   searchBrief: null,
   subConfig: null,
 
@@ -658,7 +664,11 @@ export const useStore = create<AppStore>((set, get) => ({
     const s = get();
     if (['models', 'skills', 'sessions'].includes(tab) && !s.agentConfig) s.loadAgentConfig();
     if (tab === 'agents' && !s.agentsOverviewData) s.loadAgentsOverview();
-    if (tab === 'monitor') s.loadAgentsStatus();
+    if (tab === 'monitor') {
+      s.loadAgentsStatus();
+      s.loadCollabBusy();
+    }
+    if (tab === 'collaboration' || tab === 'tasks') s.loadCollabBusy();
     if (tab === 'web_search' && !s.searchBrief) s.loadWebSearch();
   },
   setTaskFilter: (f) => set({ taskFilter: f }),
@@ -729,6 +739,15 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
+  loadCollabBusy: async () => {
+    try {
+      const data = await api.globalAgentBusy();
+      set({ collabAgentBusyData: data });
+    } catch {
+      set({ collabAgentBusyData: null });
+    }
+  },
+
   loadWebSearch: async () => {
     try {
       const [brief, config] = await Promise.all([api.searchBrief(), api.searchConfig()]);
@@ -749,7 +768,11 @@ export const useStore = create<AppStore>((set, get) => ({
 
   loadAll: async () => {
     const s = get();
-    await s.loadLive();
+    await Promise.all([
+      s.loadLive(),
+      s.loadCollabBusy(),
+      s.activeTab === 'monitor' ? s.loadAgentsStatus() : Promise.resolve(),
+    ]);
     const tab = s.activeTab;
     if (['models', 'skills'].includes(tab)) await s.loadAgentConfig();
   },

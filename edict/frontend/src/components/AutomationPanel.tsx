@@ -16,7 +16,7 @@ function collectAutomationLogs(tasks: Task[], locale: 'zh' | 'en' = 'zh') {
           taskId: task.id,
           title: task.title || (locale === 'en' ? '(Untitled)' : '(无标题)'),
           at: item.at || '',
-          from: item.from || (locale === 'en' ? 'Control Center Dispatch' : '总控中心调度'),
+          from: item.from || (locale === 'en' ? 'Coordination Center Dispatch' : '协调中心调度'),
           to: item.to || task.org || '—',
           remark: item.remark || '',
           state: task.state || '',

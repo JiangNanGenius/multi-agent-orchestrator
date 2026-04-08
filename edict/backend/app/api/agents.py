@@ -20,7 +20,7 @@ AGENT_META = {
     "code_specialist": {"name": "代码专家", "role": "代码实现、技术方案与问题修复", "icon": "🛡️"},
     "audit_specialist": {"name": "审计专家", "role": "质量审查、测试校验与审计把关", "icon": "⚖️"},
     "deploy_specialist": {"name": "部署专家", "role": "工程交付、自动化与部署实施", "icon": "🔧"},
-    "admin_specialist": {"name": "管理专家", "role": "后台管理、配置维护与运营支持", "icon": "🗂️"},
+    "admin_specialist": {"name": "技能管理员", "role": "技能管理、配置维护与运营支持", "icon": "🗂️"},
     "search_specialist": {"name": "搜索专家", "role": "全网搜索、信息检索与线索汇总", "icon": "🌐"},
 }
 

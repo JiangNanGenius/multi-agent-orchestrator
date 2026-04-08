@@ -9,6 +9,7 @@ import type {
   ActivityEntry,
   TodoItem,
   PhaseDuration,
+  CollabAgentBusyEntry,
 } from '../api';
 
 const AGENT_LABELS: Record<string, string> = {
@@ -68,12 +69,24 @@ function isAutomationFlowRemark(remark: string): boolean {
   return remark.includes('自动') || remark.includes('重试') || remark.includes('升级') || remark.includes('回滚') || remark.includes('调度');
 }
 
+function renderBusyOrigin(entry: CollabAgentBusyEntry): string {
+  const kind = entry.occupancy_kind || entry.source_type || '';
+  if (kind === 'task_active') return '任务执行中';
+  if (kind === 'task_reserved') return '任务预占中';
+  if (kind === 'task_paused') return '任务暂停中';
+  if (kind === 'task_blocked') return '任务阻塞中';
+  if (kind === 'meeting') return '会议占用中';
+  if (kind === 'chat') return '讨论占用中';
+  return entry.label || '忙碌中';
+}
+
 export default function TaskModal() {
   const modalTaskId = useStore((s) => s.modalTaskId);
   const setModalTaskId = useStore((s) => s.setModalTaskId);
   const liveStatus = useStore((s) => s.liveStatus);
   const loadAll = useStore((s) => s.loadAll);
   const toast = useStore((s) => s.toast);
+  const collabAgentBusyData = useStore((s) => s.collabAgentBusyData);
 
   const [activityData, setActivityData] = useState<TaskActivityData | null>(null);
   const [schedData, setSchedData] = useState<SchedulerStateData | null>(null);
@@ -155,6 +168,8 @@ export default function TaskModal() {
   const todoTotal = todos.length;
   const canStop = !['Done', 'Blocked', 'Cancelled'].includes(task.state);
   const canResume = ['Blocked', 'Cancelled'].includes(task.state);
+  const taskBusyEntries = (collabAgentBusyData?.busy || []).filter((entry) => entry.task_id === task.id);
+  const crossBusyEntries = (collabAgentBusyData?.busy || []).filter((entry) => entry.agent_id && entry.task_id !== task.id && entry.source_type !== 'task');
 
   const doTaskAction = async (action: string, reason: string) => {
     try {
@@ -352,10 +367,37 @@ export default function TaskModal() {
             )}
           </div>
 
-          {/* Scheduler Section */}
+          {(taskBusyEntries.length > 0 || crossBusyEntries.length > 0) && (
+            <div style={{ marginTop: 14, marginBottom: 10, display: 'grid', gap: 8 }}>
+              {taskBusyEntries.length > 0 && (
+                <div style={{ border: '1px solid #4cc38a44', background: '#0f2219', borderRadius: 14, padding: '12px 14px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8, color: '#67e8a5' }}>全局占用 · 当前任务</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {taskBusyEntries.map((entry) => (
+                      <div key={`${entry.agent_id}-${entry.updated_at}`} style={{ minWidth: 160, border: '1px solid #4cc38a33', borderRadius: 12, padding: '8px 10px', background: '#10271d' }}>
+                        <div style={{ fontWeight: 700 }}>{entry.emoji} {entry.name}</div>
+                        <div style={{ fontSize: 12, color: '#67e8a5', marginTop: 4 }}>{renderBusyOrigin(entry)}</div>
+                        {entry.reason && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{entry.reason}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {crossBusyEntries.length > 0 && (
+                <div style={{ border: '1px solid #6b728044', background: '#141821', borderRadius: 14, padding: '12px 14px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8 }}>全局繁忙提醒</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
+                    当前系统中仍有 {crossBusyEntries.length} 个专家被会议或跨任务协作占用；如需临时拉会或改派，可优先避开这些专家。
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Scheduler state */}
           <div className="sched-section">
             <div className="sched-head">
-              <span className="sched-title">🧭 总控中心调度</span>
+              <span className="sched-title">🧭 协调中心调度</span>
               <span className="sched-status">
                 {sched ? `${sched.enabled === false ? '已禁用' : '运行中'} · 阈值 ${sched.stallThresholdSec || 180}s` : '加载中...'}
               </span>
@@ -598,7 +640,7 @@ function LiveActivitySection({
   const maxDur = Math.max(...phaseDurations.map((p) => p.durationSec || 1), 1);
   const phaseColors: Record<string, string> = {
     '任务入口': '#eab308', '总控中心': '#f97316', '规划中心': '#3b82f6', '评审中心': '#8b5cf6',
-    '调度中心': '#10b981', '专业执行组': '#06b6d4', '文案专家': '#ec4899', '数据专家': '#f59e0b',
+    '调度中心': '#10b981', '执行团队': '#06b6d4', '文案专家': '#ec4899', '数据专家': '#f59e0b',
     '代码专家': '#ef4444', '合规专家': '#6366f1', '部署专家': '#14b8a6', 'Agent管理专家': '#d946ef',
   };
 

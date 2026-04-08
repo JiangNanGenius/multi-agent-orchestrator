@@ -58,8 +58,8 @@ def test_write_atomic_no_partial(tmp_path):
 
 def test_unicode_roundtrip(tmp_path):
     p = tmp_path / 'unicode.json'
-    data = {'name': '户部尚书', 'emoji': '🏛️'}
+    data = {'name': '数据专家', 'emoji': '📊'}
     atomic_json_write(p, data)
     result = atomic_json_read(p, {})
-    assert result['name'] == '户部尚书'
-    assert result['emoji'] == '🏛️'
+    assert result['name'] == '数据专家'
+    assert result['emoji'] == '📊'

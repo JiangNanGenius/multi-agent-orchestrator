@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-看板任务更新工具 - 供各省部 Agent 调用
+看板任务更新工具 - 供多角色协作节点调用
 
 本工具操作 data/tasks_source.json（JSON 看板模式）。
 如果您已部署 edict/backend（Postgres + Redis 事件总线模式），
@@ -77,8 +77,6 @@ STATE_ORG_MAP = {
     'Assigned': '调度中心', 'Next': '调度中心',
     'Doing': '执行中', 'Review': '调度中心', 'Done': '完成', 'Blocked': '阻塞',
     'PendingConfirm': '调度中心', 'Pending': '规划中心',
-    # 兼容历史三省状态命名，避免旧测试/旧脚本写回后 org 不联动
-    'Taizi': '总控中心', 'Zhongshu': '中书省', 'Menxia': '门下省', 'Shangshu': '尚书省',
 }
 
 _STATE_AGENT_MAP = {
@@ -88,8 +86,6 @@ _STATE_AGENT_MAP = {
     'Review': 'dispatch_center',
     'Pending': 'plan_center',
     'PendingConfirm': 'dispatch_center',
-    # 兼容历史三省状态命名
-    'Taizi': 'control_center', 'Zhongshu': 'plan_center', 'Menxia': 'review_center', 'Shangshu': 'dispatch_center',
 }
 
 _ORG_AGENT_MAP = {
@@ -193,7 +189,7 @@ def find_task(tasks, task_id):
     return next((t for t in tasks if t.get('id') == task_id), None)
 
 
-# 旨意标题最低要求
+# 任务标题最低要求
 _MIN_TITLE_LEN = 6
 _JUNK_TITLES = {
     '?', '？', '好', '好的', '是', '否', '不', '不是', '对', '了解', '收到',
@@ -202,7 +198,7 @@ _JUNK_TITLES = {
 }
 
 def _sanitize_text(raw, max_len=80):
-    """清洗文本：剥离文件路径、URL、Conversation 元数据、传旨前缀、截断过长内容。"""
+    """清洗文本：剥离文件路径、URL、Conversation 元数据、历史输入前缀，并截断过长内容。"""
     t = (raw or '').strip()
     # 1) 剥离 Conversation info / Conversation 后面的所有内容
     t = re.split(r'\n*Conversation\b', t, maxsplit=1)[0].strip()
@@ -212,8 +208,8 @@ def _sanitize_text(raw, max_len=80):
     t = re.sub(r'[/\\.~][A-Za-z0-9_\-./]+(?:\.(?:py|js|ts|json|md|sh|yaml|yml|txt|csv|html|css|log))?', '', t)
     # 4) 剥离 URL
     t = re.sub(r'https?://\S+', '', t)
-    # 5) 清理常见前缀: "传旨:" "下旨:" "下旨（xxx）:" 等
-    t = re.sub(r'^(传旨|下旨)([（(][^)）]*[)）])?[：:\uff1a]\s*', '', t)
+    # 5) 清理历史输入前缀（兼容旧版任务录入格式）
+    t = re.sub(r'^(传旨|下旨|任务|指令|需求)([（(][^)）]*[)）])?[：:\uff1a]\s*', '', t)
     # 6) 剥离系统元数据关键词
     t = re.sub(r'(message_id|session_id|chat_id|open_id|user_id|tenant_key)\s*[:=]\s*\S+', '', t)
     # 7) 合并多余空白
@@ -263,12 +259,12 @@ def _infer_agent_id_from_runtime(task=None):
 
 
 def _is_valid_task_title(title):
-    """校验标题是否足够作为一个旨意任务。"""
+    """校验标题是否足够作为一个有效任务。"""
     t = (title or '').strip()
     if len(t) < _MIN_TITLE_LEN:
-        return False, f'标题过短（{len(t)}<{_MIN_TITLE_LEN}字），疑似非旨意'
+        return False, f'标题过短（{len(t)}<{_MIN_TITLE_LEN}字），疑似不是有效任务'
     if t.lower() in _JUNK_TITLES:
-        return False, f'标题 "{t}" 不是有效旨意'
+        return False, f'标题 "{t}" 不是有效任务'
     # 纯标点或问号
     if re.fullmatch(r'[\s?？!！.。,，…·\-—~]+', t):
         return False, '标题只有标点符号'
@@ -282,10 +278,10 @@ def _is_valid_task_title(title):
 
 
 def cmd_create(task_id, title, state, org, owner, remark=None):
-    """新建任务（收旨时立即调用）"""
+    """新建任务（收单时立即调用）"""
     # 清洗标题（剥离元数据）
     title = _sanitize_title(title)
-    # 旨意标题校验
+    # 任务标题校验
     valid, reason = _is_valid_task_title(title)
     if not valid:
         log.warning(f'⚠️ 拒绝创建 {task_id}：{reason}')

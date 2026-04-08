@@ -14,8 +14,8 @@ import WebSearchPanel from './components/WebSearchPanel';
 import AutomationPanel from './components/AutomationPanel';
 import TaskModal from './components/TaskModal';
 import Toaster from './components/Toaster';
-import CourtCeremony from './components/CourtCeremony';
-import CourtDiscussion from './components/CourtDiscussion';
+import StartupTransition from './components/CourtCeremony'; // 待同步文件名为 StartupTransition
+import CollaborationDiscussion from './components/CourtDiscussion'; // 待同步文件名为 CollaborationDiscussion
 
 type AuthBootState = 'loading' | 'ready';
 
@@ -58,7 +58,7 @@ function LoginScreen({
     <div className="auth-shell">
       <div className="auth-card">
         <div className="auth-badge">{pickLocaleText(locale, '看板登录', 'Dashboard Login')}</div>
-        <h1 className="auth-title">{pickLocaleText(locale, '多Agent智作中枢', 'Multi-Agent Orchestrator')}</h1>
+        <h1 className="auth-title">{pickLocaleText(locale, '多Agent协作平台', 'Multi-Agent Collaboration Platform')}</h1>
         <p className="auth-desc">
           {pickLocaleText(locale, '看板已启用账号密码认证。默认账号为 ', 'This dashboard uses username-password authentication. The default account is ')}<strong>admin</strong>{pickLocaleText(locale, '，首次登录必须修改密码；用户名可在首次登录时一并修改，也可稍后再改。', '. You must change the password on first login. The username can be changed during first login or later in account settings.')}
         </p>
@@ -406,8 +406,8 @@ export default function App() {
     <div className="wrap">
       <div className="hdr">
         <div>
-          <div className="logo">{pickLocaleText(locale, '多Agent智作中枢', 'Multi-Agent Orchestrator')}</div>
-          <div className="sub-text">{pickLocaleText(locale, 'Multi-Agent Orchestrator · 中文默认部署与多阶段任务治理', 'Multi-Agent Orchestrator · AI-assisted deployment and multi-stage task governance')}</div>
+          <div className="logo">{pickLocaleText(locale, '多Agent协作平台', 'Multi-Agent Collaboration Platform')}</div>
+          <div className="sub-text">{pickLocaleText(locale, 'Multi-Agent Collaboration Platform · 中文默认部署与多阶段任务治理', 'Multi-Agent Collaboration Platform · AI-assisted deployment and multi-stage task governance')}</div>
         </div>
         <div className="hdr-r">
           <span className={`chip ${syncOk ? 'ok' : syncOk === false ? 'err' : ''}`}>
@@ -442,7 +442,7 @@ export default function App() {
       </div>
 
       {activeTab === 'tasks' && <EdictBoard />}
-      {activeTab === 'court' && <CourtDiscussion />}
+      {activeTab === 'collaboration' && <CollaborationDiscussion />}
       {activeTab === 'monitor' && <MonitorPanel />}
       {activeTab === 'automation' && <AutomationPanel />}
       {activeTab === 'agents' && <AgentOverviewPanel />}
@@ -455,7 +455,7 @@ export default function App() {
 
       <TaskModal />
       <Toaster />
-      <CourtCeremony />
+      <StartupTransition />
 
       {showAccountModal ? (
         <AccountModal

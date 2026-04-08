@@ -31,7 +31,10 @@ from court_discuss import (
     create_session as cd_create, advance_discussion as cd_advance,
     get_session as cd_get, conclude_session as cd_conclude,
     list_sessions as cd_list, destroy_session as cd_destroy,
-    get_fate_event as cd_fate, OFFICIAL_PROFILES as CD_PROFILES,
+    get_fate_event as cd_fate, AGENT_PROFILES as CD_PROFILES,
+    list_agent_busy as cd_agent_busy, pause_session as cd_pause,
+    resume_session as cd_resume, get_run_status as cd_run_status,
+    sync_task_busy_states as cd_sync_task_busy_states,
 )
 
 log = logging.getLogger('server')
@@ -818,7 +821,7 @@ _AGENT_DEPTS = [
     {'id':'code_specialist',  'label':'代码专家', 'emoji':'⚔️', 'role':'工程实现专家',     'rank':'专业执行组'},
     {'id':'audit_specialist', 'label':'审计专家', 'emoji':'⚖️', 'role':'审计审核专家',     'rank':'专业执行组'},
     {'id':'deploy_specialist','label':'部署专家', 'emoji':'🔧', 'role':'部署运维专家',     'rank':'专业执行组'},
-    {'id':'admin_specialist', 'label':'管理专家', 'emoji':'👔', 'role':'系统管理专家',     'rank':'专业执行组'},
+    {'id':'admin_specialist', 'label':'技能管理员', 'emoji':'👔', 'role':'技能管理专家',     'rank':'专业执行组'},
     {'id':'search_specialist','label':'搜索专家', 'emoji':'🌐', 'role':'全网搜索专家',     'rank':'支撑能力'},
 ]
 
@@ -1046,10 +1049,75 @@ _ORG_AGENT_MAP = {
     '审计专家': 'audit_specialist',
     '部署专家': 'deploy_specialist',
     '管理专家': 'admin_specialist',
+    '技能管理员': 'admin_specialist',
     '搜索专家': 'search_specialist',
 }
 
 _TERMINAL_STATES = {'Done', 'Cancelled'}
+
+
+def _resolve_task_busy_agents(task):
+    state = str(task.get('state', ''))
+    org = str(task.get('org', ''))
+    agent_ids = []
+
+    primary = _STATE_AGENT_MAP.get(state)
+    if primary is None and state in ('Doing', 'Next', 'Blocked'):
+        primary = _ORG_AGENT_MAP.get(org)
+    if primary:
+        agent_ids.append(primary)
+
+    target_dept = str(task.get('targetDept', '') or '')
+    target_agent = _ORG_AGENT_MAP.get(target_dept)
+    if target_agent and state in ('Assigned', 'Next', 'Pending') and target_agent not in agent_ids:
+        agent_ids.append(target_agent)
+
+    return [aid for aid in agent_ids if aid]
+
+
+def _task_busy_run_state(task):
+    return 'paused' if str(task.get('state', '')) == 'Blocked' else 'running'
+
+
+def _task_busy_reason(task):
+    state = str(task.get('state', ''))
+    block = str(task.get('block', '') or '')
+    now_text = str(task.get('now', '') or '')
+    if state == 'Blocked':
+        return block or now_text or '任务阻塞'
+    return now_text or state or '任务执行中'
+
+
+def sync_global_agent_busy_from_tasks(tasks=None):
+    tasks = tasks if isinstance(tasks, list) else load_tasks()
+    task_sources = []
+    for task in tasks:
+        if not isinstance(task, dict):
+            continue
+        task_id = str(task.get('id', '') or '')
+        state = str(task.get('state', '') or '')
+        if not task_id or state in _TERMINAL_STATES or bool(task.get('archived')):
+            continue
+        agent_ids = _resolve_task_busy_agents(task)
+        if not agent_ids:
+            continue
+        task_sources.append({
+            'task_id': task_id,
+            'task_title': str(task.get('title', '') or ''),
+            'task_state': state,
+            'task_org': str(task.get('org', '') or ''),
+            'agent_ids': agent_ids,
+            'claimed_by': str(task.get('org', '') or '任务调度'),
+            'reason': _task_busy_reason(task),
+            'run_state': _task_busy_run_state(task),
+        })
+    return cd_sync_task_busy_states(task_sources)
+
+
+def get_global_agent_busy():
+    tasks = load_tasks()
+    sync_global_agent_busy_from_tasks(tasks)
+    return cd_agent_busy()
 
 
 def _parse_iso(ts):
@@ -2467,6 +2535,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(get_scheduler_state(task_id))
         elif p == '/api/agents-status':
             self.send_json(get_agents_status())
+        elif p == '/api/global-agent-busy':
+            self.send_json(get_global_agent_busy())
         elif p.startswith('/api/task-output/'):
             task_id = p.replace('/api/task-output/', '')
             if not task_id or not _SAFE_NAME_RE.match(task_id):
@@ -2496,16 +2566,22 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({'ok': False, 'error': 'invalid agent_id'}, 400)
             else:
                 self.send_json({'ok': True, 'agentId': agent_id, 'activity': get_agent_activity(agent_id)})
-        # ── 朝堂议政 ──
-        elif p == '/api/court-discuss/list':
+        # ── 协同讨论 ──
+        elif p == '/api/collab-discuss/list':
             self.send_json({'ok': True, 'sessions': cd_list()})
-        elif p == '/api/court-discuss/agents':
+        elif p == '/api/collab-discuss/agents':
             self.send_json({'ok': True, 'agents': CD_PROFILES})
-        elif p.startswith('/api/court-discuss/session/'):
-            sid = p.replace('/api/court-discuss/session/', '')
+        elif p == '/api/collab-discuss/agent-busy':
+            self.send_json(get_global_agent_busy())
+        elif p.startswith('/api/collab-discuss/session/'):
+            sid = p.replace('/api/collab-discuss/session/', '')
             data = cd_get(sid)
             self.send_json(data if data else {'ok': False, 'error': 'session not found'}, 200 if data else 404)
-        elif p == '/api/court-discuss/fate':
+        elif p.startswith('/api/collab-discuss/run-status/'):
+            sid = p.replace('/api/collab-discuss/run-status/', '')
+            data = cd_run_status(sid)
+            self.send_json(data, 200 if data.get('ok') else 404)
+        elif p == '/api/collab-discuss/fate':
             self.send_json({'ok': True, 'event': cd_fate()})
         elif self._serve_static(p):
             pass  # 已由 _serve_static 处理 (JS/CSS/图片等)
@@ -2886,6 +2962,21 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(result)
             return
 
+        if p == '/api/agent-command':
+            agent_id = body.get('agentId', '').strip()
+            message = body.get('message', '').strip()
+            if not agent_id:
+                self.send_json({'ok': False, 'error': 'agentId required'}, 400)
+                return
+            if not message:
+                self.send_json({'ok': False, 'error': 'message required'}, 400)
+                return
+            result = wake_agent(agent_id, message)
+            if result.get('ok'):
+                result['message'] = f'已向 {agent_id} 发送指令，预计 10-30 秒内可在活动流中看到响应'
+            self.send_json(result)
+            return
+
         if p == '/api/set-model':
             agent_id = body.get('agentId', '').strip()
             model = body.get('model', '').strip()
@@ -2925,42 +3016,77 @@ class Handler(BaseHTTPRequestHandler):
             atomic_json_update(DATA / 'agent_config.json', _set_channel, {})
             self.send_json({'ok': True, 'message': f'派发渠道已切换为 {channel}'})
 
-        # ── 朝堂议政 POST ──
-        elif p == '/api/court-discuss/start':
+        # ── 协同讨论 POST ──
+        elif p == '/api/collab-discuss/start':
             topic = body.get('topic', '').strip()
-            agents = body.get('agents', []) or body.get('officials', [])
+            agents = body.get('agents', [])
             task_id = body.get('taskId', '').strip()
+            preferred_mode = body.get('preferredMode', 'auto').strip() or 'auto'
+            moderator_id = body.get('moderatorId', '').strip()
+            select_all = bool(body.get('selectAll', False))
             if not topic:
                 self.send_json({'ok': False, 'error': 'topic required'}, 400)
                 return
             if not agents or not isinstance(agents, list):
                 self.send_json({'ok': False, 'error': 'agents list required'}, 400)
                 return
-            # 校验 Agent ID
             valid_ids = set(CD_PROFILES.keys())
             agents = [agent_id for agent_id in agents if agent_id in valid_ids]
             if len(agents) < 2:
                 self.send_json({'ok': False, 'error': '至少选择2个 Agent'}, 400)
                 return
-            self.send_json(cd_create(topic, agents, task_id))
+            if preferred_mode not in ('auto', 'meeting', 'chat'):
+                preferred_mode = 'auto'
+            if moderator_id and moderator_id not in valid_ids:
+                moderator_id = ''
+            sync_global_agent_busy_from_tasks()
+            self.send_json(cd_create(topic, agents, task_id, preferred_mode, moderator_id, select_all))
 
-        elif p == '/api/court-discuss/advance':
+        elif p == '/api/collab-discuss/advance':
             sid = body.get('sessionId', '').strip()
             user_msg = body.get('userMessage', '').strip() or None
-            decree = body.get('decree', '').strip() or None
+            constraint = body.get('constraint', '').strip() or None
+            intent = body.get('intent', 'auto').strip() or 'auto'
+            speaker_ids = body.get('speakerIds', [])
+            stage_action = body.get('stageAction', '').strip() or None
             if not sid:
                 self.send_json({'ok': False, 'error': 'sessionId required'}, 400)
                 return
-            self.send_json(cd_advance(sid, user_msg, decree))
+            if not isinstance(speaker_ids, list):
+                speaker_ids = []
+            valid_ids = set(CD_PROFILES.keys())
+            speaker_ids = [agent_id for agent_id in speaker_ids if agent_id in valid_ids]
+            sync_global_agent_busy_from_tasks()
+            self.send_json(cd_advance(sid, user_msg, constraint, intent, speaker_ids, stage_action))
 
-        elif p == '/api/court-discuss/conclude':
+        elif p == '/api/collab-discuss/pause':
+            sid = body.get('sessionId', '').strip()
+            reason = body.get('reason', '').strip()
+            if not sid:
+                self.send_json({'ok': False, 'error': 'sessionId required'}, 400)
+                return
+            sync_global_agent_busy_from_tasks()
+            self.send_json(cd_pause(sid, reason))
+
+        elif p == '/api/collab-discuss/resume':
+            sid = body.get('sessionId', '').strip()
+            reason = body.get('reason', '').strip()
+            auto_run = body.get('autoRun') if 'autoRun' in body else None
+            if not sid:
+                self.send_json({'ok': False, 'error': 'sessionId required'}, 400)
+                return
+            sync_global_agent_busy_from_tasks()
+            self.send_json(cd_resume(sid, auto_run, reason))
+
+        elif p == '/api/collab-discuss/conclude':
             sid = body.get('sessionId', '').strip()
             if not sid:
                 self.send_json({'ok': False, 'error': 'sessionId required'}, 400)
                 return
+            sync_global_agent_busy_from_tasks()
             self.send_json(cd_conclude(sid))
 
-        elif p == '/api/court-discuss/destroy':
+        elif p == '/api/collab-discuss/destroy':
             sid = body.get('sessionId', '').strip()
             if sid:
                 cd_destroy(sid)

@@ -1,12 +1,10 @@
 /**
- * 协同讨论 — 多Agent实时讨论可视化组件
- *
- * 灵感来自 nvwa 项目的故事剧场 + 协作工坊 + 虚拟生活
+ * 协同讨论会议室 — 自动识别正式会议或闲聊
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useStore, DEPTS, deptMeta } from '../store';
-import { api } from '../api';
+import { api, type CollabDiscussResult, type CollabMinute, type CollabAgentBusyEntry } from '../api';
 import { pickLocaleText, type Locale } from '../i18n';
 
 const EMOTION_EMOJI: Record<string, string> = {
@@ -14,60 +12,232 @@ const EMOTION_EMOJI: Record<string, string> = {
   thinking: '🤔', amused: '😄', happy: '😊',
 };
 
-const COURT_POSITIONS: Record<string, { x: number; y: number }> = {
-  plan_center: { x: 15, y: 25 }, review_center: { x: 15, y: 45 }, dispatch_center: { x: 15, y: 65 },
-  docs_specialist: { x: 85, y: 18 }, data_specialist: { x: 85, y: 31 }, code_specialist: { x: 85, y: 44 },
-  audit_specialist: { x: 85, y: 57 }, deploy_specialist: { x: 85, y: 70 }, search_specialist: { x: 85, y: 83 },
-  control_center: { x: 50, y: 20 }, admin_specialist: { x: 50, y: 80 },
+const STAGE_LABEL: Record<string, { zh: string; en: string }> = {
+  meeting_init: { zh: '会议建立', en: 'Meeting Setup' },
+  moderator_open: { zh: '主持人开场', en: 'Moderator Opening' },
+  expert_statement: { zh: '专家陈述', en: 'Expert Statements' },
+  cross_discussion: { zh: '交叉讨论', en: 'Cross Discussion' },
+  decision_sync: { zh: '结论收敛', en: 'Decision Sync' },
+  meeting_closed: { zh: '会议结束', en: 'Meeting Closed' },
+  chatting: { zh: '自由闲聊', en: 'Chatting' },
 };
 
-interface CourtMessage {
+const COLLAB_POSITIONS: Record<string, { x: number; y: number }> = {
+  plan_center: { x: 18, y: 22 },
+  review_center: { x: 18, y: 42 },
+  dispatch_center: { x: 18, y: 62 },
+  docs_specialist: { x: 84, y: 16 },
+  data_specialist: { x: 84, y: 29 },
+  code_specialist: { x: 84, y: 42 },
+  audit_specialist: { x: 84, y: 55 },
+  deploy_specialist: { x: 84, y: 68 },
+  search_specialist: { x: 84, y: 81 },
+  control_center: { x: 50, y: 18 },
+  admin_specialist: { x: 50, y: 80 },
+};
+
+interface CollabMessage {
   type: string;
   content: string;
   agent_id?: string;
   agent_name?: string;
   emotion?: string;
-  action?: string;
+  action?: string | null;
   timestamp?: number;
 }
 
-interface CourtSession {
-  session_id: string;
-  topic: string;
-  agents: Array<{
-    id: string;
-    name: string;
-    emoji: string;
-    role: string;
-    personality: string;
-    speaking_style: string;
-  }>;
-  messages: CourtMessage[];
-  round: number;
-  phase: string;
+interface CollabAgent {
+  id: string;
+  name: string;
+  emoji: string;
+  role: string;
+  personality?: string;
+  speaking_style?: string;
 }
 
-export default function CourtDiscussion() {
+interface TraceEntry {
+  at?: number;
+  round?: number;
+  stage?: string;
+  kind?: string;
+  content?: string;
+  mode?: string;
+  intent?: string;
+  speaker_ids?: string[];
+  result_stage?: string;
+  summary?: string;
+  reason?: string;
+  auto_run?: boolean;
+}
+
+interface CollabSession {
+  session_id: string;
+  topic: string;
+  agents: CollabAgent[];
+  messages: CollabMessage[];
+  round: number;
+  phase: string;
+  mode?: 'meeting' | 'chat';
+  stage?: string;
+  moderator_id?: string;
+  moderator_name?: string;
+  speaker_queue?: string[];
+  agenda?: string;
+  minutes?: CollabMinute[];
+  trace?: TraceEntry[];
+  decision_items?: string[];
+  open_questions?: string[];
+  action_items?: string[];
+  stage_history?: Array<Record<string, unknown>>;
+  summary?: string;
+  select_all?: boolean;
+  run_state?: 'running' | 'paused' | 'concluded' | string;
+  auto_run?: boolean;
+  run_interval_sec?: number;
+  auto_round_limit?: number;
+  auto_round_count?: number;
+  last_advanced_at?: number | null;
+  next_run_at?: number | null;
+  claimed_agents?: string[];
+  conflicted_agents?: string[];
+  yielded_agents?: string[];
+  busy_snapshot?: CollabAgentBusyEntry[];
+}
+
+function normalizeSession(res: CollabDiscussResult): CollabSession {
+  return {
+    session_id: res.session_id || '',
+    topic: res.topic || '',
+    agents: res.agents || [],
+    messages: (res.messages || []).map((msg) => ({
+      type: msg.type,
+      content: msg.content,
+      agent_id: msg.agent_id,
+      agent_name: msg.agent_name,
+      emotion: msg.emotion,
+      action: msg.action,
+      timestamp: msg.timestamp,
+    })),
+    round: res.round || 0,
+    phase: res.phase || 'active',
+    mode: res.mode,
+    stage: res.stage,
+    moderator_id: res.moderator_id,
+    moderator_name: res.moderator_name,
+    speaker_queue: res.speaker_queue || [],
+    agenda: res.agenda || '',
+    minutes: res.minutes || [],
+    trace: (res.trace || []) as TraceEntry[],
+    decision_items: res.decision_items || [],
+    open_questions: res.open_questions || [],
+    action_items: res.action_items || [],
+    stage_history: res.stage_history || [],
+    summary: res.summary,
+    select_all: res.select_all,
+    run_state: res.run_state || (res.phase === 'concluded' ? 'concluded' : 'running'),
+    auto_run: res.auto_run || false,
+    run_interval_sec: res.run_interval_sec,
+    auto_round_limit: res.auto_round_limit,
+    auto_round_count: res.auto_round_count,
+    last_advanced_at: res.last_advanced_at,
+    next_run_at: res.next_run_at,
+    claimed_agents: res.claimed_agents || [],
+    conflicted_agents: res.conflicted_agents || [],
+    yielded_agents: res.yielded_agents || [],
+    busy_snapshot: res.busy_snapshot || [],
+  };
+}
+
+function mergeAdvanceResult(prev: CollabSession, res: CollabDiscussResult): CollabSession {
+  const appendedMessages: CollabMessage[] = (res.new_messages || []).map((m) => ({
+    type: m.type || 'agent',
+    agent_id: m.agent_id || '',
+    agent_name: m.agent_name || m.name || '',
+    content: m.content,
+    emotion: m.emotion,
+    action: m.action,
+    timestamp: Date.now() / 1000,
+  }));
+
+  const mergedMessages = [...prev.messages, ...appendedMessages];
+  if (res.scene_note) {
+    mergedMessages.push({
+      type: 'scene_note',
+      content: res.scene_note,
+      timestamp: Date.now() / 1000,
+    });
+  }
+
+  return {
+    ...prev,
+    round: res.round ?? prev.round,
+    phase: res.phase ?? prev.phase,
+    mode: res.mode ?? prev.mode,
+    stage: res.stage ?? prev.stage,
+    moderator_id: res.moderator_id ?? prev.moderator_id,
+    moderator_name: res.moderator_name ?? prev.moderator_name,
+    speaker_queue: res.speaker_queue ?? prev.speaker_queue,
+    messages: mergedMessages,
+    minutes: res.minutes ?? prev.minutes,
+    decision_items: res.decision_items ?? prev.decision_items,
+    open_questions: res.open_questions ?? prev.open_questions,
+    action_items: res.action_items ?? prev.action_items,
+    run_state: res.run_state ?? prev.run_state,
+    auto_run: res.auto_run ?? prev.auto_run,
+    run_interval_sec: res.run_interval_sec ?? prev.run_interval_sec,
+    auto_round_limit: res.auto_round_limit ?? prev.auto_round_limit,
+    auto_round_count: res.auto_round_count ?? prev.auto_round_count,
+    last_advanced_at: res.last_advanced_at ?? prev.last_advanced_at,
+    next_run_at: res.next_run_at ?? prev.next_run_at,
+    claimed_agents: res.claimed_agents ?? prev.claimed_agents,
+    conflicted_agents: res.conflicted_agents ?? prev.conflicted_agents,
+    yielded_agents: res.yielded_agents ?? prev.yielded_agents,
+    busy_snapshot: res.busy_snapshot ?? prev.busy_snapshot,
+  };
+}
+
+function busyAccent(state?: string) {
+  switch (state) {
+    case 'active':
+      return 'text-emerald-300 border-emerald-700/40 bg-emerald-900/20';
+    case 'reserved':
+      return 'text-sky-300 border-sky-700/40 bg-sky-900/20';
+    case 'paused':
+      return 'text-amber-300 border-amber-700/40 bg-amber-900/20';
+    case 'yielding':
+      return 'text-fuchsia-300 border-fuchsia-700/40 bg-fuchsia-900/20';
+    case 'cooldown':
+      return 'text-slate-300 border-slate-700/40 bg-slate-800/30';
+    default:
+      return 'text-[var(--muted)] border-[var(--line)] bg-[var(--panel2)]';
+  }
+}
+
+export default function CollaborationDiscussion() {
   const locale = useStore((s) => s.locale);
   const toast = useStore((s) => s.toast);
   const liveStatus = useStore((s) => s.liveStatus);
+  const collabAgentBusyData = useStore((s) => s.collabAgentBusyData);
+  const loadCollabBusy = useStore((s) => s.loadCollabBusy);
 
   const [phase, setPhase] = useState<'setup' | 'session'>('setup');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(['control_center', 'plan_center', 'review_center']));
   const [topic, setTopic] = useState('');
-  const [session, setSession] = useState<CourtSession | null>(null);
+  const [moderatorId, setModeratorId] = useState('control_center');
+  const [session, setSession] = useState<CollabSession | null>(null);
   const [loading, setLoading] = useState(false);
   const [autoPlay, setAutoPlay] = useState(false);
   const autoPlayRef = useRef(false);
 
   const [userInput, setUserInput] = useState('');
-  const [showDecree, setShowDecree] = useState(false);
-  const [decreeInput, setDecreeInput] = useState('');
-  const [decreeFlash, setDecreeFlash] = useState(false);
+  const [showConstraint, setShowConstraint] = useState(false);
+  const [constraintInput, setConstraintInput] = useState('');
+  const [constraintFlash, setConstraintFlash] = useState(false);
   const [diceRolling, setDiceRolling] = useState(false);
   const [diceResult, setDiceResult] = useState<string | null>(null);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [emotions, setEmotions] = useState<Record<string, string>>({});
+  const [speakerSelection, setSpeakerSelection] = useState<Set<string>>(new Set());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -80,122 +250,198 @@ export default function CourtDiscussion() {
   }, [autoPlay]);
 
   useEffect(() => {
-    if (!autoPlay || !session || loading) return;
+    if (!autoPlay || !session || loading || session.phase === 'concluded' || session.run_state === 'paused') return;
     const timer = setInterval(() => {
-      if (autoPlayRef.current && !loading) {
-        handleAdvance();
+      if (!autoPlayRef.current || loading) return;
+      if (session.mode === 'meeting') {
+        handleAdvance({
+          intent: 'next_stage',
+          stageAction: 'next_stage',
+          speakerIds: Array.from(speakerSelection),
+        });
+      } else {
+        handleAdvance({ intent: 'chat' });
       }
-    }, 5000);
+    }, 6000);
     return () => clearInterval(timer);
-  }, [autoPlay, session, loading]);
+  }, [autoPlay, session, loading, speakerSelection]);
+
+  useEffect(() => {
+    loadCollabBusy().catch(() => {});
+  }, [loadCollabBusy]);
+
+  const allAgentIds = useMemo(() => DEPTS.map((d) => d.id), []);
+  const sessionAgents = session?.agents || [];
+  const currentModeratorId = session?.moderator_id || moderatorId;
+  const moderatorSelectable = Array.from(selectedIds);
+  const currentMode = session?.mode || 'meeting';
+  const currentStage = session?.stage || 'meeting_init';
+  const speakerPool = sessionAgents.filter((agent) => agent.id !== currentModeratorId);
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Set(prev);
+      if (moderatorId && !next.has(moderatorId)) {
+        next.add(moderatorId);
+      }
+      return next;
+    });
+  }, [moderatorId]);
+
+  useEffect(() => {
+    if (!session) return;
+    const queue = session.speaker_queue || [];
+    if (queue.length > 0) {
+      setSpeakerSelection(new Set(queue));
+    }
+  }, [session?.speaker_queue, session?.session_id]);
 
   const toggleAgent = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else if (next.size < 8) next.add(id);
+      if (next.has(id)) {
+        if (id === moderatorId) return prev;
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
+  };
+
+  const selectAllAgents = () => {
+    setSelectedIds(new Set(allAgentIds));
+    if (!moderatorId) setModeratorId('control_center');
+  };
+
+  const clearAgentSelection = () => {
+    setSelectedIds(new Set(moderatorId ? [moderatorId] : []));
+  };
+
+  const toggleSpeaker = (id: string) => {
+    setSpeakerSelection((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const animateMessages = (messages: CollabMessage[]) => {
+    const aiMsgs = messages
+      .filter((m) => m.type === 'agent' || m.type === 'moderator')
+      .map((m) => ({ agent_id: m.agent_id || '', emotion: m.emotion || 'neutral' }))
+      .filter((m) => Boolean(m.agent_id));
+
+    if (aiMsgs.length === 0) return;
+    const emotionMap: Record<string, string> = {};
+    let idx = 0;
+    const cycle = () => {
+      if (idx < aiMsgs.length) {
+        const currentAgentId = aiMsgs[idx].agent_id;
+        setSpeakingId(currentAgentId);
+        emotionMap[currentAgentId] = aiMsgs[idx].emotion;
+        idx += 1;
+        setTimeout(cycle, 1100);
+      } else {
+        setSpeakingId(null);
+      }
+    };
+    cycle();
+    setEmotions((prev) => ({ ...prev, ...emotionMap }));
   };
 
   const handleStart = async () => {
     if (!topic.trim() || selectedIds.size < 2 || loading) return;
     setLoading(true);
     try {
-      const res = await api.courtDiscussStart(topic, Array.from(selectedIds));
-      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '启动失败', 'Failed to start discussion'));
-      setSession(res as unknown as CourtSession);
+      const res = await api.collabDiscussStart(
+        topic,
+        Array.from(selectedIds),
+        undefined,
+        'auto',
+        moderatorId,
+        selectedIds.size === allAgentIds.length,
+      );
+      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '启动失败', 'Failed to start meeting'));
+      const normalized = normalizeSession(res);
+      setSession(normalized);
       setPhase('session');
+      loadCollabBusy().catch(() => {});
+      setSpeakerSelection(new Set(normalized.speaker_queue || []));
+      animateMessages(normalized.messages.slice(-3));
     } catch (e: unknown) {
-      toast((e as Error).message || pickLocaleText(locale, '启动失败', 'Failed to start discussion'), 'err');
+      toast((e as Error).message || pickLocaleText(locale, '启动失败', 'Failed to start meeting'), 'err');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAdvance = useCallback(async (userMsg?: string, decree?: string) => {
+  const handleAdvance = useCallback(async ({
+    userMessage,
+    constraint,
+    intent = 'auto',
+    speakerIds = [],
+    stageAction,
+  }: {
+    userMessage?: string;
+    constraint?: string;
+    intent?: 'auto' | 'meeting' | 'chat' | 'user_message' | 'constraint' | 'next_round' | 'next_stage';
+    speakerIds?: string[];
+    stageAction?: string;
+  }) => {
     if (!session || loading) return;
     setLoading(true);
-
     try {
-      const res = await api.courtDiscussAdvance(session.session_id, userMsg, decree);
+      const res = await api.collabDiscussAdvance(
+        session.session_id,
+        userMessage,
+        constraint,
+        intent,
+        speakerIds,
+        stageAction,
+      );
       if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '推进失败', 'Failed to advance discussion'));
-
-      setSession((prev) => {
-        if (!prev) return prev;
-        const newMsgs: CourtMessage[] = [];
-
-        if (userMsg) {
-          newMsgs.push({ type: 'emperor', content: userMsg, timestamp: Date.now() / 1000 });
-        }
-        if (decree) {
-          newMsgs.push({ type: 'decree', content: decree, timestamp: Date.now() / 1000 });
-        }
-
-        const aiMsgs = (res.new_messages || []).map((m: Record<string, string>) => ({
-          type: 'agent',
-          agent_id: m.agent_id || m.official_id,
-          agent_name: m.agent_name || m.official_name || m.name,
-          content: m.content,
-          emotion: m.emotion,
-          action: m.action,
-          timestamp: Date.now() / 1000,
-        }));
-
-        if (res.scene_note) {
-          newMsgs.push({ type: 'scene_note', content: res.scene_note, timestamp: Date.now() / 1000 });
-        }
-
-        return {
-          ...prev,
-          round: res.round ?? prev.round + 1,
-          messages: [...prev.messages, ...newMsgs, ...aiMsgs],
-        };
-      });
-
-      const aiMsgs = (res.new_messages || []).map((m: Record<string, string>) => ({
-        agent_id: m.agent_id || m.official_id,
-        emotion: m.emotion || 'neutral',
-      })).filter((m) => Boolean(m.agent_id));
-      if (aiMsgs.length > 0) {
-        const emotionMap: Record<string, string> = {};
-        let idx = 0;
-        const cycle = () => {
-          if (idx < aiMsgs.length) {
-            const currentAgentId = aiMsgs[idx].agent_id as string;
-            setSpeakingId(currentAgentId);
-            emotionMap[currentAgentId] = aiMsgs[idx].emotion || 'neutral';
-            idx++;
-            setTimeout(cycle, 1200);
-          } else {
-            setSpeakingId(null);
-          }
-        };
-        cycle();
-        setEmotions((prev) => ({ ...prev, ...emotionMap }));
-      }
-    } catch {
-      // ignore silently to match existing interaction pattern
+      setSession((prev) => (prev ? mergeAdvanceResult(prev, res) : prev));
+      loadCollabBusy().catch(() => {});
+      animateMessages((res.new_messages || []).map((m) => ({
+        type: m.type || 'agent',
+        content: m.content,
+        agent_id: m.agent_id,
+        agent_name: m.agent_name || m.name,
+        emotion: m.emotion,
+      })));
+    } catch (e: unknown) {
+      toast((e as Error).message || pickLocaleText(locale, '推进失败', 'Failed to advance discussion'), 'err');
     } finally {
       setLoading(false);
     }
-  }, [session, loading, locale]);
+  }, [session, loading, locale, toast]);
 
-  const handleEmperor = () => {
+  const handleUserSubmit = () => {
     const msg = userInput.trim();
     if (!msg) return;
     setUserInput('');
-    handleAdvance(msg);
+    handleAdvance({
+      userMessage: msg,
+      intent: currentMode === 'meeting' ? 'user_message' : 'chat',
+      speakerIds: currentMode === 'meeting' ? Array.from(speakerSelection) : [],
+    });
   };
 
-  const handleDecree = () => {
-    const msg = decreeInput.trim();
+  const handleConstraint = () => {
+    const msg = constraintInput.trim();
     if (!msg) return;
-    setDecreeInput('');
-    setShowDecree(false);
-    setDecreeFlash(true);
-    setTimeout(() => setDecreeFlash(false), 800);
-    handleAdvance(undefined, msg);
+    setConstraintInput('');
+    setShowConstraint(false);
+    setConstraintFlash(true);
+    setTimeout(() => setConstraintFlash(false), 800);
+    handleAdvance({
+      constraint: msg,
+      intent: 'constraint',
+      speakerIds: Array.from(speakerSelection),
+    });
   };
 
   const handleDice = async () => {
@@ -205,16 +451,20 @@ export default function CourtDiscussion() {
 
     let count = 0;
     const timer = setInterval(async () => {
-      count++;
-      setDiceResult(pickLocaleText(locale, '🎲 命运轮转中...', '🎲 Fate is turning...'));
+      count += 1;
+      setDiceResult(pickLocaleText(locale, '🎲 会议现场出现变量...', '🎲 The room is shifting...'));
       if (count >= 6) {
         clearInterval(timer);
         try {
-          const res = await api.courtDiscussFate();
+          const res = await api.collabDiscussFate();
           const event = res.event || pickLocaleText(locale, '边疆急报传来', 'Urgent frontier news arrives');
           setDiceResult(event);
           setDiceRolling(false);
-          handleAdvance(undefined, locale === 'en' ? `[Random Event] ${event}` : `【随机事件】${event}`);
+          handleAdvance({
+            constraint: locale === 'en' ? `[Random Event] ${event}` : `【随机事件】${event}`,
+            intent: 'constraint',
+            speakerIds: Array.from(speakerSelection),
+          });
         } catch {
           setDiceResult(pickLocaleText(locale, '命运之力暂时无法触及', 'The force of fate cannot be reached right now'));
           setDiceRolling(false);
@@ -223,32 +473,63 @@ export default function CourtDiscussion() {
     }, 200);
   };
 
+  const handlePauseResume = async () => {
+    if (!session || loading || session.phase === 'concluded') return;
+    setLoading(true);
+    try {
+      const res = session.run_state === 'paused'
+        ? await api.collabDiscussResume(session.session_id, autoPlayRef.current)
+        : await api.collabDiscussPause(session.session_id);
+      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '更新运行状态失败', 'Failed to update run state'));
+      setSession((prev) => (prev ? { ...prev, ...normalizeSession(res), messages: prev.messages } : prev));
+      loadCollabBusy().catch(() => {});
+      if (session.run_state !== 'paused') {
+        setAutoPlay(false);
+      }
+    } catch (e: unknown) {
+      toast((e as Error).message || pickLocaleText(locale, '更新运行状态失败', 'Failed to update run state'), 'err');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleConclude = async () => {
     if (!session) return;
     setLoading(true);
     try {
-      const res = await api.courtDiscussConclude(session.session_id);
-      if (res.summary) {
-        setSession((prev) =>
-          prev
-            ? {
-                ...prev,
-                phase: 'concluded',
-                messages: [
-                  ...prev.messages,
-                  {
-                    type: 'system',
-                    content: locale === 'en' ? `📋 Discussion concluded — ${res.summary}` : `📋 协同讨论结束 — ${res.summary}`,
-                    timestamp: Date.now() / 1000,
-                  },
-                ],
-              }
-            : prev,
-        );
-      }
+      const res = await api.collabDiscussConclude(session.session_id);
+      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '结束失败', 'Failed to conclude meeting'));
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              phase: 'concluded',
+              run_state: 'concluded',
+              auto_run: false,
+              next_run_at: null,
+              stage: prev.mode === 'meeting' ? 'meeting_closed' : prev.stage,
+              summary: res.summary || prev.summary,
+              minutes: res.minutes || prev.minutes,
+              decision_items: res.decision_items || prev.decision_items,
+              open_questions: res.open_questions || prev.open_questions,
+              action_items: res.action_items || prev.action_items,
+              messages: [
+                ...prev.messages,
+                {
+                  type: 'system',
+                  content: res.summary
+                    ? (locale === 'en' ? `📋 Session concluded — ${res.summary}` : `📋 会议结束 —— ${res.summary}`)
+                    : pickLocaleText(locale, '📋 会议已结束', '📋 Session concluded'),
+                  timestamp: Date.now() / 1000,
+                },
+              ],
+            }
+          : prev,
+      );
+      loadCollabBusy().catch(() => {});
       setAutoPlay(false);
-    } catch {
-      toast(pickLocaleText(locale, '结束失败', 'Failed to conclude discussion'), 'err');
+    } catch (e: unknown) {
+      toast((e as Error).message || pickLocaleText(locale, '结束失败', 'Failed to conclude discussion'), 'err');
     } finally {
       setLoading(false);
     }
@@ -256,7 +537,9 @@ export default function CourtDiscussion() {
 
   const handleReset = () => {
     if (session) {
-      api.courtDiscussDestroy(session.session_id).catch(() => {});
+      api.collabDiscussDestroy(session.session_id).catch(() => {}).finally(() => {
+        loadCollabBusy().catch(() => {});
+      });
     }
     setPhase('setup');
     setSession(null);
@@ -264,6 +547,7 @@ export default function CourtDiscussion() {
     setEmotions({});
     setSpeakingId(null);
     setDiceResult(null);
+    setSpeakerSelection(new Set());
   };
 
   const activeEdicts = (liveStatus?.tasks || []).filter(
@@ -272,115 +556,174 @@ export default function CourtDiscussion() {
 
   const presetTopics = [
     ...activeEdicts.slice(0, 3).map((t) => ({
-      text: locale === 'en' ? `Discuss task ${t.id}: ${t.title}` : `讨论任务 ${t.id}：${t.title}`,
-      taskId: t.id,
+      text: locale === 'en' ? `Hold a meeting on task ${t.id}: ${t.title}` : `围绕任务 ${t.id} 开会：${t.title}`,
       icon: '📜',
     })),
-    { text: pickLocaleText(locale, '讨论系统架构优化方案', 'Discuss system architecture optimization'), taskId: '', icon: '🏗️' },
-    { text: pickLocaleText(locale, '评估当前项目进展和风险', 'Assess current project progress and risks'), taskId: '', icon: '📊' },
-    { text: pickLocaleText(locale, '制定下周工作计划', 'Prepare the work plan for next week'), taskId: '', icon: '📋' },
-    { text: pickLocaleText(locale, '紧急问题：线上Bug排查方案', 'Urgent issue: production bug investigation plan'), taskId: '', icon: '🚨' },
+    { text: pickLocaleText(locale, '评审当前系统改造方案与风险', 'Review the current system redesign and risks'), icon: '🏗️' },
+    { text: pickLocaleText(locale, '讨论下周工作安排和责任分工', 'Discuss next week planning and responsibilities'), icon: '📋' },
+    { text: pickLocaleText(locale, '你们先陪我聊聊最近项目推进感受', 'Let us just chat about the recent project mood'), icon: '💬' },
+    { text: pickLocaleText(locale, '讨论线上故障处置方案与回滚策略', 'Discuss the incident response and rollback strategy'), icon: '🚨' },
   ];
+
+  const stageText = STAGE_LABEL[currentStage] || { zh: currentStage, en: currentStage };
+  const minutes = session?.minutes || [];
+  const decisions = session?.decision_items || [];
+  const openQuestions = session?.open_questions || [];
+  const actionItems = session?.action_items || [];
+  const trace = session?.trace || [];
+  const busyEntries = collabAgentBusyData?.busy || [];
+  const busyByAgent = new Map(busyEntries.map((entry) => [entry.agent_id, entry]));
+  const activeBusySessions = collabAgentBusyData?.sessions || [];
+  const sessionBusySnapshot = session?.busy_snapshot?.length
+    ? session.busy_snapshot
+    : (sessionAgents.map((agent) => busyByAgent.get(agent.id)).filter(Boolean) as CollabAgentBusyEntry[]);
 
   if (phase === 'setup') {
     return (
       <div className="space-y-6">
         <div className="text-center py-4">
           <h2 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-purple-400 bg-clip-text text-transparent">
-            {pickLocaleText(locale, '🏛 协同讨论', '🏛 Collaboration Discussion')}
+            {pickLocaleText(locale, '🏛 专家会议室', '🏛 Expert Meeting Room')}
           </h2>
           <p className="text-xs text-[var(--muted)] mt-1">
-            {pickLocaleText(locale, '选择参与 Agent，围绕议题展开讨论 · 你可随时发言或注入新约束改变讨论走向', 'Choose participating agents and start a discussion around the topic. You can speak at any time or inject new constraints to redirect the discussion.')}
+            {pickLocaleText(
+              locale,
+              '系统将自动识别你要正式开会还是轻松闲聊；正式会议会启用主持人控场、点名发言、阶段推进与会议纪要。',
+              'The system auto-detects whether you want a formal meeting or a casual chat. Formal meetings enable moderator control, named speakers, staged progression and meeting minutes.',
+            )}
           </p>
         </div>
 
-        <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-semibold">{pickLocaleText(locale, '👔 选择参与 Agent', '👔 Select Agents')}</span>
-            <span className="text-xs text-[var(--muted)]">
-              {locale === 'en' ? `(${selectedIds.size}/8, at least 2)` : `（${selectedIds.size}/8，至少2位）`}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-            {DEPTS.map((d) => {
-              const active = selectedIds.has(d.id);
-              const meta = deptMeta(d.id, locale);
-              const color = meta.color;
-              return (
-                <button
-                  key={d.id}
-                  onClick={() => toggleAgent(d.id)}
-                  className="p-2.5 rounded-lg border transition-all text-left"
-                  style={{
-                    borderColor: active ? color + '80' : 'var(--line)',
-                    background: active ? color + '15' : 'var(--panel2)',
-                    boxShadow: active ? `0 0 12px ${color}20` : 'none',
-                  }}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-lg">{d.emoji}</span>
-                    <div>
-                      <div className="text-xs font-semibold" style={{ color: active ? color : 'var(--text)' }}>
-                        {meta.label}
-                      </div>
-                      <div className="text-[10px] text-[var(--muted)]">{meta.role}</div>
-                    </div>
-                    {active && (
-                      <span
-                        className="ml-auto w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-white"
-                        style={{ background: color }}
-                      >
-                        ✓
-                      </span>
-                    )}
+        <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_.8fr] gap-4">
+          <div className="space-y-4">
+            <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
+              <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                <div>
+                  <div className="text-sm font-semibold">{pickLocaleText(locale, '👥 参会专家选择', '👥 Participants')}</div>
+                  <div className="text-xs text-[var(--muted)] mt-1">
+                    {locale === 'en' ? `${selectedIds.size}/${allAgentIds.length} selected, at least 2` : `已选 ${selectedIds.size}/${allAgentIds.length} 位，至少 2 位`}
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
-          <div className="text-sm font-semibold mb-2">{pickLocaleText(locale, '📜 设置议题', '📜 Set Topic')}</div>
-          {presetTopics.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {presetTopics.map((p, i) => (
-                <button
-                  key={i}
-                  onClick={() => setTopic(p.text)}
-                  className="text-xs px-2.5 py-1.5 rounded-lg border border-[var(--line)] hover:border-[var(--acc)] hover:text-[var(--acc)] transition-colors"
-                  style={{
-                    background: topic === p.text ? 'var(--acc)' + '18' : 'transparent',
-                    borderColor: topic === p.text ? 'var(--acc)' : undefined,
-                    color: topic === p.text ? 'var(--acc)' : undefined,
-                  }}
-                >
-                  {p.icon} {p.text}
-                </button>
-              ))}
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={selectAllAgents}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-[var(--acc)]40 text-[var(--acc)] hover:bg-[var(--acc)]10 transition"
+                  >
+                    {pickLocaleText(locale, '全选所有人', 'Select All')}
+                  </button>
+                  <button
+                    onClick={clearAgentSelection}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--text)] transition"
+                  >
+                    {pickLocaleText(locale, '清空到主持人', 'Clear to Moderator')}
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {DEPTS.map((d) => {
+                  const active = selectedIds.has(d.id);
+                  const meta = deptMeta(d.id, locale);
+                  const color = meta.color;
+                  const isModerator = moderatorId === d.id;
+                  return (
+                    <button
+                      key={d.id}
+                      onClick={() => toggleAgent(d.id)}
+                      className="p-2.5 rounded-lg border transition-all text-left"
+                      style={{
+                        borderColor: active ? color + '80' : 'var(--line)',
+                        background: active ? color + '15' : 'var(--panel2)',
+                        boxShadow: active ? `0 0 12px ${color}20` : 'none',
+                      }}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-lg">{d.emoji}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold truncate" style={{ color: active ? color : 'var(--text)' }}>
+                            {meta.label}
+                          </div>
+                          <div className="text-[10px] text-[var(--muted)] truncate">{meta.role}</div>
+                          {busyByAgent.get(d.id)?.state && busyByAgent.get(d.id)?.state !== 'idle' && (
+                            <div className="mt-1">
+                              <span className={`inline-flex text-[9px] px-1.5 py-0.5 rounded-full border ${busyAccent(busyByAgent.get(d.id)?.state)}`}>
+                                {busyByAgent.get(d.id)?.label}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {isModerator && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                            {pickLocaleText(locale, '主持', 'Host')}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          )}
-          <textarea
-            className="w-full bg-[var(--panel2)] rounded-lg p-3 text-sm border border-[var(--line)] focus:border-[var(--acc)] outline-none resize-none"
-            rows={2}
-            placeholder={pickLocaleText(locale, '或自定义议题...', 'Or enter a custom topic...')}
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-          />
-        </div>
 
-        <div className="flex flex-wrap gap-1.5">
-          {[
-            pickLocaleText(locale, '👤 用户发言', '👤 User Speech'),
-            pickLocaleText(locale, '⚡ 插入约束', '⚡ Inject Constraints'),
-            pickLocaleText(locale, '🎲 随机事件', '🎲 Random Event'),
-            pickLocaleText(locale, '🔄 自动推进', '🔄 Auto Advance'),
-            pickLocaleText(locale, '📜 讨论记录', '📜 Discussion Log'),
-          ].map((tag) => (
-            <span key={tag} className="text-[10px] px-2 py-1 rounded-full border border-[var(--line)] text-[var(--muted)]">
-              {tag}
-            </span>
-          ))}
+            <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
+              <div className="text-sm font-semibold mb-2">{pickLocaleText(locale, '🎙️ 指定主持人', '🎙️ Moderator')}</div>
+              <select
+                value={moderatorId}
+                onChange={(e) => setModeratorId(e.target.value)}
+                className="w-full bg-[var(--panel2)] rounded-lg px-3 py-2 text-sm border border-[var(--line)] outline-none focus:border-[var(--acc)]"
+              >
+                {moderatorSelectable.map((id) => {
+                  const meta = deptMeta(id, locale);
+                  return (
+                    <option key={id} value={id}>
+                      {meta.emoji} {meta.label} · {meta.role}
+                    </option>
+                  );
+                })}
+              </select>
+              <div className="text-[11px] text-[var(--muted)] mt-2">
+                {pickLocaleText(locale, '正式会议中只有主持人点名的专家会在当前轮发言。', 'Only experts named by the moderator will speak during the current round in formal meetings.')}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
+              <div className="text-sm font-semibold mb-2">{pickLocaleText(locale, '📌 会议议题 / 闲聊主题', '📌 Topic')}</div>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {presetTopics.map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setTopic(p.text)}
+                    className="text-xs px-2.5 py-1.5 rounded-lg border border-[var(--line)] hover:border-[var(--acc)] hover:text-[var(--acc)] transition-colors"
+                    style={{
+                      background: topic === p.text ? 'var(--acc)18' : 'transparent',
+                      borderColor: topic === p.text ? 'var(--acc)' : undefined,
+                      color: topic === p.text ? 'var(--acc)' : undefined,
+                    }}
+                  >
+                    {p.icon} {p.text}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                className="w-full bg-[var(--panel2)] rounded-lg p-3 text-sm border border-[var(--line)] focus:border-[var(--acc)] outline-none resize-none"
+                rows={5}
+                placeholder={pickLocaleText(locale, '例如：请各位专家围绕发布计划、风险和资源安排正式开会；或者直接说“陪我聊聊最近的推进感受”。', 'Example: ask the experts to hold a formal meeting around release planning, risks, and staffing; or simply say “let us chat about recent progress.”')}
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+              />
+            </div>
+
+            <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)] space-y-2">
+              <div className="text-sm font-semibold">{pickLocaleText(locale, '🧠 自动交互机制', '🧠 Auto Interaction')}</div>
+              <div className="text-xs text-[var(--muted)] leading-relaxed">
+                {pickLocaleText(
+                  locale,
+                  '系统会自动识别这是正式会议还是闲聊。若识别为会议，将依次进入：会议建立、主持人开场、专家陈述、交叉讨论、结论收敛与会议结束；若识别为闲聊，则弱化流程，保留多人陪聊体验。',
+                  'The system automatically detects whether this is a formal meeting or a casual chat. Meetings move through setup, moderator opening, expert statements, cross discussion, decision sync and close; casual chat keeps a lighter multi-expert conversation experience.',
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         <button
@@ -398,99 +741,113 @@ export default function CourtDiscussion() {
           }}
         >
           {loading
-            ? pickLocaleText(locale, '准备中...', 'Preparing...')
-            : locale === 'en'
-              ? `🏛 Start Collaboration (${selectedIds.size} agents)`
-              : `🏛 开始协同讨论（${selectedIds.size}个 Agent）`}
+            ? pickLocaleText(locale, '会议室准备中...', 'Preparing the meeting room...')
+            : pickLocaleText(locale, '🏛️ 进入专家会议室', '🏛️ Enter the Expert Meeting Room')}
         </button>
       </div>
     );
   }
 
-  const agents = session?.agents || (session as CourtSession & { officials?: CourtSession['agents'] })?.officials || [];
-  const messages = session?.messages || [];
-
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between flex-wrap gap-2 bg-[var(--panel)] rounded-xl px-4 py-2 border border-[var(--line)]">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold">{pickLocaleText(locale, '🏛 协同讨论', '🏛 Collaboration')}</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--acc)]20 text-[var(--acc)] border border-[var(--acc)]30">
-            {locale === 'en' ? `Round ${session?.round || 0}` : `第${session?.round || 0}轮`}
-          </span>
-          {session?.phase === 'concluded' && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-900/40 text-green-400 border border-green-800">
-              {pickLocaleText(locale, '已结束', 'Concluded')}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setShowDecree(!showDecree)}
-            className="text-xs px-2.5 py-1 rounded-lg border border-amber-600/40 text-amber-400 hover:bg-amber-900/20 transition"
-            title={pickLocaleText(locale, '插入约束 — 从全局视角干预讨论', 'Inject constraints — intervene from a global perspective')}
-          >
-            {pickLocaleText(locale, '⚡ 约束', '⚡ Constraints')}
-          </button>
-          <button
-            onClick={handleDice}
-            disabled={diceRolling || loading}
-            className="text-xs px-2.5 py-1 rounded-lg border border-purple-600/40 text-purple-400 hover:bg-purple-900/20 transition"
-            title={pickLocaleText(locale, '随机事件 — 为讨论注入变化', 'Random event — inject change into the discussion')}
-          >
-            🎲 {diceRolling ? '...' : pickLocaleText(locale, '事件', 'Event')}
-          </button>
-          <button
-            onClick={() => setAutoPlay(!autoPlay)}
-            className={`text-xs px-2.5 py-1 rounded-lg border transition ${autoPlay
-              ? 'border-green-600/40 text-green-400 bg-green-900/20'
-              : 'border-[var(--line)] text-[var(--muted)] hover:text-[var(--text)]'
-              }`}
-          >
-            {autoPlay ? pickLocaleText(locale, '⏸ 暂停', '⏸ Pause') : pickLocaleText(locale, '▶ 自动', '▶ Auto')}
-          </button>
-          {session?.phase !== 'concluded' && (
+    <div className="space-y-4">
+      <div className="bg-[var(--panel)] rounded-xl px-4 py-3 border border-[var(--line)]">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-bold">{pickLocaleText(locale, '🏛 专家会议室', '🏛 Expert Meeting Room')}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${currentMode === 'meeting' ? 'bg-amber-900/30 text-amber-300 border-amber-700/40' : 'bg-sky-900/30 text-sky-300 border-sky-700/40'}`}>
+                {currentMode === 'meeting'
+                  ? pickLocaleText(locale, '正式会议', 'Formal Meeting')
+                  : pickLocaleText(locale, '闲聊模式', 'Casual Chat')}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--acc)]20 text-[var(--acc)] border border-[var(--acc)]30">
+                {locale === 'en' ? `Round ${session?.round || 0}` : `第${session?.round || 0}轮`}
+              </span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${session?.run_state === 'paused' ? 'bg-amber-900/30 text-amber-300 border-amber-700/40' : 'bg-emerald-900/30 text-emerald-300 border-emerald-700/40'}`}>
+                {session?.run_state === 'paused'
+                  ? pickLocaleText(locale, '已暂停', 'Paused')
+                  : pickLocaleText(locale, '运行中', 'Running')}
+              </span>
+              {session?.phase === 'concluded' && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-900/40 text-green-400 border border-green-800">
+                  {pickLocaleText(locale, '已结束', 'Concluded')}
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-[var(--muted)]">
+              {pickLocaleText(locale, '议题', 'Topic')}：{session?.topic}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={handleConclude}
-              className="text-xs px-2.5 py-1 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--warn)] hover:border-[var(--warn)]40 transition"
+              onClick={() => setShowConstraint(!showConstraint)}
+              className="text-xs px-2.5 py-1 rounded-lg border border-amber-600/40 text-amber-400 hover:bg-amber-900/20 transition"
             >
-              {pickLocaleText(locale, '📋 结束讨论', '📋 Conclude')}
+              {pickLocaleText(locale, '⚡ 注入新约束', '⚡ Inject Constraint')}
             </button>
-          )}
-          <button
-            onClick={handleReset}
-            className="text-xs px-2 py-1 rounded-lg border border-red-900/40 text-red-400/70 hover:text-red-400 transition"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-
-      {showDecree && (
-        <div
-          className="bg-gradient-to-br from-amber-950/40 to-purple-950/30 rounded-xl p-4 border border-amber-700/30"
-          style={{ animation: 'fadeIn .3s' }}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold text-amber-400">{pickLocaleText(locale, '⚡ 插入约束 — 全局视角', '⚡ Inject Constraints — Global View')}</span>
-            <button onClick={() => setShowDecree(false)} className="text-xs text-[var(--muted)]">
+            <button
+              onClick={handleDice}
+              disabled={diceRolling || loading}
+              className="text-xs px-2.5 py-1 rounded-lg border border-purple-600/40 text-purple-400 hover:bg-purple-900/20 transition"
+            >
+              🎲 {diceRolling ? '...' : pickLocaleText(locale, '随机事件', 'Random Event')}
+            </button>
+            <button
+              onClick={() => setAutoPlay(!autoPlay)}
+              disabled={session?.run_state === 'paused'}
+              className={`text-xs px-2.5 py-1 rounded-lg border transition ${autoPlay ? 'border-green-600/40 text-green-400 bg-green-900/20' : 'border-[var(--line)] text-[var(--muted)] hover:text-[var(--text)]'} disabled:opacity-40`}
+            >
+              {autoPlay ? pickLocaleText(locale, '⏸ 暂停自动推进', '⏸ Pause Auto') : pickLocaleText(locale, '▶ 自动推进', '▶ Auto Run')}
+            </button>
+            {session?.phase !== 'concluded' && (
+              <button
+                onClick={handlePauseResume}
+                disabled={loading}
+                className={`text-xs px-2.5 py-1 rounded-lg border transition ${session?.run_state === 'paused' ? 'border-emerald-600/40 text-emerald-300 hover:bg-emerald-900/20' : 'border-amber-600/40 text-amber-300 hover:bg-amber-900/20'} disabled:opacity-40`}
+              >
+                {session?.run_state === 'paused'
+                  ? pickLocaleText(locale, '⏯ 恢复会话', '⏯ Resume Session')
+                  : pickLocaleText(locale, '⏸ 暂停会话', '⏸ Pause Session')}
+              </button>
+            )}
+            {session?.phase !== 'concluded' && (
+              <button
+                onClick={handleConclude}
+                className="text-xs px-2.5 py-1 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--warn)] hover:border-[var(--warn)]40 transition"
+              >
+                {pickLocaleText(locale, '📋 结束会议', '📋 Conclude')}
+              </button>
+            )}
+            <button
+              onClick={handleReset}
+              className="text-xs px-2 py-1 rounded-lg border border-red-900/40 text-red-400/70 hover:text-red-400 transition"
+            >
               ✕
             </button>
           </div>
+        </div>
+      </div>
+
+      {showConstraint && (
+        <div className="bg-gradient-to-br from-amber-950/40 to-purple-950/30 rounded-xl p-4 border border-amber-700/30" style={{ animation: 'fadeIn .3s' }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-bold text-amber-400">{pickLocaleText(locale, '⚡ 约束注入', '⚡ Constraint Injection')}</span>
+            <button onClick={() => setShowConstraint(false)} className="text-xs text-[var(--muted)]">✕</button>
+          </div>
           <p className="text-[10px] text-amber-300/60 mb-2">
-            {pickLocaleText(locale, '注入新的限制或背景变化，所有参与 Agent 将据此重新响应', 'Inject a new constraint or context change, and all participating agents will respond accordingly.')}
+            {pickLocaleText(locale, '你可以补充新的限制、背景变化或管理要求，系统会据此调整会议走向。', 'Add new constraints, context shifts or management requirements, and the system will adjust the meeting flow accordingly.')}
           </p>
           <div className="flex gap-2">
             <input
-              value={decreeInput}
-              onChange={(e) => setDecreeInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleDecree()}
-              placeholder={pickLocaleText(locale, '例如：预算减半，但发布日期不能延后...', 'Example: cut the budget in half, but do not delay the release date...')}
+              value={constraintInput}
+              onChange={(e) => setConstraintInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleConstraint()}
+              placeholder={pickLocaleText(locale, '例如：预算减半，但发布日期不能延后...', 'Example: cut the budget in half, but do not delay the launch date...')}
               className="flex-1 bg-black/30 rounded-lg px-3 py-1.5 text-sm border border-amber-800/40 outline-none focus:border-amber-600"
             />
             <button
-              onClick={handleDecree}
-              disabled={!decreeInput.trim()}
+              onClick={handleConstraint}
+              disabled={!constraintInput.trim()}
               className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-purple-600 text-white text-xs font-semibold disabled:opacity-40"
             >
               {pickLocaleText(locale, '注入', 'Inject')}
@@ -500,16 +857,13 @@ export default function CourtDiscussion() {
       )}
 
       {diceResult && (
-        <div
-          className="bg-purple-950/40 rounded-lg px-3 py-2 border border-purple-700/30 text-xs text-purple-300 flex items-center gap-2"
-          style={{ animation: 'fadeIn .3s' }}
-        >
+        <div className="bg-purple-950/40 rounded-lg px-3 py-2 border border-purple-700/30 text-xs text-purple-300 flex items-center gap-2" style={{ animation: 'fadeIn .3s' }}>
           <span className="text-lg">🎲</span>
           {diceResult}
         </div>
       )}
 
-      {decreeFlash && (
+      {constraintFlash && (
         <div
           className="fixed inset-0 pointer-events-none z-50"
           style={{
@@ -519,134 +873,429 @@ export default function CourtDiscussion() {
         />
       )}
 
-      <div className="text-xs text-center text-[var(--muted)] py-1">
-        📜 {session?.topic || ''}
-      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_.8fr] gap-4">
+        <div className="space-y-4 min-w-0">
+          <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] p-4 space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-3">
-        <div className="bg-[var(--panel)] rounded-xl p-3 border border-[var(--line)] relative overflow-hidden min-h-[320px]">
-          <div className="text-center mb-2">
-            <div className="inline-block px-3 py-1 rounded-lg bg-gradient-to-b from-amber-800/40 to-amber-950/40 border border-amber-700/30">
-              <span className="text-lg">👑</span>
-              <div className="text-[10px] text-amber-400/80">{pickLocaleText(locale, '龙 椅', 'Imperial Seat')}</div>
+
+              <MetricCard
+                title={pickLocaleText(locale, '当前模式', 'Current Mode')}
+                value={currentMode === 'meeting' ? pickLocaleText(locale, '正式会议', 'Formal Meeting') : pickLocaleText(locale, '闲聊', 'Chat')}
+                accent={currentMode === 'meeting' ? '#e8a040' : '#6a9eff'}
+              />
+              <MetricCard
+                title={pickLocaleText(locale, '主持人', 'Moderator')}
+                value={session?.moderator_name || deptMeta(currentModeratorId, locale).label}
+                accent={'#a07aff'}
+              />
+              <MetricCard
+                title={pickLocaleText(locale, '当前阶段', 'Current Stage')}
+                value={locale === 'en' ? stageText.en : stageText.zh}
+                accent={'#6aef9a'}
+              />
+              <MetricCard
+                title={pickLocaleText(locale, '可追溯记录', 'Trace Entries')}
+                value={String(trace.length)}
+                accent={'#ff9a6a'}
+              />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] gap-3">
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="text-xs font-semibold">{pickLocaleText(locale, '全局专家忙碌总览', 'Global Expert Busy Overview')}</div>
+                  <span className="text-[10px] text-[var(--muted)]">{busyEntries.filter((item) => item.state !== 'idle').length}/{busyEntries.length}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {busyEntries.map((entry) => (
+                    <div key={entry.agent_id} className={`px-2 py-1 rounded-lg border text-[10px] ${busyAccent(entry.state)}`}>
+                      <span className="font-semibold">{entry.emoji} {entry.name}</span>
+                      <span className="ml-1 opacity-80">{entry.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="text-xs font-semibold">{pickLocaleText(locale, '占用中的协同会话', 'Active Collaboration Sessions')}</div>
+                  <span className="text-[10px] text-[var(--muted)]">{activeBusySessions.length}</span>
+                </div>
+                {activeBusySessions.length > 0 ? (
+                  <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1">
+                    {activeBusySessions.slice(0, 4).map((item) => (
+                      <div key={item.session_id} className="rounded-lg border border-[var(--line)] p-2 text-[10px] bg-black/10">
+                        <div className="font-semibold text-[var(--text)] truncate">{item.topic}</div>
+                        <div className="text-[var(--muted)] mt-1">
+                          {pickLocaleText(locale, '状态', 'State')}：{item.run_state || '-'} · {pickLocaleText(locale, '轮次', 'Round')} {item.round}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-[var(--muted)]">{pickLocaleText(locale, '当前没有其他会话占用专家。', 'No other sessions are currently occupying experts.')}</div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="relative" style={{ minHeight: 250 }}>
-            <div className="absolute left-0 top-0 text-[9px] text-[var(--muted)] opacity-50">{pickLocaleText(locale, '核心中枢', 'Core Centers')}</div>
-            <div className="absolute right-0 top-0 text-[9px] text-[var(--muted)] opacity-50">{pickLocaleText(locale, '专业执行组', 'Execution Team')}</div>
-
-            {agents.map((o) => {
-              const pos = COURT_POSITIONS[o.id] || { x: 50, y: 50 };
-              const color = deptMeta(o.id, locale).color;
-              const isSpeaking = speakingId === o.id;
-              const emotion = emotions[o.id] || 'neutral';
-
-              return (
-                <div
-                  key={o.id}
-                  className="absolute transition-all duration-500"
-                  style={{
-                    left: `${pos.x}%`,
-                    top: `${pos.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                >
-                  {isSpeaking && (
-                    <div
-                      className="absolute -inset-2 rounded-full"
-                      style={{
-                        background: `radial-gradient(circle, ${color}40, transparent)`,
-                        animation: 'pulse 1s infinite',
-                      }}
-                    />
-                  )}
-                  <div
-                    className="relative w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 transition-all"
-                    style={{
-                      borderColor: isSpeaking ? color : color + '40',
-                      background: isSpeaking ? color + '30' : color + '10',
-                      transform: isSpeaking ? 'scale(1.2)' : 'scale(1)',
-                      boxShadow: isSpeaking ? `0 0 16px ${color}50` : 'none',
-                    }}
-                  >
-                    {o.emoji}
-                    {EMOTION_EMOJI[emotion] && (
-                      <span className="absolute -top-1 -right-1 text-xs" style={{ animation: 'bounceIn .3s' }}>
-                        {EMOTION_EMOJI[emotion]}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[9px] text-center mt-0.5 whitespace-nowrap" style={{ color: isSpeaking ? color : 'var(--muted)' }}>
-                    {o.name}
+          {currentMode === 'meeting' && session?.phase !== 'concluded' && (
+            <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] p-4 space-y-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div>
+                  <div className="text-sm font-semibold">{pickLocaleText(locale, '🎯 主持人点名发言', '🎯 Moderator Speaker Control')}</div>
+                  <div className="text-xs text-[var(--muted)] mt-1">
+                    {pickLocaleText(locale, '只有被主持人点名的专家会在下一轮发言。你也可以直接推进到下一阶段。', 'Only experts named by the moderator will speak in the next round. You can also advance directly to the next stage.')}
                   </div>
                 </div>
-              );
-            })}
+                <button
+                  onClick={() => setSpeakerSelection(new Set(speakerPool.map((agent) => agent.id)))}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-[var(--acc)]40 text-[var(--acc)] hover:bg-[var(--acc)]10 transition"
+                >
+                  {pickLocaleText(locale, '本轮全选发言', 'Select All Speakers')}
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {speakerPool.map((agent) => {
+                  const meta = deptMeta(agent.id, locale);
+                  const active = speakerSelection.has(agent.id);
+                  const busy = busyByAgent.get(agent.id);
+                  const blocked = Boolean(busy && busy.session_id && busy.session_id !== session?.session_id && busy.state !== 'idle');
+                  return (
+                    <button
+                      key={agent.id}
+                      onClick={() => toggleSpeaker(agent.id)}
+                      disabled={blocked}
+                      className="p-2 rounded-lg border text-left transition disabled:opacity-50"
+                      style={{
+                        borderColor: active ? meta.color + '80' : 'var(--line)',
+                        background: active ? meta.color + '15' : 'var(--panel2)',
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{agent.emoji}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold truncate">{agent.name}</div>
+                          <div className="text-[10px] text-[var(--muted)] truncate">{agent.role}</div>
+                          {busy && busy.state !== 'idle' && (
+                            <div className="mt-1">
+                              <span className={`inline-flex text-[9px] px-1.5 py-0.5 rounded-full border ${busyAccent(busy.state)}`}>
+                                {busy.label}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {blocked ? <span className="text-[10px] text-amber-300">!</span> : active && <span className="text-[10px] text-[var(--acc)]">✓</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => handleAdvance({
+                    intent: 'next_round',
+                    speakerIds: Array.from(speakerSelection),
+                  })}
+                  disabled={loading || speakerSelection.size === 0}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold border border-[var(--acc)]40 text-[var(--acc)] hover:bg-[var(--acc)]10 disabled:opacity-40"
+                >
+                  {pickLocaleText(locale, '请被点名专家发言', 'Run Named Speakers')}
+                </button>
+                <button
+                  onClick={() => handleAdvance({
+                    intent: 'next_stage',
+                    speakerIds: Array.from(speakerSelection),
+                    stageAction: 'next_stage',
+                  })}
+                  disabled={loading}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold border border-green-600/40 text-green-400 hover:bg-green-900/20 disabled:opacity-40"
+                >
+                  {pickLocaleText(locale, '进入下一阶段', 'Advance Stage')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-3">
+            <div className="bg-[var(--panel)] rounded-xl p-3 border border-[var(--line)] relative overflow-hidden min-h-[340px]">
+              <div className="text-center mb-2">
+                <div className="inline-block px-3 py-1 rounded-lg bg-gradient-to-b from-amber-800/40 to-amber-950/40 border border-amber-700/30">
+                  <span className="text-lg">🎙️</span>
+                  <div className="text-[10px] text-amber-400/80">
+                    {session?.moderator_name || pickLocaleText(locale, '主持人', 'Moderator')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative" style={{ minHeight: 270 }}>
+                <div className="absolute left-0 top-0 text-[9px] text-[var(--muted)] opacity-50">{pickLocaleText(locale, '协调层', 'Coordination Layer')}</div>
+                <div className="absolute right-0 top-0 text-[9px] text-[var(--muted)] opacity-50">{pickLocaleText(locale, '执行角色', 'Execution Roles')}</div>
+
+                {sessionAgents.map((agent) => {
+                  const pos = COLLAB_POSITIONS[agent.id] || { x: 50, y: 50 };
+                  const meta = deptMeta(agent.id, locale);
+                  const color = meta.color;
+                  const isSpeaking = speakingId === agent.id;
+                  const emotion = emotions[agent.id] || 'neutral';
+                  const isModerator = currentModeratorId === agent.id;
+                  const isQueued = (session?.speaker_queue || []).includes(agent.id);
+                  const busy = sessionBusySnapshot.find((entry) => entry.agent_id === agent.id) || busyByAgent.get(agent.id);
+                  const isConflicted = (session?.conflicted_agents || []).includes(agent.id);
+
+                  return (
+                    <div
+                      key={agent.id}
+                      className="absolute transition-all duration-500"
+                      style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: 'translate(-50%, -50%)' }}
+                    >
+                      {isSpeaking && (
+                        <div
+                          className="absolute -inset-2 rounded-full"
+                          style={{ background: `radial-gradient(circle, ${color}40, transparent)`, animation: 'pulse 1s infinite' }}
+                        />
+                      )}
+                      <div
+                        className="relative w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 transition-all"
+                        style={{
+                          borderColor: isSpeaking || isModerator ? color : color + '40',
+                          background: isSpeaking || isModerator ? color + '30' : color + '10',
+                          transform: isSpeaking ? 'scale(1.2)' : 'scale(1)',
+                          boxShadow: isSpeaking ? `0 0 16px ${color}50` : 'none',
+                        }}
+                      >
+                        {agent.emoji}
+                        {EMOTION_EMOJI[emotion] && (
+                          <span className="absolute -top-1 -right-1 text-xs" style={{ animation: 'bounceIn .3s' }}>
+                            {EMOTION_EMOJI[emotion]}
+                          </span>
+                        )}
+                        {isModerator && (
+                          <span className="absolute -bottom-1 -right-1 text-[9px] bg-amber-500 text-black rounded-full w-4 h-4 flex items-center justify-center">H</span>
+                        )}
+                      </div>
+                      <div className="text-[9px] text-center mt-0.5 whitespace-nowrap" style={{ color: isSpeaking ? color : 'var(--muted)' }}>
+                        {agent.name}
+                      </div>
+                        {isQueued && currentMode === 'meeting' && (
+                          <div className="text-[8px] text-center text-emerald-400 mt-0.5">
+                            {pickLocaleText(locale, '本轮发言', 'Speaking Now')}
+                          </div>
+                        )}
+                        {busy && (
+                          <div className={`text-[8px] text-center mt-0.5 px-1 py-0.5 rounded border ${busyAccent(busy.state)}`}>
+                            {isConflicted
+                              ? pickLocaleText(locale, '被其他会话占用', 'Occupied Elsewhere')
+                              : busy.label}
+                          </div>
+                        )}
+
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] flex flex-col" style={{ maxHeight: 620 }}>
+              <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ minHeight: 260 }}>
+                {(session?.messages || []).map((msg, i) => (
+                  <MessageBubble key={i} msg={msg} agents={sessionAgents} locale={locale} moderatorId={currentModeratorId} />
+                ))}
+                {loading && (
+                  <div className="text-xs text-[var(--muted)] text-center py-2" style={{ animation: 'pulse 1.5s infinite' }}>
+                    {currentMode === 'meeting'
+                      ? pickLocaleText(locale, '🎙️ 主持人与专家正在整理会议发言...', '🎙️ The moderator and experts are preparing their remarks...')
+                      : pickLocaleText(locale, '💬 大家正在继续聊天...', '💬 The room is continuing the conversation...')}
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {session?.phase !== 'concluded' && (
+                <div className="border-t border-[var(--line)] p-3 space-y-2">
+                  <div className="text-[11px] text-[var(--muted)]">
+                    {session?.run_state === 'paused'
+                      ? pickLocaleText(locale, '会话已暂停。你可以恢复会话后继续推进，或直接结束会议。', 'The session is paused. Resume it before advancing, or conclude it directly.')
+                      : currentMode === 'meeting'
+                        ? pickLocaleText(locale, '你可以插话、补充要求，或让主持人按当前点名名单继续推进。', 'You can interrupt, add requirements, or let the moderator continue with the current speaker list.')
+                        : pickLocaleText(locale, '你可以像在群聊里一样直接和大家说话。', 'You can talk to everyone as if you were in a group chat.')}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleUserSubmit()}
+                      placeholder={pickLocaleText(locale, '输入你的消息...', 'Type your message...')}
+                      className="flex-1 bg-[var(--panel2)] rounded-lg px-3 py-2 text-sm border border-[var(--line)] outline-none focus:border-amber-600"
+                    />
+                    <button
+                      onClick={handleUserSubmit}
+                      disabled={!userInput.trim() || loading || session?.run_state === 'paused'}
+                      className="px-4 py-2 rounded-lg text-xs font-semibold border-0 disabled:opacity-40"
+                      style={{
+                        background: userInput.trim() ? 'linear-gradient(135deg, #e8a040, #f5c842)' : 'var(--panel2)',
+                        color: userInput.trim() ? '#000' : 'var(--muted)',
+                      }}
+                    >
+                      {pickLocaleText(locale, '发送', 'Send')}
+                    </button>
+                    <button
+                      onClick={() => handleAdvance({
+                        intent: currentMode === 'meeting' ? 'next_round' : 'chat',
+                        speakerIds: currentMode === 'meeting' ? Array.from(speakerSelection) : [],
+                      })}
+                      disabled={loading || session?.run_state === 'paused'}
+                      className="px-3 py-2 rounded-lg text-xs border border-[var(--acc)]40 text-[var(--acc)] hover:bg-[var(--acc)]10 disabled:opacity-40 transition"
+                    >
+                      {currentMode === 'meeting'
+                        ? pickLocaleText(locale, '下一轮', 'Next Round')
+                        : pickLocaleText(locale, '继续聊', 'Continue')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] flex flex-col" style={{ maxHeight: 500 }}>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ minHeight: 200 }}>
-            {messages.map((msg, i) => (
-              <MessageBubble key={i} msg={msg} agents={agents} locale={locale} />
-            ))}
-            {loading && (
-              <div className="text-xs text-[var(--muted)] text-center py-2" style={{ animation: 'pulse 1.5s infinite' }}>
-                {pickLocaleText(locale, '🏛 群臣正在思考...', '🏛 The agents are thinking...')}
+        <div className="space-y-4 min-w-0">
+          <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] p-4 space-y-3">
+            <div className="text-sm font-semibold">{pickLocaleText(locale, '📒 会议纪要 / 对话摘要', '📒 Minutes / Summary')}</div>
+            {minutes.length > 0 ? (
+              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                {minutes.slice().reverse().map((minute, idx) => (
+                  <div key={`${minute.timestamp}-${idx}`} className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-2">
+                    <div className="text-[10px] text-[var(--muted)] mb-1">
+                      {pickLocaleText(locale, '第', 'Round ')}{minute.round}{pickLocaleText(locale, '轮', '')} · {locale === 'en' ? (STAGE_LABEL[minute.stage]?.en || minute.stage) : (STAGE_LABEL[minute.stage]?.zh || minute.stage)}
+                    </div>
+                    <div className="text-xs leading-relaxed">{minute.content}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-[var(--muted)]">
+                {currentMode === 'meeting'
+                  ? pickLocaleText(locale, '会议纪要将在主持推进后持续生成。', 'Minutes will accumulate as the moderator advances the meeting.')
+                  : pickLocaleText(locale, '闲聊模式下不会强制生成正式会议纪要。', 'Casual chat does not enforce formal minutes.')}
               </div>
             )}
-            <div ref={messagesEndRef} />
+            {session?.summary && (
+              <div className="rounded-lg border border-emerald-700/30 bg-emerald-950/20 p-2">
+                <div className="text-[10px] text-emerald-400 mb-1">{pickLocaleText(locale, '最终总结', 'Final Summary')}</div>
+                <div className="text-xs leading-relaxed">{session.summary}</div>
+              </div>
+            )}
           </div>
 
-          {session?.phase !== 'concluded' && (
-            <div className="border-t border-[var(--line)] p-2 flex gap-2">
-              <input
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleEmperor()}
-                placeholder={pickLocaleText(locale, '朕有话说...', 'Share your guidance...')}
-                className="flex-1 bg-[var(--panel2)] rounded-lg px-3 py-1.5 text-sm border border-[var(--line)] outline-none focus:border-amber-600"
-              />
-              <button
-                onClick={handleEmperor}
-                disabled={!userInput.trim() || loading}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold border-0 disabled:opacity-40"
-                style={{
-                  background: userInput.trim() ? 'linear-gradient(135deg, #e8a040, #f5c842)' : 'var(--panel2)',
-                  color: userInput.trim() ? '#000' : 'var(--muted)',
-                }}
-              >
-                {pickLocaleText(locale, '👑 发言', '👑 Speak')}
-              </button>
-              <button
-                onClick={() => handleAdvance()}
-                disabled={loading}
-                className="px-3 py-1.5 rounded-lg text-xs border border-[var(--acc)]40 text-[var(--acc)] hover:bg-[var(--acc)]10 disabled:opacity-40 transition"
-              >
-                {pickLocaleText(locale, '▶ 下一轮', '▶ Next Round')}
-              </button>
+          <SummaryListCard title={pickLocaleText(locale, '✅ 当前结论', '✅ Decisions')} items={decisions} emptyText={pickLocaleText(locale, '尚未形成结论。', 'No decisions yet.')} accent="emerald" />
+          <SummaryListCard title={pickLocaleText(locale, '❓ 待决问题', '❓ Open Questions')} items={openQuestions} emptyText={pickLocaleText(locale, '暂无待决问题。', 'No open questions.')} accent="amber" />
+          <SummaryListCard title={pickLocaleText(locale, '📌 行动项', '📌 Action Items')} items={actionItems} emptyText={pickLocaleText(locale, '暂无行动项。', 'No action items.')} accent="sky" />
+
+          <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] p-4">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="text-sm font-semibold">{pickLocaleText(locale, '🧾 可追溯记录', '🧾 Trace Log')}</div>
+              <span className="text-[10px] text-[var(--muted)]">{trace.length}</span>
             </div>
-          )}
+            {trace.length > 0 ? (
+              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                {trace.slice().reverse().map((item, idx) => (
+                  <div key={`${item.at || idx}-${idx}`} className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-2 text-xs">
+                    <div className="text-[10px] text-[var(--muted)] mb-1">
+                      {pickLocaleText(locale, '阶段', 'Stage')}：{locale === 'en' ? (STAGE_LABEL[item.stage || '']?.en || item.stage || '-') : (STAGE_LABEL[item.stage || '']?.zh || item.stage || '-')}
+                    </div>
+                    <div className="leading-relaxed break-words">
+                      {renderTrace(item, locale)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-[var(--muted)]">{pickLocaleText(locale, '暂无追溯记录。', 'No trace entries yet.')}</div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
+function MetricCard({ title, value, accent }: { title: string; value: string; accent: string }) {
+  return (
+    <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3">
+      <div className="text-[10px] text-[var(--muted)] mb-1">{title}</div>
+      <div className="text-sm font-semibold" style={{ color: accent }}>{value}</div>
+    </div>
+  );
+}
+
+function SummaryListCard({
+  title,
+  items,
+  emptyText,
+  accent,
+}: {
+  title: string;
+  items: string[];
+  emptyText: string;
+  accent: 'emerald' | 'amber' | 'sky';
+}) {
+  const colorMap = {
+    emerald: 'text-emerald-400 border-emerald-700/30 bg-emerald-950/10',
+    amber: 'text-amber-400 border-amber-700/30 bg-amber-950/10',
+    sky: 'text-sky-400 border-sky-700/30 bg-sky-950/10',
+  };
+
+  return (
+    <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] p-4">
+      <div className={`text-sm font-semibold mb-2 ${colorMap[accent].split(' ')[0]}`}>{title}</div>
+      {items.length > 0 ? (
+        <div className="space-y-2">
+          {items.map((item, idx) => (
+            <div key={`${item}-${idx}`} className={`rounded-lg border p-2 text-xs leading-relaxed ${colorMap[accent]}`}>
+              {item}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-[var(--muted)]">{emptyText}</div>
+      )}
+    </div>
+  );
+}
+
+function renderTrace(item: TraceEntry, locale: Locale) {
+  if (item.kind === 'user_message' && item.content) {
+    return pickLocaleText(locale, `用户插话：${item.content}`, `User spoke: ${item.content}`);
+  }
+  if (item.kind === 'constraint' && item.content) {
+    return pickLocaleText(locale, `注入约束：${item.content}`, `Constraint injected: ${item.content}`);
+  }
+  if (item.kind === 'advance') {
+    const speakers = (item.speaker_ids || []).join(', ') || pickLocaleText(locale, '未指定', 'not specified');
+    return pickLocaleText(locale, `会议推进，意图：${item.intent || 'auto'}；发言名单：${speakers}。`, `Advanced the session. Intent: ${item.intent || 'auto'}; speakers: ${speakers}.`);
+  }
+  if (item.kind === 'concluded' && item.summary) {
+    return pickLocaleText(locale, `会议结束：${item.summary}`, `Session concluded: ${item.summary}`);
+  }
+  return item.kind || '-';
+}
+
 function MessageBubble({
   msg,
   agents,
   locale,
+  moderatorId,
 }: {
-  msg: CourtMessage;
-  agents: Array<{ id: string; name: string; emoji: string }>;
+  msg: CollabMessage;
+  agents: CollabAgent[];
   locale: Locale;
+  moderatorId: string;
 }) {
-  const speakerId = msg.agent_id || (msg as CourtMessage & { official_id?: string }).official_id || '';
-  const speakerName = msg.agent_name || (msg as CourtMessage & { official_name?: string }).official_name || 'Agent';
-  const color = deptMeta(speakerId, locale).color;
+  const speakerId = msg.agent_id || '';
+  const speakerName = msg.agent_name || 'Agent';
+  const meta = deptMeta(speakerId, locale);
+  const color = meta.color;
   const agent = agents.find((o) => o.id === speakerId);
+  const isModerator = speakerId === moderatorId || msg.type === 'moderator';
 
   if (msg.type === 'system') {
     return (
@@ -664,7 +1313,18 @@ function MessageBubble({
     );
   }
 
-  if (msg.type === 'emperor') {
+  if (msg.type === 'minutes') {
+    return (
+      <div className="text-center py-2">
+        <div className="inline-block rounded-lg px-4 py-2 border border-emerald-700/30 bg-emerald-950/20">
+          <div className="text-xs text-emerald-400 font-bold">{pickLocaleText(locale, '📒 纪要更新', '📒 Minutes Update')}</div>
+          <div className="text-sm mt-0.5">{msg.content}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (msg.type === 'user') {
     return (
       <div className="flex justify-end">
         <div className="max-w-[80%] bg-gradient-to-br from-amber-900/40 to-amber-800/20 rounded-xl px-3 py-2 border border-amber-700/30">
@@ -675,7 +1335,7 @@ function MessageBubble({
     );
   }
 
-  if (msg.type === 'decree') {
+  if (msg.type === 'constraint') {
     return (
       <div className="text-center py-2">
         <div className="inline-block bg-gradient-to-r from-amber-900/30 via-purple-900/30 to-amber-900/30 rounded-lg px-4 py-2 border border-amber-600/30">
@@ -692,16 +1352,22 @@ function MessageBubble({
         className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 border"
         style={{ borderColor: color + '60', background: color + '15' }}
       >
-        {agent?.emoji || '💬'}
+        {isModerator ? '🎙️' : agent?.emoji || '💬'}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5">
+        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
           <span className="text-[11px] font-semibold" style={{ color }}>
             {speakerName}
           </span>
-          {msg.emotion && EMOTION_EMOJI[msg.emotion] && (
-            <span className="text-xs">{EMOTION_EMOJI[msg.emotion]}</span>
+          {isModerator && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-amber-700/30 text-amber-400 bg-amber-900/20">
+              {pickLocaleText(locale, '主持人', 'Moderator')}
+            </span>
           )}
+          {msg.action && (
+            <span className="text-[10px] text-[var(--muted)]">· {msg.action}</span>
+          )}
+          {msg.emotion && EMOTION_EMOJI[msg.emotion] && <span className="text-xs">{EMOTION_EMOJI[msg.emotion]}</span>}
         </div>
         <div className="text-sm leading-relaxed">
           {msg.content?.split(/(\*[^*]+\*)/).map((part, i) => {

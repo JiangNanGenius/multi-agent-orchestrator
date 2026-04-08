@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store';
-import { api, RemoteSkillItem } from '../api';
+import { api, type ActivityEntry, type RemoteSkillItem } from '../api';
 import { pickLocaleText, formatCount } from '../i18n';
 
 const COMMUNITY_SOURCES = [
@@ -81,6 +81,12 @@ export default function SkillsConfig() {
   const [removingSkill, setRemovingSkill] = useState<string | null>(null);
   const [quickPickSource, setQuickPickSource] = useState<(typeof COMMUNITY_SOURCES)[number] | null>(null);
   const [quickPickAgent, setQuickPickAgent] = useState('');
+  const [commandForm, setCommandForm] = useState<{ agentId: string; agentLabel: string } | null>(null);
+  const [commandText, setCommandText] = useState('');
+  const [commandSubmitting, setCommandSubmitting] = useState(false);
+  const [commandLoading, setCommandLoading] = useState(false);
+  const [commandStatus, setCommandStatus] = useState('');
+  const [commandActivity, setCommandActivity] = useState<ActivityEntry[]>([]);
 
   useEffect(() => {
     loadAgentConfig();
@@ -229,18 +235,126 @@ export default function SkillsConfig() {
     }
   };
 
+  const summarizeActivity = (entry: ActivityEntry): string => {
+    if (entry.text) return entry.text;
+    if (entry.remark) return entry.remark;
+    if (entry.output) return entry.output;
+    if (entry.thinking) return entry.thinking;
+    if (entry.tool) return `${pickLocaleText(locale, '工具调用：', 'Tool Call: ')}${entry.tool}`;
+    if (entry.from || entry.to) return `${entry.from || '—'} → ${entry.to || '—'}`;
+    return pickLocaleText(locale, '暂无摘要', 'No summary');
+  };
+
+  const loadCommandActivity = async (agentId: string) => {
+    setCommandLoading(true);
+    try {
+      const r = await api.agentActivity(agentId);
+      if (r.ok) setCommandActivity(r.activity || []);
+      else setCommandActivity([]);
+    } catch {
+      setCommandActivity([]);
+    }
+    setCommandLoading(false);
+  };
+
+  const normalizeAgentLabel = (agentId: string, agentLabel: string) => {
+    if (agentId === 'admin_specialist' || agentLabel === '管理专家') return '技能管理员';
+    return agentLabel;
+  };
+
+  const getSkillManagerTarget = () => {
+    const agents = agentConfig?.agents || [];
+    const preferred = agents.find((ag) => ag.id === 'admin_specialist');
+    if (preferred) {
+      return {
+        agentId: preferred.id,
+        agentLabel: normalizeAgentLabel(preferred.id, preferred.label),
+      };
+    }
+    const fallback = agents[0];
+    if (!fallback) return null;
+    return { agentId: fallback.id, agentLabel: normalizeAgentLabel(fallback.id, fallback.label) };
+  };
+
+  const openCommandForm = (agentId: string, agentLabel: string) => {
+    setCommandForm({ agentId, agentLabel: normalizeAgentLabel(agentId, agentLabel) });
+    setCommandText('');
+    setCommandStatus('');
+    setCommandActivity([]);
+    loadCommandActivity(agentId);
+  };
+
+  const openSkillManagerCommandForm = () => {
+    const target = getSkillManagerTarget();
+    if (target) openCommandForm(target.agentId, target.agentLabel);
+  };
+
+  const submitCommand = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commandForm || !commandText.trim()) return;
+    setCommandSubmitting(true);
+    try {
+      const r = await api.sendAgentCommand(commandForm.agentId, commandText.trim());
+      if (r.ok) {
+        const msg = r.message || pickLocaleText(locale, '指令已发送', 'Command sent');
+        setCommandStatus(msg);
+        toast(msg, 'ok');
+        setCommandText('');
+        setTimeout(() => loadCommandActivity(commandForm.agentId), 1500);
+      } else {
+        const err = r.error || pickLocaleText(locale, '发送失败', 'Failed to send command');
+        setCommandStatus(err);
+        toast(err, 'err');
+      }
+    } catch {
+      const err = pickLocaleText(locale, '服务器连接失败', 'Server connection failed');
+      setCommandStatus(err);
+      toast(err, 'err');
+    }
+    setCommandSubmitting(false);
+  };
+
   if (!agentConfig?.agents) {
     return <div className="empty">{pickLocaleText(locale, '无法加载', 'Unable to load')}</div>;
   }
 
   const localPanel = (
     <div>
+      <div
+        style={{
+          marginBottom: 18,
+          background: 'linear-gradient(135deg, rgba(42,68,127,.32), rgba(20,28,48,.72))',
+          border: '1px solid var(--line)',
+          borderRadius: 14,
+          padding: 16,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--acc)', fontWeight: 700, letterSpacing: '.05em', marginBottom: 6 }}>
+              {pickLocaleText(locale, '技能管理员独立入口', 'Skill Manager Dedicated Entry')}
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>
+              {pickLocaleText(locale, '像聊天一样，直接把命令发给技能管理员', 'Send a command directly to the Skill Manager like a chat')}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7, maxWidth: 760 }}>
+              {pickLocaleText(locale, '这里不是普通配置页操作，而是技能管理员的独立对话框入口。你可以直接向技能管理员发送自然语言指令，并查看其最近的活动回流。', 'This is not just a configuration action. It is a dedicated dialog entry for the Skill Manager. You can send natural-language commands to the Skill Manager directly and inspect the latest activity returned by that agent.')}
+            </div>
+          </div>
+          <button
+            onClick={openSkillManagerCommandForm}
+            style={{ padding: '10px 18px', background: 'var(--acc)', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' }}
+          >
+            {pickLocaleText(locale, '发送给技能管理员', 'Send to Skill Manager')}
+          </button>
+        </div>
+      </div>
       <div className="skills-grid">
         {agentConfig.agents.map((ag) => (
           <div className="sk-card" key={ag.id}>
             <div className="sk-hdr">
               <span className="sk-emoji">{ag.emoji || '🏛️'}</span>
-              <span className="sk-name">{ag.label}</span>
+              <span className="sk-name">{normalizeAgentLabel(ag.id, ag.label)}</span>
               <span className="sk-cnt">{formatCount(locale, (ag.skills || []).length, '技能', 'skill(s)')}</span>
             </div>
             <div className="sk-list">
@@ -256,8 +370,16 @@ export default function SkillsConfig() {
                 ))
               )}
             </div>
-            <div className="sk-add" onClick={() => openAddForm(ag.id, ag.label)}>
-              {pickLocaleText(locale, '＋ 添加技能', '＋ Add Skill')}
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <div className="sk-add" onClick={() => openAddForm(ag.id, normalizeAgentLabel(ag.id, ag.label))} style={{ flex: 1 }}>
+                {pickLocaleText(locale, '＋ 添加技能', '＋ Add Skill')}
+              </div>
+              <button
+                onClick={() => openCommandForm(ag.id, normalizeAgentLabel(ag.id, ag.label))}
+                style={{ padding: '10px 12px', background: 'transparent', color: 'var(--acc)', border: '1px solid var(--acc)', borderRadius: 10, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}
+              >
+                {pickLocaleText(locale, '发指令', 'Command')}
+              </button>
             </div>
           </div>
         ))}
@@ -323,7 +445,7 @@ export default function SkillsConfig() {
               >
                 <option value="">{pickLocaleText(locale, '— 选择 Agent —', '— Select Agent —')}</option>
                 {agentConfig.agents.map((ag) => (
-                  <option key={ag.id} value={ag.id}>{ag.emoji} {ag.label} ({ag.id})</option>
+                  <option key={ag.id} value={ag.id}>{ag.emoji} {normalizeAgentLabel(ag.id, ag.label)} ({ag.id})</option>
                 ))}
               </select>
             </div>
@@ -576,6 +698,112 @@ export default function SkillsConfig() {
         </div>
       )}
 
+      {commandForm && (
+        <div className="modal-bg open" onClick={() => setCommandForm(null)}>
+          <div className="modal" style={{ maxWidth: 760 }} onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setCommandForm(null)}>✕</button>
+            <div className="modal-body">
+              <div style={{ fontSize: 11, color: '#7cc7ff', fontWeight: 700, letterSpacing: '.04em', marginBottom: 4 }}>
+                {pickLocaleText(locale, '独立 Agent 指令入口', 'Dedicated Agent Command Entry')}
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>
+                {pickLocaleText(locale, `发送给 ${commandForm.agentLabel}`, `Send to ${commandForm.agentLabel}`)}
+              </div>
+
+              <div style={{ background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 10, padding: 12, marginBottom: 18, fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
+                {pickLocaleText(locale, '在这里输入的内容会直接作为指令发送给指定 Agent，而不是创建普通看板任务。适合调试、试运行、技能调用或点对点下达短指令。', 'Content entered here will be sent directly to the selected agent instead of creating a normal board task. It is suitable for debugging, trial runs, skill invocation, or short point-to-point instructions.')}
+              </div>
+
+              <form onSubmit={submitCommand} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>{pickLocaleText(locale, '目标 Agent', 'Target Agent')}</label>
+                  <select
+                    value={commandForm.agentId}
+                    onChange={(e) => {
+                      const nextId = e.target.value;
+                      const nextAgent = agentConfig.agents.find((ag) => ag.id === nextId);
+                      if (!nextAgent) return;
+                      setCommandForm({ agentId: nextAgent.id, agentLabel: normalizeAgentLabel(nextAgent.id, nextAgent.label) });
+                      setCommandStatus('');
+                      setCommandActivity([]);
+                      loadCommandActivity(nextAgent.id);
+                    }}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', fontSize: 13 }}
+                  >
+                    {agentConfig.agents.map((ag) => (
+                      <option key={ag.id} value={ag.id}>{ag.emoji} {normalizeAgentLabel(ag.id, ag.label)} ({ag.id})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 6 }}>{pickLocaleText(locale, '发送内容', 'Message')}</label>
+                  <textarea
+                    required
+                    rows={5}
+                    placeholder={pickLocaleText(locale, '例如：请检查你当前可用的技能，并告诉我适合处理“技能管理”相关需求的最佳工作方式。', 'For example: inspect your currently available skills and tell me the best workflow to handle skill-management related requests.')}
+                    value={commandText}
+                    onChange={(e) => setCommandText(e.target.value)}
+                    style={{ width: '100%', padding: '12px 14px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'vertical', lineHeight: 1.7 }}
+                  />
+                </div>
+                {commandStatus && (
+                  <div style={{ fontSize: 12, color: commandStatus.includes('失败') || commandStatus.toLowerCase().includes('failed') ? '#ff5270' : '#4caf88', background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 8, padding: '10px 12px' }}>
+                    {commandStatus}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => loadCommandActivity(commandForm.agentId)}
+                    style={{ padding: '8px 14px', background: 'transparent', color: 'var(--acc)', border: '1px solid var(--acc)', borderRadius: 8, cursor: 'pointer', fontSize: 12 }}
+                  >
+                    {pickLocaleText(locale, '刷新最近活动', 'Refresh Recent Activity')}
+                  </button>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button type="button" className="btn btn-g" onClick={() => setCommandForm(null)} style={{ padding: '8px 20px' }}>{pickLocaleText(locale, '关闭', 'Close')}</button>
+                    <button
+                      type="submit"
+                      disabled={commandSubmitting || !commandText.trim()}
+                      style={{ padding: '8px 20px', fontSize: 13, background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      {commandSubmitting ? pickLocaleText(locale, '⟳ 发送中…', '⟳ Sending...') : pickLocaleText(locale, '发送给 Agent', 'Send to Agent')}
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              <div style={{ marginTop: 22 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '最近活动回流', 'Latest Activity Feed')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>{pickLocaleText(locale, '用于确认该 Agent 是否已收到并开始处理指令', 'Use this to verify that the agent received and started handling the command')}</div>
+                </div>
+                {commandLoading ? (
+                  <div style={{ textAlign: 'center', padding: '26px 0', color: 'var(--muted)', fontSize: 12 }}>{pickLocaleText(locale, '⟳ 正在读取活动…', '⟳ Loading activity...')}</div>
+                ) : commandActivity.length === 0 ? (
+                  <div style={{ background: 'var(--panel2)', border: '1px dashed var(--line)', borderRadius: 10, padding: 16, color: 'var(--muted)', fontSize: 12 }}>
+                    {pickLocaleText(locale, '当前还没有读取到该 Agent 的最近活动。发送指令后可稍等几秒再刷新。', 'No recent activity was retrieved for this agent yet. After sending a command, wait a few seconds and refresh.')}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 280, overflowY: 'auto', paddingRight: 4 }}>
+                    {commandActivity.slice(-12).reverse().map((item, idx) => (
+                      <div key={`${String(item.at || idx)}-${idx}`} style={{ background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{item.kind || pickLocaleText(locale, '活动', 'Activity')}</span>
+                          <span style={{ fontSize: 10, color: 'var(--muted)' }}>{String(item.at || '')}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                          {summarizeActivity(item)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {addRemoteForm && (
         <div className="modal-bg open" onClick={() => setAddRemoteForm(false)}>
           <div className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
@@ -602,7 +830,7 @@ export default function SkillsConfig() {
                   >
                     <option value="">{pickLocaleText(locale, '— 选择 Agent —', '— Select Agent —')}</option>
                     {agentConfig.agents.map((ag) => (
-                      <option key={ag.id} value={ag.id}>{ag.emoji} {ag.label} ({ag.id})</option>
+                      <option key={ag.id} value={ag.id}>{ag.emoji} {normalizeAgentLabel(ag.id, ag.label)} ({ag.id})</option>
                     ))}
                   </select>
                 </div>

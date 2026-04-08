@@ -17,9 +17,9 @@ def main():
         )
         page = ctx.new_page()
 
-        # ── Clear ceremony localStorage so it doesn't show on every load
+        # ── 预设启动过渡状态，避免每次加载都重复展示
         page.goto(URL)
-        page.evaluate("localStorage.setItem('openclaw_court_date', new Date().toISOString().substring(0,10))")
+        page.evaluate("localStorage.setItem('openclaw_startup_transition_date', new Date().toISOString().substring(0,10))")
         page.reload()
         page.wait_for_load_state('networkidle')
         page.wait_for_timeout(2000)
@@ -28,7 +28,7 @@ def main():
         print('📋 01 kanban...')
         page.screenshot(path=os.path.join(SHOTS, '01-kanban-main.png'), full_page=False)
 
-        # 2. Monitor (省部调度)
+        # 2. Monitor (运行调度)
         print('🔭 02 monitor...')
         page.click('[data-tab="monitor"]')
         page.wait_for_timeout(800)
@@ -91,12 +91,12 @@ def main():
         page.wait_for_timeout(1000)
         page.screenshot(path=os.path.join(SHOTS, '10-web-search-brief.png'), full_page=False)
 
-        # 11. Ceremony - clear date then reload
-        print('🎬 11 ceremony...')
-        page.evaluate("localStorage.removeItem('openclaw_court_date')")
+        # 11. Startup transition - clear date then reload
+        print('🎬 11 startup transition...')
+        page.evaluate("localStorage.removeItem('openclaw_startup_transition_date')")
         page.reload()
         page.wait_for_timeout(2500)
-        page.screenshot(path=os.path.join(SHOTS, '11-ceremony.png'), full_page=False)
+        page.screenshot(path=os.path.join(SHOTS, '11-startup-transition.png'), full_page=False)
 
         browser.close()
     print('✅ All screenshots saved to', SHOTS)

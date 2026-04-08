@@ -50,6 +50,7 @@ export const api = {
   searchBrief: () => fetchJ<SearchBrief>(`${API_BASE}/api/search-brief`),
   searchConfig: () => fetchJ<SubConfig>(`${API_BASE}/api/search-config`),
   agentsStatus: () => fetchJ<AgentsStatusData>(`${API_BASE}/api/agents-status`),
+  globalAgentBusy: () => fetchJ<CollabAgentBusyResult>(`${API_BASE}/api/global-agent-busy`),
 
   // 任务实时动态
   taskActivity: (id: string) =>
@@ -68,8 +69,12 @@ export const api = {
     postJ<ActionResult>(`${API_BASE}/api/set-model`, { agentId, model }),
   setDispatchChannel: (channel: string) =>
     postJ<ActionResult>(`${API_BASE}/api/set-dispatch-channel`, { channel }),
-  agentWake: (agentId: string) =>
-    postJ<ActionResult>(`${API_BASE}/api/agent-wake`, { agentId }),
+  agentWake: (agentId: string, message = '') =>
+    postJ<ActionResult>(`${API_BASE}/api/agent-wake`, { agentId, message }),
+  sendAgentCommand: (agentId: string, message: string) =>
+    postJ<ActionResult>(`${API_BASE}/api/agent-command`, { agentId, message }),
+  agentActivity: (agentId: string) =>
+    fetchJ<AgentActivityResult>(`${API_BASE}/api/agent-activity/${encodeURIComponent(agentId)}`),
   taskAction: (taskId: string, action: string, reason: string) =>
     postJ<ActionResult>(`${API_BASE}/api/task-action`, { taskId, action, reason }),
   reviewAction: (taskId: string, action: string, comment: string) =>
@@ -115,17 +120,57 @@ export const api = {
   createTask: (data: CreateTaskPayload) =>
     postJ<ActionResult & { taskId?: string }>(`${API_BASE}/api/create-task`, data),
 
-  // ── 协同讨论 ──
-  courtDiscussStart: (topic: string, agentIds: string[], taskId?: string) =>
-    postJ<CourtDiscussResult>(`${API_BASE}/api/court-discuss/start`, { topic, agents: agentIds, taskId }),
-  courtDiscussAdvance: (sessionId: string, userMessage?: string, decree?: string) =>
-    postJ<CourtDiscussResult>(`${API_BASE}/api/court-discuss/advance`, { sessionId, userMessage, decree }),
-  courtDiscussConclude: (sessionId: string) =>
-    postJ<ActionResult & { summary?: string }>(`${API_BASE}/api/court-discuss/conclude`, { sessionId }),
-  courtDiscussDestroy: (sessionId: string) =>
-    postJ<ActionResult>(`${API_BASE}/api/court-discuss/destroy`, { sessionId }),
-  courtDiscussFate: () =>
-    fetchJ<{ ok: boolean; event: string }>(`${API_BASE}/api/court-discuss/fate`),
+  // ── 多角色协同讨论 ──
+  collabDiscussStart: (
+    topic: string,
+    agentIds: string[],
+    taskId?: string,
+    preferredMode: 'auto' | 'meeting' | 'chat' = 'auto',
+    moderatorId?: string,
+    selectAll = false,
+  ) =>
+    postJ<CollabDiscussResult>(`${API_BASE}/api/collab-discuss/start`, {
+      topic,
+      agents: agentIds,
+      taskId,
+      preferredMode,
+      moderatorId,
+      selectAll,
+    }),
+  collabDiscussAdvance: (
+    sessionId: string,
+    userMessage?: string,
+    constraint?: string,
+    intent: 'auto' | 'meeting' | 'chat' | 'user_message' | 'constraint' | 'next_round' | 'next_stage' = 'auto',
+    speakerIds: string[] = [],
+    stageAction?: string,
+  ) =>
+    postJ<CollabDiscussResult>(`${API_BASE}/api/collab-discuss/advance`, {
+      sessionId,
+      userMessage,
+      constraint,
+      intent,
+      speakerIds,
+      stageAction,
+    }),
+  collabDiscussPause: (sessionId: string, reason = '') =>
+    postJ<CollabDiscussResult>(`${API_BASE}/api/collab-discuss/pause`, { sessionId, reason }),
+  collabDiscussResume: (sessionId: string, autoRun?: boolean, reason = '') =>
+    postJ<CollabDiscussResult>(`${API_BASE}/api/collab-discuss/resume`, {
+      sessionId,
+      reason,
+      ...(typeof autoRun === 'boolean' ? { autoRun } : {}),
+    }),
+  collabDiscussConclude: (sessionId: string) =>
+    postJ<ActionResult & { summary?: string; minutes?: CollabMinute[]; decision_items?: string[]; open_questions?: string[]; action_items?: string[] }>(`${API_BASE}/api/collab-discuss/conclude`, { sessionId }),
+  collabDiscussDestroy: (sessionId: string) =>
+    postJ<ActionResult>(`${API_BASE}/api/collab-discuss/destroy`, { sessionId }),
+  collabDiscussAgentBusy: () =>
+    fetchJ<CollabAgentBusyResult>(`${API_BASE}/api/collab-discuss/agent-busy`),
+  collabDiscussRunStatus: (sessionId: string) =>
+    fetchJ<CollabRunStatus>(`${API_BASE}/api/collab-discuss/run-status/${encodeURIComponent(sessionId)}`),
+  collabDiscussFate: () =>
+    fetchJ<{ ok: boolean; event: string }>(`${API_BASE}/api/collab-discuss/fate`),
 };
 
 // ── Types ──
@@ -145,7 +190,6 @@ export interface AuthStatus {
   currentUser?: string | null;
   authFile?: string;
 }
-
 export interface AuthLoginResult extends ActionResult {
   token?: string;
   username?: string;
@@ -422,6 +466,13 @@ export interface TaskActivityData {
   resourceSummary?: ResourceSummary;
 }
 
+export interface AgentActivityResult {
+  ok: boolean;
+  agentId?: string;
+  activity?: ActivityEntry[];
+  error?: string;
+}
+
 export interface SchedulerInfo {
   retryCount?: number;
   escalationLevel?: number;
@@ -501,16 +552,147 @@ export interface RemoteSkillsListResult {
 
 // ── 协同讨论 ──
 
-export interface CourtDiscussResult {
+export interface CollabMinute {
+  round: number;
+  stage: string;
+  content: string;
+  timestamp: number;
+}
+
+export interface CollabAgentBusyEntry {
+  agent_id: string;
+  name: string;
+  emoji: string;
+  role: string;
+  state: 'idle' | 'reserved' | 'active' | 'paused' | 'yielding' | 'cooldown' | string;
+  label: string;
+  source_type?: 'meeting' | 'chat' | 'task' | string;
+  source_id?: string;
+  occupancy_kind?: 'meeting' | 'chat' | 'task_active' | 'task_reserved' | 'task_paused' | 'task_blocked' | string;
+  session_id: string;
+  topic: string;
+  mode: string;
+  stage: string;
+  round: number;
+  moderator_id: string;
+  task_id?: string;
+  task_title?: string;
+  task_state?: string;
+  task_org?: string;
+  claimed_by: string;
+  reason: string;
+  updated_at: number;
+}
+
+export interface GlobalBusyTaskItem {
+  task_id: string;
+  task_title: string;
+  task_state: string;
+  task_org: string;
+  run_state?: 'running' | 'paused' | string;
+  occupancy_kind?: string;
+  claimed_agents?: string[];
+  updated_at?: number;
+}
+
+export interface CollabSessionListItem {
+  session_id: string;
+  topic: string;
+  round: number;
+  phase: string;
+  mode?: 'meeting' | 'chat';
+  stage?: string;
+  moderator_id?: string;
+  moderator_name?: string;
+  agent_count?: number;
+  message_count?: number;
+  run_state?: 'running' | 'paused' | 'concluded' | string;
+  auto_run?: boolean;
+  last_advanced_at?: number | null;
+  next_run_at?: number | null;
+  updated_at?: number | null;
+  claimed_agents?: string[];
+  conflicted_agents?: string[];
+  yielded_agents?: string[];
+}
+
+export interface CollabAgentBusyResult {
+  ok: boolean;
+  busy: CollabAgentBusyEntry[];
+  sessions: CollabSessionListItem[];
+  tasks?: GlobalBusyTaskItem[];
+  updated_at?: number;
+  error?: string;
+}
+
+export interface CollabRunStatus {
+  ok: boolean;
+  session_id?: string;
+  phase?: string;
+  run_state?: 'running' | 'paused' | 'concluded' | string;
+  auto_run?: boolean;
+  auto_round_limit?: number;
+  auto_round_count?: number;
+  last_advanced_at?: number | null;
+  next_run_at?: number | null;
+  claimed_agents?: string[];
+  conflicted_agents?: string[];
+  yielded_agents?: string[];
+  busy_snapshot?: CollabAgentBusyEntry[];
+  error?: string;
+}
+
+export interface CollabDiscussResult {
   ok: boolean;
   session_id?: string;
   topic?: string;
   round?: number;
-  new_messages?: Array<{
+  phase?: string;
+  mode?: 'meeting' | 'chat';
+  stage?: string;
+  moderator_id?: string;
+  moderator_name?: string;
+  speaker_queue?: string[];
+  agenda?: string;
+  minutes?: CollabMinute[];
+  trace?: Array<Record<string, unknown>>;
+  decision_items?: string[];
+  open_questions?: string[];
+  action_items?: string[];
+  stage_history?: Array<Record<string, unknown>>;
+  select_all?: boolean;
+  run_state?: 'running' | 'paused' | 'concluded' | string;
+  auto_run?: boolean;
+  run_interval_sec?: number;
+  auto_round_limit?: number;
+  auto_round_count?: number;
+  last_advanced_at?: number | null;
+  next_run_at?: number | null;
+  claimed_agents?: string[];
+  conflicted_agents?: string[];
+  yielded_agents?: string[];
+  busy_snapshot?: CollabAgentBusyEntry[];
+  agents?: Array<{
+    id: string;
+    name: string;
+    emoji: string;
+    role: string;
+    personality: string;
+    speaking_style: string;
+  }>;
+  messages?: Array<{
+    type: string;
+    content: string;
     agent_id?: string;
     agent_name?: string;
-    official_id?: string;
-    official_name?: string;
+    emotion?: string;
+    action?: string;
+    timestamp?: number;
+  }>;
+  new_messages?: Array<{
+    type?: string;
+    agent_id?: string;
+    agent_name?: string;
     name?: string;
     content: string;
     emotion?: string;
@@ -518,5 +700,6 @@ export interface CourtDiscussResult {
   }>;
   scene_note?: string;
   total_messages?: number;
+  summary?: string;
   error?: string;
 }
