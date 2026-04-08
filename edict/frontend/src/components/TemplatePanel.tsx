@@ -20,7 +20,7 @@ const DEPT_LABELS: Record<string, { zh: string; en: string }> = {
   文案专家: { zh: '文案专家', en: 'Docs Specialist' },
   数据专家: { zh: '数据专家', en: 'Data Specialist' },
   代码专家: { zh: '代码专家', en: 'Code Specialist' },
-  审计专家: { zh: '审计专家', en: 'Audit Specialist' },
+  合规专家: { zh: '合规专家', en: 'Compliance Specialist' },
   部署专家: { zh: '部署专家', en: 'Deploy Specialist' },
 };
 

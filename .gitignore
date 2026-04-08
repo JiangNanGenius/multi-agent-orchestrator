@@ -35,9 +35,19 @@ edict/frontend/node_modules/
 # Vite cache
 .vite/
 
+# Frontend build artifacts
+edict/frontend/dist/
+
 # IDE
 .vscode/
 
 # Backups
 *.bak*
 data
+
+# Internal audit and temporary work records
+/audit_outputs/dashboard_preview_findings_*.md
+/audit_outputs/dashboard_runtime_preview_*.md
+/audit_outputs/internal_preview_notes_*.md
+/edict/TODO_*.md
+/edict/WORKLOG_*.md

@@ -818,10 +818,10 @@ _AGENT_DEPTS = [
     {'id':'dispatch_center',  'label':'调度中心', 'emoji':'📮', 'role':'调度协同中心',     'rank':'核心节点'},
     {'id':'docs_specialist',  'label':'文案专家', 'emoji':'📝', 'role':'内容文档专家',     'rank':'专业执行组'},
     {'id':'data_specialist',  'label':'数据专家', 'emoji':'💰', 'role':'数据分析专家',     'rank':'专业执行组'},
-    {'id':'code_specialist',  'label':'代码专家', 'emoji':'⚔️', 'role':'工程实现专家',     'rank':'专业执行组'},
-    {'id':'audit_specialist', 'label':'审计专家', 'emoji':'⚖️', 'role':'审计审核专家',     'rank':'专业执行组'},
-    {'id':'deploy_specialist','label':'部署专家', 'emoji':'🔧', 'role':'部署运维专家',     'rank':'专业执行组'},
-    {'id':'admin_specialist', 'label':'技能管理员', 'emoji':'👔', 'role':'技能管理专家',     'rank':'专业执行组'},
+    {'id':'code_specialist',  'label':'代码专家', 'emoji':'💻', 'role':'工程实现专家',     'rank':'专业执行组'},
+    {'id':'audit_specialist', 'label':'合规专家', 'emoji':'⚖️', 'role':'合规审查专家',     'rank':'专业执行组'},
+    {'id':'deploy_specialist','label':'部署专家', 'emoji':'🧰', 'role':'部署运维专家',     'rank':'专业执行组'},
+    {'id':'admin_specialist', 'label':'技能管理员', 'emoji':'🗂️', 'role':'技能管理支持',     'rank':'专业执行组'},
     {'id':'search_specialist','label':'搜索专家', 'emoji':'🌐', 'role':'全网搜索专家',     'rank':'支撑能力'},
 ]
 
@@ -1047,6 +1047,7 @@ _ORG_AGENT_MAP = {
     '数据专家': 'data_specialist',
     '代码专家': 'code_specialist',
     '审计专家': 'audit_specialist',
+    '合规专家': 'audit_specialist',
     '部署专家': 'deploy_specialist',
     '管理专家': 'admin_specialist',
     '技能管理员': 'admin_specialist',
@@ -2472,11 +2473,7 @@ class Handler(BaseHTTPRequestHandler):
         if self._check_auth():
             return
         if p in ('', '/dashboard', '/dashboard.html'):
-            idx = DIST / 'index.html'
-            if idx.exists():
-                self.send_file(idx)
-            else:
-                self.send_file(BASE / 'dashboard.html')
+            self.send_file(BASE / 'dashboard.html')
         elif p == '/api/live-status':
             task_data_dir = get_task_data_dir()
             self.send_json(read_json(task_data_dir / 'live_status.json'))

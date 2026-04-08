@@ -17,9 +17,9 @@ AGENT_META = {
     "dispatch_center": {"name": "调度中心", "role": "任务派发、协调推进与结果汇总", "icon": "📮"},
     "data_specialist": {"name": "数据专家", "role": "数据分析、指标统计与资源评估", "icon": "💰"},
     "docs_specialist": {"name": "文案专家", "role": "文档撰写、信息表达与对外说明", "icon": "📝"},
-    "code_specialist": {"name": "代码专家", "role": "代码实现、技术方案与问题修复", "icon": "🛡️"},
-    "audit_specialist": {"name": "审计专家", "role": "质量审查、测试校验与审计把关", "icon": "⚖️"},
-    "deploy_specialist": {"name": "部署专家", "role": "工程交付、自动化与部署实施", "icon": "🔧"},
+    "code_specialist": {"name": "代码专家", "role": "代码实现、技术方案与问题修复", "icon": "💻"},
+    "audit_specialist": {"name": "合规专家", "role": "质量审查、测试校验与合规把关", "icon": "⚖️"},
+    "deploy_specialist": {"name": "部署专家", "role": "工程交付、自动化与部署实施", "icon": "🧰"},
     "admin_specialist": {"name": "技能管理员", "role": "技能管理、配置维护与运营支持", "icon": "🗂️"},
     "search_specialist": {"name": "搜索专家", "role": "全网搜索、信息检索与线索汇总", "icon": "🌐"},
 }

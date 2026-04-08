@@ -94,9 +94,9 @@ body {
 .dt-文案专家 { border-color: #f5c84244; color: #f5c842; background: #201a08; }
 .dt-数据专家 { border-color: #ff9a6a44; color: #ff9a6a; background: #28100a; }
 .dt-代码专家 { border-color: #ff527044; color: #ff5270; background: #280a10; }
-.dt-审计专家 { border-color: #cc444444; color: #cc4444; background: #280808; }
+.dt-合规专家 { border-color: #cc444444; color: #cc4444; background: #280808; }
 .dt-部署专家 { border-color: #44aaff44; color: #44aaff; background: #081828; }
-.dt-管理专家 { border-color: #9b59b644; color: #9b59b6; background: #1b0d24; }
+.dt-技能管理员 { border-color: #9b59b644; color: #9b59b6; background: #1b0d24; }
 .dt-搜索专家 { border-color: #4cc9f044; color: #4cc9f0; background: #081a22; }
 
  .ec-scheduler-chip { margin-top: 10px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); display: flex; flex-direction: column; gap: 3px; }

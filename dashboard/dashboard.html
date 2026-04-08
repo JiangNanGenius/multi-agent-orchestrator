@@ -85,7 +85,7 @@
     .dt-文案专家{border-color:#f5c84244;color:#f5c842;background:#201a08}
     .dt-数据专家{border-color:#ff9a6a44;color:#ff9a6a;background:#28100a}
     .dt-代码专家{border-color:#44aaff44;color:#44aaff;background:#081828}
-    .dt-审计专家{border-color:#cc444444;color:#cc4444;background:#280808}
+    .dt-合规专家{border-color:#cc444444;color:#cc4444;background:#280808}
     .dt-部署专家{border-color:#14b8a644;color:#14b8a6;background:#081d1d}
 
     .ec-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:6px}
@@ -723,7 +723,7 @@
     <div class="tab" data-tab="monitor">🔭 运行调度 <span class="tbadge" id="tb-m">0</span></div>
     <div class="tab" data-tab="agents">👥 协作节点</div>
     <div class="tab" data-tab="models">⚙️ 模型配置</div>
-    <div class="tab" data-tab="skills">🛠️ 技能配置</div>
+    <div class="tab" data-tab="skills">🛠️ 技能管理</div>
     <div class="tab" data-tab="sessions">💬 快速任务 <span class="tbadge" id="tb-s">0</span></div>
     <div class="tab" data-tab="archives">🗄️ 结果归档 <span class="tbadge" id="tb-mem">0</span></div>
     <div class="tab" data-tab="templates">📚 模板中心</div>
@@ -732,6 +732,49 @@
 
   <!-- ══ 任务看板 ══ -->
   <div class="panel active" id="panel-tasks">
+    <div class="dispatch-talk" id="task-publish-panel" style="margin-bottom:16px">
+      <div class="dt-head">
+        <div>
+          <div class="dt-title">📋 任务发布</div>
+          <div class="dt-sub">用自然语言填写任务内容即可创建正式任务，适用于新任务提交、补充说明和加急需求。</div>
+        </div>
+        <div class="dt-status" id="task-publish-status">待发送</div>
+      </div>
+      <div class="dt-grid">
+        <div class="dt-form">
+          <div class="dt-row">
+            <div class="dt-field">
+              <label class="dt-label" for="task-publish-priority">优先级</label>
+              <select id="task-publish-priority" class="dt-select">
+                <option value="normal">普通优先级</option>
+                <option value="high">高优先级</option>
+              </select>
+            </div>
+            <div class="dt-field">
+              <label class="dt-label">默认接收</label>
+              <input class="dt-input" value="总控中心" disabled />
+            </div>
+          </div>
+          <label class="dt-label" for="task-publish-input">任务内容</label>
+          <textarea id="task-publish-input" class="dt-textarea" placeholder="例如：请整理最近三个月销售数据，输出趋势分析、图表和一页结论摘要；若发现异常，请标出主要原因。"></textarea>
+          <div class="dt-presets">
+            <button type="button" class="dt-chip" onclick="fillTaskPublishTemplate('分析')">数据分析模板</button>
+            <button type="button" class="dt-chip" onclick="fillTaskPublishTemplate('开发')">开发实现模板</button>
+            <button type="button" class="dt-chip" onclick="fillTaskPublishTemplate('报告')">报告交付模板</button>
+            <button type="button" class="dt-chip" onclick="fillTaskPublishTemplate('加急')">高优先级模板</button>
+          </div>
+          <div class="dt-actions">
+            <div class="dt-note">提交后会创建正式任务，并在下方保留最近记录，方便查看任务号与提交时间。</div>
+            <button type="button" class="btn btn-g" onclick="clearTaskPublishDraft()">清空</button>
+            <button type="button" class="dt-send" id="task-publish-send" onclick="speakTaskPublish()">发布任务</button>
+          </div>
+        </div>
+        <div class="dt-history">
+          <div class="dt-history-title">最近发布记录</div>
+          <div class="dt-history-list" id="task-publish-history"></div>
+        </div>
+      </div>
+    </div>
     <div class="archive-bar" id="archive-bar">
       <span class="ab-label">📋 筛选：</span>
       <button class="ab-btn active" data-filter="active" onclick="setTaskFilter('active')">🔥 进行中</button>
@@ -820,7 +863,51 @@
 
   <!-- ══ 技能配置 ══ -->
   <div class="panel" id="panel-skills">
-    <div class="sec-title" style="margin-bottom:14px">各中心与专家 · Skills 配置 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted)">— 点击技能查看详情，底部可添加新技能</span></div>
+    <div class="dispatch-talk" id="skill-manager-panel" style="margin-bottom:16px">
+      <div class="dt-head">
+        <div>
+          <div class="dt-title">🛠️ 技能管理</div>
+          <div class="dt-sub">这里会把需求提交给 <b>技能管理员</b>。你可以描述新增技能、下线技能、调整技能说明，或补充某个执行节点需要的新能力。</div>
+        </div>
+        <div class="dt-status" id="skill-admin-status">待发送</div>
+      </div>
+      <div class="dt-grid">
+        <div class="dt-form">
+          <div class="dt-row">
+            <div class="dt-field">
+              <label class="dt-label">处理节点</label>
+              <input class="dt-input" value="技能管理员" disabled />
+            </div>
+            <div class="dt-field">
+              <label class="dt-label">处理方式</label>
+              <input class="dt-input" value="后台任务" disabled />
+            </div>
+          </div>
+          <label class="dt-label" for="skill-admin-input">任务说明</label>
+          <textarea id="skill-admin-input" class="dt-textarea" placeholder="例如：请收敛旧技能入口，统一改成技能管理后台任务入口；并为代码专家补一个前端排错技能。"></textarea>
+          <div class="dt-presets">
+            <button type="button" class="dt-chip" onclick="fillSkillManagerTemplate('新增')">新增技能模板</button>
+            <button type="button" class="dt-chip" onclick="fillSkillManagerTemplate('删除')">删除技能模板</button>
+            <button type="button" class="dt-chip" onclick="fillSkillManagerTemplate('替换')">替换入口模板</button>
+            <button type="button" class="dt-chip" onclick="fillSkillManagerTemplate('排查')">排查问题模板</button>
+          </div>
+          <div class="dt-actions">
+            <div class="dt-note">提交后会创建后台任务，右侧保留最近记录，下方显示相关任务动态。</div>
+            <button type="button" class="btn btn-g" onclick="clearSkillManagerDraft()">清空</button>
+            <button type="button" class="dt-send" id="skill-admin-send" onclick="speakToSkillManager()">提交任务</button>
+          </div>
+        </div>
+        <div class="dt-history">
+          <div class="dt-history-title">最近记录</div>
+          <div class="dt-history-list" id="skill-admin-history"></div>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">任务动态</div>
+        <div id="skill-admin-activity" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+    <div class="sec-title" style="margin-bottom:14px">各中心与专家 · 技能管理 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted)">— 点击技能查看详情，底部可添加新技能</span></div>
     <div class="skills-grid" id="skills-grid"></div>
   </div>
 
@@ -836,9 +923,9 @@
       <span class="sess-filter" data-sf="docs_specialist" onclick="filterSessions('docs_specialist',this)">文案专家</span>
       <span class="sess-filter" data-sf="data_specialist" onclick="filterSessions('data_specialist',this)">数据专家</span>
       <span class="sess-filter" data-sf="code_specialist" onclick="filterSessions('code_specialist',this)">代码专家</span>
-      <span class="sess-filter" data-sf="audit_specialist" onclick="filterSessions('audit_specialist',this)">审计专家</span>
+      <span class="sess-filter" data-sf="audit_specialist" onclick="filterSessions('audit_specialist',this)">合规专家</span>
       <span class="sess-filter" data-sf="deploy_specialist" onclick="filterSessions('deploy_specialist',this)">部署专家</span>
-      <span class="sess-filter" data-sf="admin_specialist" onclick="filterSessions('admin_specialist',this)">管理专家</span>
+      <span class="sess-filter" data-sf="admin_specialist" onclick="filterSessions('admin_specialist',this)">技能管理员</span>
       <span class="sess-filter" data-sf="review_center" onclick="filterSessions('review_center',this)">评审中心</span>
       <span class="sess-filter" data-sf="search_specialist" onclick="filterSessions('search_specialist',this)">搜索专家</span>
     </div>
@@ -871,31 +958,41 @@
     </div>
     <div class="tpl-cats" id="tpl-cats"></div>
     <div class="tpl-grid" id="tpl-grid"></div>
-    <!-- 自由发起任务 -->
-    <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--line)">
-      <div style="font-size:13px;font-weight:700;margin-bottom:8px">✍️ 自由发起任务</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">无需模板，直接用自然语言描述你的需求，系统会自动交由总控中心预处理</div>
-      <textarea id="free-edict-input" style="width:100%;min-height:80px;resize:vertical;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13px;color:var(--text);font-family:inherit" placeholder="例如：帮我分析一下最近三个月的销售数据趋势，生成图表和报告…"></textarea>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
-        <select id="free-edict-priority" style="background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--text)">
-          <option value="normal">普通优先级</option>
-          <option value="high">高优先级</option>
-        </select>
-        <button class="tpl-go" style="padding:8px 20px;font-size:13px" onclick="submitFreeEdict()">📋 创建任务</button>
-      </div>
+    <div style="margin-top:24px;padding:16px 18px;border:1px dashed var(--line);border-radius:12px;background:rgba(255,255,255,.02)">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">📋 任务发布入口已迁移</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.7">自由发布任务已调整为 <b>任务看板顶部的任务发布入口</b>。现在建议在任务看板页直接用自然语言发布任务，这样可以同时查看最近记录与任务号回流。</div>
     </div>
   </div>
 
   <!-- ══ 全网搜索 ══ -->
   <div class="panel" id="panel-web_search">
-    <div class="mb-hdr">
-      <div>
-        <div class="mb-title">📰 全网搜索 · 热点摘要</div>
-        <div id="mb-subtitle" class="mb-sub">加载中…</div>
+    <div class="mb-hdr" style="display:flex;flex-direction:column;align-items:stretch;gap:14px;padding:18px;border-radius:16px;background:linear-gradient(135deg,rgba(18,28,56,.95),rgba(13,18,36,.96));border:1px solid var(--line)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div>
+          <div class="mb-title">🌐 全网搜索</div>
+          <div id="mb-subtitle" class="mb-sub">像搜索引擎一样输入关键词，按回车或点击“搜索”即可发起检索；后台会继续抓取并自动更新结果。</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-g" onclick="toggleSubConfig()" style="font-size:12px;padding:6px 14px">高级搜索</button>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn btn-g" onclick="toggleSubConfig()" style="font-size:12px;padding:6px 14px">⚙ 订阅管理</button>
-        <button class="btn btn-g" id="mb-refresh-btn" onclick="refreshSearchBrief()" style="font-size:12px;padding:6px 14px">⟳ 立即刷新</button>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="ws-filter-input" oninput="handleWebSearchInput()" onblur="autoRememberWebSearchQuery()" onkeydown="if(event.key==='Enter'){event.preventDefault();executeWebSearchFromInput(true)}" placeholder="搜索全网资讯、主题、公司、行业、政策…" style="flex:1;min-width:260px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025));border:1px solid rgba(122,162,255,.24);border-radius:999px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;box-shadow:0 10px 30px rgba(0,0,0,.16)" />
+        <button class="btn btn-p" id="mb-refresh-btn" onclick="executeWebSearchFromInput(true)" style="font-size:13px;padding:10px 18px;border-radius:999px">搜索</button>
+        <button class="btn btn-g" type="button" onclick="clearWebSearchFilter()" style="font-size:12px;padding:8px 14px;border-radius:999px">清空</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="dt-chip" onclick="applyWebSearchSuggestion('AI 智能体')">AI 智能体</button>
+        <button type="button" class="dt-chip" onclick="applyWebSearchSuggestion('半导体')">半导体</button>
+        <button type="button" class="dt-chip" onclick="applyWebSearchSuggestion('跨境出海')">跨境出海</button>
+        <button type="button" class="dt-chip" onclick="applyWebSearchSuggestion('资本市场')">资本市场</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid rgba(122,162,255,.18);border-radius:12px;background:rgba(255,255,255,.03)">
+        <div style="flex:1;min-width:260px">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">最近搜索记录</div>
+          <div id="ws-history-list" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        </div>
+        <button class="btn btn-g" type="button" onclick="clearWebSearchHistory()" style="font-size:12px;padding:8px 14px">清空记录</button>
       </div>
     </div>
 
@@ -991,6 +1088,7 @@ let _mainRefreshBusy = false;
 const MAIN_REFRESH_SECONDS = 5;
 const GLOBAL_SCAN_STORAGE_KEY = 'openclaw_global_scan_state_v1';
 const DISPATCH_TALK_STORAGE_KEY = 'openclaw_dispatch_center_talk_v1';
+const WEB_SEARCH_HISTORY_STORAGE_KEY = 'openclaw_web_search_history_v1';
 
 function persistGlobalScanState(meta = {}){
   try{
@@ -1055,11 +1153,11 @@ const AGENT_ARCHITECTURE = {
   review_center:{label:'评审中心', role:'质量评审中心', rank:'核心节点', emoji:'🔍', color:'#6a9eff'},
   dispatch_center:{label:'调度中心', role:'调度协同中心', rank:'核心节点', emoji:'📮', color:'#6aef9a'},
   docs_specialist:{label:'文案专家', role:'内容文档专家', rank:'专业执行组', emoji:'📝', color:'#f5c842'},
-  data_specialist:{label:'数据专家', role:'数据分析专家', rank:'专业执行组', emoji:'💰', color:'#ff9a6a'},
-  code_specialist:{label:'代码专家', role:'工程实现专家', rank:'专业执行组', emoji:'⚔️', color:'#44aaff'},
-  audit_specialist:{label:'审计专家', role:'审计审核专家', rank:'专业执行组', emoji:'⚖️', color:'#cc4444'},
-  deploy_specialist:{label:'部署专家', role:'部署运维专家', rank:'专业执行组', emoji:'🔧', color:'#ff5270'},
-  admin_specialist:{label:'管理专家', role:'系统管理专家', rank:'专业执行组', emoji:'👔', color:'#9b59b6'},
+  data_specialist:{label:'数据专家', role:'数据分析专家', rank:'专业执行组', emoji:'📊', color:'#ff9a6a'},
+  code_specialist:{label:'代码专家', role:'工程实现专家', rank:'专业执行组', emoji:'💻', color:'#44aaff'},
+  audit_specialist:{label:'合规专家', role:'合规审查专家', rank:'专业执行组', emoji:'⚖️', color:'#cc4444'},
+  deploy_specialist:{label:'部署专家', role:'部署运维专家', rank:'专业执行组', emoji:'🧰', color:'#ff5270'},
+  admin_specialist:{label:'技能管理员', role:'技能管理支持', rank:'专业执行组', emoji:'🗂️', color:'#9b59b6'},
   search_specialist:{label:'搜索专家', role:'全网搜索专家', rank:'支撑能力', emoji:'🌐', color:'#36cfc9'}
 };
 const AGENT_LABEL_TO_ID = Object.fromEntries(Object.entries(AGENT_ARCHITECTURE).flatMap(([id, meta]) => [
@@ -1097,8 +1195,8 @@ function normalizeUserText(text){
   if(text == null) return '';
   return String(text)
     .replace(/结果报告/g,'结果归档')
-    .replace(/合规专家/g,'审计专家')
-    .replace(/Agent管理专家/g,'管理专家');
+    .replace(/审计专家/g,'合规专家')
+    .replace(/Agent管理专家/g,'技能管理员');
 }
 function normalizeAgentPresentation(agent){
   const base = agent || {};
@@ -1409,12 +1507,133 @@ function setTaskFilter(f){
 }
 
 /* ══ PIPE STATUS FOR A TASK ══ */
-function getPipeStatus(t){
-  const stateIdx = PIPE_STATE_IDX[t.state] ?? 4;
-  return PIPE.map((stage, i) => ({
+function pipeIconForDept(dept){
+  const normalized = normalizeDeptLabel(normalizeUserText(dept || ''));
+  const meta = agentMetaByLabel(normalized) || agentMetaById(normalizeAgentId(normalized));
+  if(meta && meta.emoji) return meta.emoji;
+  const fallback = {
+    '任务入口':'🗂️',
+    '总控中心':'🎛️',
+    '规划中心':'🧭',
+    '评审中心':'🔍',
+    '调度中心':'📮',
+    '专业执行组':'⚙️',
+    '结果归档':'✅',
+  };
+  return fallback[normalized] || '📌';
+}
+function pipeActionForDept(dept, task, remark=''){
+  const normalized = normalizeDeptLabel(normalizeUserText(dept || ''));
+  const text = normalizeUserText(String(remark || ''));
+  if(/回滚/.test(text)) return '回退';
+  if(/升级/.test(text)) return '协调';
+  if(/重试/.test(text)) return '重试';
+  if(/退回|修订/.test(text) && normalized === '规划中心') return '修订';
+  if(/入队派发|排队/.test(text)) return '排队';
+  if(/派发/.test(text) && normalized === '调度中心') return '派发';
+  if(/提交/.test(text) && normalized === '任务入口') return '提交';
+  if(/归档|完成|确认完成/.test(text) && normalized === '结果归档') return '归档';
+  const defaults = {
+    '任务入口':'提交',
+    '总控中心':'预处理',
+    '规划中心':'拆解',
+    '评审中心':'核验',
+    '调度中心': ['Assigned','Next'].includes(task?.state) ? '派发' : '汇总',
+    '专业执行组':'执行',
+    '结果归档':'归档',
+    '文案专家':'执行',
+    '数据专家':'执行',
+    '代码专家':'执行',
+    '合规专家':'执行',
+    '部署专家':'执行',
+    '技能管理员':'执行',
+    '搜索专家':'执行',
+  };
+  return defaults[normalized] || '处理';
+}
+function resolveTaskCurrentDept(task){
+  const state = String(task?.state || '');
+  const org = normalizeDeptLabel(normalizeUserText(task?.org || ''));
+  const targetDept = normalizeDeptLabel(normalizeUserText(task?.targetDept || ''));
+  if(state === 'Done') return '结果归档';
+  if(state === 'Pending' || state === 'Inbox') return '任务入口';
+  if(state === 'Assigned') return targetDept || org || '调度中心';
+  if(state === 'Next' || state === 'Doing') return org || targetDept || '专业执行组';
+  if(state === 'Review') return org || '调度中心';
+  if(state === 'Blocked' || state === 'Cancelled') return org || targetDept || '总控中心';
+  return org || targetDept || '';
+}
+function buildDynamicPipeStages(task){
+  const flowLog = Array.isArray(task?.flow_log) ? task.flow_log : [];
+  const stages = [];
+  const pushStage = (dept, remark='', extra={})=>{
+    let normalized = normalizeDeptLabel(normalizeUserText(dept || ''));
+    if(!normalized) return;
+    if(normalized === '专业执行组'){
+      const preferred = normalizeDeptLabel(normalizeUserText(task?.targetDept || task?.org || ''));
+      if(preferred) normalized = preferred;
+    }
+    const item = {
+      key: `${normalized}-${stages.length}`,
+      dept: normalized,
+      icon: pipeIconForDept(normalized),
+      action: pipeActionForDept(normalized, task, remark),
+      remark: normalizeUserText(remark || ''),
+      at: extra.at || '',
+      source: extra.source || 'dynamic',
+    };
+    const prev = stages[stages.length - 1];
+    if(
+      prev &&
+      prev.dept === item.dept &&
+      prev.action === item.action &&
+      !/回滚|退回|升级|重试|人工|手动推进/.test(item.remark || '')
+    ){
+      prev.remark = item.remark || prev.remark;
+      prev.at = item.at || prev.at;
+      prev.source = item.source || prev.source;
+      return;
+    }
+    stages.push(item);
+  };
+  if(flowLog.length){
+    flowLog.forEach((fl, idx)=>{
+      let toDept = fl?.to || '';
+      const normalizedTo = normalizeDeptLabel(normalizeUserText(toDept));
+      if(normalizedTo === '专业执行组'){
+        const preferred = normalizeDeptLabel(normalizeUserText(task?.targetDept || (idx === flowLog.length - 1 ? task?.org : '') || ''));
+        if(preferred) toDept = preferred;
+      }
+      pushStage(toDept, fl?.remark || '', {at: fl?.at || '', source: 'flow'});
+    });
+  }
+  if(!stages.length){
+    const stateIdx = PIPE_STATE_IDX[task?.state] ?? 1;
+    PIPE.slice(0, Math.max(1, stateIdx + 1)).forEach(stage=>{
+      pushStage(stage.dept, stage.action, {source: 'fallback'});
+    });
+  }
+  const currentDept = resolveTaskCurrentDept(task);
+  const lastStage = stages[stages.length - 1];
+  if(currentDept && (!lastStage || lastStage.dept !== currentDept)){
+    pushStage(currentDept, task?.now || '', {at: task?.updatedAt || '', source: 'current'});
+  }
+  let activeIndex = stages.length - 1;
+  if(currentDept){
+    for(let i = stages.length - 1; i >= 0; i--){
+      if(stages[i].dept === currentDept){
+        activeIndex = i;
+        break;
+      }
+    }
+  }
+  return stages.map((stage, i)=>({
     ...stage,
-    status: i < stateIdx ? 'done' : i === stateIdx ? 'active' : 'pending'
+    status: i < activeIndex ? 'done' : i === activeIndex ? 'active' : 'pending'
   }));
+}
+function getPipeStatus(t){
+  return buildDynamicPipeStages(t);
 }
 
 /* ══ CARD MINI PIPELINE ══ */
@@ -1422,7 +1641,7 @@ function miniPipe(t){
   const stages = getPipeStatus(t);
   return `<div class="ec-pipe">
     ${stages.map((s,i) => `
-      <div class="ep-node ${s.status}">
+      <div class="ep-node ${s.status}" title="${esc(s.dept)} · ${esc(s.action)}${s.remark ? ` · ${esc(s.remark)}` : ''}">
         <div class="ep-icon">${s.icon}</div>
         <div class="ep-name">${s.dept}</div>
       </div>
@@ -1463,7 +1682,8 @@ function renderTasks(tasks){
     const deptCls = 'dt-'+(t.org||'').replace(/\s/g,'');
     const stCls = 'st-'+(t.state||'');
     const isBlocked = t.block && t.block !== '无' && t.block !== '-';
-    const curStage = PIPE.find((_,i) => getPipeStatus(t)[i].status === 'active');
+    const pipeStages = getPipeStatus(t);
+    const curStage = pipeStages.find(s => s.status === 'active');
     const todos = t.todos||[];
     const todoDone = todos.filter(x=>x.status==='completed').length;
     const todoTotal = todos.length;
@@ -1519,7 +1739,7 @@ async function loadAgentsStatus(){
     renderAgentsStatus(_agentsStatusData);
   }catch(e){
     document.getElementById('agent-status-panel').innerHTML=
-      '<div class="as-panel"><div style="color:var(--danger);font-size:12px">⚠️ 无法获取 Agent 状态</div></div>';
+      '<div class="as-panel"><div style="color:var(--danger);font-size:12px">⚠️ 无法获取节点状态</div></div>';
   }finally{
     _agentsStatusLoading = false;
   }
@@ -1539,10 +1759,10 @@ function renderAgentsStatus(data){
   document.getElementById('agent-status-panel').innerHTML=`
     <div class="as-panel">
       <div class="as-header">
-        <span class="as-title">🔌 Agent 在线状态</span>
+        <span class="as-title">🔌 节点在线状态</span>
         <span class="as-gw ${gwCls}">Gateway: ${esc(gw.status||'未知')}</span>
         <button class="as-refresh" onclick="loadAgentsStatus()" title="刷新状态">🔄 刷新</button>
-        ${offline+unconf>0?`<button class="as-wake-all" onclick="wakeAllAgents()" title="唤醒所有离线Agent">⚡ 全部唤醒</button>`:''}
+        ${offline+unconf>0?`<button class="as-wake-all" onclick="wakeAllAgents()" title="唤醒所有离线节点">⚡ 全部唤醒</button>`:''}
       </div>
       <div class="as-grid">
         ${filtered.map(a=>{
@@ -1607,10 +1827,10 @@ function renderMonitor(tasks){
     {id:'dispatch_center', label:'调度中心', emoji:'📮', role:'调度协调', rank:'核心节点'},
     {id:'docs_specialist', label:'文案专家', emoji:'📝', role:'内容文档专家', rank:'专业执行组'},
     {id:'data_specialist', label:'数据专家', emoji:'💰', role:'数据分析专家', rank:'专业执行组'},
-    {id:'code_specialist', label:'代码专家', emoji:'⚔️', role:'工程实现专家', rank:'专业执行组'},
-    {id:'audit_specialist', label:'审计专家', emoji:'⚖️', role:'审计审核专家', rank:'专业执行组'},
-    {id:'deploy_specialist', label:'部署专家', emoji:'🔧', role:'部署运维专家', rank:'专业执行组'},
-    {id:'admin_specialist', label:'管理专家', emoji:'👔', role:'系统管理专家', rank:'专业执行组'},
+    {id:'code_specialist', label:'代码专家', emoji:'💻', role:'工程实现专家', rank:'专业执行组'},
+    {id:'audit_specialist', label:'合规专家', emoji:'⚖️', role:'合规审查专家', rank:'专业执行组'},
+    {id:'deploy_specialist', label:'部署专家', emoji:'🧰', role:'部署运维专家', rank:'专业执行组'},
+    {id:'admin_specialist', label:'技能管理员', emoji:'🗂️', role:'技能管理支持', rank:'专业执行组'},
     {id:'search_specialist', label:'搜索专家', emoji:'🌐', role:'全网搜索专家', rank:'支撑能力'},
   ];
 
@@ -1736,10 +1956,11 @@ function openTask(id){
     </div>` : ''}
 
     <!-- 流程管线 -->
+    <div style="font-size:12px;color:var(--muted);margin:-6px 0 10px">流程按该任务的实际流转动态生成；遇到回退、插入步骤、升级协调或重试时，这里会随任务一起变化。</div>
     <div class="m-pipe">
       ${stages.map((s,i) => `
         <div class="mp-stage">
-          <div class="mp-node ${s.status}">
+          <div class="mp-node ${s.status}" title="${esc(s.dept)} · ${esc(s.action)}${s.remark ? ` · ${esc(s.remark)}` : ''}">
             ${s.status==='done' ? '<div class="mp-done-tick">✓</div>' : ''}
             <div class="mp-icon">${s.icon}</div>
             <div class="mp-dept" style="${s.status==='active'?'color:var(--acc)':s.status==='done'?'color:var(--ok)':''}">${s.dept}</div>
@@ -1872,7 +2093,7 @@ function openTask(id){
       <div id="la-todos-bar"></div>
       <div id="la-resource-bar"></div>
       <div class="la-log" id="la-log">
-        <div class="la-empty">正在获取 Agent 活动数据...</div>
+        <div class="la-empty">正在读取任务动态...</div>
       </div>
     </div>
   `;
@@ -2016,12 +2237,12 @@ function renderLiveActivity(data){
   if(!log)return;
 
   if(!data.ok||!data.activity||!data.activity.length){
-    const msg=data.message||data.error||'Agent 尚未上报进展（等待 Agent 调用 progress 命令）';
+    const msg=data.message||data.error||'当前还没有进度回流，请稍后刷新查看。';
     log.innerHTML=`<div class="la-empty">${esc(msg)}</div>`;
     if(dot)dot.classList.add('idle');
     if(agLbl){
       const agents=(data.relatedAgents||[]).join(', ');
-      agLbl.textContent=agents?`搜索范围: ${agents}`:'无对应 Agent';
+      agLbl.textContent=agents?`搜索范围: ${agents}`:'暂无对应执行节点';
     }
     return;
   }
@@ -2029,7 +2250,7 @@ function renderLiveActivity(data){
   if(agLbl){
     const parts=[];
     if(data.agentLabel)parts.push(data.agentLabel);
-    if(data.relatedAgents&&data.relatedAgents.length>1) parts.push(`${data.relatedAgents.length}个 Agent`);
+    if(data.relatedAgents&&data.relatedAgents.length>1) parts.push(`${data.relatedAgents.length}个执行节点`);
     if(data.lastActive)parts.push(`最后活跃: ${data.lastActive}`);
     agLbl.textContent=parts.join(' · ');
   }
@@ -2040,7 +2261,7 @@ function renderLiveActivity(data){
   const phaseBar = document.getElementById('la-phase-bar');
   if(phaseBar && data.phaseDurations && data.phaseDurations.length){
     const maxDur = Math.max(...data.phaseDurations.map(p=>p.durationSec||1), 1);
-    const phaseColors = {'总控中心':'#f97316','规划中心':'#3b82f6','评审中心':'#8b5cf6','调度中心':'#10b981','专业执行组':'#06b6d4','文案专家':'#ec4899','数据专家':'#f59e0b','代码专家':'#44aaff','审计专家':'#6366f1','部署专家':'#ff5270','管理专家':'#d946ef','任务入口':'#eab308','结果归档':'#22c55e'};
+    const phaseColors = {'总控中心':'#f97316','规划中心':'#3b82f6','评审中心':'#8b5cf6','调度中心':'#10b981','专业执行组':'#06b6d4','文案专家':'#ec4899','数据专家':'#f59e0b','代码专家':'#44aaff','合规专家':'#6366f1','部署专家':'#ff5270','技能管理员':'#d946ef','任务入口':'#eab308','结果归档':'#22c55e'};
     let totalDurText = data.totalDuration ? `<span style="margin-left:auto;font-size:10px;color:var(--muted)">总耗时 ${data.totalDuration}</span>` : '';
     phaseBar.innerHTML = `<div style="padding:4px 0 8px;border-bottom:1px solid var(--border)">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="font-size:11px;font-weight:600;color:var(--fg)">⏱ 阶段耗时</span>${totalDurText}</div>
@@ -2106,7 +2327,7 @@ function renderLiveActivity(data){
   if(dot){dot.classList.toggle('idle',!isActive);}
 
   // Agent label map
-  const _agentLabels={control_center:'总控中心',plan_center:'规划中心',review_center:'评审中心',dispatch_center:'调度中心',docs_specialist:'文案专家',data_specialist:'数据专家',code_specialist:'代码专家',audit_specialist:'审计专家',deploy_specialist:'部署专家',admin_specialist:'管理专家',search_specialist:'搜索专家'};
+  const _agentLabels={control_center:'总控中心',plan_center:'规划中心',review_center:'评审中心',dispatch_center:'调度中心',docs_specialist:'文案专家',data_specialist:'数据专家',code_specialist:'代码专家',audit_specialist:'合规专家',deploy_specialist:'部署专家',admin_specialist:'技能管理员',search_specialist:'搜索专家'};
 
   const renderEntry=(a)=>{
     const time=a.at?fmtActivityTime(a.at):'';
@@ -2296,12 +2517,324 @@ function renderCL(log){
 }
 
 /* ══ SKILLS ══ */
+const TASK_PUBLISH_STORAGE_KEY = 'openclaw_task_publish_store_v1';
+const SKILL_MANAGER_STORAGE_KEY = 'openclaw_skill_manager_store_v1';
+let currentWebSearchBrief = null;
+
+function findLiveTaskById(taskId){
+  const tasks = liveStatus && Array.isArray(liveStatus.tasks) ? liveStatus.tasks : [];
+  return tasks.find(t => t.id === taskId) || null;
+}
+function summarizeHistoryTask(taskId){
+  const task = findLiveTaskById(taskId);
+  if(!task) return '<span class="tag">任务记录已保留</span>';
+  return `<span class="tag st-${esc(task.state||'Pending')}">${esc(stateLabel(task))}</span>`;
+}
+function openTaskFromHistory(taskId){
+  if(!taskId){ toast('暂无可查看的任务', 'err'); return; }
+  activatePanel('tasks');
+  const tryOpen = ()=>{
+    const target = findLiveTaskById(taskId);
+    if(target) openTask(taskId);
+    else toast(`任务 ${taskId} 暂未出现在当前看板`, 'err');
+  };
+  if(!liveStatus || !Array.isArray(liveStatus.tasks)){
+    loadAll({silent:true}).then(()=>setTimeout(tryOpen, 80));
+    return;
+  }
+  setTimeout(tryOpen, 80);
+}
+function renderHistoryActions(taskId, removeFn, removeKey, viewLabel='查看任务'){
+  const encodedKey = JSON.stringify(removeKey).replace(/"/g,'&quot;');
+  const encodedTask = JSON.stringify(taskId || '').replace(/"/g,'&quot;');
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+    ${taskId ? `<button type="button" class="btn btn-g" style="font-size:11px;padding:4px 10px" onclick="openTaskFromHistory(${encodedTask})">${viewLabel}</button>` : ''}
+    <button type="button" class="btn btn-g" style="font-size:11px;padding:4px 10px" onclick="${removeFn}(${encodedKey})">删除记录</button>
+  </div>`;
+}
+
+function readTaskPublishStore(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(TASK_PUBLISH_STORAGE_KEY) || '{}');
+    return {
+      draft: typeof raw.draft === 'string' ? raw.draft : '',
+      priority: raw.priority === 'high' ? 'high' : 'normal',
+      history: Array.isArray(raw.history) ? raw.history.slice(0,6) : []
+    };
+  }catch(_){
+    return {draft:'', priority:'normal', history:[]};
+  }
+}
+function writeTaskPublishStore(data){
+  localStorage.setItem(TASK_PUBLISH_STORAGE_KEY, JSON.stringify({
+    draft: data.draft || '',
+    priority: data.priority === 'high' ? 'high' : 'normal',
+    history: Array.isArray(data.history) ? data.history.slice(0,6) : []
+  }));
+}
+function removeTaskPublishHistoryItem(taskId){
+  const st = readTaskPublishStore();
+  writeTaskPublishStore({...st, history: (st.history || []).filter(item => item.taskId !== taskId)});
+  renderTaskPublishHistory();
+  toast('已删除该条发布记录', 'ok');
+}
+function renderTaskPublishHistory(){
+  const wrap = document.getElementById('task-publish-history');
+  const statusEl = document.getElementById('task-publish-status');
+  if(!wrap || !statusEl) return;
+  const st = readTaskPublishStore();
+  if(!st.history.length){
+    wrap.innerHTML = '<div class="empty" style="padding:14px">暂无发布记录</div>';
+    statusEl.textContent = st.draft ? '草稿未发送' : '待发送';
+    statusEl.className = 'dt-status';
+    return;
+  }
+  const latest = st.history[0];
+  statusEl.textContent = latest.taskId ? `最近任务 ${latest.taskId}` : '最近已发送';
+  statusEl.className = 'dt-status ok';
+  wrap.innerHTML = st.history.map(item=>{
+    const taskMeta = summarizeHistoryTask(item.taskId);
+    return `<div class="dt-log-item">
+      <div class="dt-log-meta"><span>${esc(item.taskId||'待分配任务号')}</span><span>${esc(item.at||'')}</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">${taskMeta}</div>
+      <div class="dt-log-body">${esc(item.text||'')}</div>
+      ${renderHistoryActions(item.taskId, 'removeTaskPublishHistoryItem', item.taskId || item.at || item.text || '')}
+    </div>`;
+  }).join('');
+}
+function restoreTaskPublishDraft(){
+  const st = readTaskPublishStore();
+  const input = document.getElementById('task-publish-input');
+  const priority = document.getElementById('task-publish-priority');
+  if(input && !input.value) input.value = st.draft || '';
+  if(priority && st.priority) priority.value = st.priority;
+  renderTaskPublishHistory();
+}
+function persistTaskPublishDraft(){
+  const st = readTaskPublishStore();
+  const input = document.getElementById('task-publish-input');
+  const priority = document.getElementById('task-publish-priority');
+  writeTaskPublishStore({...st, draft: input ? input.value : st.draft, priority: priority ? priority.value : st.priority});
+  renderTaskPublishHistory();
+}
+function clearTaskPublishDraft(){
+  const st = readTaskPublishStore();
+  const input = document.getElementById('task-publish-input');
+  const priority = document.getElementById('task-publish-priority');
+  if(input) input.value = '';
+  if(priority) priority.value = 'normal';
+  writeTaskPublishStore({...st, draft:'', priority:'normal'});
+  renderTaskPublishHistory();
+}
+function fillTaskPublishTemplate(kind){
+  const input = document.getElementById('task-publish-input');
+  const priority = document.getElementById('task-publish-priority');
+  if(!input) return;
+  const templates = {
+    '分析': '请分析最近一段时间的核心业务数据，输出关键趋势、异常点、原因判断，并附一页结论摘要。',
+    '开发': '请根据需求完成开发实现，给出改动方案、关键文件、验证步骤与上线注意事项。',
+    '报告': '请围绕这个主题产出一份结构清晰的报告，包含背景、分析、结论和建议。',
+    '加急': '这是一个高优先级任务，请先快速判断范围与风险，再立即推进执行并及时同步进度。'
+  };
+  input.value = templates[kind] || '';
+  if(priority && kind === '加急') priority.value = 'high';
+  persistTaskPublishDraft();
+  input.focus();
+}
+async function speakTaskPublish(){
+  const input = document.getElementById('task-publish-input');
+  const priority = document.getElementById('task-publish-priority');
+  const btn = document.getElementById('task-publish-send');
+  const statusEl = document.getElementById('task-publish-status');
+  if(!input || !btn || !statusEl) return;
+  const text = (input.value || '').trim();
+  const p = priority ? priority.value : 'normal';
+  if(!text || text.length < 6){ toast('请输入至少6个字的任务内容','err'); return; }
+  btn.disabled = true; btn.textContent = '⟳ 发布中…';
+  statusEl.textContent = '发送中'; statusEl.className = 'dt-status sending';
+  try{
+    const r = await postJ(API+'/create-task', {
+      title: text,
+      org:'总控中心',
+      owner:'总控中心值守',
+      priority:p,
+      templateId:'task_publish_dialog',
+      params:{entry:'task-publish-panel', message:text, source:'dashboard-task-publish'}
+    });
+    if(r.ok){
+      const st = readTaskPublishStore();
+      const history = [{text, taskId:r.taskId||'', at:fmtLocalTime(new Date().toISOString())}, ...(st.history||[])].slice(0,6);
+      writeTaskPublishStore({draft:'', priority:p, history});
+      input.value = '';
+      renderTaskPublishHistory();
+      statusEl.textContent = r.taskId ? `已创建 ${r.taskId}` : '发布成功';
+      statusEl.className = 'dt-status ok';
+      toast(r.message || '任务已创建', 'ok');
+      loadAll({silent:true});
+    }else{
+      statusEl.textContent = '发送失败';
+      statusEl.className = 'dt-status err';
+      toast(r.error || '任务发布失败', 'err');
+    }
+  }catch(_){
+    statusEl.textContent = '连接失败';
+    statusEl.className = 'dt-status err';
+    toast('服务器连接失败','err');
+  }finally{
+    btn.disabled = false; btn.textContent = '发布任务';
+  }
+}
+
+function readSkillManagerStore(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(SKILL_MANAGER_STORAGE_KEY) || '{}');
+    return {
+      draft: typeof raw.draft === 'string' ? raw.draft : '',
+      history: Array.isArray(raw.history) ? raw.history.slice(0,6) : []
+    };
+  }catch(_){
+    return {draft:'', history:[]};
+  }
+}
+function writeSkillManagerStore(data){
+  localStorage.setItem(SKILL_MANAGER_STORAGE_KEY, JSON.stringify({
+    draft: data.draft || '',
+    history: Array.isArray(data.history) ? data.history.slice(0,6) : []
+  }));
+}
+function removeSkillManagerHistoryItem(taskId){
+  const st = readSkillManagerStore();
+  writeSkillManagerStore({...st, history: (st.history || []).filter(item => item.taskId !== taskId)});
+  renderSkillManagerHistory();
+  toast('已删除该条技能管理记录', 'ok');
+}
+function renderSkillManagerHistory(){
+  const wrap = document.getElementById('skill-admin-history');
+  const statusEl = document.getElementById('skill-admin-status');
+  if(!wrap || !statusEl) return;
+  const st = readSkillManagerStore();
+    if(!st.history.length){
+    wrap.innerHTML = '<div class="empty" style="padding:14px">暂无技能管理任务</div>';
+    statusEl.textContent = st.draft ? '草稿未发送' : '待发送';
+    statusEl.className = 'dt-status';
+    return;
+  }
+  const latest = st.history[0];
+  statusEl.textContent = latest.taskId ? `最近任务 ${latest.taskId}` : '最近已发送';
+  statusEl.className = 'dt-status ok';
+  wrap.innerHTML = st.history.map(item=>`<div class="dt-log-item">
+    <div class="dt-log-meta"><span>${esc(item.taskId||'技能管理后台任务')}</span><span>${esc(item.at||'')}</span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">${summarizeHistoryTask(item.taskId)}</div>
+    <div class="dt-log-body">${esc(item.text||'')}</div>
+    ${renderHistoryActions(item.taskId, 'removeSkillManagerHistoryItem', item.taskId || item.at || item.text || '')}
+  </div>`).join('');
+}
+function restoreSkillManagerDraft(){
+  const st = readSkillManagerStore();
+  const input = document.getElementById('skill-admin-input');
+  if(input && !input.value) input.value = st.draft || '';
+  renderSkillManagerHistory();
+}
+function persistSkillManagerDraft(){
+  const st = readSkillManagerStore();
+  const input = document.getElementById('skill-admin-input');
+  writeSkillManagerStore({...st, draft: input ? input.value : st.draft});
+  renderSkillManagerHistory();
+}
+function clearSkillManagerDraft(){
+  const st = readSkillManagerStore();
+  const input = document.getElementById('skill-admin-input');
+  if(input) input.value = '';
+  writeSkillManagerStore({...st, draft:''});
+  renderSkillManagerHistory();
+}
+function fillSkillManagerTemplate(kind){
+  const input = document.getElementById('skill-admin-input');
+  if(!input) return;
+  const templates = {
+    '新增': '请为指定 Agent 新增一个技能，并补充技能名称、用途说明、触发条件和预期输出。',
+    '删除': '请删除一个不再需要的技能，并说明删除原因以及是否有替代技能。',
+    '替换': '请把当前旧入口替换成新的技能管理聊天入口，并同步调整相关文案与展示名称。',
+    '排查': '请排查当前技能管理链路为什么没有生效，并说明真实对外页面、缺口和修复建议。'
+  };
+  input.value = templates[kind] || '';
+  persistSkillManagerDraft();
+  input.focus();
+}
+async function loadSkillManagerActivity(){
+  const wrap = document.getElementById('skill-admin-activity');
+  if(!wrap) return;
+  wrap.innerHTML = '<div class="empty" style="padding:12px">⟳ 正在读取技能管理任务动态…</div>';
+  try{
+    const r = await fetchJ(API+'/agent-activity/admin_specialist');
+    const items = Array.isArray(r.activity) ? r.activity.slice(-5).reverse() : [];
+    if(!items.length){
+      wrap.innerHTML = '<div class="empty" style="padding:12px">暂无任务动态回流</div>';
+      return;
+    }
+    wrap.innerHTML = items.map(entry=>`<div style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02)"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:11px;color:var(--muted)"><span>${esc(entry.kind||'activity')}</span><span>${esc((entry.at||'').substring(0,19).replace('T',' '))}</span></div><div style="font-size:12px;line-height:1.7;color:var(--text)">${esc(entry.text||entry.remark||entry.output||entry.tool||'暂无摘要')}</div></div>`).join('');
+  }catch(_){
+    wrap.innerHTML = '<div class="empty" style="padding:12px">⚠️ 无法读取活动流</div>';
+  }
+}
+async function speakToSkillManager(){
+  const input = document.getElementById('skill-admin-input');
+  const btn = document.getElementById('skill-admin-send');
+  const statusEl = document.getElementById('skill-admin-status');
+  if(!input || !btn || !statusEl) return;
+  const text = (input.value || '').trim();
+  if(!text || text.length < 4){ toast('请输入更明确的技能管理指令','err'); return; }
+  btn.disabled = true; btn.textContent = '⟳ 创建中…';
+  statusEl.textContent = '发送中'; statusEl.className = 'dt-status sending';
+  try{
+    const taskTitle = `请技能管理员处理以下事项：${text}`;
+    const r = await postJ(API+'/create-task', {
+      title: taskTitle,
+      org:'总控中心',
+      owner:'技能管理员入口',
+      priority:'normal',
+      targetDept:'技能管理员',
+      templateId:'skill_manager_dialog',
+      params:{entry:'skill-manager-panel', message:text, targetAgent:'admin_specialist', source:'dashboard-skill-manager'}
+    });
+    if(r.ok){
+      const st = readSkillManagerStore();
+      const history = [{text, taskId:r.taskId||'', at:fmtLocalTime(new Date().toISOString())}, ...(st.history||[])].slice(0,6);
+      writeSkillManagerStore({draft:'', history});
+      input.value = '';
+      renderSkillManagerHistory();
+      statusEl.textContent = r.taskId ? `已创建 ${r.taskId}` : '已发起';
+      statusEl.className = 'dt-status ok';
+      toast(r.message || '技能管理后台任务已创建', 'ok');
+      loadAll({silent:true});
+      setTimeout(loadSkillManagerActivity, 1200);
+    }else{
+      statusEl.textContent = '发送失败'; statusEl.className = 'dt-status err';
+      toast(r.error || '发送失败', 'err');
+    }
+  }catch(_){
+    statusEl.textContent = '连接失败'; statusEl.className = 'dt-status err';
+    toast('服务器连接失败','err');
+  }finally{
+    btn.disabled = false; btn.textContent = '提交任务';
+  }
+}
 function renderSkills(cfg){
-  if(!cfg||!cfg.agents){document.getElementById('skills-grid').innerHTML='<div class="empty">无法加载</div>';return}
-  document.getElementById('skills-grid').innerHTML=cfg.agents.map(ag=>`
+  const wrap = document.getElementById('skills-grid');
+  if(!cfg||!cfg.agents){ if(wrap) wrap.innerHTML='<div class="empty">无法加载</div>'; return; }
+  const agents = (cfg.agents||[]).map(ag=>{
+    if(ag.id === 'admin_specialist') return {...ag, label:'技能管理员', emoji: ag.emoji || '🗂️'};
+    if(ag.id === 'code_specialist') return {...ag, emoji:'💻'};
+    if(ag.id === 'data_specialist') return {...ag, emoji:'📊'};
+    if(ag.id === 'deploy_specialist') return {...ag, emoji:'🧰'};
+    return ag;
+  });
+  wrap.innerHTML = agents.map(ag=>`
     <div class="sk-card"><div class="sk-hdr"><span class="sk-emoji">${ag.emoji||'🏛️'}</span><span class="sk-name">${esc(ag.label)}</span><span class="sk-cnt">${(ag.skills||[]).length} 技能</span></div>
-    <div class="sk-list">${!(ag.skills||[]).length?'<div class="sk-empty">暂无 Skills</div>':(ag.skills||[]).map(sk=>`<div class="sk-item" onclick="openSkill('${esc(ag.id)}','${esc(sk.name)}')"><span class="si-name">📦 ${esc(sk.name)}</span><span class="si-desc">${esc(sk.description||'无描述')}</span><span class="si-arrow">›</span></div>`).join('')}</div>
-    <div class="sk-add" onclick="openAddSkillForm('${esc(ag.id)}','${esc(ag.label)}')">＋ 添加技能</div></div>`).join('')
+    <div class="sk-list">${!(ag.skills||[]).length?'<div class="sk-empty">暂无技能</div>':(ag.skills||[]).map(sk=>`<div class="sk-item" onclick="openSkill('${esc(ag.id)}','${esc(sk.name)}')"><span class="si-name">📦 ${esc(sk.name)}</span><span class="si-desc">${esc(sk.description||'无描述')}</span><span class="si-arrow">›</span></div>`).join('')}</div>
+    <div class="sk-add" onclick="openAddSkillForm('${esc(ag.id)}','${esc(ag.label)}')">＋ 添加技能</div></div>`).join('');
+  renderSkillManagerHistory();
+  loadSkillManagerActivity();
 }
 
 /* skill detail modal — 写入 modal-body (复用已有 modal) */
@@ -2757,7 +3290,7 @@ function filterSessions(filter, el){
 /* ══ WEB SEARCH BRIEF (全网搜索摘要) ══ */
 const CAT_META = {
   '政治': {icon:'🏛️', color:'#6a9eff', desc:'全球政治动态'},
-  '军事': {icon:'⚔️',  color:'#ff5270', desc:'军事与冲突'},
+  '军事': {icon:'🛰️',  color:'#ff5270', desc:'军事与冲突'},
   '经济': {icon:'💹',  color:'#2ecc8a', desc:'经济与市场'},
   'AI大模型': {icon:'🤖', color:'#a07aff', desc:'AI与大模型进展'},
 };
@@ -2890,60 +3423,349 @@ async function saveSubConfig(){
 }
 
 // --- Web search brief rendering ---
+function normalizeWebSearchHistoryItem(item){
+  if(typeof item === 'string'){
+    return {query:item, taskId:'', at:'', snapshot:null, resultTotal:0, categoryCount:0};
+  }
+  const snapshot = item && typeof item.snapshot === 'object' ? item.snapshot : null;
+  return {
+    query: String((item && (item.query || item.text)) || '').trim(),
+    taskId: String((item && item.taskId) || '').trim(),
+    at: String((item && item.at) || ''),
+    resultTotal: Number((item && item.resultTotal) || (snapshot && snapshot.total) || 0),
+    categoryCount: Number((item && item.categoryCount) || (snapshot && snapshot.categoryCount) || 0),
+    snapshot,
+  };
+}
+function readWebSearchHistoryStore(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(WEB_SEARCH_HISTORY_STORAGE_KEY) || '{}');
+    return {
+      draft: typeof raw.draft === 'string' ? raw.draft : '',
+      history: Array.isArray(raw.history) ? raw.history.filter(Boolean).map(normalizeWebSearchHistoryItem).slice(0,10) : []
+    };
+  }catch(_){
+    return {draft:'', history:[]};
+  }
+}
+function writeWebSearchHistoryStore(data){
+  localStorage.setItem(WEB_SEARCH_HISTORY_STORAGE_KEY, JSON.stringify({
+    draft: data.draft || '',
+    history: Array.isArray(data.history) ? data.history.filter(Boolean).map(normalizeWebSearchHistoryItem).slice(0,10) : []
+  }));
+}
+function getWebSearchHistoryKey(item){
+  const row = normalizeWebSearchHistoryItem(item || {});
+  return row.taskId || row.query;
+}
+function getWebSearchHistoryItem(key){
+  const st = readWebSearchHistoryStore();
+  return (st.history || []).find(item => getWebSearchHistoryKey(item) === key) || null;
+}
+function upsertWebSearchHistoryItem(entry){
+  const item = normalizeWebSearchHistoryItem(entry || {});
+  if(!item.query && !item.taskId) return;
+  const st = readWebSearchHistoryStore();
+  const key = getWebSearchHistoryKey(item);
+  const history = [item, ...(st.history || []).filter(row => getWebSearchHistoryKey(row) !== key)].slice(0,10);
+  writeWebSearchHistoryStore({draft: item.query || st.draft || '', history});
+}
+function persistWebSearchDraft(){
+  const input = document.getElementById('ws-filter-input');
+  const st = readWebSearchHistoryStore();
+  writeWebSearchHistoryStore({draft: input ? input.value.trim() : '', history: st.history || []});
+}
+function handleWebSearchInput(){
+  persistWebSearchDraft();
+  if(currentWebSearchBrief) renderWebSearchBrief(currentWebSearchBrief);
+}
+function rememberWebSearchQuery(query){
+  const text = String(query || '').trim();
+  const st = readWebSearchHistoryStore();
+  writeWebSearchHistoryStore({draft:text, history: st.history || []});
+}
+function renderWebSearchHistory(){
+  const wrap = document.getElementById('ws-history-list');
+  if(!wrap) return;
+  const st = readWebSearchHistoryStore();
+  if(!st.history.length){
+    wrap.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 10px;border:1px dashed var(--line);border-radius:10px;background:var(--panel2)">暂无搜索记录。后续搜索会以后台任务方式保留在这里，支持查看结果、回看任务和删除。</div>';
+    return;
+  }
+  wrap.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;width:100%">${st.history.map(item=>{
+    const key = JSON.stringify(getWebSearchHistoryKey(item)).replace(/"/g,'&quot;');
+    return `<div style="padding:10px 12px;border:1px solid rgba(122,162,255,.18);border-radius:12px;background:rgba(255,255,255,.04)">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;font-size:11px;color:var(--muted)">
+        <span>${item.taskId ? esc(item.taskId) : '搜索记录'}</span>
+        <span>${esc(item.at || '')}</span>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">${esc(item.query || '全网重点动态')}</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+        ${item.taskId ? summarizeHistoryTask(item.taskId) : '<span class="tag">仅保留结果快照</span>'}
+        ${item.resultTotal ? `<span class="tag">${item.resultTotal} 条结果</span>` : ''}
+        ${item.categoryCount ? `<span class="tag">${item.categoryCount} 个分类</span>` : ''}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-g" style="font-size:11px;padding:4px 10px" onclick="applySavedWebSearchQuery(${key})">复用查询</button>
+        <button type="button" class="btn btn-g" style="font-size:11px;padding:4px 10px" onclick="openStoredWebSearchResult(${key})">查看结果</button>
+        ${item.taskId ? `<button type="button" class="btn btn-g" style="font-size:11px;padding:4px 10px" onclick="openTaskFromHistory(${JSON.stringify(item.taskId).replace(/"/g,'&quot;')})">查看任务</button>` : ''}
+        <button type="button" class="btn btn-g" style="font-size:11px;padding:4px 10px" onclick="deleteWebSearchHistoryItem(${key})">删除记录</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+function restoreWebSearchDraft(){
+  const input = document.getElementById('ws-filter-input');
+  if(!input) return;
+  const st = readWebSearchHistoryStore();
+  if(!input.value && st.draft) input.value = st.draft;
+}
+function applySavedWebSearchQuery(keyOrQuery){
+  const input = document.getElementById('ws-filter-input');
+  if(!input) return;
+  const item = getWebSearchHistoryItem(keyOrQuery);
+  const query = item ? item.query : String(keyOrQuery || '');
+  input.value = query;
+  rememberWebSearchQuery(query);
+  renderWebSearchHistory();
+  filterWebSearchBrief();
+  input.focus();
+}
+function autoRememberWebSearchQuery(showToast){
+  const input = document.getElementById('ws-filter-input');
+  const query = input ? input.value.trim() : '';
+  if(query){
+    rememberWebSearchQuery(query);
+    if(showToast) toast('已保留搜索草稿', 'ok');
+  }else{
+    persistWebSearchDraft();
+  }
+  filterWebSearchBrief();
+}
+function deleteWebSearchHistoryItem(key){
+  const st = readWebSearchHistoryStore();
+  writeWebSearchHistoryStore({draft: st.draft || '', history: (st.history || []).filter(item => getWebSearchHistoryKey(item) !== key)});
+  renderWebSearchHistory();
+  toast('已删除该条搜索记录', 'ok');
+}
+function clearWebSearchHistory(){
+  const input = document.getElementById('ws-filter-input');
+  writeWebSearchHistoryStore({draft: input ? input.value.trim() : '', history: []});
+  renderWebSearchHistory();
+  toast('已清空搜索记录', 'ok');
+}
+function getWebSearchQuery(){
+  return ((document.getElementById('ws-filter-input')||{}).value || '').trim().toLowerCase();
+}
+function buildFilteredWebSearchData(d, queryText){
+  const query = String(queryText || '').trim().toLowerCase();
+  const cats = d.categories || {};
+  const enabledSet = subConfig ? new Set((subConfig.categories||[]).filter(c=>c.enabled).map(c=>c.name)) : null;
+  const userKws = (subConfig && subConfig.keywords || []).map(k=>k.toLowerCase());
+  const filteredCats = Object.entries(cats).reduce((acc,[cat,items])=>{
+    if(enabledSet && !enabledSet.has(cat)) return acc;
+    const matched = (items||[]).map(item=>{
+      const text = `${cat} ${(item.title||'')} ${(item.summary||item.desc||'')} ${(item.source||'')}`.toLowerCase();
+      const kwHits = userKws.filter(k=>text.includes(k)).length;
+      return {...item, _kwHits: kwHits, _matches: !query || text.includes(query)};
+    }).filter(item=>item._matches).sort((a,b)=>b._kwHits-a._kwHits);
+    if(matched.length) acc[cat] = matched;
+    return acc;
+  }, {});
+  const flatItems = Object.values(filteredCats).flat();
+  return {
+    query,
+    filteredCats,
+    total: flatItems.length,
+    keywordHits: flatItems.filter(item=>item._kwHits).length,
+  };
+}
+function renderStoredWebSearchResult(snapshot){
+  const sub = document.getElementById('mb-subtitle');
+  const body = document.getElementById('mb-body');
+  if(!body) return;
+  if(sub){
+    const dateStr = snapshot.date ? snapshot.date.replace(/(\d{4})(\d{2})(\d{2})/,'$1年$2月$3日') : '历史快照';
+    sub.textContent = `${dateStr}｜历史结果快照｜${snapshot.generatedAt ? `抓取时间 ${snapshot.generatedAt}` : '无抓取时间'}｜关键词：${snapshot.query || '未命名查询'}`;
+  }
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px">
+      <div style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03)"><div style="font-size:11px;color:var(--muted)">历史结果</div><div style="font-size:22px;font-weight:800">${snapshot.total || 0}</div></div>
+      <div style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03)"><div style="font-size:11px;color:var(--muted)">分类数量</div><div style="font-size:22px;font-weight:800">${snapshot.categoryCount || 0}</div></div>
+      <div style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03)"><div style="font-size:11px;color:var(--muted)">历史查询</div><div style="font-size:14px;font-weight:700">${esc(snapshot.query || '全网重点动态')}</div></div>
+    </div>
+    <div class="mb-cats">
+      ${(snapshot.categories || []).map(cat=>{
+        const meta = CAT_META[cat.name] || {icon:'📰',color:'var(--acc)'};
+        return `<div class="mb-cat">
+          <div class="mb-cat-hdr">
+            <span class="mb-cat-icon">${meta.icon}</span>
+            <span class="mb-cat-name" style="color:${meta.color}">${esc(cat.name)}</span>
+            <span class="mb-cat-cnt">${Number(cat.count || (cat.items || []).length || 0)} 条</span>
+          </div>
+          <div class="mb-news-list">
+            ${(cat.items || []).map(item=>{
+              const hasImg = item.image && item.image.startsWith('http');
+              const kwBadge = item.kwHits ? `<span style="font-size:9px;padding:1px 5px;border-radius:999px;background:#a07aff22;color:#a07aff;border:1px solid #a07aff44;margin-left:4px">⭐ 关注</span>` : '';
+              return `<div class="mb-card" onclick="window.open('${esc(item.link || '')}','_blank')">
+                <div class="mb-img">
+                  ${hasImg ? `<img src="${esc(item.image)}" onerror="this.parentElement.textContent='${meta.icon}'" loading="lazy">` : `<span>${meta.icon}</span>`}
+                </div>
+                <div class="mb-info">
+                  <div class="mb-headline">${esc(item.title || '')}${kwBadge}</div>
+                  <div class="mb-summary">${esc(item.summary || item.desc || '')}</div>
+                  <div class="mb-meta">
+                    <span class="mb-source">📡 ${esc(item.source || '')}</span>
+                    ${item.pub_date ? `<span class="mb-time">${esc(item.pub_date.substring(0,16))}</span>` : ''}
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+function captureWebSearchSnapshot(d, queryText){
+  const built = buildFilteredWebSearchData(d, queryText);
+  const categories = Object.entries(built.filteredCats).slice(0,8).map(([cat, items])=>({
+    name: cat,
+    count: items.length,
+    items: (items || []).slice(0,6).map(item=>({
+      title: item.title || '',
+      summary: item.summary || item.desc || '',
+      source: item.source || '',
+      link: item.link || '',
+      pub_date: item.pub_date || '',
+      image: item.image || '',
+      kwHits: Number(item._kwHits || 0),
+    })),
+  }));
+  return {
+    query: String(queryText || '').trim(),
+    date: d.date || '',
+    generatedAt: d.generated_at || '',
+    total: built.total || 0,
+    categoryCount: categories.length,
+    categories,
+  };
+}
+function openStoredWebSearchResult(key){
+  const item = getWebSearchHistoryItem(key);
+  if(!item){ toast('未找到该条搜索记录', 'err'); return; }
+  const input = document.getElementById('ws-filter-input');
+  if(input) input.value = item.query || '';
+  persistWebSearchDraft();
+  if(item.snapshot){
+    renderStoredWebSearchResult(item.snapshot);
+    toast('已打开历史结果快照', 'ok');
+    return;
+  }
+  if(item.taskId){
+    openTaskFromHistory(item.taskId);
+    return;
+  }
+  toast('该记录暂未沉淀结果快照', 'err');
+}
+function applyWebSearchSuggestion(keyword){
+  const input = document.getElementById('ws-filter-input');
+  if(!input) return;
+  input.value = keyword;
+  rememberWebSearchQuery(keyword);
+  filterWebSearchBrief();
+  executeWebSearchFromInput(false);
+  input.focus();
+}
+async function executeWebSearchFromInput(showToast){
+  const input = document.getElementById('ws-filter-input');
+  const query = input ? input.value.trim() : '';
+  const at = fmtLocalTime(new Date().toISOString());
+  rememberWebSearchQuery(query);
+  renderWebSearchHistory();
+  let taskId = '';
+  try{
+    const taskTitle = query
+      ? `请围绕关键词「${query}」执行全网搜索、抓取重点资讯并沉淀结果快照。`
+      : '请执行一次全网搜索，抓取重点资讯并沉淀结果快照。';
+    const createRes = await postJ(API+'/create-task', {
+      title: taskTitle,
+      org:'总控中心',
+      owner:'全网搜索入口',
+      priority:'normal',
+      targetDept:'搜索专家',
+      templateId:'web_search_dialog',
+      params:{entry:'web-search-panel', query, source:'dashboard-web-search'}
+    });
+    if(createRes && createRes.ok) taskId = createRes.taskId || '';
+  }catch(_){ }
+  upsertWebSearchHistoryItem({query: query || '全网重点动态', taskId, at, snapshot:null, resultTotal:0, categoryCount:0});
+  renderWebSearchHistory();
+  await refreshSearchBrief(showToast, {query: query || '全网重点动态', taskId, at});
+}
+function clearWebSearchFilter(){
+  const input = document.getElementById('ws-filter-input');
+  if(input) input.value = '';
+  persistWebSearchDraft();
+  filterWebSearchBrief();
+}
+function filterWebSearchBrief(){
+  persistWebSearchDraft();
+  if(currentWebSearchBrief) renderWebSearchBrief(currentWebSearchBrief);
+}
 async function loadWebSearchBrief(){
   const body = document.getElementById('mb-body');
+  restoreWebSearchDraft();
+  renderWebSearchHistory();
   body.innerHTML = '<div class="mb-loading">⟳ 加载搜索摘要中…</div>';
   try{
     const d = await fetchJ(API+'/search-brief');
+    currentWebSearchBrief = d;
     await loadSubConfig();
     renderWebSearchBrief(d);
+    renderWebSearchHistory();
   }catch(e){
-    body.innerHTML = '<div class="mb-empty">⚠️ 暂无数据，请点击「立即刷新」</div>';
+    body.innerHTML = '<div class="mb-empty">⚠️ 暂无数据，请点击“搜索”发起后台抓取</div>';
   }
 }
 
 function renderWebSearchBrief(d){
+  currentWebSearchBrief = d;
   const sub = document.getElementById('mb-subtitle');
-  if(d.generated_at){
-    const dateStr = d.date ? d.date.replace(/(\d{4})(\d{2})(\d{2})/,'$1年$2月$3日') : '';
-    sub.textContent = `${dateStr} | 刷新于 ${d.generated_at} | 共 ${Object.values(d.categories||{}).flat().length} 条摘要`;
-  }
   const body = document.getElementById('mb-body');
-  const cats = d.categories||{};
-  if(!Object.keys(cats).length){
-    body.innerHTML='<div class="mb-empty">暂无数据，点击右上角「立即刷新」获取最新搜索摘要</div>';
+  const built = buildFilteredWebSearchData(d, getWebSearchQuery());
+  const filteredCats = built.filteredCats;
+  const total = built.total;
+  const query = built.query;
+  if(sub){
+    const dateStr = d.date ? d.date.replace(/(\d{4})(\d{2})(\d{2})/,'$1年$2月$3日') : '';
+    sub.textContent = `${dateStr || '最新一期'}｜${d.generated_at ? `刷新于 ${d.generated_at}` : '等待抓取'}｜当前展示 ${total} 条${query ? `｜筛选词：${query}` : ''}`;
+  }
+  if(!Object.keys(filteredCats).length){
+    body.innerHTML = `<div class="mb-empty">${query ? '没有匹配当前筛选词的结果，请换个关键词试试。' : '暂无数据，点击右上角“搜索”即可发起后台抓取。'}</div>`;
     return;
   }
-  // Filter by enabled categories
-  const enabledSet = subConfig ? new Set((subConfig.categories||[]).filter(c=>c.enabled).map(c=>c.name)) : null;
-  const userKws = (subConfig && subConfig.keywords||[]).map(k=>k.toLowerCase());
-
-  body.innerHTML = `<div class="mb-cats">
-    ${Object.entries(cats).map(([cat, items])=>{
-      if(enabledSet && !enabledSet.has(cat)) return '';
-      const meta = CAT_META[cat]||{icon:'📰',color:'var(--acc)'};
-      // Boost items matching user keywords
-      const scored = items.map(item=>{
-        const text = ((item.title||'')+(item.summary||'')).toLowerCase();
-        const kwHits = userKws.filter(k=>text.includes(k)).length;
-        return {...item, _kwHits: kwHits};
-      }).sort((a,b)=>b._kwHits-a._kwHits);
-      return `<div class="mb-cat">
-        <div class="mb-cat-hdr">
-          <span class="mb-cat-icon">${meta.icon}</span>
-          <span class="mb-cat-name" style="color:${meta.color}">${esc(cat)}</span>
-          <span class="mb-cat-cnt">${scored.length} 条</span>
-        </div>
-        <div class="mb-news-list">
-          ${!scored.length ? '<div class="mb-empty" style="padding:16px">暂无新闻</div>' :
-            scored.map(item => {
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px">
+      <div style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03)"><div style="font-size:11px;color:var(--muted)">当前结果</div><div style="font-size:22px;font-weight:800">${total}</div></div>
+      <div style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03)"><div style="font-size:11px;color:var(--muted)">分类数量</div><div style="font-size:22px;font-weight:800">${Object.keys(filteredCats).length}</div></div>
+      <div style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03)"><div style="font-size:11px;color:var(--muted)">关注词命中</div><div style="font-size:22px;font-weight:800">${built.keywordHits}</div></div>
+    </div>
+    <div class="mb-cats">
+      ${Object.entries(filteredCats).map(([cat, items])=>{
+        const meta = CAT_META[cat]||{icon:'📰',color:'var(--acc)'};
+        return `<div class="mb-cat">
+          <div class="mb-cat-hdr">
+            <span class="mb-cat-icon">${meta.icon}</span>
+            <span class="mb-cat-name" style="color:${meta.color}">${esc(cat)}</span>
+            <span class="mb-cat-cnt">${items.length} 条</span>
+          </div>
+          <div class="mb-news-list">
+            ${items.map(item => {
               const hasImg = item.image && item.image.startsWith('http');
               const kwBadge = item._kwHits ? `<span style="font-size:9px;padding:1px 5px;border-radius:999px;background:#a07aff22;color:#a07aff;border:1px solid #a07aff44;margin-left:4px">⭐ 关注</span>` : '';
               return `<div class="mb-card" onclick="window.open('${esc(item.link)}','_blank')">
                 <div class="mb-img">
-                  ${hasImg
-                    ? `<img src="${esc(item.image)}" onerror="this.parentElement.textContent='${meta.icon}'" loading="lazy">`
-                    : `<span>${meta.icon}</span>`}
+                  ${hasImg ? `<img src="${esc(item.image)}" onerror="this.parentElement.textContent='${meta.icon}'" loading="lazy">` : `<span>${meta.icon}</span>`}
                 </div>
                 <div class="mb-info">
                   <div class="mb-headline">${esc(item.title)}${kwBadge}</div>
@@ -2955,55 +3777,68 @@ function renderWebSearchBrief(d){
                 </div>
               </div>`;
             }).join('')}
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 let _newsPolling = null;
 let _lastBriefDate = null;
 
-async function refreshSearchBrief(){
+async function refreshSearchBrief(showToast, historyMeta={}){
   const btn = document.getElementById('mb-refresh-btn');
-  btn.disabled = true; btn.textContent = '⟳ 刷新中…';
+  btn.disabled = true; btn.textContent = '搜索中…';
   try{
-    // 记录刷新前的数据时间戳
     try{
       const old = await fetchJ(API+'/search-brief');
       _lastBriefDate = old.generated_at || null;
     }catch(e){ _lastBriefDate = null; }
+    autoRememberWebSearchQuery(false);
     const r = await postJ(API+'/search-brief/refresh', {});
-    toast(r.message||'刷新已触发，正在自动检查更新…', 'ok', 5000);
-    // 轮询检测更新（每5秒检查一次，最多2分钟）
+    if(showToast){
+      toast('已发起搜索，后台正在抓取最新结果', 'ok', 4000);
+    }else{
+      toast(r.message||'已触发抓取，正在自动检查更新…', 'ok', 5000);
+    }
     if(_newsPolling) clearInterval(_newsPolling);
     let pollCount = 0;
     _newsPolling = setInterval(async ()=>{
       pollCount++;
-      if(pollCount > 24){ // 2分钟超时
+      if(pollCount > 24){
         clearInterval(_newsPolling);
         _newsPolling = null;
-        btn.disabled = false; btn.textContent = '⟳ 立即刷新';
-        toast('刷新超时，请重试', 'err');
+        btn.disabled = false; btn.textContent = '搜索';
+        toast('搜索超时，请重试', 'err');
         return;
       }
       try{
         const fresh = await fetchJ(API+'/search-brief');
         if(fresh.generated_at && fresh.generated_at !== _lastBriefDate){
-          // 数据已更新
           clearInterval(_newsPolling);
           _newsPolling = null;
-          btn.disabled = false; btn.textContent = '⟳ 立即刷新';
+          btn.disabled = false; btn.textContent = '搜索';
+          currentWebSearchBrief = fresh;
+          const snapshot = captureWebSearchSnapshot(fresh, historyMeta.query || '');
+          upsertWebSearchHistoryItem({
+            query: historyMeta.query || snapshot.query || '全网重点动态',
+            taskId: historyMeta.taskId || '',
+            at: historyMeta.at || fmtLocalTime(new Date().toISOString()),
+            snapshot,
+            resultTotal: snapshot.total,
+            categoryCount: snapshot.categoryCount,
+          });
           await loadWebSearchBrief();
-          toast('✅ 搜索摘要已更新', 'ok');
+          renderWebSearchHistory();
+          toast('✅ 搜索结果已更新并沉淀到历史记录', 'ok');
         } else {
-          btn.textContent = `⟳ 刷新中… (${pollCount * 5}s)`;
+          btn.textContent = `搜索中… (${pollCount * 5}s)`;
         }
       }catch(e){}
     }, 5000);
   }catch(e){
-    toast('触发失败', 'err');
-    btn.disabled = false; btn.textContent = '⟳ 立即刷新';
+    toast('搜索失败', 'err');
+    btn.disabled = false; btn.textContent = '搜索';
   }
 }
 
@@ -3383,19 +4218,22 @@ async function copyGlobalScanReport(){
 }
 
 /* ══ TABS ══ */
-document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+function activatePanel(tabName){
+  const nextTab = String(tabName || 'tasks');
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===nextTab));
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');activeTab=t.dataset.tab;
-  document.getElementById('panel-'+activeTab).classList.add('active');
-  if(['models','skills'].includes(activeTab))loadAgentConfig();
-  if(activeTab==='agents')loadAgentsOverview();
-  if(activeTab==='monitor')loadAgentsStatus();
-  if(activeTab==='web_search')loadWebSearchBrief();
-  if(activeTab==='sessions')renderSessions(liveStatus?liveStatus.tasks:[]);
-  if(activeTab==='archives')renderArchives();
-  if(activeTab==='templates')renderTemplates();
-}));
+  const panel = document.getElementById('panel-'+nextTab);
+  if(panel) panel.classList.add('active');
+  activeTab = nextTab;
+  if(['models','skills'].includes(activeTab)) loadAgentConfig();
+  if(activeTab==='agents') loadAgentsOverview();
+  if(activeTab==='monitor') loadAgentsStatus();
+  if(activeTab==='web_search') loadWebSearchBrief();
+  if(activeTab==='sessions') renderSessions(liveStatus?liveStatus.tasks:[]);
+  if(activeTab==='archives') renderArchives();
+  if(activeTab==='templates') renderTemplates();
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>activatePanel(t.dataset.tab)));
 
 /* ══ COUNTDOWN (5s) ══ */
 function startCd(){
@@ -3497,33 +4335,21 @@ function openMemorial(jsonStr){
     const depts = [...new Set(fl.map(f=>f.from).concat(fl.map(f=>f.to)).filter(x=>x && x!=='任务发起人' && x!=='任务入口' && x!=='总控中心')).map(d=>normalizeDeptLabel(d))];
 
 
-  // 基于 flow_log 重建现代流程分段，并兼容旧节点名称
-  let originLog=[], planLog=[], reviewLog=[], execLog=[], resultLog=[];
-  for(const f of fl){
-    if(['任务发起人','任务入口','总控中心'].includes(f.from)) originLog.push(f);
-    else if(['规划中心'].includes(f.to)||['规划中心'].includes(f.from)) planLog.push(f);
-    else if(['评审中心'].includes(f.to)||['评审中心'].includes(f.from)) reviewLog.push(f);
-    else if(f.remark&&(f.remark.includes('完成')||f.remark.includes('归档')||f.remark.includes('交付')||f.remark.includes('结果归档'))) resultLog.push(f);
-    else execLog.push(f);
-  }
-
-  const renderPhase = (title, icon, items)=>{
-    if(!items.length) return '';
-    return `<div style="margin-bottom:18px">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px">${icon} ${title}</div>
-      <div class="md-timeline">${items.map(f=>{
-        const dotCls = f.remark&&f.remark.includes('✅')?'green':f.remark&&(f.remark.includes('驳')||f.remark.includes('退回'))?'red':'';
-        return `<div class="md-tl-item">
-          <div class="md-tl-dot ${dotCls}"></div>
-          <div style="display:flex;gap:6px;align-items:baseline">
-            <span class="md-tl-from">${esc(f.from||'')}</span>
-            <span class="md-tl-to">→ ${esc(f.to||'')}</span>
-          </div>
-          <div class="md-tl-remark">${esc(f.remark||'')}</div>
-          <div class="md-tl-time">${esc((f.at||'').substring(0,19).replace('T',' '))}</div>
-        </div>`;
-      }).join('')}</div>
-    </div>`;
+  const stages = getPipeStatus(t);
+  const renderMemorialTimeline = (items)=>{
+    if(!items.length) return '<div style="font-size:12px;color:var(--muted);padding:6px 0">暂无流转记录</div>';
+    return `<div class="md-timeline">${items.map(f=>{
+      const dotCls = f.remark&&f.remark.includes('✅')?'green':f.remark&&(f.remark.includes('驳')||f.remark.includes('退回')||f.remark.includes('回滚'))?'red':'';
+      return `<div class="md-tl-item">
+        <div class="md-tl-dot ${dotCls}"></div>
+        <div style="display:flex;gap:6px;align-items:baseline;flex-wrap:wrap">
+          <span class="md-tl-from">${esc(normalizeDeptLabel(f.from||'') || f.from || '')}</span>
+          <span class="md-tl-to">→ ${esc(normalizeDeptLabel(f.to||'') || f.to || '')}</span>
+        </div>
+        <div class="md-tl-remark">${esc(f.remark||'')}</div>
+        <div class="md-tl-time">${esc((f.at||'').substring(0,19).replace('T',' '))}</div>
+      </div>`;
+    }).join('')}</div>`;
   };
 
   document.getElementById('modal-body').innerHTML=`
@@ -3538,12 +4364,25 @@ function openMemorial(jsonStr){
 
     ${t.now?`<div style="background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:var(--muted)">${esc(t.now)}</div>`:''}
 
-    ${renderPhase('任务提交与受理','👤',originLog)}
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">流程按该任务的实际流转动态生成；即使归档后回看，也会保留回退、插步、升级和重试痕迹。</div>
+    <div class="m-pipe" style="margin-bottom:18px">
+      ${stages.map((s,i) => `
+        <div class="mp-stage">
+          <div class="mp-node ${s.status}" title="${esc(s.dept)} · ${esc(s.action)}${s.remark ? ` · ${esc(s.remark)}` : ''}">
+            ${s.status==='done' ? '<div class="mp-done-tick">✓</div>' : ''}
+            <div class="mp-icon">${s.icon}</div>
+            <div class="mp-dept" style="${s.status==='active'?'color:var(--acc)':s.status==='done'?'color:var(--ok)':''}">${s.dept}</div>
+            <div class="mp-action">${s.action}</div>
+          </div>
+          ${i < stages.length-1 ? `<div class="mp-arrow" style="${s.status==='done'?'color:var(--ok);opacity:.6':''}">→</div>` : ''}
+        </div>
+      `).join('')}
+    </div>
 
-    ${renderPhase('规划中心', '📋', planLog)}
-    ${renderPhase('评审中心', '🔍', reviewLog)}
-    ${renderPhase('专业执行阶段', '⚙️', execLog)}
-    ${renderPhase('结果归档', '📨', resultLog)}
+    <div style="margin-bottom:18px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">🕓 流转时间线</div>
+      ${renderMemorialTimeline(fl)}
+    </div>
 
     ${t.output&&t.output!=='-'?`<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
       <div style="font-size:11px;font-weight:600;margin-bottom:4px">📦 产出物</div>
@@ -3883,13 +4722,18 @@ function openFeedback(){
 /* ══ INIT ══ */
 restoreGlobalScanState();
 restoreDispatchCenterDraft();
+restoreTaskPublishDraft();
+restoreSkillManagerDraft();
 document.addEventListener('input', e=>{
   if(['dispatch-talk-input','dispatch-talk-task'].includes(e.target.id)) persistDispatchCenterDraft();
+  if(e.target.id==='task-publish-input') persistTaskPublishDraft();
+  if(e.target.id==='skill-admin-input') persistSkillManagerDraft();
 });
 document.addEventListener('change', e=>{
   if(e.target.id==='dispatch-talk-type') persistDispatchCenterDraft();
+  if(e.target.id==='task-publish-priority') persistTaskPublishDraft();
 });
-loadAll().then(()=>showStartupTransition());
+loadAll().then(()=>{ renderTaskPublishHistory(); renderSkillManagerHistory(); loadSkillManagerActivity(); showStartupTransition(); });
 startCd();
 </script>
 </body>

@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { PIPE, useStore, getPipeStatus, stateLabel, deptColor, isArchived, isEdict, getSchedulerSummary, DEPTS } from '../store';
+import { useStore, getPipeStatus, stateLabel, deptColor, isArchived, isEdict, getSchedulerSummary, DEPTS } from '../store';
 import { api, type Task, type CollabAgentBusyEntry, type CreateTaskPayload } from '../api';
 import { pickLocaleText } from '../i18n';
 
@@ -331,7 +331,7 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
   const stCls = 'st-' + (task.state || '');
   const deptCls = 'dt-' + (task.org || '').replace(/\s/g, '');
   const pipeStatus = getPipeStatus(task, locale);
-  const curStage = PIPE.find((_, i) => pipeStatus[i].status === 'active');
+  const curStage = pipeStatus.find((stage) => stage.status === 'active') || pipeStatus[pipeStatus.length - 1] || null;
   const todos = task.todos || [];
   const todoDone = todos.filter((x) => x.status === 'completed').length;
   const todoTotal = todos.length;

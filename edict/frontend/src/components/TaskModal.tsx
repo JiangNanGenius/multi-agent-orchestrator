@@ -22,8 +22,8 @@ const AGENT_LABELS: Record<string, string> = {
   deploy_specialist: '部署专家',
   data_specialist: '数据专家',
   docs_specialist: '文案专家',
-  audit_specialist: '审计专家',
-  admin_specialist: '管理专家',
+  audit_specialist: '合规专家',
+  admin_specialist: '技能管理员',
   search_specialist: '搜索专家',
 };
 
@@ -320,7 +320,7 @@ export default function TaskModal() {
               <div className="cs-icon">{activeStage.icon}</div>
               <div className="cs-info">
                 <div className="cs-dept" style={{ color: deptColor(activeStage.dept) }}>{activeStage.dept}</div>
-                <div className="cs-action">当前阶段：{activeStage.action}</div>
+                <div className="cs-action">当前环节：{activeStage.action}</div>
               </div>
               <span className={`hb ${hb.status} cs-hb`}>{hb.label}</span>
             </div>
@@ -343,6 +343,9 @@ export default function TaskModal() {
                 )}
               </div>
             ))}
+          </div>
+          <div style={{ marginTop: 10, fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>
+            当前流程会根据这条任务的实际流转动态生成；如遇回退、补充步骤、改派、重试或升级，链路会随之更新。
           </div>
 
           {/* Action Buttons */}
@@ -632,7 +635,7 @@ function LiveActivitySection({
 
   const agentParts: string[] = [];
   if (data.agentLabel) agentParts.push(normalizeDeptLabel(data.agentLabel));
-  if (data.relatedAgents && data.relatedAgents.length > 1) agentParts.push(`${data.relatedAgents.length}个 Agent`);
+  if (data.relatedAgents && data.relatedAgents.length > 1) agentParts.push(`${data.relatedAgents.length}个执行节点`);
   if (data.lastActive) agentParts.push(`最后活跃: ${data.lastActive}`);
 
   // Phase durations
@@ -641,7 +644,7 @@ function LiveActivitySection({
   const phaseColors: Record<string, string> = {
     '任务入口': '#eab308', '总控中心': '#f97316', '规划中心': '#3b82f6', '评审中心': '#8b5cf6',
     '调度中心': '#10b981', '执行团队': '#06b6d4', '文案专家': '#ec4899', '数据专家': '#f59e0b',
-    '代码专家': '#ef4444', '合规专家': '#6366f1', '部署专家': '#14b8a6', 'Agent管理专家': '#d946ef',
+    '代码专家': '#ef4444', '合规专家': '#6366f1', '部署专家': '#14b8a6', '技能管理员': '#d946ef',
   };
 
   // Todos summary
@@ -765,7 +768,7 @@ function LiveActivitySection({
         ) : (
           !flowItems.length && (
             <div className="la-empty">
-              {data.message || data.error || 'Agent 尚未上报进展（等待 Agent 调用 progress 命令）'}
+              {data.message || data.error || '当前还没有进度回流，请稍后刷新查看。'}
             </div>
           )
         )}

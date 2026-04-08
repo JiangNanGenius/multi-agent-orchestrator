@@ -73,6 +73,7 @@ ORG_AGENT_MAP = {
     "审计专家": "audit_specialist",
     "部署专家": "deploy_specialist",
     "管理专家": "admin_specialist",
+    "技能管理员": "admin_specialist",
     "搜索专家": "search_specialist",
 }
 

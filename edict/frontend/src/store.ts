@@ -109,10 +109,10 @@ export const AGENT_ARCHITECTURE = {
     color: '#44aaff',
   },
   audit_specialist: {
-    label: '审计专家',
-    labelEn: 'Audit Specialist',
-    role: '审计审核执行',
-    roleEn: 'Audit Review Execution',
+    label: '合规专家',
+    labelEn: 'Compliance Specialist',
+    role: '合规审查执行',
+    roleEn: 'Compliance Review Execution',
     rank: '执行角色',
     rankEn: 'Execution Role',
     emoji: '⚖️',
@@ -129,13 +129,13 @@ export const AGENT_ARCHITECTURE = {
     color: '#ff5270',
   },
   admin_specialist: {
-    label: '管理专家',
-    labelEn: 'Admin Specialist',
-    role: '系统管理执行',
-    roleEn: 'System Administration Execution',
+    label: '技能管理员',
+    labelEn: 'Skill Manager',
+    role: '技能管理执行',
+    roleEn: 'Skill Management Execution',
     rank: '执行角色',
     rankEn: 'Execution Role',
-    emoji: '👔',
+    emoji: '🗂️',
     color: '#9b59b6',
   },
   search_specialist: {
@@ -236,7 +236,8 @@ export function normalizeFlowRemark(text: string): string {
     .replace(/Result report/g, 'Result archive')
     .replace(/专业执行组/g, '执行团队')
     .replace(/Execution Team/g, 'Execution Team')
-    .replace(/Agent管理专家/g, '管理专家')
+    .replace(/Agent管理专家/g, '技能管理员')
+    .replace(/管理专家/g, '技能管理员')
     .replace(/全网搜索简报/g, '全网搜索简报');
 }
 
@@ -318,14 +319,141 @@ export function isArchived(t: Task): boolean {
 
 export type PipeStatus = { key: string; dept: string; icon: string; action: string; status: 'done' | 'active' | 'pending' };
 
-export function getPipeStatus(t: Task, locale: Locale = 'zh'): PipeStatus[] {
+const STATE_TO_FLOW_NODE: Record<string, string> = {
+  Inbox: '任务入口',
+  Pending: '任务入口',
+  ControlCenter: '总控中心',
+  PlanCenter: '规划中心',
+  ReviewCenter: '评审中心',
+  Assigned: '调度中心',
+  Doing: '执行团队',
+  Review: '调度中心',
+  Done: '结果归档',
+  Blocked: '执行团队',
+  Cancelled: '执行团队',
+  Next: '调度中心',
+};
+
+function resolveFlowNode(input: string): string {
+  if (!input) return '';
+  const trimmed = String(input).trim();
+  if (!trimmed) return '';
+  const byState = STATE_TO_FLOW_NODE[trimmed];
+  if (byState) return byState;
+  const normalizedId = normalizeAgentId(trimmed);
+  if (normalizedId !== trimmed && AGENT_ARCHITECTURE[normalizedId as AgentArchitectureId]) {
+    return normalizedId;
+  }
+  const normalizedLabel = normalizeDeptLabel(trimmed);
+  if (normalizedLabel && normalizedLabel !== trimmed) return normalizedLabel;
+  return trimmed;
+}
+
+function flowActionLabel(node: string, locale: Locale = 'zh'): string {
+  const key = resolveFlowNode(node);
+  const zh = {
+    '任务入口': '提交',
+    '总控中心': '协调',
+    '规划中心': '规划',
+    '评审中心': '核验',
+    '调度中心': '分派',
+    '执行团队': '执行',
+    '结果归档': '归档',
+    docs_specialist: '编写',
+    data_specialist: '分析',
+    code_specialist: '实现',
+    audit_specialist: '审查',
+    deploy_specialist: '部署',
+    admin_specialist: '管理',
+    search_specialist: '检索',
+  } as const;
+  const en = {
+    '任务入口': 'Submit',
+    '总控中心': 'Coordinate',
+    '规划中心': 'Plan',
+    '评审中心': 'Review',
+    '调度中心': 'Dispatch',
+    '执行团队': 'Execute',
+    '结果归档': 'Archive',
+    docs_specialist: 'Write',
+    data_specialist: 'Analyze',
+    code_specialist: 'Build',
+    audit_specialist: 'Audit',
+    deploy_specialist: 'Deploy',
+    admin_specialist: 'Manage',
+    search_specialist: 'Search',
+  } as const;
+  const dict = locale === 'en' ? en : zh;
+  return dict[key as keyof typeof dict] || (locale === 'en' ? 'Handle' : '处理');
+}
+
+function flowStageMeta(node: string, locale: Locale = 'zh'): Omit<PipeStatus, 'status'> {
+  const resolved = resolveFlowNode(node);
+  const pipeStage = PIPE.find((stage) => stage.key === resolved || stage.dept === resolved || stage.deptEn === resolved);
+  if (pipeStage) {
+    return {
+      key: pipeStage.key,
+      icon: pipeStage.icon,
+      dept: locale === 'en' ? pipeStage.deptEn : pipeStage.dept,
+      action: locale === 'en' ? pipeStage.actionEn : pipeStage.action,
+    };
+  }
+  const meta = deptMeta(resolved, locale);
+  return {
+    key: normalizeAgentId(resolved) || resolved,
+    icon: meta.emoji || '🧩',
+    dept: meta.label || resolved,
+    action: flowActionLabel(resolved, locale),
+  };
+}
+
+function buildStaticPipeStatus(t: Task, locale: Locale = 'zh'): PipeStatus[] {
   const stateIdx = PIPE_STATE_IDX[t.state] ?? 4;
   return PIPE.map((stage, i) => ({
-    key: stage.key,
+    key: `${stage.key}-${i}`,
     icon: stage.icon,
     dept: locale === 'en' ? stage.deptEn : stage.dept,
     action: locale === 'en' ? stage.actionEn : stage.action,
     status: (i < stateIdx ? 'done' : i === stateIdx ? 'active' : 'pending') as 'done' | 'active' | 'pending',
+  }));
+}
+
+export function getPipeStatus(t: Task, locale: Locale = 'zh'): PipeStatus[] {
+  const sequence: string[] = [];
+  const pushNode = (node: string) => {
+    const resolved = resolveFlowNode(node);
+    if (!resolved) return;
+    if (sequence[sequence.length - 1] === resolved) return;
+    sequence.push(resolved);
+  };
+
+  pushNode('任务入口');
+  (t.flow_log || []).forEach((entry) => {
+    pushNode(entry.from || '');
+    pushNode(entry.to || '');
+  });
+  pushNode(t.org || '');
+  if (t.state === 'Done') pushNode('结果归档');
+
+  const dynamicStages = sequence.map((node, index) => ({
+    ...flowStageMeta(node, locale),
+    key: `${flowStageMeta(node, locale).key}-${index}`,
+  }));
+
+  if (dynamicStages.length < 2) {
+    return buildStaticPipeStatus(t, locale);
+  }
+
+  const activeNode = t.state === 'Done'
+    ? '结果归档'
+    : resolveFlowNode(t.org || STATE_TO_FLOW_NODE[t.state] || sequence[sequence.length - 1] || '');
+  const activeDept = activeNode ? flowStageMeta(activeNode, locale).dept : '';
+  let activeIdx = dynamicStages.map((stage) => stage.dept).lastIndexOf(activeDept);
+  if (activeIdx < 0) activeIdx = dynamicStages.length - 1;
+
+  return dynamicStages.map((stage, index) => ({
+    ...stage,
+    status: (index < activeIdx ? 'done' : index === activeIdx ? 'active' : 'pending') as 'done' | 'active' | 'pending',
   }));
 }
 
@@ -493,7 +621,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'tpl-code-review', cat: '工程开发', icon: '🔍', name: '代码审查',
     desc: '对指定代码仓库/文件进行质量审查，输出问题清单和改进建议',
-    depts: ['代码专家', '审计专家'], est: '~20分钟', cost: '¥2',
+    depts: ['代码专家', '合规专家'], est: '~20分钟', cost: '¥2',
     params: [
       { key: 'repo', label: '仓库/文件路径', type: 'text', required: true },
       { key: 'scope', label: '审查范围', type: 'select', options: ['全量', '增量(最近commit)', '指定文件'], default: '增量(最近commit)' },
