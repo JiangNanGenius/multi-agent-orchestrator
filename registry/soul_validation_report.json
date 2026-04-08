@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-08 04:01:45",
+  "generatedAt": "2026-04-08 17:15:17",
   "requiredSections": [
     "角色定义",
     "核心职责",
@@ -76,6 +76,13 @@
     {
       "agentId": "admin_specialist",
       "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/admin_specialist/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "expert_curator",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/expert_curator/SOUL.md",
       "hasRequiredSections": true,
       "missingSections": [],
       "deployStrategy": "source"

@@ -136,9 +136,11 @@ open http://127.0.0.1:7891
 
 > 在任务看板或任务详情中，点击 **⏸ 叫停** 或 **🚫 取消** 按钮
 
-### 订阅情报简报
+### 使用 AI 搜索引擎
 
-> 看板 → 情报简报 → ⚙️ 订阅管理 → 选择分类 / 添加源 / 配飞书推送
+> 看板 → AI 搜索引擎 → 输入问题 → 选择自动分配或手动多选搜索专家 → 按需展开高级搜索设置
+
+AI 搜索入口现在默认以**低优先级搜索任务**进入系统，适合持续检索、线索汇总与主题跟踪；页面会直接展示搜索专家当前是否忙碌，便于判断是否立即发起搜索任务。
 
 ---
 
@@ -245,6 +247,7 @@ openclaw gateway restart
 - [📖 README](../README.md)
 - [🤝 贡献指南](../CONTRIBUTING.md)
 - [💬 OpenClaw 文档](https://docs.openclaw.ai)
-- [📮 公众号 · cft0808](wechat.md) — 架构拆解 / 踩坑复盘 / Token 省钱术
+- [📝 项目实践与更新记录](wechat.md) — 架构拆解 / 踩坑复盘 / Token 优化 / 公开更新说明
+- [🏗️ 当前架构总览](current_architecture_overview.md) — 任务治理链路、面板职责与系统分层说明
 
 > 说明：当前安装流程会读取 `~/.openclaw/openclaw.json` 识别已有运行时环境，但不会直接改写该文件；如需补齐运行时 Agent 注册，请查看 `data/openclaw_registry_suggestions.json`。新增专家角色的同步已优先基于仓库 `agents/` 目录与 Registry 产物自动发现，不再要求先手工维护固定角色清单。长任务的上下文压缩归档与续写衔接状态会写入任务元数据，并同步显示在运行看板与任务详情中。部署前如需让 AI 做结构化审计，请参考 `docs/ai_deployment_checklist_and_prompts_20260408.md`。

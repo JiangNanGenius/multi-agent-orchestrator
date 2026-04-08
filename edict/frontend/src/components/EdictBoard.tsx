@@ -1,7 +1,7 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { type FormEvent, useMemo, useState } from 'react';
 import { useStore, getPipeStatus, stateLabel, deptColor, isArchived, isEdict, getSchedulerSummary, DEPTS } from '../store';
 import { api, type Task, type CollabAgentBusyEntry, type CreateTaskPayload } from '../api';
-import { pickLocaleText } from '../i18n';
+import { pickLocaleText, type Locale } from '../i18n';
 
 // 排序权重
 const STATE_ORDER: Record<string, number> = {
@@ -11,19 +11,114 @@ const STATE_ORDER: Record<string, number> = {
 
 type QuickCreateForm = {
   title: string;
-  org: string;
   owner: string;
-  targetDept: string;
+  autoAssign: boolean;
+  targetDepts: string[];
   priority: 'low' | 'normal' | 'high';
 };
 
+const EXECUTION_TARGET_IDS = new Set([
+  'docs_specialist',
+  'data_specialist',
+  'code_specialist',
+  'audit_specialist',
+  'deploy_specialist',
+  'admin_specialist',
+  'expert_curator',
+  'search_specialist',
+]);
+
 const DEFAULT_FORM: QuickCreateForm = {
   title: '',
-  org: '总控中心',
   owner: '面板值守',
-  targetDept: '',
+  autoAssign: true,
+  targetDepts: [],
   priority: 'normal',
 };
+
+function buildTaskPayload(locale: Locale, form: QuickCreateForm): CreateTaskPayload {
+  const normalizedTargets = Array.from(new Set(form.targetDepts.map((item) => item.trim()).filter(Boolean)));
+  return {
+    title: form.title.trim(),
+    org: pickLocaleText(locale, '调度中心', 'Dispatch Center'),
+    owner: form.owner.trim() || (locale === 'en' ? 'Dashboard Operator' : '面板值守'),
+    priority: form.priority,
+    ...(form.autoAssign || !normalizedTargets.length
+      ? {}
+      : {
+          targetDept: normalizedTargets[0],
+          targetDepts: normalizedTargets,
+        }),
+  };
+}
+
+function TargetExpertSelector({
+  locale,
+  form,
+  targetOptions,
+  onModeChange,
+  onToggleTarget,
+}: {
+  locale: Locale;
+  form: QuickCreateForm;
+  targetOptions: Array<{ id: string; label: string; emoji: string }>;
+  onModeChange: (autoAssign: boolean) => void;
+  onToggleTarget: (deptId: string) => void;
+}) {
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '目标专家（可选）', 'Target Specialists (Optional)')}</span>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          className={`chip ${form.autoAssign ? 'ok' : ''}`}
+          onClick={() => onModeChange(true)}
+          style={{ cursor: 'pointer' }}
+        >
+          {pickLocaleText(locale, '自动分配', 'Auto assign')}
+        </button>
+        <button
+          type="button"
+          className={`chip ${!form.autoAssign ? 'ok' : ''}`}
+          onClick={() => onModeChange(false)}
+          style={{ cursor: 'pointer' }}
+        >
+          {pickLocaleText(locale, '指定专家', 'Specify specialists')}
+        </button>
+      </div>
+      {!form.autoAssign ? (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {targetOptions.map((dept) => {
+            const active = form.targetDepts.includes(dept.id);
+            return (
+              <button
+                key={dept.id}
+                type="button"
+                className="chip"
+                onClick={() => onToggleTarget(dept.id)}
+                style={{
+                  cursor: 'pointer',
+                  borderColor: active ? 'var(--acc)' : 'var(--line)',
+                  color: active ? 'var(--acc)' : 'var(--text)',
+                  background: active ? 'rgba(122,162,255,0.14)' : 'transparent',
+                }}
+              >
+                {dept.emoji} {dept.label} {active ? '✓' : ''}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+      <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>
+        {form.autoAssign
+          ? pickLocaleText(locale, '当前为自动分配模式，调度中心会根据任务内容自行路由。', 'Auto-assign mode is active. The dispatch center will route the task based on its content.')
+          : form.targetDepts.length
+            ? pickLocaleText(locale, `已指定 ${form.targetDepts.length} 位目标专家：${form.targetDepts.map((id) => targetOptions.find((item) => item.id === id)?.label || id).join('、')}`, `Selected ${form.targetDepts.length} specialist(s): ${form.targetDepts.map((id) => targetOptions.find((item) => item.id === id)?.label || id).join(', ')}`)
+            : pickLocaleText(locale, '请至少勾选一位具体专家，或切回自动分配。', 'Select at least one specialist, or switch back to auto assign.')}
+      </div>
+    </div>
+  );
+}
 
 function MiniPipe({ task }: { task: Task }) {
   const locale = useStore((s) => s.locale);
@@ -67,12 +162,32 @@ function QuickCreateTaskModal({
   const [submitting, setSubmitting] = useState(false);
 
   const targetOptions = useMemo(
-    () => DEPTS.filter((dept) => dept.id !== 'control_center'),
+    () => DEPTS.filter((dept) => EXECUTION_TARGET_IDS.has(dept.id)),
     [],
   );
 
   const updateField = <K extends keyof QuickCreateForm>(key: K, value: QuickCreateForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleModeChange = (autoAssign: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      autoAssign,
+      targetDepts: autoAssign ? [] : prev.targetDepts,
+    }));
+  };
+
+  const toggleTargetDept = (deptId: string) => {
+    setForm((prev) => {
+      const exists = prev.targetDepts.includes(deptId);
+      const next = exists ? prev.targetDepts.filter((item) => item !== deptId) : [...prev.targetDepts, deptId];
+      return {
+        ...prev,
+        autoAssign: false,
+        targetDepts: next,
+      };
+    });
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -82,14 +197,12 @@ function QuickCreateTaskModal({
       toast(pickLocaleText(locale, '请先填写任务标题', 'Please enter a task title'), 'err');
       return;
     }
+    if (!form.autoAssign && !form.targetDepts.length) {
+      toast(pickLocaleText(locale, '请至少选择一位目标专家，或切回自动分配', 'Select at least one specialist, or switch back to auto assign'), 'err');
+      return;
+    }
 
-    const payload: CreateTaskPayload = {
-      title,
-      org: form.org,
-      owner: form.owner.trim() || (locale === 'en' ? 'Dashboard Operator' : '面板值守'),
-      priority: form.priority,
-      ...(form.targetDept ? { targetDept: form.targetDept } : {}),
-    };
+    const payload: CreateTaskPayload = buildTaskPayload(locale, form);
 
     setSubmitting(true);
     try {
@@ -116,13 +229,13 @@ function QuickCreateTaskModal({
     <div className="modal-bg open" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 760 }} onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>✕</button>
-        <div className="modal-id">{pickLocaleText(locale, '快速建任务', 'Quick Create Task')}</div>
-        <div className="modal-title">{pickLocaleText(locale, '在面板内直接发布任务', 'Create and dispatch a task from the board')}</div>
+        <div className="modal-id">{pickLocaleText(locale, '发布任务', 'Publish Task')}</div>
+        <div className="modal-title">{pickLocaleText(locale, '将任务提交给调度中心', 'Submit a task to the Dispatch Center')}</div>
         <div style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>
           {pickLocaleText(
             locale,
-            '适合临时加派、人工补录和控制台直接下发。提交后任务会进入现有调度链路，并同步全局忙碌状态。',
-            'Use this for urgent assignment, manual intake, or direct operations dispatch. The task will enter the existing execution pipeline and update the global busy state after submission.',
+            '这里的任务入口已按治理逻辑固定收口到调度中心。你只需填写任务内容与优先级，调度中心会继续按既定规则分派到后续执行角色。',
+            'This entry point is now fixed to the Dispatch Center by governance rules. Fill in the request and priority, and the Dispatch Center will continue routing it according to the existing workflow.',
           )}
         </div>
 
@@ -138,17 +251,12 @@ function QuickCreateTaskModal({
           </label>
 
           <label className="auth-label">
-            <span>{pickLocaleText(locale, '进入节点', 'Entry Node')}</span>
-            <select
-              value={form.org}
-              onChange={(e) => updateField('org', e.target.value)}
-              style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}
-            >
-              <option value="总控中心">{pickLocaleText(locale, '总控中心', 'Control Center')}</option>
-              <option value="规划中心">{pickLocaleText(locale, '规划中心', 'Plan Center')}</option>
-              <option value="评审中心">{pickLocaleText(locale, '评审中心', 'Review Center')}</option>
-              <option value="调度中心">{pickLocaleText(locale, '调度中心', 'Dispatch Center')}</option>
-            </select>
+            <span>{pickLocaleText(locale, '目标中心', 'Target Center')}</span>
+            <input
+              value={pickLocaleText(locale, '调度中心', 'Dispatch Center')}
+              readOnly
+              style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'rgba(106,239,154,0.08)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}
+            />
           </label>
 
           <label className="auth-label">
@@ -173,19 +281,15 @@ function QuickCreateTaskModal({
             />
           </label>
 
-          <label className="auth-label">
-            <span>{pickLocaleText(locale, '目标执行角色（可选）', 'Target Execution Role (Optional)')}</span>
-            <select
-              value={form.targetDept}
-              onChange={(e) => updateField('targetDept', e.target.value)}
-              style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}
-            >
-              <option value="">{pickLocaleText(locale, '自动分配', 'Auto assign')}</option>
-              {targetOptions.map((dept) => (
-                <option key={dept.id} value={dept.label}>{dept.emoji} {dept.label}</option>
-              ))}
-            </select>
-          </label>
+          <div className="auth-label auth-full">
+            <TargetExpertSelector
+              locale={locale}
+              form={form}
+              targetOptions={targetOptions}
+              onModeChange={handleModeChange}
+              onToggleTarget={toggleTargetDept}
+            />
+          </div>
 
           <div className="auth-full" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
             <button type="button" className="btn-refresh" onClick={onClose} disabled={submitting}>
@@ -208,12 +312,32 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
   const [submitting, setSubmitting] = useState(false);
 
   const targetOptions = useMemo(
-    () => DEPTS.filter((dept) => dept.id !== 'control_center'),
+    () => DEPTS.filter((dept) => EXECUTION_TARGET_IDS.has(dept.id)),
     [],
   );
 
   const updateField = <K extends keyof QuickCreateForm>(key: K, value: QuickCreateForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleModeChange = (autoAssign: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      autoAssign,
+      targetDepts: autoAssign ? [] : prev.targetDepts,
+    }));
+  };
+
+  const toggleTargetDept = (deptId: string) => {
+    setForm((prev) => {
+      const exists = prev.targetDepts.includes(deptId);
+      const next = exists ? prev.targetDepts.filter((item) => item !== deptId) : [...prev.targetDepts, deptId];
+      return {
+        ...prev,
+        autoAssign: false,
+        targetDepts: next,
+      };
+    });
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -223,14 +347,12 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
       toast(pickLocaleText(locale, '请先填写任务标题', 'Please enter a task title'), 'err');
       return;
     }
+    if (!form.autoAssign && !form.targetDepts.length) {
+      toast(pickLocaleText(locale, '请至少选择一位目标专家，或切回自动分配', 'Select at least one specialist, or switch back to auto assign'), 'err');
+      return;
+    }
 
-    const payload: CreateTaskPayload = {
-      title,
-      org: form.org,
-      owner: form.owner.trim() || (locale === 'en' ? 'Dashboard Operator' : '面板值守'),
-      priority: form.priority,
-      ...(form.targetDept ? { targetDept: form.targetDept } : {}),
-    };
+    const payload: CreateTaskPayload = buildTaskPayload(locale, form);
 
     setSubmitting(true);
     try {
@@ -265,10 +387,10 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>
-            {pickLocaleText(locale, '直接发布任务', 'Publish Task Directly')}
+            {pickLocaleText(locale, '发布任务', 'Publish Task')}
           </div>
           <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-            {pickLocaleText(locale, '在任务看板顶部直接输入并下发任务，无需先打开弹窗。发布后会立即进入现有调度链路，并同步专家忙碌状态。', 'Create and dispatch tasks directly from the top of the board without opening a modal. Submitted tasks enter the current workflow immediately and update global agent occupancy.')}
+            {pickLocaleText(locale, '在任务看板顶部直接录入并提交任务。该入口已固定发往调度中心，由其继续按既定规则分派到后续执行角色。', 'Create and submit tasks directly from the top of the board. This entry is fixed to the Dispatch Center, which will continue routing work according to the established rules.')}
           </div>
         </div>
       </div>
@@ -284,13 +406,8 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
           />
         </label>
         <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '进入节点', 'Entry Node')}</span>
-          <select value={form.org} onChange={(e) => updateField('org', e.target.value)} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}>
-            <option value="总控中心">{pickLocaleText(locale, '总控中心', 'Control Center')}</option>
-            <option value="规划中心">{pickLocaleText(locale, '规划中心', 'Plan Center')}</option>
-            <option value="评审中心">{pickLocaleText(locale, '评审中心', 'Review Center')}</option>
-            <option value="调度中心">{pickLocaleText(locale, '调度中心', 'Dispatch Center')}</option>
-          </select>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '目标中心', 'Target Center')}</span>
+          <input value={pickLocaleText(locale, '调度中心', 'Dispatch Center')} readOnly style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'rgba(106,239,154,0.08)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }} />
         </label>
         <label style={{ display: 'grid', gap: 6 }}>
           <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '优先级', 'Priority')}</span>
@@ -304,15 +421,15 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
           <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '发布人', 'Requester')}</span>
           <input value={form.owner} onChange={(e) => updateField('owner', e.target.value)} placeholder={pickLocaleText(locale, '例如：产品运营值守', 'Example: Product Operations Desk')} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }} />
         </label>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '目标执行角色', 'Target Role')}</span>
-          <select value={form.targetDept} onChange={(e) => updateField('targetDept', e.target.value)} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}>
-            <option value="">{pickLocaleText(locale, '自动分配', 'Auto assign')}</option>
-            {targetOptions.map((dept) => (
-              <option key={dept.id} value={dept.label}>{dept.emoji} {dept.label}</option>
-            ))}
-          </select>
-        </label>
+        <div style={{ display: 'grid', gap: 6, minWidth: 280 }}>
+          <TargetExpertSelector
+            locale={locale}
+            form={form}
+            targetOptions={targetOptions}
+            onModeChange={handleModeChange}
+            onToggleTarget={toggleTargetDept}
+          />
+        </div>
         <button type="submit" className="auth-primary" disabled={submitting} style={{ width: 'auto', minWidth: 140, height: 44 }}>
           {submitting ? pickLocaleText(locale, '发布中…', 'Creating...') : pickLocaleText(locale, '发布任务', 'Create Task')}
         </button>

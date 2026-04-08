@@ -31,6 +31,7 @@ DEFAULT_AGENT_META = {
     'audit_specialist':  {'label': '审计专家', 'role': '审计专家', 'duty': '审核、审计追踪与风险控制', 'emoji': '⚖️'},
     'deploy_specialist': {'label': '部署专家', 'role': '部署专家', 'duty': '基础设施、部署运维与环境处理', 'emoji': '🔧'},
     'admin_specialist':  {'label': '管理专家', 'role': '管理专家', 'duty': 'Agent 注册、培训、管理与配置维护', 'emoji': '👔'},
+    'expert_curator':    {'label': '专家编组官', 'role': '专家编组官', 'duty': '专家新增、非预置专家删除与专家名册治理', 'emoji': '🧩'},
     'search_specialist': {'label': '搜索专家', 'role': '搜索专家', 'duty': '全网检索、资料汇总、线索筛选与搜索结果整理', 'emoji': '📰'},
 }
 
@@ -45,6 +46,7 @@ MODERN_AGENT_ID_ORDER = [
     'audit_specialist',
     'deploy_specialist',
     'admin_specialist',
+    'expert_curator',
     'search_specialist',
 ]
 MODERN_AGENT_ID_SET = set(MODERN_AGENT_ID_ORDER)
@@ -82,7 +84,7 @@ KNOWN_MODELS = [
 PRODUCT_NAME = '多Agent智作中枢'
 CONTROL_CENTER_IDS = {'control_center'}
 DEFAULT_CENTER_AGENT_IDS = {'control_center', 'plan_center', 'review_center', 'dispatch_center'}
-DEFAULT_SPECIALIST_AGENT_IDS = {'docs_specialist', 'data_specialist', 'code_specialist', 'audit_specialist', 'deploy_specialist', 'admin_specialist', 'search_specialist'}
+DEFAULT_SPECIALIST_AGENT_IDS = {'docs_specialist', 'data_specialist', 'code_specialist', 'audit_specialist', 'deploy_specialist', 'admin_specialist', 'expert_curator', 'search_specialist'}
 CENTER_AGENT_IDS = set(DEFAULT_CENTER_AGENT_IDS)
 SPECIALIST_AGENT_IDS = set(DEFAULT_SPECIALIST_AGENT_IDS)
 SYSTEM_REPAIR_SCOPE = [

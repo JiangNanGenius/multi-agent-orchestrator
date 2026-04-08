@@ -119,6 +119,8 @@ export const api = {
 
   createTask: (data: CreateTaskPayload) =>
     postJ<ActionResult & { taskId?: string }>(`${API_BASE}/api/create-task`, data),
+  taskAppendMessage: (taskId: string, agentId: string, message: string) =>
+    postJ<ActionResult>(`${API_BASE}/api/task-append-message`, { taskId, agentId, message }),
 
   // ── 多角色协同讨论 ──
   collabDiscussStart: (
@@ -259,6 +261,9 @@ export interface Task {
   title: string;
   state: string;
   org: string;
+  currentDept?: string;
+  targetDept?: string;
+  targetDepts?: string[];
   now: string;
   eta: string;
   block: string;
@@ -414,6 +419,8 @@ export interface ActivityEntry {
   kind: string;
   at?: number | string;
   text?: string;
+  message?: string;
+  summary?: string;
   thinking?: string;
   agent?: string;
   from?: string;
@@ -526,6 +533,7 @@ export interface CreateTaskPayload {
   org: string;
   owner?: string;
   targetDept?: string;
+  targetDepts?: string[];
   priority?: string;
   templateId?: string;
   params?: Record<string, string>;

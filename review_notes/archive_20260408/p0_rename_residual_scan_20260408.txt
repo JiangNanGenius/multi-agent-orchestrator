@@ -1,0 +1,4 @@
+agents/groups/liubu.md:1:# 六部组级指令 — 户部、礼部、兵部、刑部、工部、吏部共用
+scripts/skill_manager.py:8:    --source https://raw.githubusercontent.com/org/skills/main/code_review/SKILL.md \
+scripts/skill_manager.py:222:OFFICIAL_SKILLS_HUB_BASE = 'https://raw.githubusercontent.com/openclaw-ai/skills-hub/main'
+scripts/skill_manager.py:225:    'https://ghproxy.com/https://raw.githubusercontent.com/openclaw-ai/skills-hub/main',

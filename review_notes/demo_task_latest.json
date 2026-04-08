@@ -1,0 +1,73 @@
+{
+  "create": {
+    "ok": true,
+    "taskId": "JJC-20260408-001",
+    "message": "任务 JJC-20260408-001 已创建，正在进入总控中心预处理"
+  },
+  "append": [
+    {
+      "ok": true,
+      "message": "JJC-20260408-001 已记录补充说明",
+      "taskId": "JJC-20260408-001",
+      "wokeAgent": false
+    },
+    {
+      "ok": true,
+      "message": "JJC-20260408-001 已记录补充说明",
+      "taskId": "JJC-20260408-001",
+      "wokeAgent": false
+    }
+  ],
+  "activity_count": 8,
+  "task_meta": {
+    "title": "示例任务：验证持久化聊天会话窗口与刷新恢复",
+    "state": "ControlCenter",
+    "org": "总控中心",
+    "output": "",
+    "block": "无",
+    "priority": "normal",
+    "reviewRound": 0,
+    "archived": false
+  },
+  "latest_activity": [
+    {
+      "at": "2026-04-08T22:27:18.157165Z",
+      "kind": "progress",
+      "text": "用户追加说明：第一条演示补充：该任务用于展示左侧会话列表、任务活动流与后台继续执行的关系。",
+      "agent": "admin_specialist",
+      "agentLabel": "技能管理员",
+      "state": "ControlCenter",
+      "org": "总控中心"
+    },
+    {
+      "at": "2026-04-08T22:27:18.157222Z",
+      "kind": "flow",
+      "from": "总控中心调度",
+      "to": "总控中心",
+      "remark": "🧭 进展确认：收到用户追加说明（技能管理员）"
+    },
+    {
+      "at": "2026-04-08T22:27:18.168802Z",
+      "kind": "progress",
+      "text": "用户追加说明：第二条演示补充：刷新网页后，仍可通过 taskId 恢复这条任务会话。",
+      "agent": "admin_specialist",
+      "agentLabel": "技能管理员",
+      "state": "ControlCenter",
+      "org": "总控中心"
+    },
+    {
+      "at": "2026-04-08T22:27:18.168847Z",
+      "kind": "flow",
+      "from": "总控中心调度",
+      "to": "总控中心",
+      "remark": "🧭 进展确认：收到用户追加说明（技能管理员）"
+    },
+    {
+      "at": "2026-04-08T22:27:18.170555Z",
+      "kind": "flow",
+      "from": "总控中心调度",
+      "to": "总控中心",
+      "remark": "🧭 派发异常：control_center（task-created）"
+    }
+  ]
+}

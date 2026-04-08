@@ -5,7 +5,17 @@
     "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-control_center",
     "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\control_center\\agent",
     "subagents": {
-      "allowAgents": ["plan_center"]
+      "allowAgents": [
+        "plan_center",
+        "dispatch_center",
+        "data_specialist",
+        "docs_specialist",
+        "code_specialist",
+        "audit_specialist",
+        "deploy_specialist",
+        "admin_specialist",
+        "search_specialist"
+      ]
     }
   },
   {
@@ -95,6 +105,15 @@
     "name": "admin_specialist",
     "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-admin_specialist",
     "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\admin_specialist\\agent",
+    "subagents": {
+      "allowAgents": ["dispatch_center"]
+    }
+  },
+  {
+    "id": "expert_curator",
+    "name": "expert_curator",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-expert_curator",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\expert_curator\\agent",
     "subagents": {
       "allowAgents": ["dispatch_center"]
     }

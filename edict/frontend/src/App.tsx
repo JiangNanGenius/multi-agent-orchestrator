@@ -402,8 +402,31 @@ export default function App() {
     );
   }
 
+  const renderActivePanel = () => {
+    if (activeTab === 'tasks') return <EdictBoard />;
+    if (activeTab === 'collaboration') return <CollaborationDiscussion />;
+    if (activeTab === 'monitor') return <MonitorPanel />;
+    if (activeTab === 'automation') return <AutomationPanel />;
+    if (activeTab === 'agents') return <AgentOverviewPanel />;
+    if (activeTab === 'models') return <ModelConfig />;
+    if (activeTab === 'skills') return <SkillsConfig />;
+    if (activeTab === 'sessions') return <SessionsPanel />;
+    if (activeTab === 'archives') return <ArchivePanel />;
+    if (activeTab === 'templates') return <TemplatePanel />;
+    if (activeTab === 'web_search') return <WebSearchPanel />;
+    return null;
+  };
+
   return (
-    <div className="wrap">
+    <div className="app-shell">
+      <div className="scene-backdrop" aria-hidden="true">
+        <div className="scene-grid" />
+        <div className="scene-orb orb-a" />
+        <div className="scene-orb orb-b" />
+        <div className="scene-orb orb-c" />
+        <div className="scene-noise" />
+      </div>
+      <div className="wrap">
       <div className="hdr">
         <div>
           <div className="logo">{pickLocaleText(locale, '多Agent协作平台', 'Multi-Agent Collaboration Platform')}</div>
@@ -428,7 +451,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="tabs">
+      <div className="tabs tabs-glass">
         {TAB_DEFS.map((t) => (
           <div
             key={t.key}
@@ -441,17 +464,9 @@ export default function App() {
         ))}
       </div>
 
-      {activeTab === 'tasks' && <EdictBoard />}
-      {activeTab === 'collaboration' && <CollaborationDiscussion />}
-      {activeTab === 'monitor' && <MonitorPanel />}
-      {activeTab === 'automation' && <AutomationPanel />}
-      {activeTab === 'agents' && <AgentOverviewPanel />}
-      {activeTab === 'models' && <ModelConfig />}
-      {activeTab === 'skills' && <SkillsConfig />}
-      {activeTab === 'sessions' && <SessionsPanel />}
-      {activeTab === 'archives' && <ArchivePanel />}
-      {activeTab === 'templates' && <TemplatePanel />}
-      {activeTab === 'web_search' && <WebSearchPanel />}
+      <div key={activeTab} className="page-stage">
+        {renderActivePanel()}
+      </div>
 
       <TaskModal />
       <Toaster />
@@ -488,6 +503,7 @@ export default function App() {
           }}
         />
       ) : null}
+      </div>
     </div>
   );
 }

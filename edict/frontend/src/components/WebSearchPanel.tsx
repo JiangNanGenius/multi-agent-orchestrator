@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useStore } from '../store';
-import { api } from '../api';
-import type { SubConfig, SearchResultItem } from '../api';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { api, type CollabAgentBusyEntry, type SearchResultItem, type SubConfig } from '../api';
 import { pickLocaleText, formatCount, type Locale } from '../i18n';
+import { DEPTS, deptMeta, normalizeAgentId, useStore } from '../store';
 
 type ResultWithMeta = SearchResultItem & {
   category: string;
@@ -18,6 +17,18 @@ const CAT_META: Record<string, { icon: string; color: string; descZh: string; de
 };
 
 const DEFAULT_CATS = ['政治', '军事', '经济', 'AI大模型'];
+const SEARCH_OWNER_ZH = 'AI 搜索引擎';
+const SEARCH_OWNER_EN = 'AI Search Engine';
+const EXECUTION_TARGET_IDS = new Set([
+  'docs_specialist',
+  'data_specialist',
+  'code_specialist',
+  'audit_specialist',
+  'deploy_specialist',
+  'admin_specialist',
+  'expert_curator',
+  'search_specialist',
+]);
 
 function getCategoryLabel(locale: Locale, cat: string) {
   const labels: Record<string, string> = {
@@ -52,25 +63,55 @@ function uniqueStrings(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+function renderBusyStateLabel(entry: CollabAgentBusyEntry, locale: Locale): string {
+  const source = entry.occupancy_kind || entry.source_type || '';
+  if (locale === 'en') {
+    if (source === 'task_active') return 'Handling a task';
+    if (source === 'task_reserved') return 'Reserved for a task';
+    if (source === 'task_paused') return 'Task paused';
+    if (source === 'task_blocked') return 'Task blocked';
+    if (source === 'meeting') return 'In meeting';
+    if (source === 'chat') return 'In discussion';
+    return entry.label || 'Busy';
+  }
+  if (source === 'task_active') return '任务执行中';
+  if (source === 'task_reserved') return '任务预占中';
+  if (source === 'task_paused') return '任务暂停中';
+  if (source === 'task_blocked') return '任务阻塞中';
+  if (source === 'meeting') return '会议占用中';
+  if (source === 'chat') return '讨论占用中';
+  return entry.label || '忙碌中';
+}
+
+function buildSearchTaskTitle(locale: Locale, query: string) {
+  return locale === 'en' ? `AI Search: ${query}` : `AI 搜索：${query}`;
+}
+
 export default function WebSearchPanel() {
   const locale = useStore((s) => s.locale);
   const searchBrief = useStore((s) => s.searchBrief);
   const subConfig = useStore((s) => s.subConfig);
+  const collabAgentBusyData = useStore((s) => s.collabAgentBusyData);
   const loadWebSearch = useStore((s) => s.loadWebSearch);
   const loadSubConfig = useStore((s) => s.loadSubConfig);
+  const loadCollabBusy = useStore((s) => s.loadCollabBusy);
   const toast = useStore((s) => s.toast);
 
-  const [showConfig, setShowConfig] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [localConfig, setLocalConfig] = useState<SubConfig | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshLabel, setRefreshLabel] = useState(pickLocaleText(locale, '更新索引', 'Refresh Index'));
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [manualTargets, setManualTargets] = useState(false);
+  const [selectedTargets, setSelectedTargets] = useState<string[]>([]);
+  const [submittingTask, setSubmittingTask] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     loadWebSearch();
-  }, [loadWebSearch]);
+    loadCollabBusy();
+  }, [loadWebSearch, loadCollabBusy]);
 
   useEffect(() => {
     if (subConfig) setLocalConfig(JSON.parse(JSON.stringify(subConfig)));
@@ -118,6 +159,7 @@ export default function WebSearchPanel() {
             setRefreshing(false);
             setRefreshLabel(pickLocaleText(locale, '更新索引', 'Refresh Index'));
             loadWebSearch();
+            loadCollabBusy();
             toast(pickLocaleText(locale, 'AI 搜索结果已更新', 'AI search results are updated'), 'ok');
           } else {
             setRefreshLabel(locale === 'en' ? `Refreshing... (${count * 5}s)` : `更新中… (${count * 5}s)`);
@@ -156,35 +198,74 @@ export default function WebSearchPanel() {
     setLocalConfig({ ...localConfig, keywords: kws });
   };
 
-  const addFeed = (name: string, url: string, category: string) => {
-    if (!localConfig || !name || !url) {
-      toast(pickLocaleText(locale, '请填写信息源名称与地址', 'Please fill in source name and URL'), 'err');
-      return;
-    }
-    const feeds = [...(localConfig.custom_feeds || [])];
-    feeds.push({ name, url, category });
-    setLocalConfig({ ...localConfig, custom_feeds: feeds });
-  };
-
-  const removeFeed = (i: number) => {
-    if (!localConfig) return;
-    const feeds = [...(localConfig.custom_feeds || [])];
-    feeds.splice(i, 1);
-    setLocalConfig({ ...localConfig, custom_feeds: feeds });
-  };
-
   const saveConfig = async () => {
     if (!localConfig) return;
     try {
       const r = await api.saveSearchConfig(localConfig);
       if (r.ok) {
-        toast(pickLocaleText(locale, '搜索策略已保存', 'Search strategy saved'), 'ok');
+        toast(pickLocaleText(locale, '搜索设置已保存', 'Search settings saved'), 'ok');
         loadSubConfig();
+        loadWebSearch();
       } else {
-        toast(r.error || pickLocaleText(locale, '保存失败', 'Failed to save configuration'), 'err');
+        toast(r.error || pickLocaleText(locale, '保存失败', 'Failed to save settings'), 'err');
       }
     } catch {
       toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+    }
+  };
+
+  const toggleTarget = (targetId: string) => {
+    setSelectedTargets((prev) => (
+      prev.includes(targetId) ? prev.filter((item) => item !== targetId) : [...prev, targetId]
+    ));
+    setManualTargets(true);
+  };
+
+  const submitSearchTask = async () => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
+      toast(pickLocaleText(locale, '请先输入要搜索的问题或线索', 'Please enter a search question or lead first'), 'err');
+      return;
+    }
+    if (manualTargets && !selectedTargets.length) {
+      toast(pickLocaleText(locale, '请至少选择一位目标专家，或切回自动分配', 'Select at least one target specialist, or switch back to auto assign'), 'err');
+      return;
+    }
+
+    setSubmittingTask(true);
+    try {
+      const payload = {
+        title: buildSearchTaskTitle(locale, trimmedQuery),
+        org: pickLocaleText(locale, '调度中心', 'Dispatch Center'),
+        owner: pickLocaleText(locale, SEARCH_OWNER_ZH, SEARCH_OWNER_EN),
+        priority: 'low',
+        templateId: 'web_search',
+        params: {
+          query: trimmedQuery,
+          category: activeCategory === 'all' ? '' : activeCategory,
+          keywords: (localConfig?.keywords || []).join('、'),
+        },
+        ...(manualTargets && selectedTargets.length
+          ? {
+              targetDept: selectedTargets[0],
+              targetDepts: selectedTargets,
+            }
+          : {}),
+      };
+      const result = await api.createTask(payload);
+      if (!result.ok) {
+        toast(result.error || pickLocaleText(locale, '搜索任务创建失败', 'Failed to create search task'), 'err');
+        return;
+      }
+      toast(
+        result.message || pickLocaleText(locale, `已创建低优先级搜索任务 ${result.taskId || ''}`.trim(), `Low-priority search task created ${result.taskId || ''}`.trim()),
+        'ok'
+      );
+      loadCollabBusy();
+    } catch {
+      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+    } finally {
+      setSubmittingTask(false);
     }
   };
 
@@ -259,6 +340,17 @@ export default function WebSearchPanel() {
   const focusMatches = filteredResults.filter((item) => item.kwHits > 0).length;
   const sourceCount = uniqueStrings(filteredResults.map((item) => item.source || hostnameOf(item.link))).length;
 
+  const searchSpecialistEntries = useMemo(
+    () => (collabAgentBusyData?.busy || []).filter((entry) => normalizeAgentId(entry.agent_id) === 'search_specialist'),
+    [collabAgentBusyData],
+  );
+  const searchSpecialistBusy = searchSpecialistEntries[0] || null;
+  const searchSpecialistMeta = deptMeta('search_specialist', locale);
+  const targetOptions = useMemo(
+    () => DEPTS.filter((dept) => EXECUTION_TARGET_IDS.has(dept.id)),
+    [],
+  );
+
   return (
     <div style={{ display: 'grid', gap: 18 }}>
       <div
@@ -278,17 +370,19 @@ export default function WebSearchPanel() {
             <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.2, marginBottom: 10 }}>
               {pickLocaleText(locale, '从全网信号里直接定位你要的答案与线索', 'Find answers and signals across the web with AI-ranked results')}
             </div>
-            <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 720, lineHeight: 1.7 }}>
+            <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 760, lineHeight: 1.7 }}>
               {pickLocaleText(
                 locale,
-                '这里不再只是分类简报，而是一个可搜索、可筛选、可配置信号源的 AI 搜索工作台。你可以输入问题、按主题过滤结果、标记重点关键词，并持续刷新索引。',
-                'This is no longer a static brief. It is an AI search workspace where you can query, filter by topic, tune sources, track focus keywords, and continuously refresh the index.'
+                '这里是一个由 Agent 驱动的搜索工作台：你可以直接输入问题、按主题筛选、标记重点关键词，并把搜索请求作为低优先级任务交给系统持续处理。',
+                'This is an agent-driven search workspace. Enter a question, filter by topic, mark focus keywords, and dispatch follow-up search requests as low-priority tasks.'
               )}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn btn-g" onClick={() => setShowConfig((v) => !v)} style={{ fontSize: 12, padding: '8px 14px' }}>
-              {pickLocaleText(locale, '搜索策略', 'Search Strategy')}
+            <button className="btn btn-g" onClick={() => setShowAdvanced((v) => !v)} style={{ fontSize: 12, padding: '8px 14px' }}>
+              {showAdvanced
+                ? pickLocaleText(locale, '收起高级搜索', 'Hide Advanced Search')
+                : pickLocaleText(locale, '高级搜索', 'Advanced Search')}
             </button>
             <button className="tpl-go" disabled={refreshing} onClick={refreshSearchResults} style={{ fontSize: 12, padding: '8px 14px' }}>
               {refreshLabel}
@@ -304,7 +398,7 @@ export default function WebSearchPanel() {
             background: 'rgba(8,12,24,0.55)',
             border: '1px solid rgba(255,255,255,0.08)',
             display: 'grid',
-            gap: 10,
+            gap: 12,
           }}
         >
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -328,7 +422,13 @@ export default function WebSearchPanel() {
             <button className="btn-refresh" onClick={() => setQuery('')} style={{ padding: '10px 14px', fontSize: 12 }}>
               {pickLocaleText(locale, '清空查询', 'Clear Query')}
             </button>
+            <button className="auth-primary" disabled={submittingTask} onClick={submitSearchTask} style={{ width: 'auto', minWidth: 168, height: 44 }}>
+              {submittingTask
+                ? pickLocaleText(locale, '提交中…', 'Submitting...')
+                : pickLocaleText(locale, '发起低优先级搜索任务', 'Create Low-Priority Search Task')}
+            </button>
           </div>
+
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {suggestionChips.map((chip) => (
               <button
@@ -341,6 +441,122 @@ export default function WebSearchPanel() {
               </button>
             ))}
           </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1.35fr) minmax(280px, 1fr)', gap: 12 }}>
+            <div style={{ padding: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', display: 'grid', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '搜索任务路由', 'Search Task Routing')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                    {pickLocaleText(locale, '搜索任务默认以低优先级进入调度中心，不挤占普通执行任务。', 'Search tasks enter the dispatch workflow with low priority by default so they do not crowd regular execution tasks.')}
+                  </div>
+                </div>
+                <span className="chip">{pickLocaleText(locale, '默认优先级：低', 'Default Priority: Low')}</span>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={`chip ${!manualTargets ? 'ok' : ''}`}
+                  onClick={() => {
+                    setManualTargets(false);
+                    setSelectedTargets([]);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {pickLocaleText(locale, '自动分配', 'Auto Assign')}
+                </button>
+                <button
+                  type="button"
+                  className={`chip ${manualTargets ? 'ok' : ''}`}
+                  onClick={() => setManualTargets(true)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {pickLocaleText(locale, '指定专家（多选）', 'Specify Specialists (Multi-select)')}
+                </button>
+              </div>
+
+              {manualTargets ? (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {targetOptions.map((dept) => {
+                    const active = selectedTargets.includes(dept.id);
+                    return (
+                      <button
+                        key={dept.id}
+                        type="button"
+                        className="chip"
+                        onClick={() => toggleTarget(dept.id)}
+                        style={{
+                          cursor: 'pointer',
+                          borderColor: active ? 'var(--acc)' : 'var(--line)',
+                          color: active ? 'var(--acc)' : 'var(--text)',
+                          background: active ? 'rgba(122,162,255,0.14)' : 'transparent',
+                        }}
+                      >
+                        {dept.emoji} {dept.label} {active ? '✓' : ''}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+
+              <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
+                {!manualTargets
+                  ? pickLocaleText(locale, '当前为自动分配模式，系统会优先按搜索问题内容自动路由到最合适的专家。', 'Auto-assign mode is active. The system will route the search request to the most suitable specialist based on the query.')
+                  : selectedTargets.length
+                    ? pickLocaleText(locale, `已指定 ${selectedTargets.length} 位目标专家：${selectedTargets.map((id) => deptMeta(id, locale).label).join('、')}`, `Selected ${selectedTargets.length} specialist(s): ${selectedTargets.map((id) => deptMeta(id, locale).label).join(', ')}`)
+                    : pickLocaleText(locale, '请至少勾选一位具体专家，或切回自动分配。', 'Select at least one specialist, or switch back to auto assign.')}
+              </div>
+            </div>
+
+            <div style={{ padding: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', display: 'grid', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '搜索专家状态', 'Search Specialist Status')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                    {pickLocaleText(locale, '这里会显示搜索专家当前是否正被任务、讨论或会议占用。', 'This shows whether the search specialist is currently occupied by a task, discussion, or meeting.')}
+                  </div>
+                </div>
+                <button className="chip" onClick={loadCollabBusy} style={{ cursor: 'pointer' }}>
+                  {pickLocaleText(locale, '刷新状态', 'Refresh Status')}
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <span style={{ fontSize: 24 }}>{searchSpecialistMeta.emoji}</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800 }}>{searchSpecialistMeta.label}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{searchSpecialistMeta.role}</div>
+                  </div>
+                </div>
+                <span
+                  className="chip"
+                  style={{
+                    borderColor: searchSpecialistBusy ? 'rgba(255,120,120,0.5)' : 'rgba(76,195,138,0.5)',
+                    color: searchSpecialistBusy ? '#ff9a9a' : '#7ff0a8',
+                    background: searchSpecialistBusy ? 'rgba(255,120,120,0.12)' : 'rgba(76,195,138,0.12)',
+                  }}
+                >
+                  {searchSpecialistBusy
+                    ? pickLocaleText(locale, '忙碌中', 'Busy')
+                    : pickLocaleText(locale, '空闲', 'Idle')}
+                </span>
+              </div>
+
+              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
+                {searchSpecialistBusy ? (
+                  <>
+                    {renderBusyStateLabel(searchSpecialistBusy, locale)}
+                    {searchSpecialistBusy.task_title
+                      ? pickLocaleText(locale, ` · 当前任务：${searchSpecialistBusy.task_title}`, ` · Current task: ${searchSpecialistBusy.task_title}`)
+                      : ''}
+                  </>
+                ) : pickLocaleText(locale, '当前没有检测到搜索专家被占用，可以直接发起新的搜索请求。', 'No active occupancy is detected for the search specialist. You can dispatch a new search request now.')}
+              </div>
+            </div>
+          </div>
+
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               className={`chip ${activeCategory === 'all' ? 'ok' : ''}`}
@@ -373,18 +589,15 @@ export default function WebSearchPanel() {
         </div>
       </div>
 
-      {showConfig && localConfig ? (
-        <SearchStrategyPanel
+      {showAdvanced && localConfig ? (
+        <SearchSettingsPanel
           locale={locale}
           config={localConfig}
           enabledSet={enabledSet}
           onToggleCat={toggleCat}
           onAddKeyword={addKeyword}
           onRemoveKeyword={removeKeyword}
-          onAddFeed={addFeed}
-          onRemoveFeed={removeFeed}
           onSave={saveConfig}
-          onSetWebhook={(v) => setLocalConfig({ ...localConfig, feishu_webhook: v })}
         />
       ) : null}
 
@@ -417,10 +630,10 @@ export default function WebSearchPanel() {
             locale,
             query
               ? '当前查询没有命中结果。你可以换一个问题、切换主题，或者更新搜索索引。'
-              : '当前还没有可展示的搜索结果。请先更新索引，或在搜索策略里添加更多信号源与关键词。',
+              : '当前还没有可展示的搜索结果。请先更新索引，或在高级搜索里调整主题范围与重点关键词。',
             query
               ? 'No result matches your current query. Try another question, switch topics, or refresh the index.'
-              : 'There are no search results yet. Refresh the index first, or add more sources and keywords in Search Strategy.'
+              : 'There are no search results yet. Refresh the index first, or refine the topic coverage and focus keywords in Advanced Search.'
           )}
         </div>
       ) : (
@@ -502,70 +715,63 @@ export default function WebSearchPanel() {
           <div style={{ display: 'grid', gap: 12, position: 'sticky', top: 14 }}>
             <InsightPanel
               title={pickLocaleText(locale, 'AI 检索摘要', 'AI Search Snapshot')}
-              children={
-                <div style={{ display: 'grid', gap: 10, fontSize: 13, color: 'var(--muted)', lineHeight: 1.7 }}>
-                  <div>
-                    {pickLocaleText(
-                      locale,
-                      `当前结果覆盖 ${totalResults} 条记录，聚焦 ${categoryCounts.size || 0} 个主题；其中 ${focusMatches} 条与重点关键词直接相关。`,
-                      `Current results cover ${totalResults} records across ${categoryCounts.size || 0} topics, with ${focusMatches} directly matching your focus keywords.`
-                    )}
-                  </div>
-                  <div>
-                    {pickLocaleText(
-                      locale,
-                      topSources.length
-                        ? `高频信源主要包括 ${topSources.map(([name]) => name).join('、')}。`
-                        : '当前结果中还没有稳定的高频信源。',
-                      topSources.length
-                        ? `High-frequency sources currently include ${topSources.map(([name]) => name).join(', ')}.`
-                        : 'No dominant sources are detected in the current result set.'
-                    )}
-                  </div>
-                  <div>
-                    {pickLocaleText(
-                      locale,
-                      query
-                        ? `当前查询为“${query}”，结果已按相关性重新排序。`
-                        : '你可以直接输入问题、公司名、事件或主题词，让结果按相关性重排。',
-                      query
-                        ? `The current query is “${query}”, and results are re-ranked by relevance.`
-                        : 'Enter a question, company, event, or topic to re-rank the result set by relevance.'
-                    )}
-                  </div>
+            >
+              <div style={{ display: 'grid', gap: 10, fontSize: 13, color: 'var(--muted)', lineHeight: 1.7 }}>
+                <div>
+                  {pickLocaleText(
+                    locale,
+                    `当前结果覆盖 ${totalResults} 条记录，聚焦 ${categoryCounts.size || 0} 个主题；其中 ${focusMatches} 条与重点关键词直接相关。`,
+                    `Current results cover ${totalResults} records across ${categoryCounts.size || 0} topics, with ${focusMatches} directly matching your focus keywords.`
+                  )}
                 </div>
-              }
-            />
+                <div>
+                  {pickLocaleText(
+                    locale,
+                    topSources.length
+                      ? `高频信源主要包括 ${topSources.map(([name]) => name).join('、')}。`
+                      : '当前结果中还没有稳定的高频信源。',
+                    topSources.length
+                      ? `High-frequency sources currently include ${topSources.map(([name]) => name).join(', ')}.`
+                      : 'No dominant sources are detected in the current result set.'
+                  )}
+                </div>
+                <div>
+                  {pickLocaleText(
+                    locale,
+                    query
+                      ? `当前查询为“${query}”，结果已按相关性重新排序。`
+                      : '你可以直接输入问题、公司名、事件或主题词，让结果按相关性重排。',
+                    query
+                      ? `The current query is “${query}”, and results are re-ranked by relevance.`
+                      : 'Enter a question, company, event, or topic to re-rank the result set by relevance.'
+                  )}
+                </div>
+              </div>
+            </InsightPanel>
 
-            <InsightPanel
-              title={pickLocaleText(locale, '重点结果', 'Featured Results')}
-              children={
-                <div style={{ display: 'grid', gap: 10 }}>
-                  {featured.map((item, idx) => (
-                    <div key={`${item.link}-featured-${idx}`} style={{ padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--line)' }}>
-                      <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>
-                        {pickLocaleText(locale, '重点结果', 'Featured')} #{idx + 1}
-                      </div>
-                      <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.6 }}>{item.title}</div>
+            <InsightPanel title={pickLocaleText(locale, '重点结果', 'Featured Results')}>
+              <div style={{ display: 'grid', gap: 10 }}>
+                {featured.map((item, idx) => (
+                  <div key={`${item.link}-featured-${idx}`} style={{ padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid var(--line)' }}>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>
+                      {pickLocaleText(locale, '重点结果', 'Featured')} #{idx + 1}
                     </div>
-                  ))}
-                  {!featured.length ? <div style={{ color: 'var(--muted)', fontSize: 12 }}>{pickLocaleText(locale, '暂无重点结果', 'No featured results')}</div> : null}
-                </div>
-              }
-            />
+                    <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.6 }}>{item.title}</div>
+                  </div>
+                ))}
+                {!featured.length ? <div style={{ color: 'var(--muted)', fontSize: 12 }}>{pickLocaleText(locale, '暂无重点结果', 'No featured results')}</div> : null}
+              </div>
+            </InsightPanel>
 
-            <InsightPanel
-              title={pickLocaleText(locale, '搜索提示', 'Query Suggestions')}
-              children={
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {suggestionChips.map((chip) => (
-                    <button key={`side-${chip}`} className="chip" onClick={() => setQuery(chip)} style={{ cursor: 'pointer' }}>
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-              }
-            />
+            <InsightPanel title={pickLocaleText(locale, '搜索提示', 'Query Suggestions')}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {suggestionChips.map((chip) => (
+                  <button key={`side-${chip}`} className="chip" onClick={() => setQuery(chip)} style={{ cursor: 'pointer' }}>
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </InsightPanel>
           </div>
         </div>
       )}
@@ -592,7 +798,7 @@ function MetricCard({ title, value, hint }: { title: string; value: string; hint
   );
 }
 
-function InsightPanel({ title, children }: { title: string; children: React.ReactNode }) {
+function InsightPanel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div style={{ padding: 14, borderRadius: 16, border: '1px solid var(--line)', background: 'rgba(255,255,255,0.025)' }}>
       <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 10 }}>{title}</div>
@@ -601,17 +807,14 @@ function InsightPanel({ title, children }: { title: string; children: React.Reac
   );
 }
 
-function SearchStrategyPanel({
+function SearchSettingsPanel({
   locale,
   config,
   enabledSet,
   onToggleCat,
   onAddKeyword,
   onRemoveKeyword,
-  onAddFeed,
-  onRemoveFeed,
   onSave,
-  onSetWebhook,
 }: {
   locale: Locale;
   config: SubConfig;
@@ -619,15 +822,9 @@ function SearchStrategyPanel({
   onToggleCat: (name: string) => void;
   onAddKeyword: (kw: string) => void;
   onRemoveKeyword: (i: number) => void;
-  onAddFeed: (name: string, url: string, cat: string) => void;
-  onRemoveFeed: (i: number) => void;
   onSave: () => void;
-  onSetWebhook: (v: string) => void;
 }) {
   const [newKw, setNewKw] = useState('');
-  const [feedName, setFeedName] = useState('');
-  const [feedUrl, setFeedUrl] = useState('');
-  const [feedCat, setFeedCat] = useState(DEFAULT_CATS[0]);
 
   const allCats = [...DEFAULT_CATS];
   (config.categories || []).forEach((c) => {
@@ -637,9 +834,9 @@ function SearchStrategyPanel({
   return (
     <div style={{ padding: 18, background: 'var(--panel2)', borderRadius: 18, border: '1px solid var(--line)', display: 'grid', gap: 18 }}>
       <div>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{pickLocaleText(locale, '搜索策略设置', 'Search Strategy Settings')}</div>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{pickLocaleText(locale, '高级搜索设置', 'Advanced Search Settings')}</div>
         <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-          {pickLocaleText(locale, '在这里管理主题范围、重点关键词、自定义信息源和推送地址，让 AI 搜索结果更贴近你的业务场景。', 'Manage topics, priority keywords, custom sources, and push destinations to align AI search with your workflows.')}
+          {pickLocaleText(locale, '这里只保留搜索本身需要的设置：主题范围与重点关键词。旧的 RSS 订阅、自定义源与外部推送入口已从搜索引擎界面移除。', 'Only search-specific settings remain here: topic coverage and focus keywords. Legacy RSS subscriptions, custom source management, and external push entries have been removed from the search engine interface.')}
         </div>
       </div>
 
@@ -669,7 +866,7 @@ function SearchStrategyPanel({
       </div>
 
       <div style={{ display: 'grid', gap: 10 }}>
-        <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '重点关键词', 'Priority Keywords')}</div>
+        <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '重点关键词', 'Focus Keywords')}</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {(config.keywords || []).map((kw, i) => (
             <span key={`${kw}-${i}`} className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -677,7 +874,7 @@ function SearchStrategyPanel({
               <span style={{ cursor: 'pointer', color: 'var(--danger)' }} onClick={() => onRemoveKeyword(i)}>✕</span>
             </span>
           ))}
-          {!(config.keywords || []).length ? <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '暂未设置重点关键词', 'No priority keywords yet')}</span> : null}
+          {!(config.keywords || []).length ? <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '暂未设置重点关键词', 'No focus keywords yet')}</span> : null}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <input
@@ -699,59 +896,9 @@ function SearchStrategyPanel({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gap: 10 }}>
-        <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '自定义信息源', 'Custom Sources')}</div>
-        <div style={{ display: 'grid', gap: 8 }}>
-          {(config.custom_feeds || []).map((f, i) => (
-            <div key={`${f.name}-${i}`} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 10, borderRadius: 12, border: '1px solid var(--line)', background: 'rgba(255,255,255,0.02)' }}>
-              <div style={{ minWidth: 110, fontWeight: 700 }}>{f.name}</div>
-              <div style={{ flex: 1, color: 'var(--muted)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.url}</div>
-              <div style={{ fontSize: 12, color: 'var(--acc)' }}>{getCategoryLabel(locale, f.category)}</div>
-              <button className="chip" onClick={() => onRemoveFeed(i)} style={{ cursor: 'pointer', color: 'var(--danger)' }}>Remove</button>
-            </div>
-          ))}
-          {!(config.custom_feeds || []).length ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '暂未添加额外信息源', 'No extra sources added')}</div> : null}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 0.8fr auto', gap: 8 }}>
-          <input
-            placeholder={pickLocaleText(locale, '信息源名称', 'Source name')}
-            value={feedName}
-            onChange={(e) => setFeedName(e.target.value)}
-            style={{ padding: '8px 10px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12, outline: 'none' }}
-          />
-          <input
-            placeholder={pickLocaleText(locale, 'RSS 或网页地址', 'RSS or source URL')}
-            value={feedUrl}
-            onChange={(e) => setFeedUrl(e.target.value)}
-            style={{ padding: '8px 10px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12, outline: 'none' }}
-          />
-          <select
-            value={feedCat}
-            onChange={(e) => setFeedCat(e.target.value)}
-            style={{ padding: '8px 10px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12, outline: 'none' }}
-          >
-            {allCats.map((c) => <option key={c} value={c}>{getCategoryLabel(locale, c)}</option>)}
-          </select>
-          <button className="btn btn-g" onClick={() => { onAddFeed(feedName, feedUrl, feedCat); setFeedName(''); setFeedUrl(''); }} style={{ fontSize: 12, padding: '8px 14px' }}>
-            {pickLocaleText(locale, '添加源', 'Add Source')}
-          </button>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gap: 8 }}>
-        <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '外部推送地址', 'External Delivery Webhook')}</div>
-        <input
-          type="text"
-          value={config.feishu_webhook || ''}
-          onChange={(e) => onSetWebhook(e.target.value)}
-          placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."
-          style={{ width: '100%', padding: '10px 12px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12, outline: 'none' }}
-        />
-      </div>
-
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <button className="tpl-go" onClick={onSave} style={{ fontSize: 12, padding: '8px 16px' }}>
-          {pickLocaleText(locale, '保存搜索策略', 'Save Search Strategy')}
+          {pickLocaleText(locale, '保存搜索设置', 'Save Search Settings')}
         </button>
       </div>
     </div>

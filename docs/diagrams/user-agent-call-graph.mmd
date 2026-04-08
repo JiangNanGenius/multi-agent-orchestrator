@@ -1,0 +1,34 @@
+flowchart TD
+    U[用户] --> CC[总控中心]
+    CC --> PC[规划中心]
+    CC -.极少数紧急介入.-> DC[调度中心]
+    CC -.非常紧急且调度中心正忙时可临时暂停.-> ES[单一专家]
+    PC --> RC[评审中心]
+    PC -.必要时咨询执行可行性.-> DC[调度中心]
+    RC -->|通过| DC
+    RC -->|退回修改| PC
+
+    DC --> DS[数据专家]
+    DC --> WS[文档专家]
+    DC --> CS[代码专家]
+    DC --> AS[审计专家]
+    DC --> DPS[部署专家]
+    DC --> ADS[技能管理员]
+    DC --> SS[搜索专家]
+    ES:::emergency
+
+    DS --> DC
+    WS --> DC
+    CS --> DC
+    AS --> DC
+    DPS --> DC
+    ADS --> DC
+    SS --> DC
+    ES -.暂停状态/紧急结果回传.-> DC
+
+    DC -.方案需重整.-> PC
+    DC -.风险需复核.-> RC
+    DC --> OUT[结果汇总 / 交付]
+    OUT --> U
+
+    classDef emergency fill:#fff4e5,stroke:#d97706,color:#7c2d12;

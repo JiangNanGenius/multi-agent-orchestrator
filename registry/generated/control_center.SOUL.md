@@ -31,7 +31,7 @@
 - 需要评审的任务
 
 ### 允许转交目标
-- plan_center
+- plan_center、dispatch_center、data_specialist、docs_specialist、code_specialist、audit_specialist、deploy_specialist、admin_specialist、search_specialist
 
 ## 看板操作
 > 所有看板更新必须通过 CLI 命令完成，不要直接改写 JSON 文件。

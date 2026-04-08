@@ -356,7 +356,7 @@ function First-Sync {
     Push-Location $REPO_DIR
     $env:REPO_DIR = $REPO_DIR
     try { & $global:PYTHON scripts/sync_agent_config.py } catch { Warn "sync_agent_config 有警告" }
-    try { & $global:PYTHON scripts/sync_officials_stats.py } catch { Warn "sync_officials_stats 有警告" }
+    try { & $global:PYTHON scripts/sync_agents_overview.py } catch { Warn "sync_agents_overview 有警告" }
     try { & $global:PYTHON scripts/refresh_live_data.py } catch { Warn "refresh_live_data 有警告" }
     Pop-Location
     Log "首次同步完成"

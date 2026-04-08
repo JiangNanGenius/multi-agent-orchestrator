@@ -689,7 +689,7 @@ _JUNK_TITLES = {
 }
 
 
-def handle_create_task(title, org='规划中心', owner='规划负责人', priority='normal', template_id='', params=None, target_dept=''):
+def handle_create_task(title, org='规划中心', owner='规划负责人', priority='normal', template_id='', params=None, target_dept='', target_depts=None):
     """从看板创建新任务（支持现代中文任务提交流程）。"""
     if not title or not title.strip():
         return {'ok': False, 'error': '任务标题不能为空'}
@@ -716,7 +716,19 @@ def handle_create_task(title, org='规划中心', owner='规划负责人', prior
         seq = max(nums) + 1 if nums else 1
     task_id = f'JJC-{today}-{seq:03d}'
     # 新架构状态编码：任务先进入总控中心预处理，再继续后续流转
-    # target_dept 记录模板建议的目标执行节点（仅供调度中心派发参考）
+    # target_dept / target_depts 记录建议的目标执行节点（仅供调度中心派发参考）
+    target_dept = str(target_dept or '').strip()
+    normalized_target_depts = []
+    if isinstance(target_depts, list):
+        for item in target_depts:
+            value = str(item or '').strip()
+            if value and value not in normalized_target_depts:
+                normalized_target_depts.append(value)
+    if target_dept and target_dept not in normalized_target_depts:
+        normalized_target_depts.insert(0, target_dept)
+    if normalized_target_depts and not target_dept:
+        target_dept = normalized_target_depts[0]
+
     initial_org = '总控中心'
     new_task = {
         'id': task_id,
@@ -742,6 +754,8 @@ def handle_create_task(title, org='规划中心', owner='规划负责人', prior
     }
     if target_dept:
         new_task['targetDept'] = target_dept
+    if normalized_target_depts:
+        new_task['targetDepts'] = normalized_target_depts
 
     _ensure_scheduler(new_task)
     _scheduler_snapshot(new_task, 'create-task-initial')
@@ -754,6 +768,69 @@ def handle_create_task(title, org='规划中心', owner='规划负责人', prior
     dispatch_for_state(task_id, new_task, 'ControlCenter', trigger='task-created')
 
     return {'ok': True, 'taskId': task_id, 'message': f'任务 {task_id} 已创建，正在进入总控中心预处理'}
+
+
+def handle_task_append_message(task_id, agent_id='', message=''):
+    """向既有任务活动流追加一条用户补充说明，供会话续聊与刷新恢复使用。"""
+    task_id = (task_id or '').strip()
+    agent_id = (agent_id or '').strip()
+    message = (message or '').strip()
+    if not task_id:
+        return {'ok': False, 'error': 'taskId required'}
+    if not message:
+        return {'ok': False, 'error': 'message required'}
+    if agent_id and not _SAFE_NAME_RE.match(agent_id):
+        return {'ok': False, 'error': f'agentId 非法: {agent_id}'}
+
+    tasks = load_tasks()
+    task = next((t for t in tasks if t.get('id') == task_id), None)
+    if not task:
+        return {'ok': False, 'error': f'任务 {task_id} 不存在'}
+
+    now = now_iso()
+    task.setdefault('progress_log', [])
+
+    agent_label = ''
+    if agent_id == 'expert_curator':
+        agent_label = '专家编组官'
+    elif agent_id:
+        for dept in _AGENT_DEPTS:
+            if dept.get('id') == agent_id:
+                agent_label = dept.get('label', '')
+                break
+    if not agent_label:
+        agent_label = agent_id or '用户补充'
+
+    task['progress_log'].append({
+        'at': now,
+        'agent': agent_id,
+        'agentLabel': agent_label,
+        'text': f'用户追加说明：{message}',
+        'state': task.get('state', ''),
+        'org': task.get('org', ''),
+    })
+    task['updatedAt'] = now
+    _ensure_scheduler(task)
+    _scheduler_mark_progress(task, f'收到用户追加说明（{agent_label}）')
+    save_tasks(tasks)
+
+    woke_agent = False
+    if agent_id and task.get('state') not in _TERMINAL_STATES:
+        wake_result = wake_agent(
+            agent_id,
+            (
+                f'📝 用户追加说明\n'
+                f'任务ID: {task_id}\n'
+                f'任务标题: {task.get("title", "(无标题)")}\n'
+                f'补充内容: {message}\n'
+                f'⚠️ 看板已有此任务，请勿重复创建。请在既有任务上下文中继续处理。'
+            ),
+        )
+        woke_agent = bool(wake_result.get('ok'))
+
+    suffix = '，并已通知相关 Agent' if woke_agent else ''
+    return {'ok': True, 'message': f'{task_id} 已记录补充说明{suffix}', 'taskId': task_id, 'wokeAgent': woke_agent}
+
 
 
 def handle_review_action(task_id, action, comment=''):
@@ -1069,9 +1146,21 @@ def _resolve_task_busy_agents(task):
         agent_ids.append(primary)
 
     target_dept = str(task.get('targetDept', '') or '')
-    target_agent = _ORG_AGENT_MAP.get(target_dept)
-    if target_agent and state in ('Assigned', 'Next', 'Pending') and target_agent not in agent_ids:
-        agent_ids.append(target_agent)
+    target_depts = task.get('targetDepts', [])
+    normalized_target_depts = []
+    if isinstance(target_depts, list):
+        for item in target_depts:
+            value = str(item or '').strip()
+            if value and value not in normalized_target_depts:
+                normalized_target_depts.append(value)
+    if target_dept and target_dept not in normalized_target_depts:
+        normalized_target_depts.insert(0, target_dept)
+
+    if state in ('Assigned', 'Next', 'Pending'):
+        for dept in normalized_target_depts:
+            target_agent = _ORG_AGENT_MAP.get(dept)
+            if target_agent and target_agent not in agent_ids:
+                agent_ids.append(target_agent)
 
     return [aid for aid in agent_ids if aid]
 
@@ -2924,7 +3013,20 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({'ok': False, 'error': 'title required'}, 400)
                 return
             target_dept = body.get('targetDept', '').strip()
-            result = handle_create_task(title, org, owner, priority, template_id, params, target_dept)
+            raw_target_depts = body.get('targetDepts', [])
+            target_depts = raw_target_depts if isinstance(raw_target_depts, list) else []
+            result = handle_create_task(title, org, owner, priority, template_id, params, target_dept, target_depts)
+            self.send_json(result)
+            return
+
+        if p == '/api/task-append-message':
+            task_id = body.get('taskId', '').strip()
+            agent_id = body.get('agentId', '').strip()
+            message = body.get('message', '').strip()
+            if not task_id or not message:
+                self.send_json({'ok': False, 'error': 'taskId and message required'}, 400)
+                return
+            result = handle_task_append_message(task_id, agent_id, message)
             self.send_json(result)
             return
 

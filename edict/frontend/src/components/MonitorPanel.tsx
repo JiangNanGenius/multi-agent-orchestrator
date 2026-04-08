@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { useStore, DEPTS, isEdict, stateLabel, getSchedulerSummary, deptMeta } from '../store';
+import { useEffect, useMemo } from 'react';
+import { useStore, DEPTS, isEdict, stateLabel, getSchedulerSummary, deptMeta, normalizeAgentId } from '../store';
 import { api, type OfficialInfo, type CollabAgentBusyEntry } from '../api';
 import { pickLocaleText } from '../i18n';
 
@@ -40,17 +40,24 @@ export default function MonitorPanel() {
     loadCollabBusy();
   }, [loadAgentsStatus, loadCollabBusy]);
 
+  const projectAgentIds = useMemo(() => new Set(DEPTS.map((d) => normalizeAgentId(d.id))), []);
+
   const tasks = liveStatus?.tasks || [];
   const activeTasks = tasks.filter((t) => isEdict(t) && t.state !== 'Done' && t.state !== 'Next');
 
   const agentMap: Record<string, OfficialInfo> = {};
   if (agentsOverviewData?.agents) {
-    agentsOverviewData.agents.forEach((o) => { agentMap[o.id] = o; });
+    agentsOverviewData.agents.forEach((o) => {
+      const normalizedId = normalizeAgentId(o.id);
+      if (projectAgentIds.has(normalizedId)) agentMap[normalizedId] = o;
+    });
   }
 
   const busyMap = (collabAgentBusyData?.busy || []).reduce<Record<string, CollabAgentBusyEntry[]>>((acc, entry) => {
-    if (!acc[entry.agent_id]) acc[entry.agent_id] = [];
-    acc[entry.agent_id].push(entry);
+    const normalizedId = normalizeAgentId(entry.agent_id);
+    if (!projectAgentIds.has(normalizedId)) return acc;
+    if (!acc[normalizedId]) acc[normalizedId] = [];
+    acc[normalizedId].push({ ...entry, agent_id: normalizedId });
     return acc;
   }, {});
 
@@ -64,16 +71,21 @@ export default function MonitorPanel() {
     }
   };
 
+  const filtered = (agentsStatusData?.agents || []).filter((a) => projectAgentIds.has(normalizeAgentId(a.id)));
+  const running = filtered.filter((a) => a.status === 'running').length;
+  const idle = filtered.filter((a) => a.status === 'idle').length;
+  const offline = filtered.filter((a) => a.status === 'offline').length;
+  const unconf = filtered.filter((a) => a.status === 'unconfigured').length;
+  const gw = agentsStatusData?.gateway;
+  const gwCls = gw?.probe ? 'ok' : gw?.alive ? 'warn' : 'err';
+
   const handleWakeAll = async () => {
-    if (!agentsStatusData) return;
-    const toWake = agentsStatusData.agents.filter(
-      (a) => a.status !== 'running' && a.status !== 'unconfigured'
-    );
+    const toWake = filtered.filter((a) => a.status !== 'running' && a.status !== 'unconfigured');
     if (!toWake.length) {
-      toast(pickLocaleText(locale, '所有 Agent 均已在线', 'All agents are already online'));
+      toast(pickLocaleText(locale, '本项目相关 Agent 均已在线', 'All project agents are already online'));
       return;
     }
-    toast(locale === 'en' ? `Waking ${toWake.length} agent(s)...` : `正在唤醒 ${toWake.length} 个 Agent...`);
+    toast(locale === 'en' ? `Waking ${toWake.length} project agent(s)...` : `正在唤醒 ${toWake.length} 个本项目 Agent...`);
     for (const a of toWake) {
       try {
         await api.agentWake(a.id);
@@ -81,67 +93,93 @@ export default function MonitorPanel() {
         // ignore
       }
     }
-    toast(locale === 'en' ? `${toWake.length} wake command(s) sent; status will refresh in 30s` : `${toWake.length} 个唤醒指令已发出，30秒后刷新状态`);
+    toast(locale === 'en' ? `${toWake.length} wake command(s) sent; status will refresh in 30s` : `${toWake.length} 个唤醒指令已发出，30 秒后刷新状态`);
     setTimeout(() => loadAgentsStatus(), 30000);
   };
 
-  const asData = agentsStatusData;
-  const filtered = asData?.agents || [];
-  const running = filtered.filter((a) => a.status === 'running').length;
-  const idle = filtered.filter((a) => a.status === 'idle').length;
-  const offline = filtered.filter((a) => a.status === 'offline').length;
-  const unconf = filtered.filter((a) => a.status === 'unconfigured').length;
-  const gw = asData?.gateway;
-  const gwCls = gw?.probe ? 'ok' : gw?.alive ? 'warn' : 'err';
-
   return (
     <div>
-      {asData && asData.ok && (
-        <div className="as-panel">
-          <div className="as-header">
-            <span className="as-title">{pickLocaleText(locale, '🔌 Agent 在线状态', '🔌 Agent Status')}</span>
-            <span className={`as-gw ${gwCls}`}>Gateway: {gw?.status || pickLocaleText(locale, '未知', 'Unknown')}</span>
-            <button className="btn-refresh" onClick={() => { loadAgentsStatus(); loadCollabBusy(); }} style={{ marginLeft: 8 }}>
-              {pickLocaleText(locale, '🔄 刷新', '🔄 Refresh')}
+      <div
+        style={{
+          marginBottom: 18,
+          background: 'linear-gradient(135deg, rgba(15,38,78,.88), rgba(12,18,33,.96))',
+          border: '1px solid rgba(83, 183, 255, 0.18)',
+          borderRadius: 18,
+          padding: 18,
+          boxShadow: '0 18px 40px rgba(0,0,0,.22)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 12, color: '#7be0ff', fontWeight: 700, letterSpacing: '.06em', marginBottom: 6 }}>
+              {pickLocaleText(locale, '运行监控', 'Runtime Monitoring')}
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>
+              {pickLocaleText(locale, '项目内 Agent 在线态势与任务占用', 'Project-Agent Runtime Status & Task Occupancy')}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, maxWidth: 880 }}>
+              {pickLocaleText(locale, '这个页面只监控当前项目相关的中心与专家，不纳入 openclaw 下其他 Agent。这里关注的是在线状态、占用状态、阻塞与唤醒动作；Agent 页则专注于贡献排行、名册治理与专家增删，两者不再重复。', 'This page monitors only the centers and specialists related to the current project and excludes other agents under openclaw. It focuses on runtime status, occupancy, blockages, and wake actions, while the Agent page now concentrates on contribution ranking, roster governance, and expert add/remove workflows.')}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button className="btn-refresh" onClick={() => { loadAgentsStatus(); loadCollabBusy(); }}>
+              {pickLocaleText(locale, '🔄 刷新监控', '🔄 Refresh Monitoring')}
             </button>
             {(offline + unconf > 0) && (
-              <button className="btn-refresh" onClick={handleWakeAll} style={{ marginLeft: 4, borderColor: 'var(--warn)', color: 'var(--warn)' }}>
-                {pickLocaleText(locale, '⚡ 全部唤醒', '⚡ Wake All')}
+              <button className="btn-refresh" onClick={handleWakeAll} style={{ borderColor: 'var(--warn)', color: 'var(--warn)' }}>
+                {pickLocaleText(locale, '⚡ 唤醒本项目 Agent', '⚡ Wake Project Agents')}
               </button>
             )}
           </div>
+        </div>
+      </div>
+
+      {agentsStatusData && agentsStatusData.ok && (
+        <div className="as-panel">
+          <div className="as-header">
+            <span className="as-title">{pickLocaleText(locale, '🔌 在线状态总览', '🔌 Status Overview')}</span>
+            <span className={`as-gw ${gwCls}`}>Gateway: {gw?.status || pickLocaleText(locale, '未知', 'Unknown')}</span>
+          </div>
           <div className="as-grid">
             {filtered.map((a) => {
+              const normalizedId = normalizeAgentId(a.id);
               const canWake = a.status !== 'running' && a.status !== 'unconfigured' && gw?.alive;
-              const busyEntries = busyMap[a.id] || [];
+              const busyEntries = busyMap[normalizedId] || [];
               const busyLead = busyEntries[0];
+              const meta = deptMeta(normalizedId, locale);
               return (
-                <div key={a.id} className="as-card" title={`${deptMeta(a.id, locale).role || a.role} · ${locale === 'en' ? (a.status === 'running' ? 'Running' : a.status === 'idle' ? 'Idle' : a.status === 'offline' ? 'Offline' : a.status === 'unconfigured' ? 'Unconfigured' : a.statusLabel) : a.statusLabel}`}>
+                <div key={normalizedId} className="as-card" title={`${meta.role || a.role} · ${locale === 'en' ? (a.status === 'running' ? 'Running' : a.status === 'idle' ? 'Idle' : a.status === 'offline' ? 'Offline' : a.status === 'unconfigured' ? 'Unconfigured' : a.statusLabel) : a.statusLabel}`}>
                   <div className={`as-dot ${a.status}`} />
-                  <div style={{ fontSize: 22 }}>{a.emoji}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700 }}>{deptMeta(a.id, locale).label || a.label}</div>
-                  <div style={{ fontSize: 10, color: 'var(--muted)' }}>{deptMeta(a.id, locale).role || a.role}</div>
-                  <div style={{ fontSize: 10, color: 'var(--muted)' }}>{locale === 'en' ? (a.status === 'running' ? 'Running' : a.status === 'idle' ? 'Idle' : a.status === 'offline' ? 'Offline' : a.status === 'unconfigured' ? 'Unconfigured' : a.statusLabel) : a.statusLabel}</div>
-                  {busyLead && (
-                    <div style={{ marginTop: 6, padding: '6px 8px', borderRadius: 10, background: busyLead.state === 'paused' ? '#2a2112' : '#0f2219', border: `1px solid ${busyLead.state === 'paused' ? '#f6c17755' : '#4cc38a44'}`, fontSize: 10, lineHeight: 1.45 }}>
-                      <div style={{ fontWeight: 700, color: busyLead.state === 'paused' ? '#f6c177' : '#67e8a5' }}>
-                        {renderBusySummary(busyLead, locale)}
+                  <div className="as-card-head">
+                    <div className="as-emoji">{meta.emoji || a.emoji}</div>
+                    <div className="as-name">{meta.label || a.label}</div>
+                    <div className="as-role">{meta.role || a.role}</div>
+                    <div className="as-status-text">{locale === 'en' ? (a.status === 'running' ? 'Running' : a.status === 'idle' ? 'Idle' : a.status === 'offline' ? 'Offline' : a.status === 'unconfigured' ? 'Unconfigured' : a.statusLabel) : a.statusLabel}</div>
+                  </div>
+                  <div className="as-card-middle">
+                    <div
+                      className={`as-busy-box ${busyLead?.state === 'paused' ? 'paused' : busyLead ? 'busy' : 'idle'}`}
+                    >
+                      <div className="as-busy-title">
+                        {busyLead ? renderBusySummary(busyLead, locale) : pickLocaleText(locale, '空闲', 'Idle')}
                       </div>
-                      <div style={{ color: 'var(--muted)', marginTop: 2 }}>
-                        {busyLead.task_title || busyLead.topic || pickLocaleText(locale, '执行中', 'Working')}
+                      <div className="as-busy-subtitle">
+                        {busyLead?.task_title || busyLead?.topic || pickLocaleText(locale, '等待任务', 'Waiting for task')}
                       </div>
                     </div>
-                  )}
-                  {a.lastActive ? (
-                    <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 6 }}>⏰ {a.lastActive}</div>
-                  ) : (
-                    <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 6 }}>{pickLocaleText(locale, '无活动记录', 'No activity yet')}</div>
-                  )}
-                  {canWake && (
-                    <button className="as-wake-btn" onClick={(e) => { e.stopPropagation(); handleWake(a.id); }}>
-                      {pickLocaleText(locale, '⚡ 唤醒', '⚡ Wake')}
-                    </button>
-                  )}
+                  </div>
+                  <div className="as-card-foot">
+                    {a.lastActive ? (
+                      <div className="as-last-active">⏰ {a.lastActive}</div>
+                    ) : (
+                      <div className="as-last-active">{pickLocaleText(locale, '无活动记录', 'No activity yet')}</div>
+                    )}
+                    {canWake && (
+                      <button className="as-wake-btn" onClick={(e) => { e.stopPropagation(); handleWake(a.id); }}>
+                        {pickLocaleText(locale, '⚡ 唤醒', '⚡ Wake')}
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -152,7 +190,7 @@ export default function MonitorPanel() {
             {offline > 0 && <span><span className="as-dot offline" style={{ position: 'static', width: 8, height: 8 }} /> {locale === 'en' ? `${offline} offline` : `${offline} 离线`}</span>}
             {unconf > 0 && <span><span className="as-dot unconfigured" style={{ position: 'static', width: 8, height: 8 }} /> {locale === 'en' ? `${unconf} unconfigured` : `${unconf} 未配置`}</span>}
             <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--muted)' }}>
-              {locale === 'en' ? `Checked at ${(asData.checkedAt || '').substring(11, 19)}` : `检测于 ${(asData.checkedAt || '').substring(11, 19)}`}
+              {locale === 'en' ? `Checked at ${(agentsStatusData.checkedAt || '').substring(11, 19)}` : `检测于 ${(agentsStatusData.checkedAt || '').substring(11, 19)}`}
             </span>
           </div>
         </div>
@@ -160,13 +198,14 @@ export default function MonitorPanel() {
 
       <div className="duty-grid">
         {DEPTS.map((d) => {
-          const myTasks = activeTasks.filter((t) => t.org === d.label);
-          const deptBusyEntries = busyMap[d.id] || [];
+          const normalizedDeptId = normalizeAgentId(d.id);
+          const myTasks = activeTasks.filter((t) => normalizeAgentId(t.org) === normalizedDeptId || normalizeAgentId(t.currentDept || '') === normalizedDeptId);
+          const deptBusyEntries = busyMap[normalizedDeptId] || [];
           const taskBusyEntries = deptBusyEntries.filter((entry) => entry.source_type === 'task');
           const nonTaskBusyEntries = deptBusyEntries.filter((entry) => entry.source_type !== 'task');
           const isActive = myTasks.some((t) => t.state === 'Doing') || taskBusyEntries.some((entry) => entry.state === 'active');
           const isBlocked = myTasks.some((t) => t.state === 'Blocked') || taskBusyEntries.some((entry) => entry.state === 'paused');
-          const off = agentMap[d.id];
+          const off = agentMap[normalizedDeptId];
           const hb = off?.heartbeat || { status: 'idle', label: '⚪' };
           const dotCls = isBlocked ? 'blocked' : isActive ? 'busy' : hb.status === 'active' ? 'active' : 'idle';
           const statusText = isBlocked
@@ -177,12 +216,12 @@ export default function MonitorPanel() {
                 ? pickLocaleText(locale, '🟢 活跃', '🟢 Active')
                 : pickLocaleText(locale, '⚪ 候命', '⚪ Idle');
           const cardCls = isBlocked ? 'blocked-card' : isActive ? 'active-card' : '';
-          const panelMeta = deptMeta(d.id, locale);
+          const panelMeta = deptMeta(normalizedDeptId, locale);
 
           return (
-            <div key={d.id} className={`duty-card ${cardCls}`}>
+            <div key={normalizedDeptId} className={`duty-card ${cardCls}`}>
               <div className="dc-hdr">
-                <span className="dc-emoji">{d.emoji}</span>
+                <span className="dc-emoji">{panelMeta.emoji}</span>
                 <div className="dc-info">
                   <div className="dc-name">{panelMeta.label}</div>
                   <div className="dc-role">{panelMeta.role} · {panelMeta.rank}</div>

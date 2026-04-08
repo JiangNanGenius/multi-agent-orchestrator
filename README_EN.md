@@ -268,7 +268,7 @@ This step is especially important after you modify anything under `agents/`, adj
 #### 4.3 Refresh statistics and dashboard live data
 
 ```bash
-python3 scripts/sync_officials_stats.py
+python3 scripts/sync_agents_overview.py
 python3 scripts/refresh_live_data.py
 ```
 
@@ -350,7 +350,7 @@ If you are updating an existing deployment, the following command set is the pre
 ```bash
 cd edict/frontend && npm install && npm run build && cd ../..
 python3 scripts/sync_agent_config.py
-python3 scripts/sync_officials_stats.py
+python3 scripts/sync_agents_overview.py
 python3 scripts/refresh_live_data.py
 openclaw gateway restart
 ```

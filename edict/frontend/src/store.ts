@@ -138,6 +138,16 @@ export const AGENT_ARCHITECTURE = {
     emoji: '🗂️',
     color: '#9b59b6',
   },
+  expert_curator: {
+    label: '专家编组官',
+    labelEn: 'Expert Curator',
+    role: '专家编组与名册治理',
+    roleEn: 'Expert Roster Governance',
+    rank: '执行角色',
+    rankEn: 'Execution Role',
+    emoji: '🧩',
+    color: '#7be0ff',
+  },
   search_specialist: {
     label: '搜索专家',
     labelEn: 'Search Specialist',
