@@ -25,7 +25,7 @@ class TaskCreate(BaseModel):
     description: str = ""
     priority: str = "中"
     assignee_org: str | None = None
-    creator: str = "emperor"
+    creator: str = "system"
     tags: list[str] = []
     meta: dict | None = None
 
@@ -104,7 +104,7 @@ async def list_tasks(
 
 @router.get("/live-status")
 async def live_status(svc: TaskService = Depends(get_task_service)):
-    """兼容旧 live_status.json 格式的全局状态。"""
+    """返回统一的全局实时状态视图。"""
     return await svc.get_live_status()
 
 
@@ -176,14 +176,14 @@ async def transition_task(
 @router.post("/{task_id}/dispatch")
 async def dispatch_task(
     task_id: uuid.UUID,
-    agent: str = Query(description="目标 agent"),
-    message: str = Query(default="", description="派发消息"),
+    agent: str = Query(description="目标中心或专家 ID"),
+    message: str = Query(default="", description="派发说明"),
     svc: TaskService = Depends(get_task_service),
 ):
-    """手动派发任务给指定 agent。"""
+    """手动派发任务给指定中心或专家。"""
     try:
         await svc.request_dispatch(task_id, agent, message)
-        return {"message": "dispatch requested", "agent": agent}
+        return {"message": "dispatch requested", "target": agent}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

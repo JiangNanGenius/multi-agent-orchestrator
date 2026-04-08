@@ -1,11 +1,12 @@
-#!/usr/bin/env python3
-import json
-import pathlib
-import time
 import datetime
-import traceback
+import json
 import logging
-from file_lock import atomic_json_write, atomic_json_read
+import pathlib
+import re
+import time
+import traceback
+
+from file_lock import atomic_json_read, atomic_json_write
 
 log = logging.getLogger('sync_runtime')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(message)s', datefmt='%H:%M:%S')
@@ -15,6 +16,42 @@ DATA = BASE / 'data'
 DATA.mkdir(exist_ok=True)
 SYNC_STATUS = DATA / 'sync_status.json'
 SESSIONS_ROOT = pathlib.Path.home() / '.openclaw' / 'agents'
+
+MARKER_RE = re.compile(r'\[\[(.*?)\]\]')
+NO_REPLY_RE = re.compile(r'^\s*NO_REPLY\b[:：\-\s]*', re.IGNORECASE)
+
+POLICY_ALIASES = {
+    'send': 'send',
+    'default': 'send',
+    'none': 'send',
+    'noreply': 'no_reply',
+    'donotreply': 'no_reply',
+    'skipreply': 'no_reply',
+    'replycurrent': 'reply_current',
+    'replytocurrent': 'reply_current',
+    'replycurrentmessage': 'reply_current',
+    'replymessage': 'reply_current',
+    'replythread': 'reply_thread',
+    'replyinthread': 'reply_thread',
+    'threadreply': 'reply_thread',
+    'replyroot': 'reply_root',
+    'replytoroot': 'reply_root',
+    'rootreply': 'reply_root',
+}
+
+FIELD_ALIASES = {
+    'messageId': {
+        'messageid', 'messsageid', 'msgid', 'targetmessageid', 'currentmessageid',
+        'lastmessageid', 'originmessageid', 'replymessageid',
+    },
+    'threadId': {'threadid', 'replythreadid', 'messagethreadid'},
+    'rootId': {'rootid', 'messagerootid', 'threadrootid'},
+    'chatId': {'chatid', 'conversationid'},
+    'senderId': {'senderid', 'userid', 'fromuserid', 'fromuserid', 'operatorid'},
+    'senderOpenId': {'openid', 'senderopenid', 'useropenid', 'fromopenid'},
+    'replyPolicy': {'replypolicy', 'reportpolicy', 'replymode'},
+    'channel': {'channel', 'lastchannel', 'sourcechannel'},
+}
 
 
 def write_status(**kwargs):
@@ -42,53 +79,108 @@ def state_from_session(age_ms, aborted):
 
 def detect_official(agent_id):
     mapping = {
-        'main':    ('储君', '太子'),        # legacy id for taizi
-        'taizi':   ('储君', '太子'),
-        'zhongshu': ('中书令', '中书省'),
-        'menxia':  ('侍中', '门下省'),
-        'shangshu': ('尚书令', '尚书省'),
-        'hubu':    ('户部尚书', '户部'),
-        'libu':    ('礼部尚书', '礼部'),
-        'bingbu':  ('兵部尚书', '兵部'),
-        'xingbu':  ('刑部尚书', '刑部'),
-        'gongbu':  ('工部尚书', '工部'),
-        'libu_hr': ('吏部尚书', '吏部'),
-        'zaochao': ('钦天监', '钦天监'),
+        'control_center': ('总控值守', '总控中心'),
+        'plan_center': ('规划协调', '规划中心'),
+        'review_center': ('评审协调', '评审中心'),
+        'dispatch_center': ('调度协调', '调度中心'),
+        'data_specialist': ('数据专家', '数据专家'),
+        'docs_specialist': ('文案专家', '文案专家'),
+        'code_specialist': ('代码专家', '代码专家'),
+        'audit_specialist': ('合规专家', '合规专家'),
+        'deploy_specialist': ('部署专家', '部署专家'),
+        'admin_specialist': ('Agent管理专家', 'Agent管理专家'),
+        'search_specialist': ('搜索专家', '搜索专家'),
     }
-    return mapping.get(agent_id, ('尚书令', '尚书省'))
+    return mapping.get(agent_id, ('调度协调', '调度中心'))
 
 
-def load_activity(session_file, limit=12):
+def normalize_key(value):
+    return re.sub(r'[^a-z0-9]+', '', str(value or '').lower())
+
+
+def normalize_policy(value):
+    normalized = normalize_key(value)
+    return POLICY_ALIASES.get(normalized, 'send') if normalized else 'send'
+
+
+def parse_reply_intent(text):
+    raw = str(text or '')
+    markers = []
+    for marker in MARKER_RE.findall(raw):
+        clean = str(marker or '').strip()
+        if clean:
+            markers.append(clean)
+
+    has_no_reply = bool(NO_REPLY_RE.match(raw))
+    policy = 'no_reply' if has_no_reply else 'send'
+
+    for marker in markers:
+        mapped = normalize_policy(marker)
+        if mapped != 'send':
+            policy = mapped
+            break
+        marker_norm = normalize_key(marker)
+        if marker_norm in {'reply', 'replytocurrent'}:
+            policy = 'reply_current'
+            break
+
+    cleaned = MARKER_RE.sub('', raw)
+    cleaned = NO_REPLY_RE.sub('', cleaned)
+    cleaned = cleaned.replace('**', '').strip()
+
+    return {
+        'policy': policy,
+        'markers': markers,
+        'hasNoReplyPrefix': has_no_reply,
+        'cleanText': cleaned,
+    }
+
+
+def extract_text_from_message(msg):
+    if not isinstance(msg, dict):
+        return ''
+    content = msg.get('content', [])
+    if not isinstance(content, list):
+        return ''
+    parts = []
+    for item in content:
+        if isinstance(item, dict) and item.get('type') == 'text' and item.get('text'):
+            parts.append(str(item.get('text')))
+    return '\n'.join(parts).strip()
+
+
+def load_session_events(session_file):
     p = pathlib.Path(session_file or '')
     if not p.exists():
         return []
-    rows = []
     try:
         lines = p.read_text(errors='ignore').splitlines()
     except Exception:
         return []
 
-    # Read all valid JSON lines first
     events = []
     for ln in lines:
         try:
             item = json.loads(ln)
-            events.append(item)
-        except:
+            if isinstance(item, dict):
+                events.append(item)
+        except Exception:
             continue
+    return events
 
-    # Process events to extract meaningful activity
-    # We want to show what the agent is *thinking* or *doing*
-    for item in reversed(events):
+
+def load_activity(session_file, limit=12, events=None):
+    rows = []
+    event_rows = events if events is not None else load_session_events(session_file)
+
+    for item in reversed(event_rows):
         msg = item.get('message') or {}
         role = msg.get('role')
         ts = item.get('timestamp') or ''
 
         if role == 'toolResult':
             tool = msg.get('toolName', '-')
-            details = msg.get('details') or {}
-            # If tool output is short, show it
-            content = msg.get('content', [{'text': ''}])[0].get('text', '')
+            content = extract_text_from_message(msg)
             if len(content) < 50:
                 text = f"Tool '{tool}' returned: {content}"
             else:
@@ -96,36 +188,114 @@ def load_activity(session_file, limit=12):
             rows.append({'at': ts, 'kind': 'tool', 'text': text})
 
         elif role == 'assistant':
-            text = ''
-            for c in msg.get('content', []):
-                if c.get('type') == 'text' and c.get('text'):
-                    raw_text = c.get('text').strip()
-                    # Clean up common prefixes
-                    clean_text = raw_text.replace('[[reply_to_current]]', '').strip()
-                    if clean_text:
-                        text = clean_text
-                    break
+            raw_text = extract_text_from_message(msg)
+            intent = parse_reply_intent(raw_text)
+            text = intent['cleanText']
             if text:
-                # Prioritize showing the "thought" - usually the first few sentences
                 summary = text.split('\n')[0]
                 if len(summary) > 200:
                     summary = summary[:200] + '...'
                 rows.append({'at': ts, 'kind': 'assistant', 'text': summary})
-                
+
         elif role == 'user':
-             # Also show what user asked, can be context relevant
-             text = ''
-             for c in msg.get('content', []):
-                if c.get('type') == 'text':
-                     text = c.get('text', '')[:100]
-             if text:
-                 rows.append({'at': ts, 'kind': 'user', 'text': f"User: {text}..."})
+            text = extract_text_from_message(msg)
+            if text:
+                rows.append({'at': ts, 'kind': 'user', 'text': f"User: {text[:100]}..."})
 
         if len(rows) >= limit:
             break
 
-    # Re-order to chronological for display if needed, but the caller usually takes the first (latest)
     return rows
+
+
+def _collect_scalar_fields(obj, prefix='root', found=None):
+    if found is None:
+        found = {}
+
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            key_norm = normalize_key(key)
+            path = f'{prefix}.{key}'
+            for field, aliases in FIELD_ALIASES.items():
+                if key_norm in aliases and value not in (None, '', [], {}):
+                    found.setdefault(field, {'value': value, 'path': path})
+            if isinstance(value, (dict, list)):
+                _collect_scalar_fields(value, path, found)
+    elif isinstance(obj, list):
+        for idx, value in enumerate(obj):
+            if isinstance(value, (dict, list)):
+                _collect_scalar_fields(value, f'{prefix}[{idx}]', found)
+
+    return found
+
+
+def build_reply_meta(row, channel, session_file, origin=None, events=None):
+    origin = origin or {}
+    event_rows = events if events is not None else load_session_events(session_file)
+
+    latest_assistant_text = ''
+    latest_assistant_message = {}
+    latest_user_message = {}
+    for item in reversed(event_rows):
+        msg = item.get('message') or {}
+        role = msg.get('role')
+        if role == 'assistant' and not latest_assistant_text:
+            latest_assistant_text = extract_text_from_message(msg)
+            latest_assistant_message = msg
+        elif role == 'user' and not latest_user_message:
+            latest_user_message = msg
+        if latest_assistant_text and latest_user_message:
+            break
+
+    parsed_intent = parse_reply_intent(latest_assistant_text)
+    candidates = _collect_scalar_fields({
+        'row': row,
+        'origin': origin,
+        'latestUserMessage': latest_user_message,
+        'latestAssistantMessage': latest_assistant_message,
+    })
+
+    explicit_policy = candidates.get('replyPolicy', {}).get('value')
+    policy = parsed_intent['policy']
+    if policy == 'send' and explicit_policy:
+        policy = normalize_policy(explicit_policy)
+
+    detected_channel = str(candidates.get('channel', {}).get('value') or channel or '-').strip() or '-'
+    channel_lower = detected_channel.lower()
+    is_feishu = 'feishu' in channel_lower or 'lark' in channel_lower
+
+    effective_policy = policy
+    fallback_mode = 'none'
+    if policy in {'reply_current', 'reply_thread', 'reply_root'}:
+        fallback_mode = 'send'
+        if not is_feishu:
+            effective_policy = 'send'
+
+    context = {
+        'targetMessageId': candidates.get('messageId', {}).get('value'),
+        'threadId': candidates.get('threadId', {}).get('value'),
+        'rootId': candidates.get('rootId', {}).get('value'),
+        'chatId': candidates.get('chatId', {}).get('value'),
+        'senderId': candidates.get('senderId', {}).get('value'),
+        'senderOpenId': candidates.get('senderOpenId', {}).get('value'),
+    }
+    available_targets = [key for key, value in context.items() if value not in (None, '', [], {})]
+
+    return {
+        'channel': detected_channel,
+        'channelFamily': 'feishu' if is_feishu else 'other',
+        'policy': policy,
+        'effectivePolicy': effective_policy,
+        'fallbackMode': fallback_mode,
+        'transport': 'webhook_notify' if is_feishu else 'generic_notify',
+        'parsedFromText': bool(parsed_intent['markers'] or parsed_intent['hasNoReplyPrefix']),
+        'markers': parsed_intent['markers'],
+        'hasNoReplyPrefix': parsed_intent['hasNoReplyPrefix'],
+        'availableTargets': available_targets,
+        'hasReplyContext': bool(available_targets),
+        **context,
+        'sourcePaths': {key: meta.get('path') for key, meta in candidates.items() if meta.get('path')},
+    }
 
 
 def build_task(agent_id, session_key, row, now_ms):
@@ -135,20 +305,17 @@ def build_task(agent_id, session_key, row, now_ms):
     aborted = bool(row.get('abortedLastRun'))
     state = state_from_session(age_ms, aborted)
 
-    official, org = detect_official(agent_id)
-    channel = row.get('lastChannel') or (row.get('origin') or {}).get('channel') or '-'
+    owner, org = detect_official(agent_id)
+    origin = row.get('origin') or {}
+    channel = row.get('lastChannel') or origin.get('channel') or '-'
     session_file = row.get('sessionFile', '')
-    
-    # 尝试从 activity 获取更有意义的当前状态描述
+    event_rows = load_session_events(session_file)
+
     latest_act = '等待指令'
-    acts = load_activity(session_file, limit=5)
-    
-    # If the absolute latest is a tool result, look for the preceding assistant thought
-    # because that explains *why* the tool was called.
+    acts = load_activity(session_file, limit=5, events=event_rows)
     if acts:
         first_act = acts[0]
         if first_act['kind'] == 'tool' and len(acts) > 1:
-            # Look for next assistant message (which is actually previous in time)
             for next_act in acts[1:]:
                 if next_act['kind'] == 'assistant':
                     latest_act = f"正在执行: {next_act['text'][:80]}"
@@ -156,26 +323,26 @@ def build_task(agent_id, session_key, row, now_ms):
             else:
                 latest_act = first_act['text'][:60]
         elif first_act['kind'] == 'assistant':
-             latest_act = f"思考中: {first_act['text'][:80]}"
+            latest_act = f"思考中: {first_act['text'][:80]}"
         else:
-             latest_act = acts[0]['text'][:60]
-    
-    title_label = (row.get('origin') or {}).get('label') or session_key
-    # 清洗会话标题：agent:xxx:cron:uuid → 定时任务, agent:xxx:subagent:uuid → 子任务
-    import re
+            latest_act = acts[0]['text'][:60]
+
+    title_label = origin.get('label') or session_key
     if re.match(r'agent:\w+:cron:', title_label):
-        title = f"{org}定时任务"
+        title = f'{org}定时任务'
     elif re.match(r'agent:\w+:subagent:', title_label):
-        title = f"{org}子任务"
+        title = f'{org}子任务'
     elif title_label == session_key or len(title_label) > 40:
-        title = f"{org}会话"
+        title = f'{org}会话'
     else:
-        title = f"{title_label}"
-    
+        title = f'{title_label}'
+
+    reply_meta = build_reply_meta(row, channel, session_file, origin=origin, events=event_rows)
+
     return {
         'id': f"OC-{agent_id}-{str(session_id)[:8]}",
         'title': title,
-        'official': official,
+        'owner': owner,
         'org': org,
         'state': state,
         'now': latest_act,
@@ -183,12 +350,12 @@ def build_task(agent_id, session_key, row, now_ms):
         'block': '上次运行中断' if aborted else '无',
         'output': session_file,
         'flow': {
-            'draft': f"agent={agent_id}",
-            'review': f"updatedAt={ms_to_str(updated_at)}",
-            'dispatch': f"sessionKey={session_key}",
+            'draft': f'agent={agent_id}',
+            'review': f'updatedAt={ms_to_str(updated_at)}',
+            'dispatch': f'sessionKey={session_key}',
         },
         'ac': '来自 OpenClaw runtime sessions 的实时映射',
-        'activity': load_activity(session_file, limit=10),
+        'activity': load_activity(session_file, limit=10, events=event_rows),
         'sourceMeta': {
             'agentId': agent_id,
             'sessionKey': session_key,
@@ -197,10 +364,14 @@ def build_task(agent_id, session_key, row, now_ms):
             'ageMs': age_ms,
             'systemSent': bool(row.get('systemSent')),
             'abortedLastRun': aborted,
+            'channel': channel,
+            'originLabel': origin.get('label'),
+            'originChannel': origin.get('channel'),
             'inputTokens': row.get('inputTokens'),
             'outputTokens': row.get('outputTokens'),
             'totalTokens': row.get('totalTokens'),
-        }
+            'replyMeta': reply_meta,
+        },
     }
 
 
@@ -236,7 +407,6 @@ def main():
                         continue
                     tasks.append(build_task(agent_id, session_key, row, now_ms))
 
-        # merge mission control tasks (最小接入)
         mc_tasks_file = DATA / 'mission_control_tasks.json'
         if mc_tasks_file.exists():
             try:
@@ -246,7 +416,6 @@ def main():
             except Exception:
                 pass
 
-        # merge manual parallel tasks (用于军机处并行看板展示)
         manual_tasks_file = DATA / 'manual_parallel_tasks.json'
         if manual_tasks_file.exists():
             try:
@@ -258,65 +427,44 @@ def main():
 
         tasks.sort(key=lambda x: x.get('sourceMeta', {}).get('updatedAt', 0), reverse=True)
 
-        # 去重（同一 id 只保留第一个=最新的）
         seen_ids = set()
         deduped = []
-        for t in tasks:
-            if t['id'] not in seen_ids:
-                seen_ids.add(t['id'])
-                deduped.append(t)
+        for task in tasks:
+            if task['id'] not in seen_ids:
+                seen_ids.add(task['id'])
+                deduped.append(task)
         tasks = deduped
 
-        # ── 过滤掉非 JJC 且非活跃的系统会话，防止看板噪音 ──
-        # 规则: 仅保留 24小时内更新的活跃会话，且排除 cron/subagent 等纯后台任务
         filtered_tasks = []
         one_day_ago = now_ms - 24 * 3600 * 1000
-        for t in tasks:
-            # 始终保留 JJC 任务（如果有的话，虽然这里主要是 OC 任务，但以防万一）
-            if str(t['id']).startswith('JJC'):
-                filtered_tasks.append(t)
+        for task in tasks:
+            if str(task['id']).startswith('JJC'):
+                filtered_tasks.append(task)
                 continue
-            
-            # OC 任务过滤
-            updated = t.get('sourceMeta', {}).get('updatedAt', 0)
-            title = t.get('title', '')
-            
-            # 1. 排除太旧的 (超过24小时)
+
+            updated = task.get('sourceMeta', {}).get('updatedAt', 0)
+            title = task.get('title', '')
             if updated < one_day_ago:
                 continue
-            
-            # 2. 排除纯后台 cron / subagent 任务，除非它们正在报错
             if '定时任务' in title or '子任务' in title:
-                # 只有当它 block 或者 error 时才显示，否则视为噪音
-                if t.get('state') != 'Blocked':
+                if task.get('state') != 'Blocked':
                     continue
-
-            # 3. 排除已冷却的 OC 会话，避免污染看板
-            # 保留 Doing（<2min）、Review（<60min）、Blocked（报错）
-            # 仅过滤掉 Next（>60min 无响应）等已结束/闲置的会话
-            state = t.get('state')
+            state = task.get('state')
             if state not in ('Doing', 'Review', 'Blocked'):
                 continue
+            filtered_tasks.append(task)
 
-            filtered_tasks.append(t)
-        
         tasks = filtered_tasks
-        
-        # ── 保留已有的 JJC-* 旨意任务（不覆盖皇上下旨记录）──
-        # JJC 任务的 now 字段由 Agent 自己通过 kanban_update.py progress 命令主动上报，
-        # 不再从会话日志中被动抓取。这里只做合并，不做 activity 映射。
+
         existing_tasks_file = DATA / 'tasks_source.json'
         if existing_tasks_file.exists():
             try:
                 existing = json.loads(existing_tasks_file.read_text())
                 jjc_existing = [t for t in existing if str(t.get('id', '')).startswith('JJC')]
-                
-                # 去掉 tasks 里已有的 JJC（以防重复），再把旨意放到最前面
                 tasks = [t for t in tasks if not str(t.get('id', '')).startswith('JJC')]
                 tasks = jjc_existing + tasks
             except Exception as e:
                 log.error(f'merge existing JJC tasks failed: {e}')
-                pass
 
         atomic_json_write(DATA / 'tasks_source.json', tasks)
 

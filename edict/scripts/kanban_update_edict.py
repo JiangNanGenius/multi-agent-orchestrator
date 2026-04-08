@@ -5,10 +5,10 @@
 保持与旧版完全相同的 CLI 接口，内部改为调用 Edict REST API。
 如果 API 不可用，降级回写 JSON 文件（过渡期保障）。
 
-用法（与旧版 100% 兼容）:
-  python3 kanban_update.py create JJC-20260223-012 "任务标题" Zhongshu 中书省 中书令
-  python3 kanban_update.py state JJC-20260223-012 Menxia "规划方案已提交门下省"
-  python3 kanban_update.py flow JJC-20260223-012 "中书省" "门下省" "规划方案提交审核"
+用法（保留原命令结构）:
+  python3 kanban_update.py create JJC-20260223-012 "任务标题" PlanCenter 规划中心 规划负责人
+  python3 kanban_update.py state JJC-20260223-012 ReviewCenter "规划方案已提交评审中心"
+  python3 kanban_update.py flow JJC-20260223-012 "规划中心" "评审中心" "规划方案提交审核"
   python3 kanban_update.py done JJC-20260223-012 "/path/to/output" "任务完成摘要"
   python3 kanban_update.py todo JJC-20260223-012 1 "实现API接口" in-progress
   python3 kanban_update.py progress JJC-20260223-012 "正在分析需求" "1.调研✅|2.文档🔄|3.原型"
@@ -40,16 +40,29 @@ _JUNK_TITLES = {
 }
 
 STATE_ORG_MAP = {
-    'Taizi': '太子', 'Zhongshu': '中书省', 'Menxia': '门下省', 'Assigned': '尚书省',
-    'Doing': '执行中', 'Review': '尚书省', 'Done': '完成', 'Blocked': '阻塞',
+    'ControlCenter': '总控中心',
+    'PlanCenter': '规划中心',
+    'ReviewCenter': '评审中心',
+    'Assigned': '调度中心',
+    'Doing': '执行中',
+    'Review': '调度中心',
+    'Done': '完成',
+    'Blocked': '阻塞',
 }
 
 # State → Edict TaskState value 映射
 _STATE_TO_EDICT = {
-    'Taizi': 'taizi', 'Zhongshu': 'zhongshu', 'Menxia': 'menxia',
-    'Assigned': 'assigned', 'Next': 'next', 'Doing': 'doing',
-    'Review': 'review', 'Done': 'done', 'Blocked': 'blocked',
-    'Cancelled': 'cancelled', 'Pending': 'pending',
+    'ControlCenter': 'ControlCenter',
+    'PlanCenter': 'PlanCenter',
+    'ReviewCenter': 'ReviewCenter',
+    'Assigned': 'Assigned',
+    'Next': 'Next',
+    'Doing': 'Doing',
+    'Review': 'Review',
+    'Done': 'Done',
+    'Blocked': 'Blocked',
+    'Cancelled': 'Cancelled',
+    'Pending': 'Pending',
 }
 
 
@@ -187,7 +200,7 @@ def _fallback_json():
     return None
 
 
-def cmd_create(task_id, title, state, org, official, remark=None):
+def cmd_create(task_id, title, state, org, owner, remark=None):
     title = _sanitize_title(title)
     valid, reason = _is_valid_task_title(title)
     if not valid:
@@ -202,7 +215,7 @@ def cmd_create(task_id, title, state, org, official, remark=None):
             'description': remark or f'下旨：{title}',
             'priority': '中',
             'assignee_org': org,
-            'creator': official,
+            'creator': owner,
             'tags': [task_id],
             'meta': {'legacy_id': task_id, 'legacy_state': state},
         })
@@ -213,7 +226,7 @@ def cmd_create(task_id, title, state, org, official, remark=None):
     # 降级
     legacy = _fallback_json()
     if legacy:
-        legacy.cmd_create(task_id, title, state, org, official, remark)
+        legacy.cmd_create(task_id, title, state, org, owner, remark)
     else:
         log.error(f'无法创建任务：API 不可用且无降级模块')
 

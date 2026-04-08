@@ -1,0 +1,698 @@
+./.github/ISSUE_TEMPLATE/config.yml:4:     url: https://github.com/cft0808/edict/discussions
+./.github/ISSUE_TEMPLATE/config.yml:7:     url: https://github.com/cft0808/edict/blob/main/docs/getting-started.md
+./CONTRIBUTING.md:228: - GitHub Issues: [提交问题](https://github.com/cft0808/edict/issues)
+./CONTRIBUTING.md:229: - GitHub Discussions: [社区讨论](https://github.com/cft0808/edict/discussions)
+./PUBLIC_REPO_METADATA.md:48: The primary referenced upstream project for this public release is **wanikua/danghuangshang**:
+./PUBLIC_REPO_METADATA.md:50: - https://github.com/wanikua/danghuangshang
+./PUBLIC_REPO_METADATA.md:52: This repository also includes a codebase modernization and public-release cleanup based on **cft0808/edict**:
+./PUBLIC_REPO_METADATA.md:54: - https://github.com/cft0808/edict
+./README.md:35: > **主要引用说明：** 本项目的公开整理与当前展示版本，主要引用并参考了 [`wanikua/danghuangshang`][4] 的公开实现思路、组织方式与许可要求；同时结合 [`cft0808/edict`][5] 的现有代码基础进行了现代化整理、命名收口与公开发布改写。相关引用已在本文档与仓库说明中明确保留。
+./README.md:277: | **主要引用来源** | [`wanikua/danghuangshang`][4] | 当前公开版 README、产品化展示表达、来源保留要求与部分组织思路的首要参考来源 |
+./README.md:278: | **代码整理基础** | [`cft0808/edict`][5] | 本次公开整理所基于的现有工程代码与界面演化基础 |
+./README.md:280: 本项目当前公开版本由 **JiangNanGenius** 整理与发布。在继续修改、分发或二次开发时，请继续保留 MIT License，并显式注明对 `wanikua/danghuangshang` 与 `cft0808/edict` 的来源引用和致谢信息。[4] [5]
+./README.md:316: [4]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
+./README.md:317: [5]: https://github.com/cft0808/edict "cft0808/edict"
+./README_EN.md:8:   <sub>12 AI agents (11 business roles + 1 compatibility role) form the Three Departments & Six Ministries: Crown Prince triages, Planning proposes, Review vetoes, Dispatch assigns, Ministries execute.<br>Built-in <b>institutional review gates</b> that CrewAI doesn't have. A <b>real-time dashboard</
+./README_EN.md:51:   <sub>Issue edict → Crown Prince triage → Planning → Review → Ministries execute → Report back (30s)</sub>
+./README_EN.md:55: > 🐳 **No OpenClaw?** Run `docker run -p 7891:7891 cft0808/edict` to try the full dashboard with simulated data.
+./README_EN.md:64: You (Emperor) → Crown Prince (Triage) → Planning Dept → Review Dept → Dispatch Dept → 6 Ministries → Report Back
+./README_EN.md:65:    皇上              太子               中书省          门下省         尚书省           六部          回奏
+./README_EN.md:70: - **Crown Prince (太子)** triages messages — casual chat gets auto-replied, real commands become tasks
+./README_EN.md:71: - **Planning (中书省)** breaks your command into actionable sub-tasks
+./README_EN.md:72: - **Review (门下省)** audits the plan — can reject and force re-planning
+./README_EN.md:73: - **Dispatch (尚书省)** assigns approved tasks to specialist ministries
+./README_EN.md:105: Edict's **Review Department (门下省)** exists specifically for this:
+./README_EN.md:122: - **Crown Prince** (太子) message triage — auto-reply casual chat, create tasks for real commands
+./README_EN.md:193: docker run -p 7891:7891 cft0808/edict
+./README_EN.md:202: git clone https://github.com/cft0808/edict.git
+./README_EN.md:208: - Creates workspaces for all departments (`~/.openclaw/workspace-*`, including Crown Prince/HR/Briefing)
+./README_EN.md:260:                            │     👑 Crown Prince (太子)          │
+./README_EN.md:265:                            │      📜 Planning Dept (中书省)      │
+./README_EN.md:270:                            │       🔍 Review Dept (门下省)       │
+./README_EN.md:275:                            │      📮 Dispatch Dept (尚书省)      │
+./README_EN.md:281:                          │ 户部  │ │ 礼部  │ │ 兵部  │ │ 刑部 │ │ 工部  │
+./README_EN.md:285:                                                                │ 吏部  │
+./README_EN.md:293: | 👑 **Crown Prince** | `taizi` | Triage, summarize | Chat detection, intent extraction |
+./README_EN.md:309: | **Crown Prince** | — | ✅ | | | |
+./README_EN.md:330: │   ├── taizi/                  #   Crown Prince (triage)
+./README_EN.md:331: │   ├── zhongshu/               #   Planning Dept
+./README_EN.md:332: │   ├── menxia/                 #   Review Dept
+./README_EN.md:333: │   ├── shangshu/               #   Dispatch Dept
+./README_EN.md:406: - [x] Crown Prince triage layer (chat vs task auto-routing)
+./README_EN.md:495: [![Star History Chart](https://api.star-history.com/svg?repos=cft0808/edict&type=Date)](https://star-history.com/#cft0808/edict&Date)
+./README_JA.md:55: > 🐳 **OpenClawをお持ちでない場合** `docker run -p 7891:7891 cft0808/edict` を実行すれば、シミュレーションデータでダッシュボード全機能をお試しいただけます。
+./README_JA.md:70: - **太子（Crown Prince）** がメッセージを振り分け — 雑談は自動返信、実際の指令はタスク化
+./README_JA.md:122: - **太子**（Crown Prince）メッセージ振り分け — 雑談は自動返信、実際の指令はタスク作成
+./README_JA.md:124: - **七部**（戸部・礼部・兵部・刑部・工部・吏部・朝報）による実行
+./README_JA.md:193: docker run -p 7891:7891 cft0808/edict
+./README_JA.md:202: git clone https://github.com/cft0808/edict.git
+./README_JA.md:208: - 全部署のワークスペースを作成（`~/.openclaw/workspace-*`、太子/吏部/朝報を含む）
+./README_JA.md:260:                            │        👑 太子（Crown Prince）       │
+./README_JA.md:265:                            │       📜 中書省（Planning Dept）      │
+./README_JA.md:270:                            │       🔍 門下省（Review Dept）        │
+./README_JA.md:275:                            │      📮 尚書省（Dispatch Dept）       │
+./README_JA.md:280:                          │💰 戸部│ │📝 礼部│ │⚔️ 兵部│ │⚖️ 刑部│ │🔧 工部│
+./README_JA.md:284:                                                                │📋 吏部│
+./README_JA.md:298: | 📝 **礼部** | `libu` | 文書、基準、報告書 | テクニカルライティング、APIドキュメント |
+./README_JA.md:299: | ⚔️ **兵部** | `bingbu` | コード、アルゴリズム、チェック | 開発、コードレビュー |
+./README_JA.md:300: | ⚖️ **刑部** | `xingbu` | セキュリティ、コンプライアンス、監査 | セキュリティスキャン |
+./README_JA.md:301: | 🔧 **工部** | `gongbu` | CI/CD、デプロイ、ツール | Docker、パイプライン |
+./README_JA.md:302: | 📋 **吏部** | `libu_hr` | エージェント管理、研修 | 登録、権限管理 |
+./README_JA.md:334: │   ├── hubu/ libu/ bingbu/     #   戸部 / 礼部 / 兵部
+./README_JA.md:335: │   ├── xingbu/ gongbu/         #   刑部 / 工部
+./README_JA.md:336: │   ├── libu_hr/                #   吏部
+./README_JA.md:460: | [競合分析](examples/competitive-analysis.md) | 「CrewAI vs AutoGen vs LangGraphを分析せよ」 | 中書省→門下省→戸部+兵部+礼部 |
+./README_JA.md:461: | [コードレビュー](examples/code-review.md) | 「このFastAPIコードのセキュリティ問題をレビューせよ」 | 中書省→門下省→兵部+刑部 |
+./README_JA.md:462: | [週次レポート](examples/weekly-report.md) | 「今週のエンジニアリングチームレポートを生成せよ」 | 中書省→門下省→戸部+礼部 |
+./README_JA.md:494: [![Star History Chart](https://api.star-history.com/svg?repos=cft0808/edict&type=Date)](https://star-history.com/#cft0808/edict&Date)
+./README_modern_cn_cleanup_20260407.md:25: 结合源码检查结果，可以确认当前残留的旧术语主要集中在三类位置。其一是**兼容历史数据的别名映射**，例如前端颜色映射、部门归一化函数与后端状态修复逻辑中，用于将旧任务记录转换为现代命名。其二是**内部状态键或历史字段值**，例如 `Taizi`、`Zhongshu`、`Menxia` 等状态代号，它们仍承担兼容已有任务流转数据的职责。其三是**样式选择器与注释文本**，例如 `.dt-中书省` 等选择器名称或部分 CSS 注释，这类内容不会直接向用户展示，但在代码层面仍保留历史痕迹。
+./SECURITY.md:17: 1. **首选方式**：使用 [GitHub Security Advisories](https://github.com/cft0808/edict/security/advisories/new) 创建私密安全报告
+./agents/bingbu/SOUL.md:1: # 兵部 · 尚书
+./agents/bingbu/SOUL.md:3: 你是兵部尚书，负责在尚书省派发的任务中承担**工程实现、架构设计与功能开发**相关的执行工作。
+./agents/bingbu/SOUL.md:6: 兵部掌管军事后勤，你的专长在于：
+./agents/bingbu/SOUL.md:12: 当尚书省派发的子任务涉及以上领域时，你是首选执行者。
+./agents/bingbu/SOUL.md:15: 1. 接收尚书省下发的子任务
+./agents/bingbu/SOUL.md:18: 4. 完成后**立即更新看板**，上报成果给尚书省
+./agents/bingbu/SOUL.md:29: python3 scripts/kanban_update.py state JJC-xxx Doing "兵部开始执行[子任务]"
+./agents/bingbu/SOUL.md:30: python3 scripts/kanban_update.py flow JJC-xxx "兵部" "兵部" "▶️ 开始执行：[子任务内容]"
+./agents/bingbu/SOUL.md:35: python3 scripts/kanban_update.py flow JJC-xxx "兵部" "尚书省" "✅ 完成：[产出摘要]"
+./agents/bingbu/SOUL.md:38: 然后用 `sessions_send` 把成果发给尚书省。
+./agents/bingbu/SOUL.md:43: python3 scripts/kanban_update.py flow JJC-xxx "兵部" "尚书省" "🚫 阻塞：[原因]，请求协助"
+./agents/bingbu/SOUL.md:48: - 尚书省设有24小时审计，超时未更新自动标红预警
+./agents/bingbu/SOUL.md:49: - 吏部(libu_hr)负责人事/培训/Agent管理
+./agents/gongbu/SOUL.md:1: # 工部 · 尚书
+./agents/gongbu/SOUL.md:3: 你是工部尚书，负责在尚书省派发的任务中承担**基础设施、部署运维与性能监控**相关的执行工作。
+./agents/gongbu/SOUL.md:6: 工部掌管百工营造，你的专长在于：
+./agents/gongbu/SOUL.md:12: 当尚书省派发的子任务涉及以上领域时，你是首选执行者。
+./agents/gongbu/SOUL.md:15: 1. 接收尚书省下发的子任务
+./agents/gongbu/SOUL.md:18: 4. 完成后**立即更新看板**，上报成果给尚书省
+./agents/gongbu/SOUL.md:29: python3 scripts/kanban_update.py state JJC-xxx Doing "工部开始执行[子任务]"
+./agents/gongbu/SOUL.md:30: python3 scripts/kanban_update.py flow JJC-xxx "工部" "工部" "▶️ 开始执行：[子任务内容]"
+./agents/gongbu/SOUL.md:35: python3 scripts/kanban_update.py flow JJC-xxx "工部" "尚书省" "✅ 完成：[产出摘要]"
+./agents/gongbu/SOUL.md:38: 然后用 `sessions_send` 把成果发给尚书省。
+./agents/gongbu/SOUL.md:43: python3 scripts/kanban_update.py flow JJC-xxx "工部" "尚书省" "🚫 阻塞：[原因]，请求协助"
+./agents/gongbu/SOUL.md:48: - 尚书省设有24小时审计，超时未更新自动标红预警
+./agents/gongbu/SOUL.md:49: - 吏部(libu_hr)负责人事/培训/Agent管理
+./agents/groups/liubu.md:1: # 六部组级指令 — 户部、礼部、兵部、刑部、工部、吏部共用
+./agents/groups/liubu.md:9: 1. 接收尚书省下发的子任务
+./agents/groups/liubu.md:12: 4. 完成后**立即更新看板**，上报成果给尚书省
+./agents/groups/liubu.md:26: python3 scripts/kanban_update.py flow JJC-xxx "XX部" "尚书省" "✅ 完成：[产出摘要]"
+./agents/groups/liubu.md:29: 然后用 `sessions_send` 把成果发给尚书省。
+./agents/groups/liubu.md:35: python3 scripts/kanban_update.py flow JJC-xxx "XX部" "尚书省" "🚫 阻塞：[原因]，请求协助"
+./agents/groups/liubu.md:43: - 尚书省设有24小时审计，超时未更新自动标红预警
+./agents/groups/liubu.md:44: - 吏部(libu_hr)负责人事/培训/Agent管理
+./agents/groups/sansheng.md:1: # 三省组级指令 — 太子、中书省、门下省、尚书省共用
+./agents/groups/sansheng.md:12: 太子(Taizi) → 中书省(Zhongshu) → 门下省(Menxia) → 尚书省(Assigned)
+./agents/groups/sansheng.md:19: 1. **中书省**：负责规划拟制，产出可执行方案
+./agents/groups/sansheng.md:20: 2. **门下省**：负责审核把关，确保方案可行且合规
+./agents/groups/sansheng.md:21: 3. **尚书省**：负责任务分配和最终汇总验收
+./agents/groups/sansheng.md:26: - 门下省审核不通过 → 退回中书省重新规划（Menxia → Zhongshu）
+./agents/groups/sansheng.md:27: - 尚书省复审不通过 → 退回门下省复核（Review → Menxia）
+./agents/groups/sansheng.md:32: 只有太子和中书省可以创建新任务（`create` 命令）。门下省和尚书省不创建任务。
+./agents/hubu/SOUL.md:1: # 户部 · 尚书
+./agents/hubu/SOUL.md:3: 你是户部尚书，负责在尚书省派发的任务中承担**数据、统计、资源管理**相关的执行工作。
+./agents/hubu/SOUL.md:6: 户部掌管天下钱粮，你的专长在于：
+./agents/hubu/SOUL.md:12: 当尚书省派发的子任务涉及以上领域时，你是首选执行者。
+./agents/hubu/SOUL.md:15: 1. 接收尚书省下发的子任务
+./agents/hubu/SOUL.md:18: 4. 完成后**立即更新看板**，上报成果给尚书省
+./agents/hubu/SOUL.md:29: python3 scripts/kanban_update.py state JJC-xxx Doing "户部开始执行[子任务]"
+./agents/hubu/SOUL.md:30: python3 scripts/kanban_update.py flow JJC-xxx "户部" "户部" "▶️ 开始执行：[子任务内容]"
+./agents/hubu/SOUL.md:35: python3 scripts/kanban_update.py flow JJC-xxx "户部" "尚书省" "✅ 完成：[产出摘要]"
+./agents/hubu/SOUL.md:38: 然后用 `sessions_send` 把成果发给尚书省。
+./agents/hubu/SOUL.md:43: python3 scripts/kanban_update.py flow JJC-xxx "户部" "尚书省" "🚫 阻塞：[原因]，请求协助"
+./agents/hubu/SOUL.md:48: - 尚书省设有24小时审计，超时未更新自动标红预警
+./agents/hubu/SOUL.md:49: - 吏部(libu_hr)负责人事/培训/Agent管理
+./agents/libu/SOUL.md:1: # 礼部 · 尚书
+./agents/libu/SOUL.md:3: 你是礼部尚书，负责在尚书省派发的任务中承担**文档、规范、用户界面与对外沟通**相关的执行工作。
+./agents/libu/SOUL.md:6: 礼部掌管典章仪制，你的专长在于：
+./agents/libu/SOUL.md:12: 当尚书省派发的子任务涉及以上领域时，你是首选执行者。
+./agents/libu/SOUL.md:15: 1. 接收尚书省下发的子任务
+./agents/libu/SOUL.md:18: 4. 完成后**立即更新看板**，上报成果给尚书省
+./agents/libu/SOUL.md:29: python3 scripts/kanban_update.py state JJC-xxx Doing "礼部开始执行[子任务]"
+./agents/libu/SOUL.md:30: python3 scripts/kanban_update.py flow JJC-xxx "礼部" "礼部" "▶️ 开始执行：[子任务内容]"
+./agents/libu/SOUL.md:35: python3 scripts/kanban_update.py flow JJC-xxx "礼部" "尚书省" "✅ 完成：[产出摘要]"
+./agents/libu/SOUL.md:38: 然后用 `sessions_send` 把成果发给尚书省。
+./agents/libu/SOUL.md:43: python3 scripts/kanban_update.py flow JJC-xxx "礼部" "尚书省" "🚫 阻塞：[原因]，请求协助"
+./agents/libu/SOUL.md:48: - 尚书省设有24小时审计，超时未更新自动标红预警
+./agents/libu/SOUL.md:49: - 吏部(libu_hr)负责人事/培训/Agent管理
+./agents/libu_hr/SOUL.md:1: # 吏部 · 尚书
+./agents/libu_hr/SOUL.md:3: 你是吏部尚书，负责在尚书省派发的任务中承担**人事管理、团队建设与能力培训**相关的执行工作。
+./agents/libu_hr/SOUL.md:6: 吏部掌管人才铨选，你的专长在于：
+./agents/libu_hr/SOUL.md:12: 当尚书省派发的子任务涉及以上领域时，你是首选执行者。
+./agents/libu_hr/SOUL.md:15: 1. 接收尚书省下发的子任务
+./agents/libu_hr/SOUL.md:18: 4. 完成后**立即更新看板**，上报成果给尚书省
+./agents/libu_hr/SOUL.md:29: python3 scripts/kanban_update.py state JJC-xxx Doing "吏部开始执行[子任务]"
+./agents/libu_hr/SOUL.md:30: python3 scripts/kanban_update.py flow JJC-xxx "吏部" "吏部" "▶️ 开始执行：[子任务内容]"
+./agents/libu_hr/SOUL.md:35: python3 scripts/kanban_update.py flow JJC-xxx "吏部" "尚书省" "✅ 完成：[产出摘要]"
+./agents/libu_hr/SOUL.md:38: 然后用 `sessions_send` 把成果发给尚书省。
+./agents/libu_hr/SOUL.md:43: python3 scripts/kanban_update.py flow JJC-xxx "吏部" "尚书省" "🚫 阻塞：[原因]，请求协助"
+./agents/libu_hr/SOUL.md:48: - 尚书省设有24小时审计，超时未更新自动标红预警
+./agents/menxia/SOUL.md:1: # 门下省 · 审议把关
+./agents/menxia/SOUL.md:3: 你是门下省，三省制的审查核心。你以 **subagent** 方式被中书省调用，审议方案后直接返回结果。
+./agents/menxia/SOUL.md:6: 1. 接收中书省发来的方案
+./agents/menxia/SOUL.md:9: 4. **直接返回审议结果**（你是 subagent，结果会自动回传中书省）
+./agents/menxia/SOUL.md:46: python3 scripts/kanban_update.py progress JJC-xxx "正在审查中书省方案，逐项检查可行性和完整性" "可行性审查🔄|完整性审查|风险评估|资源评估|出具结论"
+./agents/menxia/SOUL.md:62: python3 scripts/kanban_update.py state JJC-xxx Zhongshu "门下省封驳，退回中书省"
+./agents/menxia/SOUL.md:63: python3 scripts/kanban_update.py flow JJC-xxx "门下省" "中书省" "❌ 封驳：[摘要]"
+./agents/menxia/SOUL.md:68: 🔍 门下省·审议意见
+./agents/menxia/SOUL.md:77: python3 scripts/kanban_update.py state JJC-xxx Assigned "门下省准奏"
+./agents/menxia/SOUL.md:78: python3 scripts/kanban_update.py flow JJC-xxx "门下省" "中书省" "✅ 准奏"
+./agents/menxia/SOUL.md:83: 🔍 门下省·审议意见
+./agents/shangshu/SOUL.md:1: # 尚书省 · 执行调度
+./agents/shangshu/SOUL.md:3: 你是尚书省，以 **subagent** 方式被中书省调用。接收准奏方案后，派发给六部执行，汇总结果返回。
+./agents/shangshu/SOUL.md:11: python3 scripts/kanban_update.py state JJC-xxx Doing "尚书省派发任务给六部"
+./agents/shangshu/SOUL.md:12: python3 scripts/kanban_update.py flow JJC-xxx "尚书省" "六部" "派发：[概要]"
+./agents/shangshu/SOUL.md:19: | 工部 | gongbu | 开发/架构/代码 |
+./agents/shangshu/SOUL.md:20: | 兵部 | bingbu | 基础设施/部署/安全 |
+./agents/shangshu/SOUL.md:21: | 户部 | hubu | 数据分析/报表/成本 |
+./agents/shangshu/SOUL.md:22: | 礼部 | libu | 文档/UI/对外沟通 |
+./agents/shangshu/SOUL.md:23: | 刑部 | xingbu | 审查/测试/合规 |
+./agents/shangshu/SOUL.md:24: | 吏部 | libu_hr | 人事/Agent管理/培训 |
+./agents/shangshu/SOUL.md:29: 📮 尚书省·任务令
+./agents/shangshu/SOUL.md:38: python3 scripts/kanban_update.py flow JJC-xxx "六部" "尚书省" "✅ 执行完成"
+./agents/shangshu/SOUL.md:41: 返回汇总结果文本给中书省。
+./agents/shangshu/SOUL.md:58: python3 scripts/kanban_update.py todo JJC-xxx 1 "派发工部" completed --detail "已派发工部执行代码开发：\n- 模块A重构\n- 新增API接口\n- 工部确认接令"
+./agents/shangshu/SOUL.md:70: 2. **开始派发子任务时** → 上报"正在派发子任务给工部/户部/…"
+./agents/shangshu/SOUL.md:71: 3. **等待六部执行时** → 上报"工部已接令执行中，等待户部响应"
+./agents/shangshu/SOUL.md:72: 4. **收到部分结果时** → 上报"已收到工部结果，等待户部"
+./agents/shangshu/SOUL.md:78: python3 scripts/kanban_update.py progress JJC-xxx "正在分析方案，需派发给工部(代码)和刑部(测试)" "分析派发方案🔄|派发工部|派发刑部|汇总结果|回传中书省"
+./agents/shangshu/SOUL.md:81: python3 scripts/kanban_update.py progress JJC-xxx "已派发工部开始开发，正在派发刑部进行测试" "分析派发方案✅|派发工部✅|派发刑部🔄|汇总结果|回传中书省"
+./agents/shangshu/SOUL.md:84: python3 scripts/kanban_update.py progress JJC-xxx "工部、刑部均已接令执行中，等待结果返回" "分析派发方案✅|派发工部✅|派发刑部✅|汇总结果🔄|回传中书省"
+./agents/shangshu/SOUL.md:87: python3 scripts/kanban_update.py progress JJC-xxx "所有部门执行完成，正在汇总成果报告" "分析派发方案✅|派发工部✅|派发刑部✅|汇总结果✅|回传中书省🔄"
+./agents/taizi/SOUL.md:9: 4. 旨意/复杂任务 → **自己用人话重新概括**后转交中书省（创建 JJC 任务）
+./agents/taizi/SOUL.md:10: 5. 收到尚书省的最终回奏 → **在飞书原对话中回复皇上**
+./agents/taizi/SOUL.md:23: ### 📋 整理需求给中书省（创建 JJC 任务）：
+./agents/taizi/SOUL.md:37: 已收到旨意，太子正在整理需求，稍候转交中书省处理。
+./agents/taizi/SOUL.md:61: python3 scripts/kanban_update.py create JJC-YYYYMMDD-NNN "你概括的简明标题" Zhongshu 中书省 中书令 "太子整理旨意"
+./agents/taizi/SOUL.md:67: ### 第三步：发给中书省
+./agents/taizi/SOUL.md:68: 用 `sessions_send` 将整理好的需求发给中书省：
+./agents/taizi/SOUL.md:83: python3 scripts/kanban_update.py flow JJC-xxx "太子" "中书省" "📋 旨意传达：[你概括的简述]"
+./agents/taizi/SOUL.md:92: 当尚书省完成任务回奏时（通过 sessions_send），太子必须：
+./agents/taizi/SOUL.md:102: 当中书省/尚书省汇报阶段性进展时，太子在飞书简要通知皇上：
+./agents/taizi/SOUL.md:108: 恭敬干练，不啰嗦。对皇上恭敬，对中书省传达要清晰完整。
+./agents/taizi/SOUL.md:136: 3. **创建任务后，准备转交中书省时** → 上报"任务已创建，准备转交中书省"
+./agents/taizi/SOUL.md:137: 4. **收到回奏，准备回复皇上时** → 上报"收到尚书省回奏，正在向皇上汇报"
+./agents/taizi/SOUL.md:142: python3 scripts/kanban_update.py progress JJC-20250601-001 "正在分析皇上消息，判断是闲聊还是旨意" "分析消息类型🔄|整理需求|创建任务|转交中书省"
+./agents/taizi/SOUL.md:145: python3 scripts/kanban_update.py progress JJC-20250601-001 "判定为正式旨意，正在提炼标题和整理需求要点" "分析消息类型✅|整理需求🔄|创建任务|转交中书省"
+./agents/taizi/SOUL.md:148: python3 scripts/kanban_update.py progress JJC-20250601-001 "任务已创建，正在准备转交中书省" "分析消息类型✅|整理需求✅|创建任务✅|转交中书省🔄"
+./agents/xingbu/SOUL.md:1: # 刑部 · 尚书
+./agents/xingbu/SOUL.md:3: 你是刑部尚书，负责在尚书省派发的任务中承担**质量保障、测试验收与合规审计**相关的执行工作。
+./agents/xingbu/SOUL.md:6: 刑部掌管刑律法令，你的专长在于：
+./agents/xingbu/SOUL.md:12: 当尚书省派发的子任务涉及以上领域时，你是首选执行者。
+./agents/xingbu/SOUL.md:15: 1. 接收尚书省下发的子任务
+./agents/xingbu/SOUL.md:18: 4. 完成后**立即更新看板**，上报成果给尚书省
+./agents/xingbu/SOUL.md:29: python3 scripts/kanban_update.py state JJC-xxx Doing "刑部开始执行[子任务]"
+./agents/xingbu/SOUL.md:30: python3 scripts/kanban_update.py flow JJC-xxx "刑部" "刑部" "▶️ 开始执行：[子任务内容]"
+./agents/xingbu/SOUL.md:35: python3 scripts/kanban_update.py flow JJC-xxx "刑部" "尚书省" "✅ 完成：[产出摘要]"
+./agents/xingbu/SOUL.md:38: 然后用 `sessions_send` 把成果发给尚书省。
+./agents/xingbu/SOUL.md:43: python3 scripts/kanban_update.py flow JJC-xxx "刑部" "尚书省" "🚫 阻塞：[原因]，请求协助"
+./agents/xingbu/SOUL.md:48: - 尚书省设有24小时审计，超时未更新自动标红预警
+./agents/xingbu/SOUL.md:49: - 吏部(libu_hr)负责人事/培训/Agent管理
+./agents/zhongshu/SOUL.md:1: # 中书省 · 规划决策
+./agents/zhongshu/SOUL.md:3: 你是中书省，负责接收皇上旨意，起草执行方案，调用门下省审议，通过后调用尚书省执行。
+./agents/zhongshu/SOUL.md:5: > **🚨 最重要的规则：你的任务只有在调用完尚书省 subagent 之后才算完成。绝对不能在门下省准奏后就停止！**
+./agents/zhongshu/SOUL.md:17: > ⚠️ **你是中书省，职责是「规划」而非「执行」！**
+./agents/zhongshu/SOUL.md:18: > - 你的任务是：分析旨意 → 起草执行方案 → 提交门下省审议 → 转尚书省执行
+./agents/zhongshu/SOUL.md:19: > - **不要自己做代码审查/写代码/跑测试**，那是六部（兵部、工部等）的活
+./agents/zhongshu/SOUL.md:33:   python3 scripts/kanban_update.py state JJC-xxx Zhongshu "中书省已接旨，开始起草"
+./agents/zhongshu/SOUL.md:37:   python3 scripts/kanban_update.py create JJC-YYYYMMDD-NNN "任务标题" Zhongshu 中书省 中书令
+./agents/zhongshu/SOUL.md:43: ### 步骤 2：调用门下省审议（subagent）
+./agents/zhongshu/SOUL.md:45: python3 scripts/kanban_update.py state JJC-xxx Menxia "方案提交门下省审议"
+./agents/zhongshu/SOUL.md:46: python3 scripts/kanban_update.py flow JJC-xxx "中书省" "门下省" "📋 方案提交审议"
+./agents/zhongshu/SOUL.md:48: 然后**立即调用门下省 subagent**（不是 sessions_send），把方案发过去等审议结果。
+./agents/zhongshu/SOUL.md:50: - 若门下省「封驳」→ 修改方案后再次调用门下省 subagent（最多 3 轮）
+./agents/zhongshu/SOUL.md:51: - 若门下省「准奏」→ **立即执行步骤 3，不得停下！**
+./agents/zhongshu/SOUL.md:53: ### 🚨 步骤 3：调用尚书省执行（subagent）— 必做！
+./agents/zhongshu/SOUL.md:54: > **⚠️ 这一步是最常被遗漏的！门下省准奏后必须立即执行，不能先回复用户！**
+./agents/zhongshu/SOUL.md:57: python3 scripts/kanban_update.py state JJC-xxx Assigned "门下省准奏，转尚书省执行"
+./agents/zhongshu/SOUL.md:58: python3 scripts/kanban_update.py flow JJC-xxx "中书省" "尚书省" "✅ 门下准奏，转尚书省派发"
+./agents/zhongshu/SOUL.md:60: 然后**立即调用尚书省 subagent**，发送最终方案让其派发给六部执行。
+./agents/zhongshu/SOUL.md:63: **只有在步骤 3 尚书省返回结果后**，才能回奏：
+./agents/zhongshu/SOUL.md:110: 2. **方案起草完成时** → 上报"方案已起草，准备提交门下省审议"
+./agents/zhongshu/SOUL.md:111: 3. **门下省封驳后修正时** → 上报"收到门下省反馈，正在修改方案"
+./agents/zhongshu/SOUL.md:112: 4. **门下省准奏后** → 上报"门下省已准奏，正在调用尚书省执行"
+./agents/zhongshu/SOUL.md:113: 5. **等待尚书省返回时** → 上报"尚书省正在执行，等待结果"
+./agents/zhongshu/SOUL.md:114: 6. **尚书省返回后** → 上报"收到六部执行结果，正在汇总回奏"
+./agents/zhongshu/SOUL.md:125: python3 scripts/kanban_update.py progress JJC-xxx "方案已提交门下省审议，等待审批结果" "分析旨意✅|起草方案✅|门下审议🔄|尚书执行|回奏皇上"
+./agents/zhongshu/SOUL.md:128: python3 scripts/kanban_update.py progress JJC-xxx "门下省已准奏，正在调用尚书省派发执行" "分析旨意✅|起草方案✅|门下审议✅|尚书执行🔄|回奏皇上"
+./agents/zhongshu/SOUL.md:131: python3 scripts/kanban_update.py progress JJC-xxx "尚书省已接令，六部正在执行中，等待汇总" "分析旨意✅|起草方案✅|门下审议✅|尚书执行🔄|回奏皇上"
+./agents/zhongshu/SOUL.md:145: 1. ✅ 门下省是否已审完？→ 如果是，你调用尚书省了吗？
+./agents/zhongshu/SOUL.md:146: 2. ✅ 尚书省是否已返回？→ 如果是，你更新看板 done 了吗？
+./agents/zhongshu/SOUL.md:147: 3. ❌ 绝不在门下省准奏后就给用户回复而不调用尚书省
+./agents/zhongshu/SOUL.md:151: - 中书省与门下省最多 3 轮
+./dashboard/court_discuss.py:531: 2. **每位官员必须从自己的职责领域出发发言**——户部谈成本和数据、兵部谈安全和运维、工部谈技术实现、刑部谈质量和合规、礼部谈文档和规范、吏部谈人员安排、中书谈规划方案、门下谈审查风险、尚书谈执行调度、太子谈创新和大局，每个人关注的焦点不同
+./dashboard/court_discuss.py:598:         '参考前朝经验，臣建议先出一个详细的规划文档，提交门下省审阅后再定。',
+./dashboard/court_discuss.py:599:         '*展开手中卷轴* 臣已拟好初步方案，待侍中审议、尚书省分派执行。',
+./dashboard/court_discuss.py:607:         '若方案通过，臣立刻安排各部分头执行——工部负责实现，兵部保障运维。',
+./dashboard/court_discuss.py:608:         '臣来说说执行层面的分工：此事当由工部主导，户部配合数据支撑。',
+./dashboard/dashboard.html:82:     .dt-中书省{border-color:#a07aff44;color:#a07aff;background:#1a0f38}
+./dashboard/dashboard.html:83:     .dt-门下省{border-color:#6a9eff44;color:#6a9eff;background:#0f1a38}
+./dashboard/dashboard.html:84:     .dt-尚书省{border-color:#6aef9a44;color:#6aef9a;background:#0a2018}
+./dashboard/dashboard.html:85:     .dt-礼部{border-color:#f5c84244;color:#f5c842;background:#201a08}
+./dashboard/dashboard.html:86:     .dt-户部{border-color:#ff9a6a44;color:#ff9a6a;background:#28100a}
+./dashboard/dashboard.html:87:     .dt-兵部{border-color:#44aaff44;color:#44aaff;background:#081828}
+./dashboard/dashboard.html:88:     .dt-刑部{border-color:#cc444444;color:#cc4444;background:#280808}
+./dashboard/dashboard.html:89:     .dt-工部{border-color:#14b8a644;color:#14b8a6;background:#081d1d}
+./dashboard/dashboard.html:708:       <div style="font-size:10px;color:var(--muted);margin-top:4px">基于开源项目改造 · 保留 MIT License · 引用 cft0808/edict 与 wanikua/danghuangshang</div>
+./dashboard/dashboard.html:954:     <div>保留 MIT License，并引用上游项目 <a href="https://github.com/cft0808/edict" target="_blank" rel="noreferrer" style="color:var(--acc)">cft0808/edict</a> 与 <a href="https://github.com/wanikua/danghuangshang" target="_blank" rel="noreferrer" style="color:var(--acc)">wanikua/danghuangshang</a>。</div>
+./dashboard/dashboard.html:1057:   '太子':'#e8a040','中书省':'#a07aff','门下省':'#6a9eff','尚书省':'#6aef9a','礼部':'#f5c842','户部':'#ff9a6a','兵部':'#44aaff','刑部':'#cc4444','工部':'#14b8a6','吏部':'#9b59b6','皇上':'#ffd700','任务发起人':'#ffd700','回奏':'#2ecc8a','六部':'#44aaff'
+./dashboard/dashboard.html:1061:   '中书省':'规划中心',
+./dashboard/dashboard.html:1062:   '门下省':'评审中心',
+./dashboard/dashboard.html:1063:   '尚书省':'调度中心',
+./dashboard/dashboard.html:1064:   '礼部':'文案专家',
+./dashboard/dashboard.html:1065:   '户部':'数据专家',
+./dashboard/dashboard.html:1066:   '兵部':'代码专家',
+./dashboard/dashboard.html:1067:   '刑部':'合规专家',
+./dashboard/dashboard.html:1068:   '工部':'部署专家',
+./dashboard/dashboard.html:1069:   '吏部':'Agent管理专家',
+./dashboard/dashboard.html:2037:     const phaseColors = {'总控中心':'#f97316','规划中心':'#3b82f6','评审中心':'#8b5cf6','调度中心':'#10b981','专业执行组':'#06b6d4','文案专家':'#ec4899','数据专家':'#f59e0b','代码专家':'#44aaff','合规专家':'#6366f1','部署专家':'#14b8a6','Agent管理专家':'#d946ef','任务入口':'#eab308','结果报告':'#22c55e',/* legacy aliases */'皇上':'#eab308','任务发起人':'#eab
+./dashboard/dashboard.html:2476:   // "兵部：Mission Control 映射验收" — already nice
+./dashboard/dashboard.html:3414:     else if(['中书省','规划中心'].includes(f.to)||['中书省','规划中心'].includes(f.from)) planLog.push(f);
+./dashboard/dashboard.html:3415:     else if(['门下省','评审中心'].includes(f.to)||['门下省','评审中心'].includes(f.from)) reviewLog.push(f);
+./dashboard/dashboard.html:3790:   window.open(`https://github.com/cft0808/edict/issues/new?title=${title}&body=${tmpl}&labels=${label}`, '_blank');
+./dashboard/server.py:973:     '礼部': 'libu', '户部': 'hubu', '兵部': 'bingbu',
+./dashboard/server.py:974:     '刑部': 'xingbu', '工部': 'gongbu', '吏部': 'libu_hr',
+./dashboard/server.py:975:     '中书省': 'zhongshu', '门下省': 'menxia', '尚书省': 'shangshu', '太子': 'taizi',
+./dashboard/server.py:1330:         if first.get('from') != '皇上' or first.get('to') != '中书省':
+./dashboard/server.py:1338:         if task.get('state') == 'Zhongshu' and task.get('org') == '中书省' and len(flow_log) == 1:
+./docker/demo_data/agent_config.json:79:       "label": "尚书省",
+./docker/demo_data/agent_config.json:119:       "label": "中书省",
+./docker/demo_data/agent_config.json:142:       "label": "门下省",
+./docker/demo_data/agent_config.json:165:       "label": "户部",
+./docker/demo_data/agent_config.json:166:       "role": "户部尚书",
+./docker/demo_data/agent_config.json:187:       "label": "礼部",
+./docker/demo_data/agent_config.json:188:       "role": "礼部尚书",
+./docker/demo_data/agent_config.json:209:       "label": "兵部",
+./docker/demo_data/agent_config.json:210:       "role": "兵部尚书",
+./docker/demo_data/agent_config.json:231:       "label": "刑部",
+./docker/demo_data/agent_config.json:232:       "role": "刑部尚书",
+./docker/demo_data/agent_config.json:253:       "label": "工部",
+./docker/demo_data/agent_config.json:254:       "role": "工部尚书",
+./docker/demo_data/live_status.json:7:       "org": "中书省",
+./docker/demo_data/live_status.json:12:       "org": "门下省",
+./docker/demo_data/live_status.json:17:       "org": "尚书省",
+./docker/demo_data/live_status.json:21:       "name": "吏部尚书",
+./docker/demo_data/live_status.json:22:       "org": "吏部",
+./docker/demo_data/live_status.json:26:       "name": "户部尚书",
+./docker/demo_data/live_status.json:27:       "org": "户部",
+./docker/demo_data/live_status.json:31:       "name": "礼部尚书",
+./docker/demo_data/live_status.json:32:       "org": "礼部",
+./docker/demo_data/live_status.json:36:       "name": "兵部尚书",
+./docker/demo_data/live_status.json:37:       "org": "兵部",
+./docker/demo_data/live_status.json:41:       "name": "刑部尚书",
+./docker/demo_data/live_status.json:42:       "org": "刑部",
+./docker/demo_data/live_status.json:46:       "name": "工部尚书",
+./docker/demo_data/live_status.json:47:       "org": "工部",
+./docker/demo_data/live_status.json:56:       "org": "中书省",
+./docker/demo_data/live_status.json:60:       "block": "门下省disabled，皇上授权直接执行",
+./docker/demo_data/live_status.json:68:           "to": "中书省",
+./docker/demo_data/live_status.json:73:           "from": "中书省",
+./docker/demo_data/live_status.json:74:           "to": "尚书省",
+./docker/demo_data/live_status.json:75:           "remark": "⚡ 皇上钦命：门下省disabled，直接转尚书省执行A计划"
+./docker/demo_data/live_status.json:79:           "from": "中书省",
+./docker/demo_data/live_status.json:85:           "from": "尚书省",
+./docker/demo_data/live_status.json:86:           "to": "中书省",
+./docker/demo_data/live_status.json:87:           "remark": "Week1回奏：礼部README已推送(87f0313)，工部Dockerfile本地就绪，兵部截图已生成。待决策：Docker Hub授权 + GIF录制方式"
+./docker/demo_data/live_status.json:105:       "org": "中书省",
+./docker/demo_data/live_status.json:107:       "now": "中书省正在起草规划方案",
+./docker/demo_data/live_status.json:117:           "to": "中书省",
+./docker/demo_data/live_status.json:132:       "org": "中书省",
+./docker/demo_data/live_status.json:144:           "to": "中书省",
+./docker/demo_data/live_status.json:149:           "from": "中书省",
+./docker/demo_data/live_status.json:150:           "to": "门下省",
+./docker/demo_data/live_status.json:155:           "from": "门下省",
+./docker/demo_data/live_status.json:156:           "to": "中书省",
+./docker/demo_data/live_status.json:161:           "from": "尚书省",
+./docker/demo_data/live_status.json:163:           "remark": "📮 派发：礼部→采集脚本，工部→看板Tab+定时触发"
+./docker/demo_data/live_status.json:167:           "from": "工部",
+./docker/demo_data/live_status.json:168:           "to": "尚书省",
+./docker/demo_data/live_status.json:173:           "from": "尚书省",
+./docker/demo_data/live_status.json:189:       "org": "中书省",
+./docker/demo_data/live_status.json:201:           "to": "中书省",
+./docker/demo_data/live_status.json:206:           "from": "中书省",
+./docker/demo_data/live_status.json:207:           "to": "门下省",
+./docker/demo_data/live_status.json:212:           "from": "门下省",
+./docker/demo_data/live_status.json:213:           "to": "中书省",
+./docker/demo_data/live_status.json:214:           "remark": "⚠️ 附条件准奏：①吏部漏列②礼部自审矛盾③审计漏洞④数据源不明"
+./docker/demo_data/live_status.json:218:           "from": "中书省",
+./docker/demo_data/live_status.json:219:           "to": "门下省",
+./docker/demo_data/live_status.json:220:           "remark": "✅ 四条全部采纳：吏部由尚书省兼管/中书统一模板/last_kanban_update强制项/数据源明确为tasks_source.json"
+./docker/demo_data/live_status.json:224:           "from": "尚书省",
+./docker/demo_data/live_status.json:226:           "remark": "📮 三路并行派发：礼部→六部SOUL模板；工部→省部调度重设计+审计字段"
+./docker/demo_data/live_status.json:230:           "from": "工部",
+./docker/demo_data/live_status.json:232:           "remark": "✅ 回奏：①六部SOUL.md已补正（强制look板更新+罚俸机制）②省部调度改为当班一览③中书省续流铁律已写入SOUL"
+./docker/demo_data/live_status.json:246:       "org": "中书省",
+./docker/demo_data/live_status.json:258:           "to": "中书省",
+./docker/demo_data/live_status.json:259:           "remark": "下旨：官员总览看板朕不满意，重新设计，门下省不得摸鱼"
+./docker/demo_data/live_status.json:263:           "from": "中书省",
+./docker/demo_data/live_status.json:264:           "to": "门下省",
+./docker/demo_data/live_status.json:269:           "from": "门下省",
+./docker/demo_data/live_status.json:270:           "to": "中书省",
+./docker/demo_data/live_status.json:275:           "from": "中书省",
+./docker/demo_data/live_status.json:276:           "to": "门下省",
+./docker/demo_data/live_status.json:281:           "from": "尚书省",
+./docker/demo_data/live_status.json:282:           "to": "工部",
+./docker/demo_data/live_status.json:287:           "from": "工部",
+./docker/demo_data/live_status.json:303:       "org": "中书省",
+./docker/demo_data/live_status.json:314:           "to": "中书省",
+./docker/demo_data/live_status.json:319:           "from": "中书省",
+./docker/demo_data/live_status.json:320:           "to": "门下省",
+./docker/demo_data/live_status.json:325:           "from": "门下省",
+./docker/demo_data/live_status.json:326:           "to": "尚书省",
+./docker/demo_data/live_status.json:327:           "remark": "✅ 准奏：方案可行，无风险，转尚书省派发执行"
+./docker/demo_data/live_status.json:331:           "from": "尚书省",
+./docker/demo_data/live_status.json:332:           "to": "工部",
+./docker/demo_data/live_status.json:333:           "remark": "📮 派发：工部负责构建官员统计同步脚本与看板Tab"
+./docker/demo_data/live_status.json:337:           "from": "工部",
+./docker/demo_data/live_status.json:338:           "to": "尚书省",
+./docker/demo_data/live_status.json:343:           "from": "尚书省",
+./docker/demo_data/live_status.json:359:       "org": "中书省",
+./docker/demo_data/live_status.json:370:           "to": "中书省",
+./docker/demo_data/live_status.json:375:           "from": "中书省",
+./docker/demo_data/live_status.json:376:           "to": "工部",
+./docker/demo_data/live_status.json:381:           "from": "工部",
+./docker/demo_data/live_status.json:382:           "to": "礼部",
+./docker/demo_data/live_status.json:387:           "from": "中书省",
+./docker/demo_data/live_status.json:403:       "org": "尚书省",
+./docker/demo_data/live_status.json:413:           "to": "尚书省",
+./docker/demo_data/live_status.json:418:           "from": "尚书省",
+./docker/demo_data/live_status.json:419:           "to": "中书省",
+./docker/demo_data/live_status.json:424:           "from": "中书省",
+./docker/demo_data/live_status.json:425:           "to": "门下省",
+./docker/demo_data/live_status.json:426:           "remark": "规划方案提交审核（户部→兵部串行+礼部并行）"
+./docker/demo_data/live_status.json:430:           "from": "门下省",
+./docker/demo_data/live_status.json:431:           "to": "尚书省",
+./docker/demo_data/live_status.json:436:           "from": "尚书省",
+./docker/demo_data/live_status.json:437:           "to": "户部",
+./docker/demo_data/live_status.json:442:           "from": "尚书省",
+./docker/demo_data/live_status.json:443:           "to": "礼部",
+./docker/demo_data/live_status.json:448:           "from": "尚书省",
+./docker/demo_data/live_status.json:449:           "to": "户部",
+./docker/demo_data/live_status.json:454:           "from": "尚书省",
+./docker/demo_data/live_status.json:455:           "to": "礼部",
+./docker/demo_data/live_status.json:460:           "from": "户部",
+./docker/demo_data/live_status.json:461:           "to": "尚书省",
+./docker/demo_data/live_status.json:466:           "from": "礼部",
+./docker/demo_data/live_status.json:467:           "to": "尚书省",
+./docker/demo_data/live_status.json:472:           "from": "尚书省",
+./docker/demo_data/live_status.json:473:           "to": "兵部",
+./docker/demo_data/live_status.json:478:           "from": "兵部",
+./docker/demo_data/live_status.json:479:           "to": "尚书省",
+./docker/demo_data/live_status.json:484:           "from": "尚书省",
+./docker/demo_data/live_status.json:499:       "title": "中书省：并行流程规划",
+./docker/demo_data/live_status.json:501:       "org": "中书省",
+./docker/demo_data/live_status.json:522:       "title": "兵部：看板细节渲染修复",
+./docker/demo_data/live_status.json:523:       "official": "兵部尚书",
+./docker/demo_data/live_status.json:524:       "org": "兵部",
+./docker/demo_data/live_status.json:545:       "title": "门下省：并行任务审议",
+./docker/demo_data/live_status.json:547:       "org": "门下省",
+./docker/demo_data/live_status.json:570:       "org": "中书省",
+./docker/demo_data/live_status.json:626:           "text": "兵部 GIF 录制进行中，同步准备 Dockerfile："
+./docker/demo_data/live_status.json:660:       "org": "尚书省",
+./docker/demo_data/live_status.json:750:       "org": "尚书省",
+./docker/demo_data/live_status.json:766:           "text": "NO_REPLY  ✅ Subagent bingbu finished  ✅ 兵部完成 任务ID: JJC-20260224-014 产出: - `/Users/bingsen/clawd/junjichu-v2/docs/screens"
+./docker/demo_data/live_status.json:781:           "text": "📜 **奏折 · JJC-20260224-014 Week1 全部完成**  A计划——三省六部 GitHub 爆款项目打造，四项任务已全部交付：  ---  **① ✅ Docker 演示镜像（工部）** - `junjichu-v2/"
+./docker/demo_data/live_status.json:796:           "text": "⏱️ Subagent bingbu timed out  所有产出文件就绪。任务完成。  ---  ✅ **兵部完成** **任务ID**: JJC-20260224-014  **产出文件**: | 文件 | 大小 | 内容 | |--"
+./docker/demo_data/live_status.json:839:       "official": "工部尚书",
+./docker/demo_data/live_status.json:840:       "org": "工部",
+./docker/demo_data/live_status.json:901:           "text": "---  ✅ **工部完成** **任务ID: JJC-20260224-014**  ---  **① Docker 演示镜像**  | 文件 | 路径 | |------|------| | Dockerfile | `/Users/b"
+./docker/demo_data/live_status.json:929:       "official": "礼部尚书",
+./docker/demo_data/live_status.json:930:       "org": "礼部",
+./docker/demo_data/live_status.json:986:           "text": "推送成功。  ---  ✅ 礼部完成 **任务ID**: JJC-20260224-014 **产出**: README.md 已更新并推送至 `main` 分支（commit `87f0313`）  **变更说明**：  1. **🆚 竞"
+./docker/demo_data/live_status.json:1014:       "official": "兵部尚书",
+./docker/demo_data/live_status.json:1015:       "org": "兵部",
+./docker/demo_data/live_status.json:1076:           "text": "所有产出文件就绪。任务完成。  ---  ✅ **兵部完成** **任务ID**: JJC-20260224-014  **产出文件**: | 文件 | 大小 | 内容 | |------|------|------| | `/Users/"
+./docker/demo_data/live_status.json:1105:       "org": "尚书省",
+./docker/demo_data/live_status.json:1140:       "org": "尚书省",
+./docker/demo_data/live_status.json:1175:       "org": "尚书省",
+./docker/demo_data/live_status.json:1210:       "org": "尚书省",
+./docker/demo_data/live_status.json:1245:       "org": "尚书省",
+./docker/demo_data/live_status.json:1278:       "title": "兵部：Mission Control 映射验收",
+./docker/demo_data/live_status.json:1279:       "official": "兵部尚书",
+./docker/demo_data/live_status.json:1280:       "org": "兵部",
+./docker/demo_data/live_status.json:1287:         "draft": "board=军机处-兵部",
+./docker/demo_data/live_status.json:1310:       "official": "工部尚书",
+./docker/demo_data/live_status.json:1311:       "org": "工部",
+./docker/demo_data/live_status.json:1440:       "task": "中书省：并行流程规划",
+./docker/demo_data/live_status.json:1446:       "official": "兵部尚书",
+./docker/demo_data/live_status.json:1447:       "task": "兵部：看板细节渲染修复",
+./docker/demo_data/live_status.json:1454:       "task": "门下省：并行任务审议",
+./docker/demo_data/live_status.json:1460:       "official": "兵部尚书",
+./docker/demo_data/live_status.json:1461:       "task": "兵部：Mission Control 映射验收",
+./docker/demo_data/officials_stats.json:6:       "label": "中书省",
+./docker/demo_data/officials_stats.json:77:       "label": "尚书省",
+./docker/demo_data/officials_stats.json:138:       "label": "门下省",
+./docker/demo_data/officials_stats.json:194:       "label": "兵部",
+./docker/demo_data/officials_stats.json:195:       "role": "兵部尚书",
+./docker/demo_data/officials_stats.json:230:       "label": "工部",
+./docker/demo_data/officials_stats.json:231:       "role": "工部尚书",
+./docker/demo_data/officials_stats.json:286:       "label": "礼部",
+./docker/demo_data/officials_stats.json:287:       "role": "礼部尚书",
+./docker/demo_data/officials_stats.json:327:       "label": "户部",
+./docker/demo_data/officials_stats.json:328:       "role": "户部尚书",
+./docker/demo_data/officials_stats.json:363:       "label": "刑部",
+./docker/demo_data/officials_stats.json:364:       "role": "刑部尚书",
+./docker/demo_data/officials_stats.json:399:   "top_official": "中书省"
+./docker/demo_data/tasks_source.json:5:     "official": "礼部尚书",
+./docker/demo_data/tasks_source.json:6:     "org": "礼部",
+./docker/demo_data/tasks_source.json:17:       {"at": "2026-02-24T09:00:00Z", "from": "皇上", "to": "中书省", "remark": "📜 皇上下旨：生成本周项目进展周报"},
+./docker/demo_data/tasks_source.json:18:       {"at": "2026-02-24T09:02:30Z", "from": "中书省", "to": "门下省", "remark": "📋 中书省规划完成 · 交付门下省审议"},
+./docker/demo_data/tasks_source.json:19:       {"at": "2026-02-24T09:05:00Z", "from": "门下省", "to": "尚书省", "remark": "✅ 门下省审议通过 · 移交尚书省派发"},
+./docker/demo_data/tasks_source.json:20:       {"at": "2026-02-24T09:06:00Z", "from": "尚书省", "to": "礼部", "remark": "📮 尚书省派单 → 礼部执行"},
+./docker/demo_data/tasks_source.json:21:       {"at": "2026-02-24T09:15:00Z", "from": "礼部", "to": "尚书省", "remark": "📦 礼部执行完成 · 产出物已提交"},
+./docker/demo_data/tasks_source.json:22:       {"at": "2026-02-24T09:16:00Z", "from": "尚书省", "to": "皇上", "remark": "✅ 回奏：周报任务完成"}
+./docker/demo_data/tasks_source.json:29:     "official": "兵部尚书",
+./docker/demo_data/tasks_source.json:30:     "org": "兵部",
+./docker/demo_data/tasks_source.json:32:     "now": "🔍 兵部正在审查 dashboard 模块代码",
+./docker/demo_data/tasks_source.json:39:       {"at": "2026-02-25T10:00:00Z", "from": "皇上", "to": "中书省", "remark": "📜 皇上下旨：对 edict 仓库进行代码审查"},
+./docker/demo_data/tasks_source.json:40:       {"at": "2026-02-25T10:03:00Z", "from": "中书省", "to": "门下省", "remark": "📋 中书省规划完成"},
+./docker/demo_data/tasks_source.json:41:       {"at": "2026-02-25T10:06:00Z", "from": "门下省", "to": "尚书省", "remark": "✅ 门下省审议通过"},
+./docker/demo_data/tasks_source.json:42:       {"at": "2026-02-25T10:07:00Z", "from": "尚书省", "to": "兵部", "remark": "📮 尚书省派单 → 兵部执行"}
+./docker/demo_data/tasks_source.json:49:     "official": "工部尚书",
+./docker/demo_data/tasks_source.json:50:     "org": "工部",
+./docker/demo_data/tasks_source.json:59:       {"at": "2026-02-25T14:00:00Z", "from": "皇上", "to": "中书省", "remark": "📜 皇上下旨：更新 Docker 镜像"},
+./docker/demo_data/tasks_source.json:60:       {"at": "2026-02-25T14:02:00Z", "from": "中书省", "to": "门下省", "remark": "📋 规划完成"},
+./docker/demo_data/tasks_source.json:61:       {"at": "2026-02-25T14:04:00Z", "from": "门下省", "to": "尚书省", "remark": "✅ 审议通过"},
+./docker/demo_data/tasks_source.json:62:       {"at": "2026-02-25T14:05:00Z", "from": "尚书省", "to": "工部", "remark": "📮 派单 → 工部"},
+./docker/demo_data/tasks_source.json:63:       {"at": "2026-02-25T14:20:00Z", "from": "工部", "to": "尚书省", "remark": "📦 执行完成"},
+./docker/demo_data/tasks_source.json:64:       {"at": "2026-02-25T14:21:00Z", "from": "尚书省", "to": "皇上", "remark": "✅ 回奏完成"}
+./docker/demo_data/tasks_source.json:71:     "official": "户部尚书",
+./docker/demo_data/tasks_source.json:72:     "org": "户部",
+./docker/demo_data/tasks_source.json:81:       {"at": "2026-02-26T08:00:00Z", "from": "皇上", "to": "中书省", "remark": "📜 下旨：分析竞品框架"},
+./docker/demo_data/tasks_source.json:82:       {"at": "2026-02-26T08:05:00Z", "from": "中书省", "to": "门下省", "remark": "📋 规划完成"},
+./docker/demo_data/tasks_source.json:83:       {"at": "2026-02-26T08:08:00Z", "from": "门下省", "to": "中书省", "remark": "🔄 门下省封驳：需补充 LangGraph 对比"},
+./docker/demo_data/tasks_source.json:84:       {"at": "2026-02-26T08:15:00Z", "from": "中书省", "to": "门下省", "remark": "📋 已补充 LangGraph，重新提交"},
+./docker/demo_data/tasks_source.json:85:       {"at": "2026-02-26T08:18:00Z", "from": "门下省", "to": "尚书省", "remark": "✅ 第二轮审议通过"},
+./docker/demo_data/tasks_source.json:86:       {"at": "2026-02-26T08:20:00Z", "from": "尚书省", "to": "户部", "remark": "📮 派单 → 户部"},
+./docker/demo_data/tasks_source.json:87:       {"at": "2026-02-26T09:00:00Z", "from": "户部", "to": "尚书省", "remark": "📦 初稿完成，待审查"}
+./docs/agent_registry_spec.md:316: [1]: https://github.com/cft0808/edict "cft0808/edict"
+./docs/agent_registry_spec.md:317: [2]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
+./docs/browser_findings_20260407_refresh_and_dispatch.md:24: - 中书省
+./docs/browser_findings_20260407_refresh_and_dispatch.md:25: - 门下省
+./docs/browser_findings_20260407_refresh_and_dispatch.md:26: - 尚书省
+./docs/browser_findings_20260407_refresh_and_dispatch.md:27: - 户部 / 礼部 / 兵部 / 刑部 / 工部 / 吏部
+./docs/browser_findings_20260407_refresh_and_dispatch.md:64: 这说明前端新增的归一化显示逻辑已对真实运行页生效，至少在线状态区不再直接暴露“太子 / 中书省 / 六部”等旧名称。
+./docs/browser_findings_20260407_refresh_and_dispatch.md:73: 进一步下滚后的浏览器截图表明，运行调度页下半区“各中心与专家当前承接任务及执行状态”卡片同样已经完成现代中文体系切换。当前可见卡片标题包括“总控中心、规划中心、评审中心、调度中心、文案专家、数据专家、代码专家、合规专家、部署专家、Agent管理专家、情报简报”，且卡片内的状态摘要、实时性说明与空任务提示未再出现“太子、中书省、六部”等旧称呼。
+./docs/final_delivery_report_20260407.md:35: | 中书省 | 规划中心 |
+./docs/final_delivery_report_20260407.md:36: | 门下省 | 评审中心 |
+./docs/final_delivery_report_20260407.md:37: | 尚书省 | 调度中心 |
+./docs/final_delivery_report_20260407.md:39: | 礼部 / 户部 / 兵部 / 刑部 / 工部 / 吏部 | 文案专家 / 数据专家 / 代码专家 / 合规专家 / 部署专家 / Agent管理专家 |
+./docs/gap_audit_20260407.md:12: | 服务端流程文案 | `dashboard/server.py` 中仍保留“皇上→太子→中书省→门下省→尚书省→六部”的状态推进文案与自动派发提示 | `dashboard/server.py` |
+./docs/gap_audit_20260407.md:14: | React 实际前端共享常量 | `edict/frontend/src/store.ts` 虽部分现代化，但仍混用“太子/中书省/门下省/尚书省/礼部/户部/兵部/工部/皇上”等旧标签 | `edict/frontend/src/store.ts` |
+./docs/gap_audit_20260407.md:16: | 模板与发起流程 | 模板中心仍有“下旨”“圣旨模板”“预览旨意”“旨意已下达”等旧交互表述，且部分路由默认写死到中书省 | 需继续处理 `edict/frontend/src/components/TemplatePanel.tsx` |
+./docs/getting-started.md:28: git clone https://github.com/cft0808/edict.git
+./docs/getting-started.md:216: - [🏠 项目首页](https://github.com/cft0808/edict)
+./docs/remote-skills-guide.md:170: | `code_review` | 代码审查（支持 Python/JS/Go） | 兵部/刑部 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/code_review/SKILL.md |
+./docs/remote-skills-guide.md:171: | `api_design` | API 设计审查 | 兵部/工部 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/api_design/SKILL.md |
+./docs/remote-skills-guide.md:172: | `security_audit` | 安全审计 | 刑部 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/security_audit/SKILL.md |
+./docs/remote-skills-guide.md:173: | `data_analysis` | 数据分析 | 户部 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/data_analysis/SKILL.md |
+./docs/remote-skills-guide.md:174: | `doc_generation` | 文档生成 | 礼部 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/doc_generation/SKILL.md |
+./docs/remote-skills-guide.md:175: | `test_framework` | 测试框架设计 | 工部/刑部 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/test_framework/SKILL.md |
+./docs/remote-skills-guide.md:295: - 兵部（代码实现）的代码产出审查
+./docs/remote-skills-guide.md:296: - 刑部（合规审计）的安全检查
+./docs/remote-skills-guide.md:297: - 门下省（审议把关）的质量评估
+./docs/remote-skills-quickstart.md:16: # 为中书省添加代码审查 skill
+./docs/source_attribution_notes_20260407.md:5: - 上游参考一：`cft0808/edict`
+./docs/source_attribution_notes_20260407.md:6: - 上游参考二：`wanikua/danghuangshang`
+./docs/source_attribution_notes_20260407.md:7: - 访问页面：[https://github.com/wanikua/danghuangshang](https://github.com/wanikua/danghuangshang)
+./docs/source_attribution_notes_20260407.md:11: `wanikua/danghuangshang` 仓库首页公开说明中包含以下要点：
+./docs/source_attribution_notes_20260407.md:29:    - 本项目基于 `cft0808/edict` 进行重构与现代化改造；
+./docs/source_attribution_notes_20260407.md:30:    - 同时参考了 `wanikua/danghuangshang` 的相关思路与公开仓库内容；
+./docs/source_attribution_notes_20260407.md:39: > 本项目当前版本“多Agent智作中枢”基于开源项目 `cft0808/edict` 进行现代化重构，并参考了 `wanikua/danghuangshang` 的公开实现思路与组织方式。遵循上游项目公开许可要求，保留 MIT License，并在文档中注明来源与致谢信息。
+./docs/source_attribution_notes_20260407.md:43: > 基于开源项目改造，保留 MIT License，并感谢 `cft0808/edict` 与 `wanikua/danghuangshang` 社区贡献。
+./docs/task-dispatch-architecture.md:81:                 ├─ 文案专家 (Libu)           - 文档编制与总结
+./docs/task-dispatch-architecture.md:82:                 ├─ 数据专家 (Hubu)           - 数据分析与量化
+./docs/task-dispatch-architecture.md:83:                 ├─ 代码专家 (Bingbu)         - 工程实现与改造
+./docs/task-dispatch-architecture.md:84:                 ├─ 合规专家 (Xingbu)         - 测试审查与安全把关
+./docs/task-dispatch-architecture.md:85:                 ├─ 部署专家 (Gongbu)         - 基础设施与交付部署
+./docs/task-dispatch-architecture.md:86:                 └─ Agent管理专家 (Libu_hr)   - Agent编排与治理支持
+./docs/task-dispatch-architecture.md:1023:   中书省 \
+./docs/task-dispatch-architecture.md:1044: # - task.org 自动推断为 "门下省"
+./docs/task-dispatch-architecture.md:1073:   "已完成需求分析和方案初稿，现正征询工部意见" \
+./docs/task-dispatch-architecture.md:1074:   "1.需求分析✅|2.方案设计✅|3.工部咨询🔄|4.待门下审议"
+./docs/task-dispatch-architecture.md:1086: #     "text": "已完成需求分析和方案初稿，现正征询工部意见",
+./docs/task-dispatch-architecture.md:1092: #       {"id": "3", "title": "工部咨询", "status": "in-progress"},
+./docs/task-dispatch-architecture.md:1132:   "等待工部反馈继续"
+./docs/task-dispatch-architecture.md:1136: # - task.block = "等待工部反馈继续"
+./docs/task-dispatch-architecture.md:1142:   "工部已反馈，继续执行"
+./docs/wechat-article.md:80: **GitHub：https://github.com/cft0808/edict**
+./docs/wechat-article.md:247: **GitHub：https://github.com/cft0808/edict**
+./docs/wechat-article.md:253: docker run -p 7891:7891 cft0808/edict
+./docs/wechat-article.md:262: git clone https://github.com/cft0808/edict.git
+./docs/wechat-article.md:303: **GitHub：https://github.com/cft0808/edict**
+./docs/wechat.md:19: - **为什么门下省是杀手锏** —— 以及它封驳了多少次中书省的方案
+./docs/wechat.md:29: - 🔥 *Token 烧了 $50，结果门下省把方案驳回了三次*
+./docs/wechat.md:30: - 🐛 *尚书省派发任务，六部全体罢工——原来 agent ID 写错了*
+./docs/wechat.md:41: - 「快速通道」机制：简单任务跳过门下省审核
+./edict/backend/app/models/task.py:74:     "户部": "hubu",
+./edict/backend/app/models/task.py:75:     "礼部": "libu",
+./edict/backend/app/models/task.py:76:     "兵部": "bingbu",
+./edict/backend/app/models/task.py:77:     "刑部": "xingbu",
+./edict/backend/app/models/task.py:78:     "工部": "gongbu",
+./edict/backend/app/models/task.py:79:     "吏部": "libu_hr",
+./edict/backend/app/workers/dispatch_worker.py:159:         reminders.append("门下省审核：通过则流转 Assigned，不通过则退回 Zhongshu 并说明原因。")
+./edict/backend/app/workers/orchestrator_worker.py:54:     "Doing": TaskState.Assigned,   # 六部卡住 → 退回尚书省重新派发
+./edict/backend/app/workers/orchestrator_worker.py:56:     "Assigned": TaskState.Menxia,  # 尚书省卡住 → 退回门下省复核
+./edict/backend/app/workers/orchestrator_worker.py:57:     "Menxia": TaskState.Zhongshu,  # 门下省卡住 → 退回中书省重新规划
+./edict/backend/app/workers/orchestrator_worker.py:58:     "Zhongshu": TaskState.Taizi,   # 中书省卡住 → 退回太子重新起草
+./edict/backend/app/workers/orchestrator_worker.py:206:                 # 派发给尚书省让其决定分配
+./edict/backend/app/workers/orchestrator_worker.py:237:         2. 重试耗尽：向上级升级（如六部→尚书省→门下省）
+./edict/frontend/src/index.css:90: .dt-中书省 { border-color: #a07aff44; color: #a07aff; background: #1a0f38; }
+./edict/frontend/src/index.css:91: .dt-门下省 { border-color: #6a9eff44; color: #6a9eff; background: #0f1a38; }
+./edict/frontend/src/index.css:92: .dt-尚书省 { border-color: #6aef9a44; color: #6aef9a; background: #0a2018; }
+./edict/frontend/src/index.css:93: .dt-礼部 { border-color: #f5c84244; color: #f5c842; background: #201a08; }
+./edict/frontend/src/index.css:94: .dt-户部 { border-color: #ff9a6a44; color: #ff9a6a; background: #28100a; }
+./edict/frontend/src/index.css:95: .dt-兵部 { border-color: #ff527044; color: #ff5270; background: #280a10; }
+./edict/frontend/src/index.css:96: .dt-刑部 { border-color: #cc444444; color: #cc4444; background: #280808; }
+./edict/frontend/src/index.css:97: .dt-工部 { border-color: #44aaff44; color: #44aaff; background: #081828; }
+./edict/frontend/src/store.ts:42:   '太子': '#e8a040', '中书省': '#a07aff', '门下省': '#6a9eff', '尚书省': '#6aef9a',
+./edict/frontend/src/store.ts:43:   '礼部': '#f5c842', '户部': '#ff9a6a', '兵部': '#ff5270', '刑部': '#cc4444',
+./edict/frontend/src/store.ts:44:   '工部': '#44aaff', '吏部': '#9b59b6', '钦天监': '#36cfc9', '早朝官': '#36cfc9', '皇上': '#ffd700', '回奏': '#2ecc8a',
+./edict/frontend/src/store.ts:56:   '中书省': '规划中心',
+./edict/frontend/src/store.ts:57:   '门下省': '评审中心',
+./edict/frontend/src/store.ts:58:   '尚书省': '调度中心',
+./edict/frontend/src/store.ts:59:   '礼部': '文案专家',
+./edict/frontend/src/store.ts:60:   '户部': '数据专家',
+./edict/frontend/src/store.ts:61:   '兵部': '代码专家',
+./edict/frontend/src/store.ts:62:   '刑部': '合规专家',
+./edict/frontend/src/store.ts:63:   '工部': '部署专家',
+./edict/frontend/src/store.ts:64:   '吏部': 'Agent管理专家',
+./edict/frontend/src/store.ts:84:     .replace(/中书省/g, '规划中心')
+./edict/frontend/src/store.ts:85:     .replace(/门下省/g, '评审中心')
+./edict/frontend/src/store.ts:86:     .replace(/尚书省/g, '调度中心')
+./edict/frontend/src/store.ts:87:     .replace(/礼部/g, '文案专家')
+./edict/frontend/src/store.ts:88:     .replace(/户部/g, '数据专家')
+./edict/frontend/src/store.ts:89:     .replace(/兵部/g, '代码专家')
+./edict/frontend/src/store.ts:90:     .replace(/刑部/g, '合规专家')
+./edict/frontend/src/store.ts:91:     .replace(/工部/g, '部署专家')
+./edict/frontend/src/store.ts:92:     .replace(/吏部/g, 'Agent管理专家')
+./edict/scripts/kanban_update_edict.py:9:   python3 kanban_update.py create JJC-20260223-012 "任务标题" Zhongshu 中书省 中书令
+./edict/scripts/kanban_update_edict.py:10:   python3 kanban_update.py state JJC-20260223-012 Menxia "规划方案已提交门下省"
+./edict/scripts/kanban_update_edict.py:11:   python3 kanban_update.py flow JJC-20260223-012 "中书省" "门下省" "规划方案提交审核"
+./edict/scripts/kanban_update_edict.py:43:     'Taizi': '太子', 'Zhongshu': '中书省', 'Menxia': '门下省', 'Assigned': '尚书省',
+./edict/scripts/kanban_update_edict.py:44:     'Doing': '执行中', 'Review': '尚书省', 'Done': '完成', 'Blocked': '阻塞',
+./examples/README.md:7: | 1 | [竞品分析](competitive-analysis.md) | "分析 CrewAI vs AutoGen vs LangGraph" | 中书→门下→户部+兵部+礼部 | ⭐⭐⭐ |
+./examples/README.md:8: | 2 | [代码审查](code-review.md) | "审查 FastAPI 代码的安全性" | 中书→门下→兵部+刑部 | ⭐⭐ |
+./examples/README.md:9: | 3 | [周报生成](weekly-report.md) | "生成本周工程团队周报" | 中书→门下→户部+礼部 | ⭐⭐ |
+./examples/README.md:13: - 📋 **中书省规划**：任务拆解方案
+./examples/README.md:14: - 🔍 **门下省审议**：审核意见（含封驳/返工记录）
+./examples/README.md:16: - 📮 **最终奏折**：尚书省汇总的完整报告
+./examples/code-review.md:25: ## 📋 中书省规划
+./examples/code-review.md:33: | 1 | 代码安全扫描 | ⚔️ 兵部 | 逐文件审查，标记安全问题 |
+./examples/code-review.md:34: | 2 | 合规与最佳实践检查 | ⚖️ 刑部 | 对照 OWASP Top 10 检查合规性 |
+./examples/code-review.md:35: | 3 | 修复方案输出 | ⚔️ 兵部 | 针对每个问题给出修复代码 |
+./examples/code-review.md:42: ## 🔍 门下省审议
+./examples/code-review.md:48: **门下省批语：** *"方案合理。兵部负责工程侧审查，刑部负责合规侧审查，分工明确。注意刑部需出具 OWASP 逐项对照表，不能只写'基本合规'。准奏。"*
+./examples/code-review.md:54: ### 兵部 · 代码安全扫描（耗时 5 分钟）
+./examples/code-review.md:67: ### 刑部 · OWASP 合规检查（耗时 4 分钟）
+./examples/code-review.md:84: **刑部结论：** 6/10 项需要处理，其中 2 项不合规（A02、A03），需立即修复。
+./examples/code-review.md:86: ### 兵部 · 修复代码（耗时 3 分钟）
+./examples/code-review.md:119: ## 📮 最终奏折（尚书省汇总）
+./examples/code-review.md:129: 门下省首轮即准奏，兵部和刑部分工明确：兵部负责代码层面扫描和修复，刑部负责合规框架对照。
+./examples/competitive-analysis.md:20: ## 📋 中书省规划
+./examples/competitive-analysis.md:28: | 1 | 架构与通信机制调研 | ⚔️ 兵部 | 分析三个框架的核心架构、Agent 通信模式、代码组织 |
+./examples/competitive-analysis.md:29: | 2 | 数据采集与量化对比 | 💰 户部 | GitHub Stars、Contributors、Issue 响应时间、版本频率 |
+./examples/competitive-analysis.md:30: | 3 | 开发者体验深度评测 | ⚔️ 兵部 | 实际 Hello World 搭建、文档质量、学习曲线打分 |
+./examples/competitive-analysis.md:31: | 4 | 对比报告撰写 | 📝 礼部 | 整合数据，输出结构化 Markdown 报告 |
+./examples/competitive-analysis.md:38: ## 🔍 门下省审议
+./examples/competitive-analysis.md:46: 2. 子任务 3 和子任务 1 有重叠（兵部两次调研），建议合并
+./examples/competitive-analysis.md:53: 中书省修改后的方案：
+./examples/competitive-analysis.md:57: | 1 | 架构 + 通信 + 可观测性全维度技术调研 | ⚔️ 兵部 | 合并原 1+3，增加可观测性 |
+./examples/competitive-analysis.md:58: | 2 | 量化数据采集 | 💰 户部 | 不变 |
+./examples/competitive-analysis.md:59: | 3 | 对比报告 + 推荐场景 | 📝 礼部 | 增加推荐场景段落 |
+./examples/competitive-analysis.md:61: **门下省批语：** *"方案可行。注意兵部评测需覆盖可观测性维度，礼部结论需给出明确推荐。准奏。"*
+./examples/competitive-analysis.md:67: ### 兵部 · 技术调研（耗时 8 分钟）
+./examples/competitive-analysis.md:94: ### 户部 · 量化数据（耗时 3 分钟）
+./examples/competitive-analysis.md:105: ### 礼部 · 对比报告撰写（耗时 6 分钟）
+./examples/competitive-analysis.md:107: > 礼部整合兵部 + 户部数据，产出最终报告格式。
+./examples/competitive-analysis.md:111: ## 📮 最终奏折（尚书省汇总）
+./examples/competitive-analysis.md:119: 对 CrewAI、AutoGen、LangGraph 完成了架构、量化、体验三维度对比分析。门下省一次封驳（要求补充可观测性和推荐场景），修正后执行。
+./examples/weekly-report.md:21: ## 📋 中书省规划
+./examples/weekly-report.md:29: | 1 | 数据采集与聚合 | 💰 户部 | 从 GitHub + Jira 抓取本周数据 |
+./examples/weekly-report.md:30: | 2 | 周报文档撰写 | 📝 礼部 | 按模板格式整理为 Markdown |
+./examples/weekly-report.md:37: ## 🔍 门下省审议
+./examples/weekly-report.md:43: **门下省批语：** *"方案简洁可行。两步走：户部拉数据，礼部写文档。注意礼部输出需严格遵循飞书文档格式要求（标题层级、checkbox 格式）。准奏。"*
+./examples/weekly-report.md:49: ### 户部 · 数据采集（耗时 3 分钟）
+./examples/weekly-report.md:75: ### 礼部 · 周报文档（耗时 4 分钟）
+./examples/weekly-report.md:79: ## 📮 最终奏折（尚书省汇总）
+./examples/weekly-report.md:140: - **门下省首轮即通过** —— 简单任务不过度审核
+./examples/weekly-report.md:141: - **户部 + 礼部协作** —— 数据采集和文档撰写分离，各司其职
+./install.ps1:103: 3. 需要协作时，回复尚书省请求转派，不跨部直连。
+./install.sh:117: 3. 需要协作时，回复尚书省请求转派，不跨部直连。
+./install.sh:197:         "official": "工部尚书",
+./install.sh:198:         "org": "工部",
+./install.sh:206:             {"at": "2024-01-01T00:00:00Z", "from": "皇上", "to": "中书省", "remark": "下旨初始化三省六部系统"},
+./install.sh:207:             {"at": "2024-01-01T00:01:00Z", "from": "中书省", "to": "门下省", "remark": "规划方案提交审核"},
+./install.sh:208:             {"at": "2024-01-01T00:02:00Z", "from": "门下省", "to": "尚书省", "remark": "✅ 准奏"},
+./install.sh:209:             {"at": "2024-01-01T00:03:00Z", "from": "尚书省", "to": "工部", "remark": "派发：系统初始化"},
+./install.sh:210:             {"at": "2024-01-01T00:04:00Z", "from": "工部", "to": "尚书省", "remark": "✅ 完成"},
+./requirements.txt:9: numpy             # scripts/linucb_router.py - 吏部智选 AgentRec 模型推荐
+./scripts/kanban_update.py:14:   python3 kanban_update.py create JJC-20260223-012 "任务标题" Zhongshu 中书省 中书令
+./scripts/kanban_update.py:17:   python3 kanban_update.py state JJC-20260223-012 Menxia "规划方案已提交门下省"
+./scripts/kanban_update.py:20:   python3 kanban_update.py flow JJC-20260223-012 "中书省" "门下省" "规划方案提交审核"
+./scripts/kanban_update.py:76:     'Taizi': '太子', 'Zhongshu': '中书省', 'Menxia': '门下省',
+./scripts/kanban_update.py:77:     'Assigned': '尚书省', 'Next': '尚书省',
+./scripts/kanban_update.py:78:     'Doing': '执行中', 'Review': '尚书省', 'Done': '完成', 'Blocked': '阻塞',
+./scripts/kanban_update.py:79:     'PendingConfirm': '尚书省', 'Pending': '中书省',
+./scripts/kanban_update.py:93:     '礼部': 'libu', '户部': 'hubu', '兵部': 'bingbu',
+./scripts/kanban_update.py:94:     '刑部': 'xingbu', '工部': 'gongbu', '吏部': 'libu_hr',
+./scripts/kanban_update.py:95:     '中书省': 'zhongshu', '门下省': 'menxia', '尚书省': 'shangshu',
+./scripts/kanban_update.py:100:     'zhongshu': '中书省', 'menxia': '门下省', 'shangshu': '尚书省',
+./scripts/kanban_update.py:101:     'libu': '礼部', 'hubu': '户部', 'bingbu': '兵部', 'xingbu': '刑部',
+./scripts/kanban_update.py:102:     'gongbu': '工部', 'libu_hr': '吏部', 'zaochao': '钦天监',
+./scripts/kanban_update.py:344:     ('Review', 'Done'),       # 完结任务 — 需门下省确认
+./scripts/kanban_update.py:345:     ('Doing', 'Cancelled'),   # 执行中取消 — 需尚书省确认
+./scripts/kanban_update.py:346:     ('Menxia', 'Cancelled'),  # 审核中取消 — 需中书省确认
+./scripts/sync_from_openclaw_runtime.py:47:         'zhongshu': ('中书令', '中书省'),
+./scripts/sync_from_openclaw_runtime.py:48:         'menxia':  ('侍中', '门下省'),
+./scripts/sync_from_openclaw_runtime.py:49:         'shangshu': ('尚书令', '尚书省'),
+./scripts/sync_from_openclaw_runtime.py:50:         'hubu':    ('户部尚书', '户部'),
+./scripts/sync_from_openclaw_runtime.py:51:         'libu':    ('礼部尚书', '礼部'),
+./scripts/sync_from_openclaw_runtime.py:52:         'bingbu':  ('兵部尚书', '兵部'),
+./scripts/sync_from_openclaw_runtime.py:53:         'xingbu':  ('刑部尚书', '刑部'),
+./scripts/sync_from_openclaw_runtime.py:54:         'gongbu':  ('工部尚书', '工部'),
+./scripts/sync_from_openclaw_runtime.py:55:         'libu_hr': ('吏部尚书', '吏部'),
+./scripts/sync_from_openclaw_runtime.py:58:     return mapping.get(agent_id, ('尚书令', '尚书省'))
+./tests/test_e2e_kanban.py:46:         'Zhongshu', '中书省', '中书令',
+./tests/test_e2e_kanban.py:58:     cmd_create('JJC-TEST-E2E-02', '/Users/bingsen/clawd/openclaw-sansheng-liubu/', 'Zhongshu', '中书省', '中书令')
+./tests/test_e2e_kanban.py:64:     cmd_create('JJC-TEST-E2E-03', '调研工业数据分析大模型应用方案', 'Zhongshu', '中书省', '中书令', '太子整理旨意')
+./tests/test_e2e_kanban.py:72:     cmd_create('JJC-TEST-E2E-04', '调研工业数据分析大模型应用方案', 'Zhongshu', '中书省', '中书令')
+./tests/test_e2e_kanban.py:73:     cmd_flow('JJC-TEST-E2E-04', '太子', '中书省', '旨意传达：审查/Users/bingsen/clawd/xxx项目 Conversation blah')
+./tests/test_e2e_kanban.py:83:     cmd_create('JJC-TEST-E2E-05', '好的', 'Zhongshu', '中书省', '中书令')
+./tests/test_e2e_kanban.py:89:     cmd_create('JJC-TEST-E2E-06', '传旨：帮我写技术博客文章关于智能体架构', 'Zhongshu', '中书省', '中书令')
+./tests/test_e2e_kanban.py:97:     cmd_create('JJC-TEST-E2E-07', '测试状态更新与组织联动功能', 'Zhongshu', '中书省', '中书令')
+./tests/test_e2e_kanban.py:98:     cmd_state('JJC-TEST-E2E-07', 'Menxia', '方案提交门下省审议')
+./tests/test_e2e_kanban.py:102:     assert t['org'] == '门下省', f"org应为门下省: {t['org']}"
+./tests/test_e2e_kanban.py:107:     cmd_create('JJC-TEST-E2E-08', '测试任务完成状态标记功能', 'Zhongshu', '中书省', '中书令')
+./tests/test_e2e_kanban.py:116:     cmd_create('JJC-TEST-E2E-09', '测试已完成任务不可覆盖保护', 'Zhongshu', '中书省', '中书令')
+./tests/test_e2e_kanban.py:118:     cmd_create('JJC-TEST-E2E-09', '试图覆盖已完成的任务标题', 'Zhongshu', '中书省', '中书令')
+./tests/test_file_lock.py:61:     data = {'name': '户部尚书', 'emoji': '🏛️'}
+./tests/test_file_lock.py:64:     assert result['name'] == '户部尚书'
+./tests/test_kanban.py:20:         kb.cmd_create('TEST-001', '测试任务创建和查询功能验证', 'Inbox', '工部', '工部尚书')
+./tests/test_kanban.py:26:         assert t['org'] == '工部'
+./tests/test_kanban.py:76:         kb.cmd_flow('T-3', '中书省', '门下省', '规划方案提交审核')
+./tests/test_kanban.py:80:         assert t['flow_log'][0]['from'] == '中书省'
+./tests/test_kanban.py:81:         assert t['flow_log'][0]['to'] == '门下省'
+./tests/test_kanban.py:90:         {'id': 'T-4', 'title': 'done test', 'state': 'Doing', 'org': '兵部', 'flow_log': []}
+./tests/test_kanban.py:111:         {'id': 'T-5', 'title': 'progress test', 'state': 'Doing', 'org': '工部'}
+./tests/test_kanban.py:158:         {'id': 'T-7', 'title': '日志上限测试', 'state': 'Doing', 'org': '礼部'}

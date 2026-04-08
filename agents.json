@@ -1,101 +1,111 @@
 [
   {
-    "id": "taizi",
-    "name": "taizi",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-taizi",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\taizi\\agent",
+    "id": "control_center",
+    "name": "control_center",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-control_center",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\control_center\\agent",
     "subagents": {
-      "allowAgents": ["zhongshu"]
+      "allowAgents": ["plan_center"]
     }
   },
   {
-    "id": "zhongshu",
-    "name": "zhongshu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-zhongshu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\zhongshu\\agent",
+    "id": "plan_center",
+    "name": "plan_center",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-plan_center",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\plan_center\\agent",
     "subagents": {
-      "allowAgents": ["menxia", "shangshu"]
+      "allowAgents": ["review_center", "dispatch_center"]
     }
   },
   {
-    "id": "menxia",
-    "name": "menxia",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-menxia",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\menxia\\agent",
+    "id": "review_center",
+    "name": "review_center",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-review_center",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\review_center\\agent",
     "subagents": {
-      "allowAgents": ["shangshu", "zhongshu"]
+      "allowAgents": ["dispatch_center", "plan_center"]
     }
   },
   {
-    "id": "shangshu",
-    "name": "shangshu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-shangshu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\shangshu\\agent",
+    "id": "dispatch_center",
+    "name": "dispatch_center",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-dispatch_center",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\dispatch_center\\agent",
     "subagents": {
-      "allowAgents": ["zhongshu", "menxia", "hubu", "libu", "bingbu", "xingbu", "gongbu", "libu_hr"]
+      "allowAgents": [
+        "plan_center",
+        "review_center",
+        "data_specialist",
+        "docs_specialist",
+        "code_specialist",
+        "audit_specialist",
+        "deploy_specialist",
+        "admin_specialist",
+        "search_specialist"
+      ]
     }
   },
   {
-    "id": "hubu",
-    "name": "hubu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-hubu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\hubu\\agent",
+    "id": "data_specialist",
+    "name": "data_specialist",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-data_specialist",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\data_specialist\\agent",
     "subagents": {
-      "allowAgents": ["shangshu"]
+      "allowAgents": ["dispatch_center"]
     }
   },
   {
-    "id": "libu",
-    "name": "libu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-libu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\libu\\agent",
+    "id": "docs_specialist",
+    "name": "docs_specialist",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-docs_specialist",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\docs_specialist\\agent",
     "subagents": {
-      "allowAgents": ["shangshu"]
+      "allowAgents": ["dispatch_center"]
     }
   },
   {
-    "id": "bingbu",
-    "name": "bingbu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-bingbu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\bingbu\\agent",
+    "id": "code_specialist",
+    "name": "code_specialist",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-code_specialist",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\code_specialist\\agent",
     "subagents": {
-      "allowAgents": ["shangshu"]
+      "allowAgents": ["dispatch_center"]
     }
   },
   {
-    "id": "xingbu",
-    "name": "xingbu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-xingbu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\xingbu\\agent",
+    "id": "audit_specialist",
+    "name": "audit_specialist",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-audit_specialist",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\audit_specialist\\agent",
     "subagents": {
-      "allowAgents": ["shangshu"]
+      "allowAgents": ["dispatch_center"]
     }
   },
   {
-    "id": "gongbu",
-    "name": "gongbu",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-gongbu",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\gongbu\\agent",
+    "id": "deploy_specialist",
+    "name": "deploy_specialist",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-deploy_specialist",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\deploy_specialist\\agent",
     "subagents": {
-      "allowAgents": ["shangshu"]
+      "allowAgents": ["dispatch_center"]
     }
   },
   {
-    "id": "libu_hr",
-    "name": "libu_hr",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-libu_hr",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\libu_hr\\agent",
+    "id": "admin_specialist",
+    "name": "admin_specialist",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-admin_specialist",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\admin_specialist\\agent",
     "subagents": {
-      "allowAgents": ["shangshu"]
+      "allowAgents": ["dispatch_center"]
     }
   },
   {
-    "id": "zaochao",
-    "name": "zaochao",
-    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-zaochao",
-    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\zaochao\\agent",
+    "id": "search_specialist",
+    "name": "search_specialist",
+    "workspace": "C:\\Users\\<YOUR_USER>\\.openclaw\\workspace-search_specialist",
+    "agentDir": "C:\\Users\\<YOUR_USER>\\.openclaw\\agents\\search_specialist\\agent",
     "subagents": {
-      "allowAgents": []
+      "allowAgents": ["dispatch_center"]
     }
   }
 ]

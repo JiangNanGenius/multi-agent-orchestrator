@@ -18,22 +18,23 @@ C:\Users\<YOUR_USER>\.openclaw\workspace\skills\edict
 ---
 
 ## 2. 如果以前装过旧版本，先删除旧链接
-如果你之前已经安装过旧版多 Agent 协作工作区，请先检查并删除这些目录里的旧 `data` / `scripts` 链接：
+如果你之前已经安装过旧版多 Agent 协作工作区，请先检查并删除这些目录里的旧 `data` / `scripts` 链接。当前正式命名体系应以新的 center / specialist 工作区为准：
 
 ```text
-C:\Users\<YOUR_USER>\.openclaw\workspace-taizi
-C:\Users\<YOUR_USER>\.openclaw\workspace-zhongshu
-C:\Users\<YOUR_USER>\.openclaw\workspace-menxia
-C:\Users\<YOUR_USER>\.openclaw\workspace-shangshu
-C:\Users\<YOUR_USER>\.openclaw\workspace-hubu
-C:\Users\<YOUR_USER>\.openclaw\workspace-libu
-C:\Users\<YOUR_USER>\.openclaw\workspace-bingbu
-C:\Users\<YOUR_USER>\.openclaw\workspace-xingbu
-C:\Users\<YOUR_USER>\.openclaw\workspace-gongbu
-C:\Users\<YOUR_USER>\.openclaw\workspace-libu_hr
-C:\Users\<YOUR_USER>\.openclaw\workspace-zaochao
+C:\Users\<YOUR_USER>\.openclaw\workspace-control_center
+C:\Users\<YOUR_USER>\.openclaw\workspace-plan_center
+C:\Users\<YOUR_USER>\.openclaw\workspace-review_center
+C:\Users\<YOUR_USER>\.openclaw\workspace-dispatch_center
+C:\Users\<YOUR_USER>\.openclaw\workspace-data_specialist
+C:\Users\<YOUR_USER>\.openclaw\workspace-docs_specialist
+C:\Users\<YOUR_USER>\.openclaw\workspace-code_specialist
+C:\Users\<YOUR_USER>\.openclaw\workspace-audit_specialist
+C:\Users\<YOUR_USER>\.openclaw\workspace-deploy_specialist
+C:\Users\<YOUR_USER>\.openclaw\workspace-admin_specialist
+C:\Users\<YOUR_USER>\.openclaw\workspace-search_specialist
 ```
 
+如果你的本地环境里仍残留早期历史命名时期创建的旧 workspace 目录，也建议一并检查并清掉里面遗留的链接，避免它们继续影响当前的 center / specialist 体系部署。
 重点删除里面已有的：
 
 - `data`
@@ -43,11 +44,19 @@ C:\Users\<YOUR_USER>\.openclaw\workspace-zaochao
 
 ---
 
-## 3. 运行安装脚本
-在 PowerShell 里进入项目目录：
+## 3. 先让 AI 检查环境，再决定是否执行安装脚本
+Windows 下的推荐做法不是一上来就直接运行 `install.ps1`。更稳妥的顺序是：先把本仓库 README、当前 OpenClaw 运行状态、现有 workspace 情况交给 AI 检查，让 AI 判断这是**首次接入**还是**增量更新**，再决定是否执行安装脚本。
+
+在 PowerShell 里先进入项目目录，供 AI 检查当前仓库与环境状态：
 
 ```powershell
 cd C:\Users\<YOUR_USER>\.openclaw\workspace\skills\edict
+```
+
+只有当 AI 完成环境评估并明确建议一次性初始化时，才执行下面的脚本作为条件性初始化工具；如果 AI 判断为增量更新，则改走前端构建、配置同步与数据刷新路径：
+
+```powershell
+# 仅当 AI 明确建议一次性初始化时再执行
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
@@ -123,34 +132,34 @@ http://127.0.0.1:7891
 
 很可能还指向旧仓库。
 
-这时你再运行新的 `install.ps1`，第一次可能出现：
+这时如果 AI 评估后仍建议走一次性初始化，再按建议运行新的 `install.ps1`，第一次可能出现：
 
 - symlink / junction 创建失败
 - 安装脚本看起来跑完了，但实际 workspace 仍然连着旧版本
 
 所以最稳妥的做法是：
 
-## 先删旧链接，再运行安装脚本
+## 先删旧链接，再让 AI 判断应走一次性初始化还是增量更新
 
 ---
 
 ## 2. 为什么安装后还要核对 agent / subagent 配置
 
-在部分环境里，安装脚本不会直接改写 `openclaw.json`，因此可能需要你依据建议清单手动补齐运行时 Agent 配置。
+在部分环境里，即使 AI 建议执行一次性初始化脚本，它也不会直接改写 `openclaw.json`，因此你仍可能需要依据建议清单手动补齐运行时 Agent 配置。
 
 因此建议你安装后主动确认：
 
-- `taizi`
-- `zhongshu`
-- `menxia`
-- `shangshu`
-- `hubu`
-- `libu`
-- `bingbu`
-- `xingbu`
-- `gongbu`
-- `libu_hr`
-- `zaochao`
+- `control_center`
+- `plan_center`
+- `review_center`
+- `dispatch_center`
+- `data_specialist`
+- `docs_specialist`
+- `code_specialist`
+- `audit_specialist`
+- `deploy_specialist`
+- `admin_specialist`
+- `search_specialist`
 
 这些 agent 是否都存在，且 `subagents.allowAgents` 是否正确。
 
@@ -244,7 +253,7 @@ Windows 下也建议正常运行 `run_loop.sh`。
 排查时建议直接访问：
 
 ```text
-http://127.0.0.1:7891/api/officials-stats
+http://127.0.0.1:7891/api/agents-overview
 http://127.0.0.1:7891/api/agent-config
 http://127.0.0.1:7891/api/live-status
 ```
@@ -275,6 +284,7 @@ http://127.0.0.1:7891/api/live-status
 运行：
 
 ```powershell
+# 仅当 AI 明确建议一次性初始化时再执行
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
@@ -309,6 +319,6 @@ python dashboard\server.py
 # 五、一句话总结
 
 ## Windows 用户最稳的做法就是：
-先清旧链接，再运行安装脚本；安装后根据只读建议核对 `openclaw.json`、确认 `tools.sessions.visibility = all`；如有需要可参考 `agents.json` 脱敏模板并替换 `<YOUR_USER>`；最后启动 `run_loop.sh` 和 `dashboard/server.py`。如果长任务出现上下文接近上限，请在看板任务详情中查看“上下文窗口管理”面板，按归档与续写提示继续执行。
+先清旧链接，再让 AI 检查当前 OpenClaw 环境与 workspace 状态，并判断应执行一次性初始化还是增量更新路径；安装后根据只读建议核对 `openclaw.json`、确认 `tools.sessions.visibility = all`；如有需要可参考 `agents.json` 脱敏模板并替换 `<YOUR_USER>`；最后启动 `run_loop.sh` 和 `dashboard/server.py`。如果长任务出现上下文接近上限，请在看板任务详情中查看“上下文窗口管理”面板，按归档与续写提示继续执行。
 
 

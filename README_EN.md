@@ -1,12 +1,14 @@
 # Multi-Agent Orchestrator
 
-> **A public, deployment-ready multi-agent orchestration repository with Chinese as the default operating language and English as an available companion language.**
+> **中文简介：一个默认以中文部署、中文运行为主，并面向复杂任务治理场景设计的多智能体协作编排系统。**
 >
-> This repository is designed for governed task execution rather than loose multi-agent chatting. It emphasizes **observable workflow stages, role-based coordination, dashboard visibility, reusable agent templates, and clean public-release boundaries**.
+> **English Description: A public, deployment-ready multi-agent orchestration repository with Chinese as the default operating language and English as an available companion language.**
+>
+> This repository is designed for governed task execution rather than loose multi-agent chatting. It emphasizes **observable workflow stages, role-based coordination, dashboard visibility, reusable agent templates, and clean public-release boundaries**. In Chinese, this can also be summarized as **一个强调任务分阶段治理、执行可观测、结果可归档、角色模板可替换、看板可持续扩展的公开协作编排仓库**.
 
 ## Project Overview
 
-**Multi-Agent Orchestrator** is a production-oriented orchestration framework for complex tasks. Instead of placing multiple agents into a single undifferentiated conversation, it routes work through a structured pipeline that includes **task intake, central preprocessing, planning, review, dispatch, specialist execution, and result archiving**. This makes the system easier to monitor, intervene in, audit, and extend.
+**Multi-Agent Orchestrator** is a production-oriented orchestration framework for complex tasks. Its Chinese counterpart can be summarized as **一个把复杂任务纳入可治理、可观测、可审查、可归档执行链路的多智能体协作编排框架**. Instead of placing multiple agents into a single undifferentiated conversation, it routes work through a structured pipeline that includes **task intake, central preprocessing, planning, review, dispatch, specialist execution, and result archiving**. This makes the system easier to monitor, intervene in, audit, and extend.
 
 This public repository has been prepared as a **sanitized release**. It keeps the dashboard, backend, frontend, agent templates, and deployment-facing documentation, while removing private environment material, local runtime traces, sensitive review artifacts, and other content that should not be exposed in a public repository.
 
@@ -19,13 +21,61 @@ This public repository has been prepared as a **sanitized release**. It keeps th
 | Public release requirement | Keep the MIT License and attribution notes; never commit sensitive data |
 | Docker support policy | **Docker images, container orchestration, and related maintenance are not provided** |
 
-## Project Workflow Diagram
+## Project Workflow Diagrams
 
-The following diagram summarizes the public repository’s default governed execution path. It condenses the relationship between task intake, governance, review, dispatch, specialist execution, archiving, and final delivery into one shared visual reference so that deployment-stage readers, secondary developers, and public visitors can establish the same mental model quickly.
+Because a single long workflow image becomes **too thin, too tall, and difficult to read** once it is embedded into a GitHub README, and because even a partially split diagram can still feel crowded if governance, review loops, dispatch fan-out, and archive convergence are all forced into one frame, this repository now uses **five shorter workflow diagrams**. The reading order is intentionally progressive: readers first understand the governed intake path, then the review loop, then execution convergence, then deployment, and finally the dashboard runtime loop.
 
-![Multi-Agent Orchestrator Workflow Diagram](docs/readme-workflow.png)
+### 1. Governed Intake Path
 
-> The main path shown in this diagram is **Task Intake → Control Center → Planning Center → Review Center → Dispatch Center → Specialist Execution → Result Archive → Final Delivery**. The review stage can send work back to planning for revision, while the dispatch stage continues to supervise execution progress and aggregate outputs.[1]
+This diagram keeps only the main path from user input to the point where work becomes dispatchable. It helps readers see the governance skeleton first: tasks do not go directly to a specialist, but pass through a unified intake, a control layer, planning, and review before they can enter supervised dispatch.
+
+![Multi-Agent Orchestrator Governed Intake Path](docs/readme-governance-intake-flow.png)
+
+> This diagram answers one core question: **how work enters the governed system and advances to a dispatch-ready state**.[1]
+
+### 2. Review Loop and Release Decision
+
+This diagram isolates the relationship between the Planning Center and the Review Center. By separating approval, revision, and release logic from the main path, the README avoids stacking return arrows on top of the primary governance flow and becomes easier to read.
+
+![Multi-Agent Orchestrator Review Loop and Release Decision](docs/readme-governance-review-loop.png)
+
+> This diagram answers the question: **how planning output is reviewed, how rejected work is sent back for revision, and how approved work proceeds to dispatch**.[1]
+
+### 3. Dispatch, Specialist Execution, and Result Convergence
+
+This diagram focuses only on how the Dispatch Center fans work out to multiple specialists and then converges the resulting outputs through **context snapshotting and compression**, result archiving, a final delivery check, and final delivery. It now makes two previously missing controls explicit. First, **long-running or multi-stage work must not rely only on transient context; it should be condensed into a stable, re-readable summary before entering the delivery path.** Second, **outputs must not be declared complete immediately after archiving; they must first pass a final delivery check. If the check fails, the flow returns to the repair loop, and if a trade-off cannot be decided autonomously, the flow returns to the user for confirmation before continuing.** Once the pre-dispatch governance stages are removed from the same frame, the fan-out, context convergence, acceptance gate, and delivery convergence pattern become much easier to recognize.
+
+![Multi-Agent Orchestrator Dispatch, Specialist Execution, and Result Convergence](docs/readme-governance-execution-flow.png)
+
+> This diagram answers the question: **how the Dispatch Center coordinates multiple specialists and, after context snapshotting, result archiving, final checking, repair routing, and user confirmation, converges outputs into one governed delivery path**.[1]
+
+### 4. Deployment and Verification Flow
+
+This diagram explains the recommended public deployment path. The key idea is that operators should **read the README, inspect the environment, determine whether an existing runtime is already present, and let AI plan the minimal execution path** before deciding whether any installation script is needed.
+
+![Multi-Agent Orchestrator Deployment and Verification Flow](docs/readme-deployment-flow.png)
+
+> The recommended sequence is **Read the documentation → Inspect the environment → Decide between incremental integration and new setup → Let AI propose the minimal commands → Use scripts only when justified → Validate services and dashboard → Enter the governed workflow**.
+
+### 5. Dashboard Runtime and Feedback Flow
+
+This diagram explains what happens after deployment. It focuses on how operators use the dashboard to observe system status, track tasks, adjust dispatching, inspect sessions and logs, and turn outputs into reports and archived results. In other words, it represents the system’s **runtime observability and operational feedback loop**.
+
+![Multi-Agent Orchestrator Dashboard Runtime and Feedback Flow](docs/readme-dashboard-flow.png)
+
+> The runtime loop centers on **monitoring status, tracking tasks, adjusting dispatch, supporting specialist execution, collecting outputs, archiving results, and feeding visibility back to operators**, with logs, session views, and reports providing supporting context.
+
+The table below summarizes why the README now uses five separate diagrams.
+
+| Diagram | Main question it answers | Best first readers |
+| --- | --- | --- |
+| Governed Intake Path | How the system admits work into a governed pipeline and advances it to a dispatch-ready state | First-time visitors, architecture reviewers |
+| Review Loop and Release Decision | How plans are reviewed, revised, and approved before dispatch | Architecture reviewers, process designers |
+| Dispatch, Specialist Execution, and Result Convergence | How specialist branches are dispatched and gathered back into one final output path | Specialist designers, secondary developers |
+| Deployment and Verification Flow | Why deployment should start with AI-assisted environment inspection instead of blind script execution | Deployers, operators |
+| Dashboard Runtime and Feedback Flow | How the dashboard supports monitoring, dispatch, observability, and archival after deployment | Daily operators, secondary developers |
+
+> Together, these five diagrams form the public repository’s intended reading path: **understand the governed intake path first, then the review loop and execution convergence, then the deployment path, and finally the runtime operating loop**.[1]
 
 ## Main Guidance for Deployment-Stage AI
 

@@ -1,0 +1,91 @@
+{
+  "generatedAt": "2026-04-08 03:01:43",
+  "requiredSections": [
+    "角色定义",
+    "核心职责",
+    "任务处理流程",
+    "看板操作",
+    "实时进展上报",
+    "异常与阻塞处理",
+    "语气"
+  ],
+  "agents": [
+    {
+      "agentId": "control_center",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/control_center/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "plan_center",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/plan_center/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "review_center",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/review_center/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "dispatch_center",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/dispatch_center/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "docs_specialist",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/docs_specialist/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "data_specialist",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/data_specialist/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "code_specialist",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/code_specialist/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "audit_specialist",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/audit_specialist/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "deploy_specialist",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/deploy_specialist/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "admin_specialist",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/admin_specialist/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    },
+    {
+      "agentId": "search_specialist",
+      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/search_specialist/SOUL.md",
+      "hasRequiredSections": true,
+      "missingSections": [],
+      "deployStrategy": "source"
+    }
+  ]
+}

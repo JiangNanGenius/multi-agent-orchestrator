@@ -1,6 +1,6 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════
-# 三省六部 · 统一服务管理脚本
+# EDICT · 统一服务管理脚本
 # 用法: ./edict.sh {start|stop|status|restart|logs}
 # ══════════════════════════════════════════════════════════════
 
@@ -32,8 +32,8 @@ _ensure_dirs() {
   [ ! -f "$REPO_DIR/data/pending_model_changes.json" ] && echo '[]' > "$REPO_DIR/data/pending_model_changes.json"
   [ ! -f "$REPO_DIR/data/tasks_source.json" ] && echo '[]' > "$REPO_DIR/data/tasks_source.json"
   [ ! -f "$REPO_DIR/data/tasks.json" ] && echo '[]' > "$REPO_DIR/data/tasks.json"
-  [ ! -f "$REPO_DIR/data/officials.json" ] && echo '[]' > "$REPO_DIR/data/officials.json"
-  [ ! -f "$REPO_DIR/data/officials_stats.json" ] && echo '{}' > "$REPO_DIR/data/officials_stats.json"
+  [ ! -f "$REPO_DIR/data/agents.json" ] && echo '[]' > "$REPO_DIR/data/agents.json"
+  [ ! -f "$REPO_DIR/data/agents_overview.json" ] && echo '{}' > "$REPO_DIR/data/agents_overview.json"
 }
 
 _is_running() {
@@ -68,7 +68,7 @@ do_start() {
   fi
 
   echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
-  echo -e "${BLUE}║  🏛️  三省六部 · 服务启动中               ║${NC}"
+  echo -e "${BLUE}║  🏛️  EDICT · 服务启动中                  ║${NC}"
   echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"
   echo ""
 
@@ -159,7 +159,7 @@ do_stop() {
 # ── 状态 ──
 
 do_status() {
-  echo -e "${BLUE}🏛️  三省六部 · 服务状态${NC}"
+  echo -e "${BLUE}🏛️  EDICT · 服务状态${NC}"
   echo ""
 
   for label_pid in "看板服务器:$SERVER_PIDFILE" "数据刷新循环:$LOOP_PIDFILE"; do

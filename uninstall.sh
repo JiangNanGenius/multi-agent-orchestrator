@@ -1,6 +1,6 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════
-# 三省六部 · OpenClaw Multi-Agent System 一键卸载脚本
+# EDICT · OpenClaw Multi-Agent System 一键卸载脚本
 # ══════════════════════════════════════════════════════════════
 set -e
 
@@ -13,7 +13,7 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC
 banner() {
   echo ""
   echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
-  echo -e "${BLUE}║  🏛️  三省六部 · 卸载向导                  ║${NC}"
+  echo -e "${BLUE}║  🏛️  EDICT · 卸载向导                     ║${NC}"
   echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"
   echo ""
 }
@@ -30,7 +30,7 @@ check_env() {
   fi
 
   echo ""
-  echo -e "${YELLOW}确定要卸载「三省六部」系统并清理相关 Agent 数据吗？${NC}"
+  echo -e "${YELLOW}确定要卸载当前项目脚本并清理相关历史 Agent 数据吗？${NC}"
   read -p "(y/N) " -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -56,7 +56,7 @@ stop_services() {
 
 # ── Step 2: 清理 OpenClaw 注册配置 ──────────────────────────────
 unregister_agents() {
-  info "从 OpenClaw 移除三省六部 Agents 注册信息..."
+  info "从 OpenClaw 移除本项目历史 Agents 注册信息..."
 
   if [ ! -f "$OC_CFG" ]; then
     warn "未找到 openclaw.json，跳过配置清理"
@@ -160,6 +160,6 @@ restart_gateway
 
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║  ✅  三省六部卸载完成！                          ║${NC}"
+echo -e "${GREEN}║  ✅  EDICT 卸载完成！                             ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════════╝${NC}"
 echo ""

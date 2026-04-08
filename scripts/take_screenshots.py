@@ -24,7 +24,7 @@ def main():
         page.wait_for_load_state('networkidle')
         page.wait_for_timeout(2000)
 
-        # 1. Kanban main (default tab = edicts)
+        # 1. Kanban main (default tab = tasks)
         print('📋 01 kanban...')
         page.screenshot(path=os.path.join(SHOTS, '01-kanban-main.png'), full_page=False)
 
@@ -36,7 +36,7 @@ def main():
 
         # 3. Task detail - click first task card
         print('📜 03 task detail...')
-        page.click('[data-tab="edicts"]')
+        page.click('[data-tab="tasks"]')
         page.wait_for_timeout(500)
         cards = page.locator('.edict-card')
         if cards.count() > 0:
@@ -61,11 +61,11 @@ def main():
         page.wait_for_timeout(1000)
         page.screenshot(path=os.path.join(SHOTS, '05-skills-config.png'), full_page=False)
 
-        # 6. Officials overview
-        print('👥 06 officials...')
-        page.click('[data-tab="officials"]')
+        # 6. Agents overview
+        print('👥 06 agents overview...')
+        page.click('[data-tab="agents"]')
         page.wait_for_timeout(1000)
-        page.screenshot(path=os.path.join(SHOTS, '06-official-overview.png'), full_page=False)
+        page.screenshot(path=os.path.join(SHOTS, '06-agents-overview.png'), full_page=False)
 
         # 7. Sessions
         print('💬 07 sessions...')
@@ -73,11 +73,11 @@ def main():
         page.wait_for_timeout(800)
         page.screenshot(path=os.path.join(SHOTS, '07-sessions.png'), full_page=False)
 
-        # 8. Memorials
-        print('📜 08 memorials...')
-        page.click('[data-tab="memorials"]')
+        # 8. Archives
+        print('📜 08 archives...')
+        page.click('[data-tab="archives"]')
         page.wait_for_timeout(800)
-        page.screenshot(path=os.path.join(SHOTS, '08-memorials.png'), full_page=False)
+        page.screenshot(path=os.path.join(SHOTS, '08-archives.png'), full_page=False)
 
         # 9. Templates
         print('📜 09 templates...')
@@ -85,11 +85,11 @@ def main():
         page.wait_for_timeout(800)
         page.screenshot(path=os.path.join(SHOTS, '09-templates.png'), full_page=False)
 
-        # 10. Morning briefing
-        print('📰 10 morning...')
-        page.click('[data-tab="morning"]')
+        # 10. Web search brief
+        print('📰 10 web_search...')
+        page.click('[data-tab="web_search"]')
         page.wait_for_timeout(1000)
-        page.screenshot(path=os.path.join(SHOTS, '10-morning-briefing.png'), full_page=False)
+        page.screenshot(path=os.path.join(SHOTS, '10-web-search-brief.png'), full_page=False)
 
         # 11. Ceremony - clear date then reload
         print('🎬 11 ceremony...')

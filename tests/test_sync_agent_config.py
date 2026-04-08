@@ -20,9 +20,9 @@ def test_sync_agent_config_accepts_allow_agents_key(tmp_path, monkeypatch):
             "defaults": {"model": "openai/gpt-4o"},
             "list": [
                 {
-                    "id": "taizi",
-                    "workspace": str(tmp_path / "ws-taizi"),
-                    "allowAgents": ["zhongshu"]
+                    "id": "control_center",
+                    "workspace": str(tmp_path / "ws-control-center"),
+                    "allowAgents": ["plan_center"]
                 }
             ]
         }
@@ -37,5 +37,5 @@ def test_sync_agent_config_accepts_allow_agents_key(tmp_path, monkeypatch):
     sync_agent_config.main()
 
     out = json.loads((tmp_path / "data" / "agent_config.json").read_text())
-    taizi = next(agent for agent in out["agents"] if agent["id"] == "taizi")
-    assert taizi["allowAgents"] == ["zhongshu"]
+    control_center = next(agent for agent in out["agents"] if agent["id"] == "control_center")
+    assert control_center["allowAgents"] == ["plan_center"]

@@ -1,4 +1,4 @@
-# 三省六部 · Python 依赖
+# EDICT · Python 依赖
 # 安装: pip install -r requirements.txt
 
 # 核心依赖（看板 + 数据同步，无需额外依赖，均为 Python 标准库）
@@ -6,5 +6,5 @@
 # scripts/*.py - json, pathlib, subprocess, datetime, etc.
 
 # 可选依赖（按需安装）
-numpy             # scripts/linucb_router.py - 吏部智选 AgentRec 模型推荐
+numpy             # scripts/linucb_router.py - AgentRec 模型推荐
 # playwright      # scripts/take_screenshots.py - 自动截图（需要额外安装浏览器: playwright install chromium）

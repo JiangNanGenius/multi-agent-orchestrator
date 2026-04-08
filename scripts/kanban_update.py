@@ -10,14 +10,14 @@
 两种模式互相独立，数据不会自动同步。
 
 用法:
-  # 新建任务（收旨时）
-  python3 kanban_update.py create JJC-20260223-012 "任务标题" Zhongshu 中书省 中书令
+  # 新建任务（收单时）
+  python3 kanban_update.py create JJC-20260223-012 "任务标题" PlanCenter 规划中心 规划中心Agent
 
   # 更新状态
-  python3 kanban_update.py state JJC-20260223-012 Menxia "规划方案已提交门下省"
+  python3 kanban_update.py state JJC-20260223-012 ReviewCenter "规划方案已提交评审中心"
 
   # 添加流转记录
-  python3 kanban_update.py flow JJC-20260223-012 "中书省" "门下省" "规划方案提交审核"
+  python3 kanban_update.py flow JJC-20260223-012 "规划中心" "评审中心" "规划方案提交审核"
 
   # 完成任务
   python3 kanban_update.py done JJC-20260223-012 "/path/to/output" "任务完成摘要"
@@ -73,33 +73,33 @@ def _load_canonical_transitions() -> dict:
 
 
 STATE_ORG_MAP = {
-    'Taizi': '太子', 'Zhongshu': '中书省', 'Menxia': '门下省',
-    'Assigned': '尚书省', 'Next': '尚书省',
-    'Doing': '执行中', 'Review': '尚书省', 'Done': '完成', 'Blocked': '阻塞',
-    'PendingConfirm': '尚书省', 'Pending': '中书省',
+    'ControlCenter': '总控中心', 'PlanCenter': '规划中心', 'ReviewCenter': '评审中心',
+    'Assigned': '调度中心', 'Next': '调度中心',
+    'Doing': '执行中', 'Review': '调度中心', 'Done': '完成', 'Blocked': '阻塞',
+    'PendingConfirm': '调度中心', 'Pending': '规划中心',
 }
 
 _STATE_AGENT_MAP = {
-    'Taizi': 'taizi',
-    'Zhongshu': 'zhongshu',
-    'Menxia': 'menxia',
-    'Assigned': 'shangshu',
-    'Review': 'shangshu',
-    'Pending': 'zhongshu',
-    'PendingConfirm': 'shangshu',
+    'ControlCenter': 'control_center',
+    'PlanCenter': 'plan_center',
+    'ReviewCenter': 'review_center',
+    'Assigned': 'dispatch_center',
+    'Review': 'dispatch_center',
+    'Pending': 'plan_center',
+    'PendingConfirm': 'dispatch_center',
 }
 
 _ORG_AGENT_MAP = {
-    '礼部': 'libu', '户部': 'hubu', '兵部': 'bingbu',
-    '刑部': 'xingbu', '工部': 'gongbu', '吏部': 'libu_hr',
-    '中书省': 'zhongshu', '门下省': 'menxia', '尚书省': 'shangshu',
+    '文案专家': 'docs_specialist', '数据专家': 'data_specialist', '代码专家': 'code_specialist',
+    '合规专家': 'audit_specialist', '部署专家': 'deploy_specialist', 'Agent管理专家': 'admin_specialist',
+    '规划中心': 'plan_center', '评审中心': 'review_center', '调度中心': 'dispatch_center',
 }
 
 _AGENT_LABELS = {
-    'main': '太子', 'taizi': '太子',
-    'zhongshu': '中书省', 'menxia': '门下省', 'shangshu': '尚书省',
-    'libu': '礼部', 'hubu': '户部', 'bingbu': '兵部', 'xingbu': '刑部',
-    'gongbu': '工部', 'libu_hr': '吏部', 'zaochao': '钦天监',
+    'control_center': '总控中心',
+    'plan_center': '规划中心', 'review_center': '评审中心', 'dispatch_center': '调度中心',
+    'docs_specialist': '文案专家', 'data_specialist': '数据专家', 'code_specialist': '代码专家', 'audit_specialist': '合规专家',
+    'deploy_specialist': '部署专家', 'admin_specialist': 'Agent管理专家', 'search_specialist': '搜索专家',
 }
 
 MAX_PROGRESS_LOG = 100  # 单任务最大进展日志条数
@@ -159,17 +159,17 @@ def _append_audit(task_id, agent, action, old_val=None, new_val=None, reason="")
 
 # ── 越权检测（Agent 权限策略）──
 AGENT_POLICY = {
-    "taizi":    {"role": "coordination", "commands": {"create", "state", "flow", "progress", "todo", "memory", "task-memo"}},
-    "zhongshu": {"role": "coordination", "commands": {"state", "flow", "progress", "todo", "memory", "task-memo", "delegate"}},
-    "menxia":   {"role": "coordination", "commands": {"state", "flow", "progress", "todo", "confirm", "memory", "task-memo"}},
-    "shangshu": {"role": "coordination", "commands": {"state", "flow", "progress", "todo", "confirm", "delegate", "memory", "task-memo", "shared-memo"}},
-    "zaochao":  {"role": "coordination", "commands": {"progress", "todo", "memory"}},
-    "hubu":     {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
-    "libu":     {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
-    "bingbu":   {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
-    "xingbu":   {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
-    "gongbu":   {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
-    "libu_hr":  {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
+    "control_center":  {"role": "coordination", "commands": {"create", "state", "flow", "progress", "todo", "memory", "task-memo"}},
+    "plan_center":     {"role": "coordination", "commands": {"state", "flow", "progress", "todo", "memory", "task-memo", "delegate"}},
+    "review_center":   {"role": "coordination", "commands": {"state", "flow", "progress", "todo", "confirm", "memory", "task-memo"}},
+    "dispatch_center": {"role": "coordination", "commands": {"state", "flow", "progress", "todo", "confirm", "delegate", "memory", "task-memo", "shared-memo"}},
+    "search_specialist": {"role": "coordination", "commands": {"progress", "todo", "memory"}},
+    "data_specialist":  {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
+    "docs_specialist":  {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
+    "code_specialist":  {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
+    "audit_specialist": {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
+    "deploy_specialist": {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
+    "admin_specialist": {"role": "execution", "commands": {"progress", "todo", "done", "block", "memory", "task-memo", "delegate-result"}},
 }
 
 def _check_permission(agent_id, cmd):
@@ -278,7 +278,7 @@ def _is_valid_task_title(title):
     return True, ''
 
 
-def cmd_create(task_id, title, state, org, official, remark=None):
+def cmd_create(task_id, title, state, org, owner, remark=None):
     """新建任务（收旨时立即调用）"""
     # 清洗标题（剥离元数据）
     title = _sanitize_title(title)
@@ -289,22 +289,22 @@ def cmd_create(task_id, title, state, org, official, remark=None):
         print(f'[看板] 拒绝创建：{reason}', flush=True)
         return
     actual_org = STATE_ORG_MAP.get(state, org)
-    clean_remark = _sanitize_remark(remark) if remark else f"下旨：{title}"
+    clean_remark = _sanitize_remark(remark) if remark else f"任务创建：{title}"
     def modifier(tasks):
         existing = next((t for t in tasks if t.get('id') == task_id), None)
         if existing:
             if existing.get('state') in ('Done', 'Cancelled'):
                 log.warning(f'⚠️ 任务 {task_id} 已完结 (state={existing["state"]})，不可覆盖')
                 return tasks
-            if existing.get('state') not in (None, '', 'Inbox', 'Pending'):
+            if existing.get('state') not in (None, '', 'ControlCenter', 'Pending'):
                 log.warning(f'任务 {task_id} 已存在 (state={existing["state"]})，将被覆盖')
         tasks = [t for t in tasks if t.get('id') != task_id]
         tasks.insert(0, {
-            "id": task_id, "title": title, "official": official,
+            "id": task_id, "title": title, "owner": owner,
             "org": actual_org, "state": state,
-            "now": clean_remark[:60] if remark else f"已下旨，等待{actual_org}接旨",
+            "now": clean_remark[:60] if remark else f"任务已创建，等待{actual_org}接收",
             "eta": "-", "block": "无", "output": "", "ac": "",
-            "flow_log": [{"at": now_iso(), "from": "皇上", "to": actual_org, "remark": clean_remark}],
+            "flow_log": [{"at": now_iso(), "from": "任务发起人", "to": actual_org, "remark": clean_remark}],
             "updatedAt": now_iso()
         })
         return tasks
@@ -322,16 +322,16 @@ if _edict_task_path.exists():
 else:
     # Fallback：当 edict 目录不存在时使用内置定义（必须与 task.py 保持一致）
     _VALID_TRANSITIONS = {
-        'Pending':        {'Taizi', 'Cancelled'},
-        'Taizi':          {'Zhongshu', 'Cancelled'},
-        'Zhongshu':       {'Menxia', 'Cancelled', 'Blocked'},
-        'Menxia':         {'Assigned', 'Zhongshu', 'Cancelled'},
+        'Pending':        {'ControlCenter', 'Cancelled'},
+        'ControlCenter':  {'PlanCenter', 'Cancelled'},
+        'PlanCenter':     {'ReviewCenter', 'Cancelled', 'Blocked'},
+        'ReviewCenter':   {'Assigned', 'PlanCenter', 'Cancelled'},
         'Assigned':       {'Doing', 'Next', 'Blocked', 'Cancelled'},
         'Next':           {'Doing', 'Blocked', 'Cancelled'},
         'Doing':          {'Review', 'Done', 'Blocked', 'Cancelled'},
-        'Review':         {'Done', 'Menxia', 'Doing', 'Cancelled', 'PendingConfirm'},
+        'Review':         {'Done', 'ReviewCenter', 'Doing', 'Cancelled', 'PendingConfirm'},
         'PendingConfirm': {'Done', 'Review', 'Cancelled'},
-        'Blocked':        {'Taizi', 'Zhongshu', 'Menxia', 'Assigned', 'Next', 'Doing', 'Review', 'Cancelled'},
+        'Blocked':        {'ControlCenter', 'PlanCenter', 'ReviewCenter', 'Assigned', 'Next', 'Doing', 'Review', 'Cancelled'},
         'Done':           set(),
         'Cancelled':      set(),
     }
@@ -341,16 +341,16 @@ else:
 
 # 需要进入 PendingConfirm 中间状态的高风险转换
 HIGH_RISK_TRANSITIONS = {
-    ('Review', 'Done'),       # 完结任务 — 需门下省确认
-    ('Doing', 'Cancelled'),   # 执行中取消 — 需尚书省确认
-    ('Menxia', 'Cancelled'),  # 审核中取消 — 需中书省确认
+    ('Review', 'Done'),              # 完结任务 — 需评审中心确认
+    ('Doing', 'Cancelled'),          # 执行中取消 — 需调度中心确认
+    ('ReviewCenter', 'Cancelled'),   # 评审中取消 — 需规划中心确认
 }
 
 # 各状态的确认权限方
 CONFIRM_AUTHORITY = {
-    'Review': 'menxia',
-    'Doing': 'shangshu',
-    'Menxia': 'zhongshu',
+    'Review': 'review_center',
+    'Doing': 'dispatch_center',
+    'ReviewCenter': 'plan_center',
 }
 
 
@@ -378,7 +378,7 @@ def cmd_state(task_id, new_state, now_text=None):
                 'target_state': new_state,
                 'requested_by': _infer_agent_id_from_runtime(t),
                 'requested_at': now_iso(),
-                'confirm_by': CONFIRM_AUTHORITY.get(old_state[0], 'shangshu'),
+                'confirm_by': CONFIRM_AUTHORITY.get(old_state[0], 'dispatch_center'),
             }
             t['now'] = f'待确认: {old_state[0]}→{new_state}'
             t['updatedAt'] = now_iso()
@@ -398,7 +398,7 @@ def cmd_state(task_id, new_state, now_text=None):
         _append_audit(task_id, _infer_agent_id_from_runtime(), 'state_rejected', old_state[0], new_state, '非法状态转换')
     elif pending_confirm[0]:
         log.info(f'⏳ {task_id} 高风险操作 {old_state[0]}→{new_state}，进入 PendingConfirm 待确认')
-        _append_audit(task_id, _infer_agent_id_from_runtime(), 'pending_confirm', old_state[0], new_state, f'需 {CONFIRM_AUTHORITY.get(old_state[0], "shangshu")} 确认')
+        _append_audit(task_id, _infer_agent_id_from_runtime(), 'pending_confirm', old_state[0], new_state, f'需 {CONFIRM_AUTHORITY.get(old_state[0], "dispatch_center")} 确认')
     else:
         log.info(f'✅ {task_id} 状态更新: {old_state[0]} → {new_state}')
         _append_audit(task_id, _infer_agent_id_from_runtime(), 'state', old_state[0], new_state, now_text or '')
@@ -440,7 +440,7 @@ def cmd_done(task_id, output_path='', summary=''):
         t['now'] = summary or '任务已完成'
         t.setdefault('flow_log', []).append({
             "at": now_iso(), "from": t.get('org', '执行部门'),
-            "to": "皇上", "remark": f"✅ 完成：{summary or '任务已完成'}"
+            "to": "任务发起人", "remark": f"✅ 完成：{summary or '任务已完成'}"
         })
         # 同步设置 outputMeta，避免依赖 refresh_live_data.py 异步补充
         if output_path:
@@ -836,7 +836,7 @@ def cmd_delegate(task_id, from_agent, to_agent, instruction, return_spec=''):
             'title': f'[委派] {instruction[:40]}',
             'state': 'Doing',
             'org': org,
-            'official': from_agent,
+            'owner': from_agent,
             'now': instruction[:60],
             'delegation': {
                 'from': from_agent,

@@ -57,9 +57,9 @@ def main():
         page.click('[data-tab="monitor"]')
         page.wait_for_timeout(2000)
 
-        # === Scene 5: Memorials (2s) ===
-        print('📜 Scene 5: Memorials...')
-        page.click('[data-tab="memorials"]')
+        # === Scene 5: Archives (2s) ===
+        print('📜 Scene 5: Archives...')
+        page.click('[data-tab="archives"]')
         page.wait_for_timeout(2000)
 
         # === Scene 6: Templates (2s) ===
@@ -67,9 +67,9 @@ def main():
         page.click('[data-tab="templates"]')
         page.wait_for_timeout(2000)
 
-        # === Scene 7: Officials (2s) ===
-        print('👥 Scene 7: Officials...')
-        page.click('[data-tab="officials"]')
+        # === Scene 7: Agents (2s) ===
+        print('👥 Scene 7: Agents...')
+        page.click('[data-tab="agents"]')
         page.wait_for_timeout(2000)
 
         # === Scene 8: Models (1.5s) ===
@@ -79,7 +79,7 @@ def main():
 
         # === Scene 9: Back to Kanban (1s) ===
         print('📋 Scene 9: Back to kanban...')
-        page.click('[data-tab="edicts"]')
+        page.click('[data-tab="tasks"]')
         page.wait_for_timeout(1500)
 
         # Close context to finalize video

@@ -2,26 +2,12 @@
  * 协同讨论 — 多Agent实时讨论可视化组件
  *
  * 灵感来自 nvwa 项目的故事剧场 + 协作工坊 + 虚拟生活
- * 功能：
- *   - 可视化协作布局，Agent 站位
- *   - 实时群聊讨论，参与 Agent 各抒己见
- *   - 用户可随时发言参与
- *   - 插入额外约束改变讨论走向
- *   - 随机事件：增加讨论扰动与灵感
- *   - 自动推进 / 手动推进
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useStore, DEPTS } from '../store';
+import { useStore, DEPTS, deptMeta } from '../store';
 import { api } from '../api';
-
-// ── 常量 ──
-
-const OFFICIAL_COLORS: Record<string, string> = {
-  taizi: '#e8a040', zhongshu: '#a07aff', menxia: '#6a9eff', shangshu: '#2ecc8a',
-  libu: '#f5c842', hubu: '#ff9a6a', bingbu: '#ff5270', xingbu: '#cc4444',
-  gongbu: '#44aaff', libu_hr: '#9b59b6',
-};
+import { pickLocaleText, type Locale } from '../i18n';
 
 const EMOTION_EMOJI: Record<string, string> = {
   neutral: '', confident: '😏', worried: '😟', angry: '😤',
@@ -29,20 +15,17 @@ const EMOTION_EMOJI: Record<string, string> = {
 };
 
 const COURT_POSITIONS: Record<string, { x: number; y: number }> = {
-  // 左列
-  zhongshu: { x: 15, y: 25 }, menxia: { x: 15, y: 45 }, shangshu: { x: 15, y: 65 },
-  // 右列
-  libu: { x: 85, y: 20 }, hubu: { x: 85, y: 35 }, bingbu: { x: 85, y: 50 },
-  xingbu: { x: 85, y: 65 }, gongbu: { x: 85, y: 80 },
-  // 中间
-  taizi: { x: 50, y: 20 }, libu_hr: { x: 50, y: 80 },
+  plan_center: { x: 15, y: 25 }, review_center: { x: 15, y: 45 }, dispatch_center: { x: 15, y: 65 },
+  docs_specialist: { x: 85, y: 18 }, data_specialist: { x: 85, y: 31 }, code_specialist: { x: 85, y: 44 },
+  audit_specialist: { x: 85, y: 57 }, deploy_specialist: { x: 85, y: 70 }, search_specialist: { x: 85, y: 83 },
+  control_center: { x: 50, y: 20 }, admin_specialist: { x: 50, y: 80 },
 };
 
 interface CourtMessage {
   type: string;
   content: string;
-  official_id?: string;
-  official_name?: string;
+  agent_id?: string;
+  agent_name?: string;
   emotion?: string;
   action?: string;
   timestamp?: number;
@@ -51,7 +34,7 @@ interface CourtMessage {
 interface CourtSession {
   session_id: string;
   topic: string;
-  officials: Array<{
+  agents: Array<{
     id: string;
     name: string;
     emoji: string;
@@ -65,7 +48,10 @@ interface CourtSession {
 }
 
 export default function CourtDiscussion() {
-  // Phase: setup | session
+  const locale = useStore((s) => s.locale);
+  const toast = useStore((s) => s.toast);
+  const liveStatus = useStore((s) => s.liveStatus);
+
   const [phase, setPhase] = useState<'setup' | 'session'>('setup');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [topic, setTopic] = useState('');
@@ -74,30 +60,21 @@ export default function CourtDiscussion() {
   const [autoPlay, setAutoPlay] = useState(false);
   const autoPlayRef = useRef(false);
 
-  // 用户发言
   const [userInput, setUserInput] = useState('');
-  // 插入约束
   const [showDecree, setShowDecree] = useState(false);
   const [decreeInput, setDecreeInput] = useState('');
   const [decreeFlash, setDecreeFlash] = useState(false);
-  // 随机事件
   const [diceRolling, setDiceRolling] = useState(false);
   const [diceResult, setDiceResult] = useState<string | null>(null);
-  // 当前高亮发言 Agent
   const [speakingId, setSpeakingId] = useState<string | null>(null);
-  // Agent 情绪
   const [emotions, setEmotions] = useState<Record<string, string>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const toast = useStore((s) => s.toast);
-  const liveStatus = useStore((s) => s.liveStatus);
 
-  // 自动滚到底部
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [session?.messages?.length]);
 
-  // 自动推进
   useEffect(() => {
     autoPlayRef.current = autoPlay;
   }, [autoPlay]);
@@ -112,8 +89,7 @@ export default function CourtDiscussion() {
     return () => clearInterval(timer);
   }, [autoPlay, session, loading]);
 
-  // ── 切换 Agent 选中 ──
-  const toggleOfficial = (id: string) => {
+  const toggleAgent = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -122,32 +98,29 @@ export default function CourtDiscussion() {
     });
   };
 
-  // ── 开始协同讨论 ──
   const handleStart = async () => {
     if (!topic.trim() || selectedIds.size < 2 || loading) return;
     setLoading(true);
     try {
       const res = await api.courtDiscussStart(topic, Array.from(selectedIds));
-      if (!res.ok) throw new Error(res.error || '启动失败');
+      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '启动失败', 'Failed to start discussion'));
       setSession(res as unknown as CourtSession);
       setPhase('session');
     } catch (e: unknown) {
-      toast((e as Error).message || '启动失败', 'err');
+      toast((e as Error).message || pickLocaleText(locale, '启动失败', 'Failed to start discussion'), 'err');
     } finally {
       setLoading(false);
     }
   };
 
-  // ── 推进讨论 ──
   const handleAdvance = useCallback(async (userMsg?: string, decree?: string) => {
     if (!session || loading) return;
     setLoading(true);
 
     try {
       const res = await api.courtDiscussAdvance(session.session_id, userMsg, decree);
-      if (!res.ok) throw new Error(res.error || '推进失败');
+      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '推进失败', 'Failed to advance discussion'));
 
-      // 更新 session messages（追加新消息）
       setSession((prev) => {
         if (!prev) return prev;
         const newMsgs: CourtMessage[] = [];
@@ -160,9 +133,9 @@ export default function CourtDiscussion() {
         }
 
         const aiMsgs = (res.new_messages || []).map((m: Record<string, string>) => ({
-          type: 'official',
-          official_id: m.official_id,
-          official_name: m.name,
+          type: 'agent',
+          agent_id: m.agent_id || m.official_id,
+          agent_name: m.agent_name || m.official_name || m.name,
           content: m.content,
           emotion: m.emotion,
           action: m.action,
@@ -180,15 +153,18 @@ export default function CourtDiscussion() {
         };
       });
 
-      // 动画：依次高亮发言中的 Agent
-      const aiMsgs = res.new_messages || [];
+      const aiMsgs = (res.new_messages || []).map((m: Record<string, string>) => ({
+        agent_id: m.agent_id || m.official_id,
+        emotion: m.emotion || 'neutral',
+      })).filter((m) => Boolean(m.agent_id));
       if (aiMsgs.length > 0) {
         const emotionMap: Record<string, string> = {};
         let idx = 0;
         const cycle = () => {
           if (idx < aiMsgs.length) {
-            setSpeakingId(aiMsgs[idx].official_id);
-            emotionMap[aiMsgs[idx].official_id] = aiMsgs[idx].emotion || 'neutral';
+            const currentAgentId = aiMsgs[idx].agent_id as string;
+            setSpeakingId(currentAgentId);
+            emotionMap[currentAgentId] = aiMsgs[idx].emotion || 'neutral';
             idx++;
             setTimeout(cycle, 1200);
           } else {
@@ -199,13 +175,12 @@ export default function CourtDiscussion() {
         setEmotions((prev) => ({ ...prev, ...emotionMap }));
       }
     } catch {
-      // silently
+      // ignore silently to match existing interaction pattern
     } finally {
       setLoading(false);
     }
-  }, [session, loading]);
+  }, [session, loading, locale]);
 
-  // ── 用户发言 ──
   const handleEmperor = () => {
     const msg = userInput.trim();
     if (!msg) return;
@@ -213,7 +188,6 @@ export default function CourtDiscussion() {
     handleAdvance(msg);
   };
 
-  // ── 插入约束 ──
   const handleDecree = () => {
     const msg = decreeInput.trim();
     if (!msg) return;
@@ -224,35 +198,31 @@ export default function CourtDiscussion() {
     handleAdvance(undefined, msg);
   };
 
-  // ── 触发随机事件 ──
   const handleDice = async () => {
     if (loading || diceRolling) return;
     setDiceRolling(true);
     setDiceResult(null);
 
-    // 滚动动画
     let count = 0;
     const timer = setInterval(async () => {
       count++;
-      setDiceResult('🎲 命运轮转中...');
+      setDiceResult(pickLocaleText(locale, '🎲 命运轮转中...', '🎲 Fate is turning...'));
       if (count >= 6) {
         clearInterval(timer);
         try {
           const res = await api.courtDiscussFate();
-          const event = res.event || '边疆急报传来';
+          const event = res.event || pickLocaleText(locale, '边疆急报传来', 'Urgent frontier news arrives');
           setDiceResult(event);
           setDiceRolling(false);
-          // 自动作为随机事件注入
-          handleAdvance(undefined, `【随机事件】${event}`);
+          handleAdvance(undefined, locale === 'en' ? `[Random Event] ${event}` : `【随机事件】${event}`);
         } catch {
-          setDiceResult('命运之力暂时无法触及');
+          setDiceResult(pickLocaleText(locale, '命运之力暂时无法触及', 'The force of fate cannot be reached right now'));
           setDiceRolling(false);
         }
       }
     }, 200);
   };
 
-  // ── 结束协同讨论 ──
   const handleConclude = async () => {
     if (!session) return;
     setLoading(true);
@@ -262,25 +232,28 @@ export default function CourtDiscussion() {
         setSession((prev) =>
           prev
             ? {
-              ...prev,
-              phase: 'concluded',
-              messages: [
-                ...prev.messages,
-                { type: 'system', content: `📋 协同讨论结束 — ${res.summary}`, timestamp: Date.now() / 1000 },
-              ],
-            }
+                ...prev,
+                phase: 'concluded',
+                messages: [
+                  ...prev.messages,
+                  {
+                    type: 'system',
+                    content: locale === 'en' ? `📋 Discussion concluded — ${res.summary}` : `📋 协同讨论结束 — ${res.summary}`,
+                    timestamp: Date.now() / 1000,
+                  },
+                ],
+              }
             : prev,
         );
       }
       setAutoPlay(false);
     } catch {
-      toast('结束失败', 'err');
+      toast(pickLocaleText(locale, '结束失败', 'Failed to conclude discussion'), 'err');
     } finally {
       setLoading(false);
     }
   };
 
-  // ── 重置 ──
   const handleReset = () => {
     if (session) {
       api.courtDiscussDestroy(session.session_id).catch(() => {});
@@ -293,54 +266,50 @@ export default function CourtDiscussion() {
     setDiceResult(null);
   };
 
-  // ── 预设议题（从当前任务中提取）──
   const activeEdicts = (liveStatus?.tasks || []).filter(
     (t) => /^JJC-/i.test(t.id) && !['Done', 'Cancelled'].includes(t.state),
   );
 
   const presetTopics = [
     ...activeEdicts.slice(0, 3).map((t) => ({
-      text: `讨论任务 ${t.id}：${t.title}`,
+      text: locale === 'en' ? `Discuss task ${t.id}: ${t.title}` : `讨论任务 ${t.id}：${t.title}`,
       taskId: t.id,
       icon: '📜',
     })),
-    { text: '讨论系统架构优化方案', taskId: '', icon: '🏗️' },
-    { text: '评估当前项目进展和风险', taskId: '', icon: '📊' },
-    { text: '制定下周工作计划', taskId: '', icon: '📋' },
-    { text: '紧急问题：线上Bug排查方案', taskId: '', icon: '🚨' },
+    { text: pickLocaleText(locale, '讨论系统架构优化方案', 'Discuss system architecture optimization'), taskId: '', icon: '🏗️' },
+    { text: pickLocaleText(locale, '评估当前项目进展和风险', 'Assess current project progress and risks'), taskId: '', icon: '📊' },
+    { text: pickLocaleText(locale, '制定下周工作计划', 'Prepare the work plan for next week'), taskId: '', icon: '📋' },
+    { text: pickLocaleText(locale, '紧急问题：线上Bug排查方案', 'Urgent issue: production bug investigation plan'), taskId: '', icon: '🚨' },
   ];
-
-  // ═══════════════════
-  //     渲染：设置页
-  // ═══════════════════
 
   if (phase === 'setup') {
     return (
       <div className="space-y-6">
-        {/* Header */}
         <div className="text-center py-4">
           <h2 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-purple-400 bg-clip-text text-transparent">
-            🏛 协同讨论
+            {pickLocaleText(locale, '🏛 协同讨论', '🏛 Collaboration Discussion')}
           </h2>
           <p className="text-xs text-[var(--muted)] mt-1">
-            选择参与 Agent，围绕议题展开讨论 · 你可随时发言或注入新约束改变讨论走向
+            {pickLocaleText(locale, '选择参与 Agent，围绕议题展开讨论 · 你可随时发言或注入新约束改变讨论走向', 'Choose participating agents and start a discussion around the topic. You can speak at any time or inject new constraints to redirect the discussion.')}
           </p>
         </div>
 
-        {/* 选择参与 Agent */}
         <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm font-semibold">👔 选择参与 Agent</span>
-            <span className="text-xs text-[var(--muted)]">（{selectedIds.size}/8，至少2位）</span>
+            <span className="text-sm font-semibold">{pickLocaleText(locale, '👔 选择参与 Agent', '👔 Select Agents')}</span>
+            <span className="text-xs text-[var(--muted)]">
+              {locale === 'en' ? `(${selectedIds.size}/8, at least 2)` : `（${selectedIds.size}/8，至少2位）`}
+            </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
             {DEPTS.map((d) => {
               const active = selectedIds.has(d.id);
-              const color = OFFICIAL_COLORS[d.id] || '#6a9eff';
+              const meta = deptMeta(d.id, locale);
+              const color = meta.color;
               return (
                 <button
                   key={d.id}
-                  onClick={() => toggleOfficial(d.id)}
+                  onClick={() => toggleAgent(d.id)}
                   className="p-2.5 rounded-lg border transition-all text-left"
                   style={{
                     borderColor: active ? color + '80' : 'var(--line)',
@@ -352,9 +321,9 @@ export default function CourtDiscussion() {
                     <span className="text-lg">{d.emoji}</span>
                     <div>
                       <div className="text-xs font-semibold" style={{ color: active ? color : 'var(--text)' }}>
-                        {d.label}
+                        {meta.label}
                       </div>
-                      <div className="text-[10px] text-[var(--muted)]">{d.role}</div>
+                      <div className="text-[10px] text-[var(--muted)]">{meta.role}</div>
                     </div>
                     {active && (
                       <span
@@ -371,9 +340,8 @@ export default function CourtDiscussion() {
           </div>
         </div>
 
-        {/* 议题 */}
         <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
-          <div className="text-sm font-semibold mb-2">📜 设置议题</div>
+          <div className="text-sm font-semibold mb-2">{pickLocaleText(locale, '📜 设置议题', '📜 Set Topic')}</div>
           {presetTopics.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-3">
               {presetTopics.map((p, i) => (
@@ -395,17 +363,19 @@ export default function CourtDiscussion() {
           <textarea
             className="w-full bg-[var(--panel2)] rounded-lg p-3 text-sm border border-[var(--line)] focus:border-[var(--acc)] outline-none resize-none"
             rows={2}
-            placeholder="或自定义议题..."
+            placeholder={pickLocaleText(locale, '或自定义议题...', 'Or enter a custom topic...')}
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
           />
         </div>
 
-        {/* 功能特性标签 */}
         <div className="flex flex-wrap gap-1.5">
           {[
-            '👤 用户发言', '⚡ 插入约束', '🎲 随机事件',
-            '🔄 自动推进', '📜 讨论记录',
+            pickLocaleText(locale, '👤 用户发言', '👤 User Speech'),
+            pickLocaleText(locale, '⚡ 插入约束', '⚡ Inject Constraints'),
+            pickLocaleText(locale, '🎲 随机事件', '🎲 Random Event'),
+            pickLocaleText(locale, '🔄 自动推进', '🔄 Auto Advance'),
+            pickLocaleText(locale, '📜 讨论记录', '📜 Discussion Log'),
           ].map((tag) => (
             <span key={tag} className="text-[10px] px-2 py-1 rounded-full border border-[var(--line)] text-[var(--muted)]">
               {tag}
@@ -413,7 +383,6 @@ export default function CourtDiscussion() {
           ))}
         </div>
 
-        {/* 开始按钮 */}
         <button
           onClick={handleStart}
           disabled={selectedIds.size < 2 || !topic.trim() || loading}
@@ -428,31 +397,30 @@ export default function CourtDiscussion() {
             cursor: selectedIds.size >= 2 && topic.trim() && !loading ? 'pointer' : 'not-allowed',
           }}
         >
-          {loading ? '准备中...' : `🏛 开始协同讨论（${selectedIds.size}个 Agent）`}
+          {loading
+            ? pickLocaleText(locale, '准备中...', 'Preparing...')
+            : locale === 'en'
+              ? `🏛 Start Collaboration (${selectedIds.size} agents)`
+              : `🏛 开始协同讨论（${selectedIds.size}个 Agent）`}
         </button>
       </div>
     );
   }
 
-  // ═══════════════════
-  //   渲染：讨论进行中
-  // ═══════════════════
-
-  const officials = session?.officials || [];
+  const agents = session?.agents || (session as CourtSession & { officials?: CourtSession['agents'] })?.officials || [];
   const messages = session?.messages || [];
 
   return (
     <div className="space-y-3">
-      {/* 顶部控制栏 */}
       <div className="flex items-center justify-between flex-wrap gap-2 bg-[var(--panel)] rounded-xl px-4 py-2 border border-[var(--line)]">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold">🏛 协同讨论</span>
+          <span className="text-sm font-bold">{pickLocaleText(locale, '🏛 协同讨论', '🏛 Collaboration')}</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--acc)]20 text-[var(--acc)] border border-[var(--acc)]30">
-            第{session?.round || 0}轮
+            {locale === 'en' ? `Round ${session?.round || 0}` : `第${session?.round || 0}轮`}
           </span>
           {session?.phase === 'concluded' && (
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-900/40 text-green-400 border border-green-800">
-              已结束
+              {pickLocaleText(locale, '已结束', 'Concluded')}
             </span>
           )}
         </div>
@@ -460,17 +428,17 @@ export default function CourtDiscussion() {
           <button
             onClick={() => setShowDecree(!showDecree)}
             className="text-xs px-2.5 py-1 rounded-lg border border-amber-600/40 text-amber-400 hover:bg-amber-900/20 transition"
-            title="插入约束 — 从全局视角干预讨论"
+            title={pickLocaleText(locale, '插入约束 — 从全局视角干预讨论', 'Inject constraints — intervene from a global perspective')}
           >
-            ⚡ 约束
+            {pickLocaleText(locale, '⚡ 约束', '⚡ Constraints')}
           </button>
           <button
             onClick={handleDice}
             disabled={diceRolling || loading}
             className="text-xs px-2.5 py-1 rounded-lg border border-purple-600/40 text-purple-400 hover:bg-purple-900/20 transition"
-            title="随机事件 — 为讨论注入变化"
+            title={pickLocaleText(locale, '随机事件 — 为讨论注入变化', 'Random event — inject change into the discussion')}
           >
-            🎲 {diceRolling ? '...' : '事件'}
+            🎲 {diceRolling ? '...' : pickLocaleText(locale, '事件', 'Event')}
           </button>
           <button
             onClick={() => setAutoPlay(!autoPlay)}
@@ -479,14 +447,14 @@ export default function CourtDiscussion() {
               : 'border-[var(--line)] text-[var(--muted)] hover:text-[var(--text)]'
               }`}
           >
-            {autoPlay ? '⏸ 暂停' : '▶ 自动'}
+            {autoPlay ? pickLocaleText(locale, '⏸ 暂停', '⏸ Pause') : pickLocaleText(locale, '▶ 自动', '▶ Auto')}
           </button>
           {session?.phase !== 'concluded' && (
             <button
               onClick={handleConclude}
               className="text-xs px-2.5 py-1 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--warn)] hover:border-[var(--warn)]40 transition"
             >
-              📋 结束讨论
+              {pickLocaleText(locale, '📋 结束讨论', '📋 Conclude')}
             </button>
           )}
           <button
@@ -498,27 +466,26 @@ export default function CourtDiscussion() {
         </div>
       </div>
 
-      {/* 约束注入面板 */}
       {showDecree && (
         <div
           className="bg-gradient-to-br from-amber-950/40 to-purple-950/30 rounded-xl p-4 border border-amber-700/30"
           style={{ animation: 'fadeIn .3s' }}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold text-amber-400">⚡ 插入约束 — 全局视角</span>
+            <span className="text-sm font-bold text-amber-400">{pickLocaleText(locale, '⚡ 插入约束 — 全局视角', '⚡ Inject Constraints — Global View')}</span>
             <button onClick={() => setShowDecree(false)} className="text-xs text-[var(--muted)]">
               ✕
             </button>
           </div>
           <p className="text-[10px] text-amber-300/60 mb-2">
-            注入新的限制或背景变化，所有参与 Agent 将据此重新响应
+            {pickLocaleText(locale, '注入新的限制或背景变化，所有参与 Agent 将据此重新响应', 'Inject a new constraint or context change, and all participating agents will respond accordingly.')}
           </p>
           <div className="flex gap-2">
             <input
               value={decreeInput}
               onChange={(e) => setDecreeInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleDecree()}
-              placeholder="例如：预算减半，但发布日期不能延后..."
+              placeholder={pickLocaleText(locale, '例如：预算减半，但发布日期不能延后...', 'Example: cut the budget in half, but do not delay the release date...')}
               className="flex-1 bg-black/30 rounded-lg px-3 py-1.5 text-sm border border-amber-800/40 outline-none focus:border-amber-600"
             />
             <button
@@ -526,13 +493,12 @@ export default function CourtDiscussion() {
               disabled={!decreeInput.trim()}
               className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-purple-600 text-white text-xs font-semibold disabled:opacity-40"
             >
-              注入
+              {pickLocaleText(locale, '注入', 'Inject')}
             </button>
           </div>
         </div>
       )}
 
-      {/* 随机事件结果 */}
       {diceResult && (
         <div
           className="bg-purple-950/40 rounded-lg px-3 py-2 border border-purple-700/30 text-xs text-purple-300 flex items-center gap-2"
@@ -543,7 +509,6 @@ export default function CourtDiscussion() {
         </div>
       )}
 
-      {/* 约束注入闪光效果 */}
       {decreeFlash && (
         <div
           className="fixed inset-0 pointer-events-none z-50"
@@ -554,32 +519,26 @@ export default function CourtDiscussion() {
         />
       )}
 
-      {/* 议题 */}
       <div className="text-xs text-center text-[var(--muted)] py-1">
         📜 {session?.topic || ''}
       </div>
 
-      {/* 主内容：协作布局 + 聊天记录 */}
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-3">
-        {/* 左侧：协作布局 */}
         <div className="bg-[var(--panel)] rounded-xl p-3 border border-[var(--line)] relative overflow-hidden min-h-[320px]">
-          {/* 龙椅 */}
           <div className="text-center mb-2">
             <div className="inline-block px-3 py-1 rounded-lg bg-gradient-to-b from-amber-800/40 to-amber-950/40 border border-amber-700/30">
               <span className="text-lg">👑</span>
-              <div className="text-[10px] text-amber-400/80">龙 椅</div>
+              <div className="text-[10px] text-amber-400/80">{pickLocaleText(locale, '龙 椅', 'Imperial Seat')}</div>
             </div>
           </div>
 
-          {/* Agent 站位 */}
           <div className="relative" style={{ minHeight: 250 }}>
-            {/* 左列标签 */}
-            <div className="absolute left-0 top-0 text-[9px] text-[var(--muted)] opacity-50">核心中枢</div>
-            <div className="absolute right-0 top-0 text-[9px] text-[var(--muted)] opacity-50">专业执行组</div>
+            <div className="absolute left-0 top-0 text-[9px] text-[var(--muted)] opacity-50">{pickLocaleText(locale, '核心中枢', 'Core Centers')}</div>
+            <div className="absolute right-0 top-0 text-[9px] text-[var(--muted)] opacity-50">{pickLocaleText(locale, '专业执行组', 'Execution Team')}</div>
 
-            {officials.map((o) => {
+            {agents.map((o) => {
               const pos = COURT_POSITIONS[o.id] || { x: 50, y: 50 };
-              const color = OFFICIAL_COLORS[o.id] || '#6a9eff';
+              const color = deptMeta(o.id, locale).color;
               const isSpeaking = speakingId === o.id;
               const emotion = emotions[o.id] || 'neutral';
 
@@ -593,7 +552,6 @@ export default function CourtDiscussion() {
                     transform: 'translate(-50%, -50%)',
                   }}
                 >
-                  {/* 说话光圈 */}
                   {isSpeaking && (
                     <div
                       className="absolute -inset-2 rounded-full"
@@ -603,7 +561,6 @@ export default function CourtDiscussion() {
                       }}
                     />
                   )}
-                  {/* 头像 */}
                   <div
                     className="relative w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 transition-all"
                     style={{
@@ -614,21 +571,13 @@ export default function CourtDiscussion() {
                     }}
                   >
                     {o.emoji}
-                    {/* 情绪气泡 */}
                     {EMOTION_EMOJI[emotion] && (
-                      <span
-                        className="absolute -top-1 -right-1 text-xs"
-                        style={{ animation: 'bounceIn .3s' }}
-                      >
+                      <span className="absolute -top-1 -right-1 text-xs" style={{ animation: 'bounceIn .3s' }}>
                         {EMOTION_EMOJI[emotion]}
                       </span>
                     )}
                   </div>
-                  {/* 名字 */}
-                  <div
-                    className="text-[9px] text-center mt-0.5 whitespace-nowrap"
-                    style={{ color: isSpeaking ? color : 'var(--muted)' }}
-                  >
+                  <div className="text-[9px] text-center mt-0.5 whitespace-nowrap" style={{ color: isSpeaking ? color : 'var(--muted)' }}>
                     {o.name}
                   </div>
                 </div>
@@ -637,29 +586,26 @@ export default function CourtDiscussion() {
           </div>
         </div>
 
-        {/* 右侧：聊天记录 */}
         <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] flex flex-col" style={{ maxHeight: 500 }}>
-          {/* 消息列表 */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ minHeight: 200 }}>
             {messages.map((msg, i) => (
-              <MessageBubble key={i} msg={msg} officials={officials} />
+              <MessageBubble key={i} msg={msg} agents={agents} locale={locale} />
             ))}
             {loading && (
               <div className="text-xs text-[var(--muted)] text-center py-2" style={{ animation: 'pulse 1.5s infinite' }}>
-                🏛 群臣正在思考...
+                {pickLocaleText(locale, '🏛 群臣正在思考...', '🏛 The agents are thinking...')}
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* 用户输入栏 */}
           {session?.phase !== 'concluded' && (
             <div className="border-t border-[var(--line)] p-2 flex gap-2">
               <input
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleEmperor()}
-                placeholder="朕有话说..."
+                placeholder={pickLocaleText(locale, '朕有话说...', 'Share your guidance...')}
                 className="flex-1 bg-[var(--panel2)] rounded-lg px-3 py-1.5 text-sm border border-[var(--line)] outline-none focus:border-amber-600"
               />
               <button
@@ -671,14 +617,14 @@ export default function CourtDiscussion() {
                   color: userInput.trim() ? '#000' : 'var(--muted)',
                 }}
               >
-                👑 发言
+                {pickLocaleText(locale, '👑 发言', '👑 Speak')}
               </button>
               <button
                 onClick={() => handleAdvance()}
                 disabled={loading}
                 className="px-3 py-1.5 rounded-lg text-xs border border-[var(--acc)]40 text-[var(--acc)] hover:bg-[var(--acc)]10 disabled:opacity-40 transition"
               >
-                ▶ 下一轮
+                {pickLocaleText(locale, '▶ 下一轮', '▶ Next Round')}
               </button>
             </div>
           )}
@@ -688,17 +634,19 @@ export default function CourtDiscussion() {
   );
 }
 
-// ── 消息气泡 ──
-
 function MessageBubble({
   msg,
-  officials,
+  agents,
+  locale,
 }: {
   msg: CourtMessage;
-  officials: Array<{ id: string; name: string; emoji: string }>;
+  agents: Array<{ id: string; name: string; emoji: string }>;
+  locale: Locale;
 }) {
-  const color = OFFICIAL_COLORS[msg.official_id || ''] || '#6a9eff';
-  const official = officials.find((o) => o.id === msg.official_id);
+  const speakerId = msg.agent_id || (msg as CourtMessage & { official_id?: string }).official_id || '';
+  const speakerName = msg.agent_name || (msg as CourtMessage & { official_name?: string }).official_name || 'Agent';
+  const color = deptMeta(speakerId, locale).color;
+  const agent = agents.find((o) => o.id === speakerId);
 
   if (msg.type === 'system') {
     return (
@@ -720,7 +668,7 @@ function MessageBubble({
     return (
       <div className="flex justify-end">
         <div className="max-w-[80%] bg-gradient-to-br from-amber-900/40 to-amber-800/20 rounded-xl px-3 py-2 border border-amber-700/30">
-          <div className="text-[10px] text-amber-400 mb-0.5">👤 用户</div>
+          <div className="text-[10px] text-amber-400 mb-0.5">{pickLocaleText(locale, '👤 用户', '👤 User')}</div>
           <div className="text-sm">{msg.content}</div>
         </div>
       </div>
@@ -731,26 +679,25 @@ function MessageBubble({
     return (
       <div className="text-center py-2">
         <div className="inline-block bg-gradient-to-r from-amber-900/30 via-purple-900/30 to-amber-900/30 rounded-lg px-4 py-2 border border-amber-600/30">
-          <div className="text-xs text-amber-400 font-bold">⚡ 新约束已注入</div>
+          <div className="text-xs text-amber-400 font-bold">{pickLocaleText(locale, '⚡ 新约束已注入', '⚡ New Constraint Injected')}</div>
           <div className="text-sm mt-0.5">{msg.content}</div>
         </div>
       </div>
     );
   }
 
-  // Agent 消息
   return (
     <div className="flex gap-2 items-start" style={{ animation: 'fadeIn .4s' }}>
       <div
         className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 border"
         style={{ borderColor: color + '60', background: color + '15' }}
       >
-        {official?.emoji || '💬'}
+        {agent?.emoji || '💬'}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5">
           <span className="text-[11px] font-semibold" style={{ color }}>
-            {msg.official_name || 'Agent'}
+            {speakerName}
           </span>
           {msg.emotion && EMOTION_EMOJI[msg.emotion] && (
             <span className="text-xs">{EMOTION_EMOJI[msg.emotion]}</span>

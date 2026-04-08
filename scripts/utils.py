@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-三省六部 · 公共工具函数
+多中心多专家协作 · 公共工具函数
 避免 read_json / now_iso 等基础函数在多个脚本中重复定义
 """
 import json, pathlib, datetime

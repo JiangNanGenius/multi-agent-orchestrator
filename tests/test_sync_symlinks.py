@@ -19,7 +19,7 @@ import sync_agent_config as sac  # noqa: E402
 
 
 # ────────────────────────────────────────────────────────────────
-# Helper: patch BASE, _SOUL_DEPLOY_MAP, HOME to isolate tests
+# Helper: patch BASE, get_sync_target_ids, HOME to isolate tests
 # ────────────────────────────────────────────────────────────────
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def project(tmp_path, monkeypatch):
 
     # Patch module-level state
     monkeypatch.setattr(sac, 'BASE', proj)
-    monkeypatch.setattr(sac, '_SOUL_DEPLOY_MAP', {'agent-a': 'aaa'})
+    monkeypatch.setattr(sac, 'get_sync_target_ids', lambda agents=None: ['aaa', 'control_center'])
     monkeypatch.setattr(pathlib.Path, 'home', staticmethod(lambda: home))
 
     return types.SimpleNamespace(root=proj, scripts=scripts, data=data, home=home)
@@ -114,8 +114,8 @@ class TestSyncScriptSymlink:
         real_file = proj_scripts / 'foo.py'
         real_file.write_text('# real content\n')
 
-        # Simulate install.sh: workspace/scripts -> project/scripts
-        ws_scripts = tmp_path / 'workspace-main' / 'scripts'
+        # Simulate install.sh: control_center workspace/scripts -> project/scripts
+        ws_scripts = tmp_path / 'workspace-control_center' / 'scripts'
         ws_scripts.parent.mkdir(parents=True)
         os.symlink(proj_scripts, ws_scripts)  # directory-level symlink
 
@@ -153,13 +153,13 @@ class TestSyncScriptsToWorkspaces:
         ws = project.home / '.openclaw' / 'workspace-aaa' / 'scripts'
         assert not (ws / '__init__.py').exists()
 
-    def test_legacy_workspace_main(self, project):
+    def test_control_center_workspace(self, project):
         sac.sync_scripts_to_workspaces()
 
-        ws_main = project.home / '.openclaw' / 'workspace-main' / 'scripts'
-        assert ws_main.is_dir()
+        ws_control_center = project.home / '.openclaw' / 'workspace-control_center' / 'scripts'
+        assert ws_control_center.is_dir()
 
-        kb = ws_main / 'kanban_update.py'
+        kb = ws_control_center / 'kanban_update.py'
         assert kb.is_symlink()
         assert kb.resolve() == (project.scripts / 'kanban_update.py').resolve()
 
@@ -205,15 +205,15 @@ class TestSyncScriptsToWorkspaces:
     ):
         """Regression test for GitHub issue #217.
 
-        install.sh creates workspace-main/scripts as a directory-level symlink
+        install.sh creates workspace-control_center/scripts as a directory-level symlink
         pointing to the project scripts/ dir.  sync_scripts_to_workspaces()
         must not delete the real source files and create self-referential links.
         """
-        # Make workspace-main/scripts a directory symlink back to project scripts/
-        ws_main = project.home / '.openclaw' / 'workspace-main'
-        ws_main.mkdir(parents=True, exist_ok=True)
-        ws_main_scripts = ws_main / 'scripts'
-        os.symlink(project.scripts, ws_main_scripts)  # directory-level symlink
+        # Make workspace-control_center/scripts a directory symlink back to project scripts/
+        ws_control_center = project.home / '.openclaw' / 'workspace-control_center'
+        ws_control_center.mkdir(parents=True, exist_ok=True)
+        ws_control_center_scripts = ws_control_center / 'scripts'
+        os.symlink(project.scripts, ws_control_center_scripts)  # directory-level symlink
 
         sac.sync_scripts_to_workspaces()
 

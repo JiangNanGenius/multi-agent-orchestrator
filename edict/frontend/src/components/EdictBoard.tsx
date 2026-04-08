@@ -1,14 +1,17 @@
-import { useStore, isEdict, isArchived, getPipeStatus, stateLabel, deptColor, PIPE } from '../store';
+import React from 'react';
+import { PIPE, useStore, getPipeStatus, stateLabel, deptColor, isArchived, isEdict, getSchedulerSummary } from '../store';
 import { api, type Task } from '../api';
+import { pickLocaleText } from '../i18n';
 
 // 排序权重
 const STATE_ORDER: Record<string, number> = {
-  Doing: 0, Review: 1, Assigned: 2, Menxia: 3, Zhongshu: 4,
-  Taizi: 5, Inbox: 6, Blocked: 7, Next: 8, Done: 9, Cancelled: 10,
+  Doing: 0, Review: 1, Assigned: 2, ReviewCenter: 3, PlanCenter: 4,
+  ControlCenter: 5, Inbox: 6, Blocked: 7, Next: 8, Done: 9, Cancelled: 10,
 };
 
 function MiniPipe({ task }: { task: Task }) {
-  const stages = getPipeStatus(task);
+  const locale = useStore((s) => s.locale);
+  const stages = getPipeStatus(task, locale);
   return (
     <div className="ec-pipe">
       {stages.map((s, i) => (
@@ -25,6 +28,7 @@ function MiniPipe({ task }: { task: Task }) {
 }
 
 function EdictCard({ task }: { task: Task }) {
+  const locale = useStore((s) => s.locale);
   const setModalTaskId = useStore((s) => s.setModalTaskId);
   const toast = useStore((s) => s.toast);
   const loadAll = useStore((s) => s.loadAll);
@@ -32,7 +36,8 @@ function EdictCard({ task }: { task: Task }) {
   const hb = task.heartbeat || { status: 'unknown', label: '⚪' };
   const stCls = 'st-' + (task.state || '');
   const deptCls = 'dt-' + (task.org || '').replace(/\s/g, '');
-  const curStage = PIPE.find((_, i) => getPipeStatus(task)[i].status === 'active');
+  const pipeStatus = getPipeStatus(task, locale);
+  const curStage = PIPE.find((_, i) => pipeStatus[i].status === 'active');
   const todos = task.todos || [];
   const todoDone = todos.filter((x) => x.status === 'completed').length;
   const todoTotal = todos.length;
@@ -40,24 +45,27 @@ function EdictCard({ task }: { task: Task }) {
   const canResume = ['Blocked', 'Cancelled'].includes(task.state);
   const archived = isArchived(task);
   const isBlocked = task.block && task.block !== '无' && task.block !== '-';
+  const schedSummary = getSchedulerSummary(task, locale);
 
   const handleAction = async (action: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (action === 'stop' || action === 'cancel') {
       // Use confirm dialog via store (will implement with ConfirmDialog)
-      const reason = prompt(action === 'stop' ? '请输入叫停原因：' : '请输入取消原因：');
+      const reason = prompt(action === 'stop'
+        ? pickLocaleText(locale, '请输入叫停原因：', 'Enter a reason to pause this task:')
+        : pickLocaleText(locale, '请输入取消原因：', 'Enter a reason to cancel this task:'));
       if (reason === null) return;
       try {
         const r = await api.taskAction(task.id, action, reason);
-        if (r.ok) { toast(r.message || '操作成功'); loadAll(); }
-        else toast(r.error || '操作失败', 'err');
-      } catch { toast('服务器连接失败', 'err'); }
+        if (r.ok) { toast(r.message || pickLocaleText(locale, '操作成功', 'Action completed')); loadAll(); }
+        else toast(r.error || pickLocaleText(locale, '操作失败', 'Action failed'), 'err');
+      } catch { toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err'); }
     } else if (action === 'resume') {
       try {
-        const r = await api.taskAction(task.id, 'resume', '恢复执行');
-        if (r.ok) { toast(r.message || '已恢复'); loadAll(); }
-        else toast(r.error || '操作失败', 'err');
-      } catch { toast('服务器连接失败', 'err'); }
+        const r = await api.taskAction(task.id, 'resume', locale === 'en' ? 'Resume execution' : '恢复执行');
+        if (r.ok) { toast(r.message || pickLocaleText(locale, '已恢复', 'Resumed')); loadAll(); }
+        else toast(r.error || pickLocaleText(locale, '操作失败', 'Action failed'), 'err');
+      } catch { toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err'); }
     }
   };
 
@@ -65,9 +73,9 @@ function EdictCard({ task }: { task: Task }) {
     e.stopPropagation();
     try {
       const r = await api.archiveTask(task.id, !task.archived);
-      if (r.ok) { toast(r.message || '操作成功'); loadAll(); }
-      else toast(r.error || '操作失败', 'err');
-    } catch { toast('服务器连接失败', 'err'); }
+      if (r.ok) { toast(r.message || pickLocaleText(locale, '操作成功', 'Action completed')); loadAll(); }
+      else toast(r.error || pickLocaleText(locale, '操作失败', 'Action failed'), 'err');
+    } catch { toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err'); }
   };
 
   return (
@@ -77,13 +85,13 @@ function EdictCard({ task }: { task: Task }) {
     >
       <MiniPipe task={task} />
       <div className="ec-id">{task.id}</div>
-      <div className="ec-title">{task.title || '(无标题)'}</div>
+      <div className="ec-title">{task.title || pickLocaleText(locale, '(无标题)', '(Untitled)')}</div>
       <div className="ec-meta">
-        <span className={`tag ${stCls}`}>{stateLabel(task)}</span>
+        <span className={`tag ${stCls}`}>{stateLabel(task, locale)}</span>
         {task.org && <span className={`tag ${deptCls}`}>{task.org}</span>}
         {curStage && (
           <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-            当前: <b style={{ color: deptColor(curStage.dept) }}>{curStage.dept} · {curStage.action}</b>
+            {pickLocaleText(locale, '当前', 'Current')}: <b style={{ color: deptColor(curStage.dept) }}>{curStage.dept} · {curStage.action}</b>
           </span>
         )}
       </div>
@@ -108,7 +116,7 @@ function EdictCard({ task }: { task: Task }) {
               {i + 1}
             </span>
           ))}
-          <span style={{ color: 'var(--muted)', fontSize: 10 }}>第 {task.review_round} 轮磋商</span>
+          <span style={{ color: 'var(--muted)', fontSize: 10 }}>{locale === 'en' ? `Round ${task.review_round} review` : `第 ${task.review_round} 轮磋商`}</span>
         </div>
       )}
       {todoTotal > 0 && (
@@ -117,9 +125,13 @@ function EdictCard({ task }: { task: Task }) {
           <div className="ec-todo-track">
             <div className="ec-todo-fill" style={{ width: `${Math.round((todoDone / todoTotal) * 100)}%` }} />
           </div>
-          <span>{todoDone === todoTotal ? '✅ 全部完成' : '🔄 进行中'}</span>
+          <span>{todoDone === todoTotal ? pickLocaleText(locale, '✅ 全部完成', '✅ Completed') : pickLocaleText(locale, '🔄 进行中', '🔄 In progress')}</span>
         </div>
       )}
+      <div className={`ec-scheduler-chip ${schedSummary.tone}`}>
+        <div className="ec-scheduler-label">{schedSummary.icon} {schedSummary.label}</div>
+        <div className="ec-scheduler-detail">{schedSummary.detail}</div>
+      </div>
       <div className="ec-footer">
         <span className={`hb ${hb.status}`}>{hb.label}</span>
         {isBlocked && (
@@ -134,18 +146,18 @@ function EdictCard({ task }: { task: Task }) {
       <div className="ec-actions" onClick={(e) => e.stopPropagation()}>
         {canStop && (
           <>
-            <button className="mini-act" onClick={(e) => handleAction('stop', e)}>⏸ 叫停</button>
-            <button className="mini-act danger" onClick={(e) => handleAction('cancel', e)}>🚫 取消</button>
+            <button className="mini-act" onClick={(e) => handleAction('stop', e)}>{pickLocaleText(locale, '⏸ 叫停', '⏸ Pause')}</button>
+            <button className="mini-act danger" onClick={(e) => handleAction('cancel', e)}>{pickLocaleText(locale, '🚫 取消', '🚫 Cancel')}</button>
           </>
         )}
         {canResume && (
-          <button className="mini-act" onClick={(e) => handleAction('resume', e)}>▶ 恢复</button>
+          <button className="mini-act" onClick={(e) => handleAction('resume', e)}>{pickLocaleText(locale, '▶ 恢复', '▶ Resume')}</button>
         )}
         {archived && !task.archived && (
-          <button className="mini-act" onClick={handleArchive}>📦 归档</button>
+          <button className="mini-act" onClick={handleArchive}>{pickLocaleText(locale, '📦 归档', '📦 Archive')}</button>
         )}
         {task.archived && (
-          <button className="mini-act" onClick={handleArchive}>📤 取消归档</button>
+          <button className="mini-act" onClick={handleArchive}>{pickLocaleText(locale, '📤 取消归档', '📤 Unarchive')}</button>
         )}
       </div>
     </div>
@@ -153,9 +165,10 @@ function EdictCard({ task }: { task: Task }) {
 }
 
 export default function EdictBoard() {
+  const locale = useStore((s) => s.locale);
   const liveStatus = useStore((s) => s.liveStatus);
-  const edictFilter = useStore((s) => s.edictFilter);
-  const setEdictFilter = useStore((s) => s.setEdictFilter);
+  const taskFilter = useStore((s) => s.taskFilter);
+  const setTaskFilter = useStore((s) => s.setTaskFilter);
   const toast = useStore((s) => s.toast);
   const loadAll = useStore((s) => s.loadAll);
 
@@ -164,68 +177,68 @@ export default function EdictBoard() {
   const activeEdicts = allEdicts.filter((t) => !isArchived(t));
   const archivedEdicts = allEdicts.filter((t) => isArchived(t));
 
-  let edicts: Task[];
-  if (edictFilter === 'active') edicts = activeEdicts;
-  else if (edictFilter === 'archived') edicts = archivedEdicts;
-  else edicts = allEdicts;
+  let visibleTasks: Task[];
+  if (taskFilter === 'active') visibleTasks = activeEdicts;
+  else if (taskFilter === 'archived') visibleTasks = archivedEdicts;
+  else visibleTasks = allEdicts;
 
-  edicts.sort((a, b) => (STATE_ORDER[a.state] ?? 9) - (STATE_ORDER[b.state] ?? 9));
+  visibleTasks.sort((a, b) => (STATE_ORDER[a.state] ?? 9) - (STATE_ORDER[b.state] ?? 9));
 
   const unArchivedDone = allEdicts.filter((t) => !t.archived && ['Done', 'Cancelled'].includes(t.state));
 
   const handleArchiveAll = async () => {
-      if (!confirm('将所有已完成或已取消的任务单移入归档？')) return;
+      if (!confirm(pickLocaleText(locale, '将所有已完成或已取消的任务单移入归档？', 'Move all completed or cancelled tasks into archive?'))) return;
 
     try {
       const r = await api.archiveAllDone();
-      if (r.ok) { toast(`📦 ${r.count || 0} 个任务单已归档`); loadAll(); }
-      else toast(r.error || '批量归档失败', 'err');
-    } catch { toast('服务器连接失败', 'err'); }
+      if (r.ok) { toast(locale === 'en' ? `📦 ${r.count || 0} task(s) archived` : `📦 ${r.count || 0} 个任务单已归档`); loadAll(); }
+      else toast(r.error || pickLocaleText(locale, '批量归档失败', 'Bulk archive failed'), 'err');
+    } catch { toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err'); }
   };
 
   const handleScan = async () => {
     try {
       const r = await api.schedulerScan();
-      if (r.ok) toast(`🧭 总控巡检完成：${r.count || 0} 个动作`);
-      else toast(r.error || '巡检失败', 'err');
+      if (r.ok) toast(locale === 'en' ? `🧭 Control scan completed: ${r.count || 0} action(s)` : `🧭 总控巡检完成：${r.count || 0} 个动作`);
+      else toast(r.error || pickLocaleText(locale, '巡检失败', 'Scan failed'), 'err');
       loadAll();
-    } catch { toast('服务器连接失败', 'err'); }
+    } catch { toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err'); }
   };
 
   return (
     <div>
       {/* Archive Bar */}
       <div className="archive-bar">
-        <span className="ab-label">筛选:</span>
+        <span className="ab-label">{pickLocaleText(locale, '筛选:', 'Filter:')}</span>
         {(['active', 'archived', 'all'] as const).map((f) => (
           <button
             key={f}
-            className={`ab-btn ${edictFilter === f ? 'active' : ''}`}
-            onClick={() => setEdictFilter(f)}
+            className={`ab-btn ${taskFilter === f ? 'active' : ''}`}
+            onClick={() => setTaskFilter(f)}
           >
-            {f === 'active' ? '活跃' : f === 'archived' ? '归档' : '全部'}
+            {f === 'active' ? pickLocaleText(locale, '活跃', 'Active') : f === 'archived' ? pickLocaleText(locale, '归档', 'Archived') : pickLocaleText(locale, '全部', 'All')}
           </button>
         ))}
         {unArchivedDone.length > 0 && (
-          <button className="ab-btn" onClick={handleArchiveAll}>📦 一键归档</button>
+          <button className="ab-btn" onClick={handleArchiveAll}>{pickLocaleText(locale, '📦 一键归档', '📦 Archive All')}</button>
         )}
         <span className="ab-count">
-          活跃 {activeEdicts.length} · 归档 {archivedEdicts.length} · 共 {allEdicts.length}
+          {locale === 'en' ? `Active ${activeEdicts.length} · Archived ${archivedEdicts.length} · Total ${allEdicts.length}` : `活跃 ${activeEdicts.length} · 归档 ${archivedEdicts.length} · 共 ${allEdicts.length}`}
         </span>
-        <button className="ab-scan" onClick={handleScan}>🧭 总控巡检</button>
+        <button className="ab-scan" onClick={handleScan}>{pickLocaleText(locale, '🧭 总控巡检', '🧭 Control Scan')}</button>
       </div>
 
       {/* Grid */}
       <div className="edict-grid">
-        {edicts.length === 0 ? (
+        {visibleTasks.length === 0 ? (
           <div className="empty" style={{ gridColumn: '1/-1' }}>
-            暂无任务单<br />
+            {pickLocaleText(locale, '暂无任务单', 'No tasks yet')}<br />
             <small style={{ fontSize: 11, marginTop: 6, display: 'block', color: 'var(--muted)' }}>
-              通过飞书提交任务后，会先进入总控中心预处理，再转入后续协作流程
+              {pickLocaleText(locale, '通过飞书提交任务后，会先进入总控中心预处理，再转入后续协作流程', 'After a task is submitted, it first enters the control center for preprocessing before moving into the collaboration pipeline')}
             </small>
           </div>
         ) : (
-          edicts.map((t) => <EdictCard key={t.id} task={t} />)
+          visibleTasks.map((t) => <EdictCard key={t.id} task={t} />)
         )}
       </div>
     </div>

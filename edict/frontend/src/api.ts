@@ -8,7 +8,10 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
 // ── 通用请求 ──
 
 async function fetchJ<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: 'no-store' });
+  const res = await fetch(url, {
+    cache: 'no-store',
+    credentials: 'include',
+  });
   if (!res.ok) throw new Error(String(res.status));
   return res.json();
 }
@@ -17,6 +20,7 @@ async function postJ<T>(url: string, data: unknown): Promise<T> {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
@@ -25,13 +29,26 @@ async function postJ<T>(url: string, data: unknown): Promise<T> {
 // ── API 接口 ──
 
 export const api = {
+  // 认证
+  authStatus: () => fetchJ<AuthStatus>(`${API_BASE}/api/auth/status`),
+  login: (username: string, password: string) =>
+    postJ<AuthLoginResult>(`${API_BASE}/api/auth/login`, { username, password }),
+  logout: () =>
+    postJ<ActionResult>(`${API_BASE}/api/auth/logout`, {}),
+  firstChange: (currentPassword: string, newPassword: string, newUsername?: string) =>
+    postJ<AuthLoginResult>(`${API_BASE}/api/auth/first-change`, { currentPassword, newPassword, newUsername }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    postJ<ActionResult>(`${API_BASE}/api/auth/change-password`, { currentPassword, newPassword }),
+  changeUsername: (currentPassword: string, newUsername: string) =>
+    postJ<AuthLoginResult>(`${API_BASE}/api/auth/change-username`, { currentPassword, newUsername }),
+
   // 核心数据
   liveStatus: () => fetchJ<LiveStatus>(`${API_BASE}/api/live-status`),
   agentConfig: () => fetchJ<AgentConfig>(`${API_BASE}/api/agent-config`),
   modelChangeLog: () => fetchJ<ChangeLogEntry[]>(`${API_BASE}/api/model-change-log`).catch(() => []),
-  officialsStats: () => fetchJ<OfficialsData>(`${API_BASE}/api/officials-stats`),
-  morningBrief: () => fetchJ<MorningBrief>(`${API_BASE}/api/morning-brief`),
-  morningConfig: () => fetchJ<SubConfig>(`${API_BASE}/api/morning-config`),
+  agentsOverview: () => fetchJ<AgentsOverviewData>(`${API_BASE}/api/agents-overview`),
+  searchBrief: () => fetchJ<SearchBrief>(`${API_BASE}/api/search-brief`),
+  searchConfig: () => fetchJ<SubConfig>(`${API_BASE}/api/search-config`),
   agentsStatus: () => fetchJ<AgentsStatusData>(`${API_BASE}/api/agents-status`),
 
   // 任务实时动态
@@ -74,10 +91,12 @@ export const api = {
     postJ<ActionResult>(`${API_BASE}/api/scheduler-escalate`, { taskId, reason }),
   schedulerRollback: (taskId: string, reason: string) =>
     postJ<ActionResult>(`${API_BASE}/api/scheduler-rollback`, { taskId, reason }),
-  refreshMorning: () =>
-    postJ<ActionResult>(`${API_BASE}/api/morning-brief/refresh`, {}),
-  saveMorningConfig: (config: SubConfig) =>
-    postJ<ActionResult>(`${API_BASE}/api/morning-config`, config),
+  schedulerConfig: (taskId: string, config: SchedulerInfo) =>
+    postJ<ActionResult & { scheduler?: SchedulerInfo; checkedAt?: string }>(`${API_BASE}/api/scheduler-config`, { taskId, config }),
+  refreshSearch: () =>
+    postJ<ActionResult>(`${API_BASE}/api/search-brief/refresh`, {}),
+  saveSearchConfig: (config: SubConfig) =>
+    postJ<ActionResult>(`${API_BASE}/api/search-config`, config),
   addSkill: (agentId: string, skillName: string, description: string, trigger: string) =>
     postJ<ActionResult>(`${API_BASE}/api/add-skill`, { agentId, skillName, description, trigger }),
 
@@ -97,8 +116,8 @@ export const api = {
     postJ<ActionResult & { taskId?: string }>(`${API_BASE}/api/create-task`, data),
 
   // ── 协同讨论 ──
-  courtDiscussStart: (topic: string, officials: string[], taskId?: string) =>
-    postJ<CourtDiscussResult>(`${API_BASE}/api/court-discuss/start`, { topic, officials, taskId }),
+  courtDiscussStart: (topic: string, agentIds: string[], taskId?: string) =>
+    postJ<CourtDiscussResult>(`${API_BASE}/api/court-discuss/start`, { topic, agents: agentIds, taskId }),
   courtDiscussAdvance: (sessionId: string, userMessage?: string, decree?: string) =>
     postJ<CourtDiscussResult>(`${API_BASE}/api/court-discuss/advance`, { sessionId, userMessage, decree }),
   courtDiscussConclude: (sessionId: string) =>
@@ -115,6 +134,22 @@ export interface ActionResult {
   ok: boolean;
   message?: string;
   error?: string;
+}
+
+export interface AuthStatus {
+  enabled: boolean;
+  configured: boolean;
+  username: string;
+  mustChangePassword: boolean;
+  authenticated: boolean;
+  currentUser?: string | null;
+  authFile?: string;
+}
+
+export interface AuthLoginResult extends ActionResult {
+  token?: string;
+  username?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface FlowEntry {
@@ -136,6 +171,45 @@ export interface Heartbeat {
   label: string;
 }
 
+export interface ReplyMeta {
+  channel?: string;
+  channelFamily?: string;
+  policy?: string;
+  effectivePolicy?: string;
+  fallbackMode?: string;
+  transport?: string;
+  parsedFromText?: boolean;
+  hasNoReplyPrefix?: boolean;
+  hasReplyContext?: boolean;
+  markers?: string[];
+  availableTargets?: string[];
+  targetMessageId?: string;
+  threadId?: string;
+  rootId?: string;
+  chatId?: string;
+  senderId?: string;
+  senderOpenId?: string;
+  sourcePaths?: Record<string, string>;
+}
+
+export interface SourceMeta {
+  agentId?: string;
+  sessionKey?: string;
+  sessionId?: string;
+  updatedAt?: number;
+  ageMs?: number;
+  systemSent?: boolean;
+  abortedLastRun?: boolean;
+  channel?: string;
+  originLabel?: string;
+  originChannel?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  replyMeta?: ReplyMeta;
+  [key: string]: unknown;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -153,7 +227,7 @@ export interface Task {
   archived: boolean;
   archivedAt?: string;
   updatedAt?: string;
-  sourceMeta?: Record<string, unknown>;
+  sourceMeta?: SourceMeta;
   activity?: ActivityEntry[];
   _prev_state?: string;
 }
@@ -226,13 +300,13 @@ export interface OfficialInfo {
   merit_rank: number;
   last_active: string;
   heartbeat: Heartbeat;
-  participated_edicts: { id: string; title: string; state: string }[];
+  participated_tasks: { id: string; title: string; state: string }[];
 }
 
-export interface OfficialsData {
-  officials: OfficialInfo[];
+export interface AgentsOverviewData {
+  agents: OfficialInfo[];
   totals: { tasks_done: number; cost_cny: number };
-  top_official: string;
+  top_agent: string;
 }
 
 export interface AgentStatusInfo {
@@ -258,7 +332,7 @@ export interface AgentsStatusData {
   checkedAt: string;
 }
 
-export interface MorningNewsItem {
+export interface SearchResultItem {
   title: string;
   summary?: string;
   desc?: string;
@@ -268,10 +342,10 @@ export interface MorningNewsItem {
   pub_date?: string;
 }
 
-export interface MorningBrief {
+export interface SearchBrief {
   date?: string;
   generated_at?: string;
-  categories: Record<string, MorningNewsItem[]>;
+  categories: Record<string, SearchResultItem[]>;
 }
 
 export interface SubCategoryConfig {
@@ -358,6 +432,18 @@ export interface SchedulerInfo {
   lastDispatchAt?: string;
   lastDispatchAgent?: string;
   autoRollback?: boolean;
+  maxRetry?: number;
+  maxRollback?: number;
+  rollbackCount?: number;
+  lastEscalatedAt?: string;
+  lastRetryAt?: string;
+  snapshot?: {
+    state?: string;
+    org?: string;
+    now?: string;
+    savedAt?: string;
+    note?: string;
+  };
 }
 
 export interface SchedulerStateData {
@@ -387,6 +473,7 @@ export interface ScanAction {
 export interface CreateTaskPayload {
   title: string;
   org: string;
+  owner?: string;
   targetDept?: string;
   priority?: string;
   templateId?: string;
@@ -420,8 +507,11 @@ export interface CourtDiscussResult {
   topic?: string;
   round?: number;
   new_messages?: Array<{
-    official_id: string;
-    name: string;
+    agent_id?: string;
+    agent_name?: string;
+    official_id?: string;
+    official_name?: string;
+    name?: string;
     content: string;
     emotion?: string;
     action?: string;

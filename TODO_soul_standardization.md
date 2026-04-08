@@ -1,0 +1,21 @@
+# SOUL 标准化改造待办
+
+- [x] 盘点 `agents/*/SOUL.md` 与 `registry/generated/*.SOUL.md` 覆盖情况
+- [x] 核查 `scripts/sync_agent_config.py` 中 SOUL 生成、校验、部署链路
+- [ ] 修正 SOUL 模板中的旧命名与章节结构问题
+- [ ] 抽取统一的 SOUL 标准骨架与命令参考，改为 `owner / agents / tasks / archives` 体系
+- [ ] 补齐 `control_center` 源 SOUL 的缺失标准章节
+- [ ] 补齐 `plan_center` 源 SOUL 的缺失标准章节
+- [ ] 补齐 `review_center` 源 SOUL 的缺失标准章节
+- [ ] 补齐 `dispatch_center` 源 SOUL 的缺失标准章节
+- [ ] 补齐 `docs_specialist` 源 SOUL 的缺失标准章节
+- [ ] 补齐 `data_specialist` 源 SOUL 的缺失标准章节
+- [ ] 补齐 `code_specialist` 源 SOUL 的缺失标准章节
+- [ ] 补齐 `audit_specialist` 源 SOUL 的缺失标准章节
+- [ ] 补齐 `deploy_specialist` 源 SOUL 的缺失标准章节
+- [ ] 补齐 `admin_specialist` 源 SOUL 的缺失标准章节
+- [ ] 补齐 `search_specialist` 源 SOUL 的缺失标准章节
+- [ ] 重新运行同步脚本，生成新的 registry 规格、SOUL 快照与校验报告
+- [ ] 复核 `registry/soul_validation_report.json` 是否已全部通过
+- [ ] 抽查生成快照与源 SOUL 是否收敛到一致语义
+- [ ] 整理修改结果并输出交付说明

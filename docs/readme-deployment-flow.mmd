@@ -1,0 +1,27 @@
+flowchart TB
+    R1[Read README / 阅读 README] --> E[Inspect Environment / 检查环境]
+    E --> B{Existing Runtime? / 是否已有运行时}
+
+    B -->|Yes / 是| I[Incremental Integration / 增量接入]
+    B -->|No / 否| N[New Setup Plan / 首次部署规划]
+
+    I --> C1[Check dashboard, backend, frontend / 检查看板、后端、前端]
+    N --> C2[Let AI propose minimal commands / 由 AI 生成最小执行命令]
+
+    C1 --> S{Need script? / 是否需要脚本}
+    C2 --> S
+
+    S -->|Only when justified / 仅在明确需要时| SH[install.sh / install.ps1]
+    S -->|No / 否| CM[Run minimal commands / 执行最小命令集]
+
+    SH --> V[Validate services and dashboard / 验证服务与看板]
+    CM --> V
+
+    V --> G[Governed Task Flow Ready / 可进入治理链路]
+
+    classDef start fill:#0b3b2e,stroke:#34d399,color:#eafff7,stroke-width:1.5px;
+    classDef main fill:#0f172a,stroke:#60a5fa,color:#e5eefc,stroke-width:1.5px;
+    classDef warn fill:#78350f,stroke:#f59e0b,color:#fff7ed,stroke-width:1.5px;
+    class R1,G start;
+    class E,I,N,C1,C2,CM,V main;
+    class SH warn;

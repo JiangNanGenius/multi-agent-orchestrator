@@ -1,4 +1,4 @@
-# 三省六部 · Edict — 代码所有权定义
+# Edict — 代码所有权定义
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 #
 # 当 PR 涉及以下路径时，GitHub 会自动请求对应 owner 做 review。

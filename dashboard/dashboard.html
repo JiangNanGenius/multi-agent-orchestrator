@@ -68,9 +68,9 @@
 
     /* state colors */
     .st-Inbox{border-color:#3a4a7a44;color:#7a9aff;background:#0a1028}
-    .st-Zhongshu{border-color:#a07aff44;color:#a07aff;background:#110a28}
-    .st-Taizi{border-color:#e8a04044;color:#e8a040;background:#281a08}
-    .st-Menxia{border-color:#ff9a6a44;color:#ff9a6a;background:#280f0a}
+    .st-PlanCenter{border-color:#a07aff44;color:#a07aff;background:#110a28}
+    .st-ControlCenter{border-color:#e8a04044;color:#e8a040;background:#281a08}
+    .st-ReviewCenter{border-color:#ff9a6a44;color:#ff9a6a;background:#280f0a}
     .st-Assigned,.st-Doing{border-color:#6a9eff44;color:#6a9eff;background:#0a1428}
     .st-Review{border-color:#f5c84244;color:#f5c842;background:#201a08}
     .st-Done{border-color:#2ecc8a44;color:var(--ok);background:#0a2018}
@@ -79,14 +79,14 @@
     .st-Next{border-color:#4a9adf44;color:#4a9adf;background:#0a1424}
 
     /* dept colors */
-    .dt-中书省{border-color:#a07aff44;color:#a07aff;background:#1a0f38}
-    .dt-门下省{border-color:#6a9eff44;color:#6a9eff;background:#0f1a38}
-    .dt-尚书省{border-color:#6aef9a44;color:#6aef9a;background:#0a2018}
-    .dt-礼部{border-color:#f5c84244;color:#f5c842;background:#201a08}
-    .dt-户部{border-color:#ff9a6a44;color:#ff9a6a;background:#28100a}
-    .dt-兵部{border-color:#44aaff44;color:#44aaff;background:#081828}
-    .dt-刑部{border-color:#cc444444;color:#cc4444;background:#280808}
-    .dt-工部{border-color:#14b8a644;color:#14b8a6;background:#081d1d}
+    .dt-规划中心{border-color:#a07aff44;color:#a07aff;background:#1a0f38}
+    .dt-评审中心{border-color:#6a9eff44;color:#6a9eff;background:#0f1a38}
+    .dt-调度中心{border-color:#6aef9a44;color:#6aef9a;background:#0a2018}
+    .dt-文案专家{border-color:#f5c84244;color:#f5c842;background:#201a08}
+    .dt-数据专家{border-color:#ff9a6a44;color:#ff9a6a;background:#28100a}
+    .dt-代码专家{border-color:#44aaff44;color:#44aaff;background:#081828}
+    .dt-审计专家{border-color:#cc444444;color:#cc4444;background:#280808}
+    .dt-部署专家{border-color:#14b8a644;color:#14b8a6;background:#081d1d}
 
     .ec-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:6px}
     .hb{font-size:10px;padding:2px 7px;border-radius:999px;border:1px solid var(--line)}
@@ -556,13 +556,13 @@
 
     .off-grid{display:none} /* legacy, hidden */
 
-    /* ══ 早朝简报 ══ */
+    /* ══ 全网搜索摘要 ══ */
     .mn-hdr{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px;padding:14px 18px;background:linear-gradient(135deg,#0a1228,#140e28);border:1px solid #1a2a4a;border-radius:14px}
     .mn-date{font-size:20px;font-weight:800;background:linear-gradient(135deg,#f5c842,#ff9a3c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .mn-sub{font-size:12px;color:var(--muted);margin-top:2px}
     .mn-hdr-r{margin-left:auto;display:flex;gap:8px;align-items:center}
-    .btn-morning-refresh{font-size:12px;padding:6px 14px;border-radius:8px;background:linear-gradient(135deg,#f5c842,#ff9a3c);color:#000;border:none;cursor:pointer;font-weight:700}
-    .btn-morning-refresh:hover{filter:brightness(1.1)}
+    .btn-search-refresh{font-size:12px;padding:6px 14px;border-radius:8px;background:linear-gradient(135deg,#f5c842,#ff9a3c);color:#000;border:none;cursor:pointer;font-weight:700}
+    .btn-search-refresh:hover{filter:brightness(1.1)}
     .mn-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
     .mn-cat{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
     .mn-cat-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--panel2);border-bottom:1px solid var(--line)}
@@ -705,7 +705,7 @@
     <div>
       <div class="logo">多Agent智作中枢</div>
       <div class="sub">总控中心视角 · 高实时性任务协作</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px">基于开源项目改造 · 保留 MIT License · 引用 cft0808/edict 与 wanikua/danghuangshang</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">基于开源项目整理与演进 · 保留 MIT License · 引用来源说明见仓库文档</div>
     </div>
     <div class="hdr-r">
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="切换主题">🌙</button>
@@ -719,24 +719,24 @@
 
   <!-- TABS -->
   <div class="tabs">
-    <div class="tab active" data-tab="edicts">📋 任务看板 <span class="tbadge" id="tb-e">0</span></div>
+    <div class="tab active" data-tab="tasks">📋 任务看板 <span class="tbadge" id="tb-e">0</span></div>
     <div class="tab" data-tab="monitor">🔭 运行调度 <span class="tbadge" id="tb-m">0</span></div>
-    <div class="tab" data-tab="officials">👥 协作节点</div>
+    <div class="tab" data-tab="agents">👥 协作节点</div>
     <div class="tab" data-tab="models">⚙️ 模型配置</div>
     <div class="tab" data-tab="skills">🛠️ 技能配置</div>
     <div class="tab" data-tab="sessions">💬 快速任务 <span class="tbadge" id="tb-s">0</span></div>
-    <div class="tab" data-tab="memorials">🗄️ 结果归档 <span class="tbadge" id="tb-mem">0</span></div>
+    <div class="tab" data-tab="archives">🗄️ 结果归档 <span class="tbadge" id="tb-mem">0</span></div>
     <div class="tab" data-tab="templates">📚 模板中心</div>
-    <div class="tab" data-tab="morning">📰 情报简报</div>
+    <div class="tab" data-tab="web_search">📰 全网搜索</div>
   </div>
 
   <!-- ══ 任务看板 ══ -->
-  <div class="panel active" id="panel-edicts">
+  <div class="panel active" id="panel-tasks">
     <div class="archive-bar" id="archive-bar">
       <span class="ab-label">📋 筛选：</span>
-      <button class="ab-btn active" data-filter="active" onclick="setEdictFilter('active')">🔥 进行中</button>
-      <button class="ab-btn" data-filter="archived" onclick="setEdictFilter('archived')">📦 已归档</button>
-      <button class="ab-btn" data-filter="all" onclick="setEdictFilter('all')">全部</button>
+      <button class="ab-btn active" data-filter="active" onclick="setTaskFilter('active')">🔥 进行中</button>
+      <button class="ab-btn" data-filter="archived" onclick="setTaskFilter('archived')">📦 已归档</button>
+      <button class="ab-btn" data-filter="all" onclick="setTaskFilter('all')">全部</button>
       <span class="ab-count" id="archive-count"></span>
       <button class="ab-scan" id="btn-global-scan" onclick="runGlobalSchedulerScan()">🧭 总控巡检</button>
       <span class="ab-scan-status" id="global-scan-status">未巡检</span>
@@ -802,7 +802,7 @@
   </div>
 
   <!-- ══ Agent总览 ══ -->
-  <div class="panel" id="panel-officials">
+  <div class="panel" id="panel-agents">
     <div id="off-activity" class="off-activity" style="display:none"></div>
     <div id="off-kpi" class="off-kpi"></div>
     <div class="off-layout">
@@ -831,26 +831,26 @@
       <span style="font-size:11px;color:var(--muted)">筛选：</span>
       <span class="sess-filter active" data-sf="all" onclick="filterSessions('all',this)">全部</span>
       <span class="sess-filter" data-sf="active" onclick="filterSessions('active',this)">进行中</span>
-      <span class="sess-filter" data-sf="zhongshu" onclick="filterSessions('zhongshu',this)">规划中心</span>
-      <span class="sess-filter" data-sf="shangshu" onclick="filterSessions('shangshu',this)">调度中心</span>
-      <span class="sess-filter" data-sf="libu" onclick="filterSessions('libu',this)">文案专家</span>
-      <span class="sess-filter" data-sf="hubu" onclick="filterSessions('hubu',this)">数据专家</span>
-      <span class="sess-filter" data-sf="bingbu" onclick="filterSessions('bingbu',this)">代码专家</span>
-      <span class="sess-filter" data-sf="xingbu" onclick="filterSessions('xingbu',this)">合规专家</span>
-      <span class="sess-filter" data-sf="gongbu" onclick="filterSessions('gongbu',this)">部署专家</span>
-      <span class="sess-filter" data-sf="libu_hr" onclick="filterSessions('libu_hr',this)">Agent管理专家</span>
-      <span class="sess-filter" data-sf="menxia" onclick="filterSessions('menxia',this)">评审中心</span>
-      <span class="sess-filter" data-sf="zaochao" onclick="filterSessions('zaochao',this)">情报简报</span>
+      <span class="sess-filter" data-sf="plan_center" onclick="filterSessions('plan_center',this)">规划中心</span>
+      <span class="sess-filter" data-sf="dispatch_center" onclick="filterSessions('dispatch_center',this)">调度中心</span>
+      <span class="sess-filter" data-sf="docs_specialist" onclick="filterSessions('docs_specialist',this)">文案专家</span>
+      <span class="sess-filter" data-sf="data_specialist" onclick="filterSessions('data_specialist',this)">数据专家</span>
+      <span class="sess-filter" data-sf="code_specialist" onclick="filterSessions('code_specialist',this)">代码专家</span>
+      <span class="sess-filter" data-sf="audit_specialist" onclick="filterSessions('audit_specialist',this)">审计专家</span>
+      <span class="sess-filter" data-sf="deploy_specialist" onclick="filterSessions('deploy_specialist',this)">部署专家</span>
+      <span class="sess-filter" data-sf="admin_specialist" onclick="filterSessions('admin_specialist',this)">管理专家</span>
+      <span class="sess-filter" data-sf="review_center" onclick="filterSessions('review_center',this)">评审中心</span>
+      <span class="sess-filter" data-sf="search_specialist" onclick="filterSessions('search_specialist',this)">搜索专家</span>
     </div>
     <div id="sess-grid" class="sess-grid"></div>
   </div>
 
   <!-- ══ 结果归档 ══ -->
-  <div class="panel" id="panel-memorials">
+  <div class="panel" id="panel-archives">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
       <div style="flex:1">
         <div class="sec-title" style="margin-bottom:2px">🗄️ 结果归档 · 任务存档</div>
-        <div style="font-size:11px;color:var(--muted)">任务完成后自动生成归档记录，保留从发起到完成的完整过程</div>
+        <div style="font-size:11px;color:var(--muted)">任务完成后可显式归档结果，保留从发起到完成的完整过程，并进入最终交付检查</div>
       </div>
       <select id="mem-filter" onchange="renderMemorials()" style="font-size:11px;padding:4px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--text);outline:none">
         <option value="all">全部</option>
@@ -886,16 +886,16 @@
     </div>
   </div>
 
-  <!-- ══ 晨报中心 ══ -->
-  <div class="panel" id="panel-morning">
+  <!-- ══ 全网搜索 ══ -->
+  <div class="panel" id="panel-web_search">
     <div class="mb-hdr">
       <div>
-        <div class="mb-title">📰 情报简报 · 今日要闻</div>
+        <div class="mb-title">📰 全网搜索 · 热点摘要</div>
         <div id="mb-subtitle" class="mb-sub">加载中…</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-g" onclick="toggleSubConfig()" style="font-size:12px;padding:6px 14px">⚙ 订阅管理</button>
-        <button class="btn btn-g" id="mb-refresh-btn" onclick="refreshNews()" style="font-size:12px;padding:6px 14px">⟳ 立即采集</button>
+        <button class="btn btn-g" id="mb-refresh-btn" onclick="refreshSearchBrief()" style="font-size:12px;padding:6px 14px">⟳ 立即刷新</button>
       </div>
     </div>
 
@@ -940,7 +940,7 @@
         </div>
         <input id="notification-webhook" class="sub-input" placeholder="Webhook URL（留空则不推送）" style="width:100%;margin-bottom:6px">
         <button class="btn btn-p" onclick="saveSubConfig()" style="font-size:12px;padding:6px 14px">保存全部配置</button>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px">采集完成后自动推送简报链接到对应渠道。</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">摘要刷新完成后会自动推送结果链接到对应渠道。</div>
       </div>
       <div id="sub-status" style="font-size:12px;margin-top:8px;display:none"></div>
     </div>
@@ -951,7 +951,7 @@
   <div style="margin-top:20px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel);font-size:11px;color:var(--muted);line-height:1.8">
     <div style="font-weight:700;color:var(--text);margin-bottom:4px">来源与许可说明</div>
     <div>本项目当前界面为 <b>多Agent智作中枢</b> 的改造版本，基于开源项目演进实现。</div>
-    <div>保留 MIT License，并引用上游项目 <a href="https://github.com/cft0808/edict" target="_blank" rel="noreferrer" style="color:var(--acc)">cft0808/edict</a> 与 <a href="https://github.com/wanikua/danghuangshang" target="_blank" rel="noreferrer" style="color:var(--acc)">wanikua/danghuangshang</a>。</div>
+    <div>保留 MIT License，并保留对上游参考项目的来源说明；当前公开部署入口以本仓库文档与当前仓库地址为准。</div>
     <div>后续系统命名、界面结构与协作流程已按“总控中心 + 多专家节点”的产品化方向持续重构。</div>
   </div>
 </div>
@@ -982,7 +982,7 @@
 <script>
 /* ══ CONFIG ══ */
 const API = (location.origin === 'file://' ? 'http://127.0.0.1:7891' : location.origin) + '/api';
-let liveStatus=null, agentConfig=null, activeTab='edicts', countdown=5;
+let liveStatus=null, agentConfig=null, activeTab='tasks', countdown=5;
 let globalScanActions = [], globalScanDetailOpen = false;
 let globalScanCheckedAt = '', globalScanCount = 0;
 let _openedTaskId = null;
@@ -1037,75 +1037,82 @@ function restoreGlobalScanState(){
 
 /* ══ PIPELINE DEFINITION ══ */
 const PIPE = [
-  {key:'Inbox',    dept:'任务入口',   icon:'🗂️', action:'提交'},
-  {key:'Taizi',    dept:'总控中心',   icon:'🎛️', action:'预处理'},
-  {key:'Zhongshu', dept:'规划中心',   icon:'🧭', action:'拆解'},
-  {key:'Menxia',   dept:'评审中心',   icon:'🔍', action:'核验'},
-  {key:'Assigned', dept:'调度中心',   icon:'📮', action:'派发'},
-  {key:'Doing',    dept:'专业执行组', icon:'⚙️', action:'执行'},
-  {key:'Review',   dept:'调度中心',   icon:'🧾', action:'汇总'},
-  {key:'Done',     dept:'结果报告',   icon:'✅', action:'交付'},
+  {key:'Inbox',          dept:'任务入口',   icon:'🗂️', action:'提交'},
+  {key:'ControlCenter',  dept:'总控中心',   icon:'🎛️', action:'预处理'},
+  {key:'PlanCenter',     dept:'规划中心',   icon:'🧭', action:'拆解'},
+  {key:'ReviewCenter',   dept:'评审中心',   icon:'🔍', action:'核验'},
+  {key:'Assigned',       dept:'调度中心',   icon:'📮', action:'派发'},
+  {key:'Doing',          dept:'专业执行组', icon:'⚙️', action:'执行'},
+  {key:'Review',         dept:'调度中心',   icon:'🧾', action:'汇总'},
+  {key:'Done',           dept:'结果归档',   icon:'✅', action:'归档'}
 ];
-const PIPE_STATE_IDX = {Inbox:0,Pending:0,Taizi:1,Zhongshu:2,Menxia:3,Assigned:4,Doing:5,Review:6,Done:7,Blocked:5,Cancelled:5,Next:4};
+const PIPE_STATE_IDX = {Inbox:0,Pending:0,ControlCenter:1,PlanCenter:2,ReviewCenter:3,Assigned:4,Doing:5,Review:6,Done:7,Blocked:5,Cancelled:5,Next:4};
 
-/* ══ NODE COLORS（现代中文主节点 + 旧字段兼容别名） ══ */
+/* ══ UNIFIED AGENT ARCHITECTURE ══ */
+const AGENT_ARCHITECTURE = {
+  control_center:{label:'总控中心', role:'全局统筹中心', rank:'核心中枢', emoji:'🎛️', color:'#e8a040'},
+  plan_center:{label:'规划中心', role:'任务规划中心', rank:'核心节点', emoji:'🧭', color:'#a07aff'},
+  review_center:{label:'评审中心', role:'质量评审中心', rank:'核心节点', emoji:'🔍', color:'#6a9eff'},
+  dispatch_center:{label:'调度中心', role:'调度协同中心', rank:'核心节点', emoji:'📮', color:'#6aef9a'},
+  docs_specialist:{label:'文案专家', role:'内容文档专家', rank:'专业执行组', emoji:'📝', color:'#f5c842'},
+  data_specialist:{label:'数据专家', role:'数据分析专家', rank:'专业执行组', emoji:'💰', color:'#ff9a6a'},
+  code_specialist:{label:'代码专家', role:'工程实现专家', rank:'专业执行组', emoji:'⚔️', color:'#44aaff'},
+  audit_specialist:{label:'审计专家', role:'审计审核专家', rank:'专业执行组', emoji:'⚖️', color:'#cc4444'},
+  deploy_specialist:{label:'部署专家', role:'部署运维专家', rank:'专业执行组', emoji:'🔧', color:'#ff5270'},
+  admin_specialist:{label:'管理专家', role:'系统管理专家', rank:'专业执行组', emoji:'👔', color:'#9b59b6'},
+  search_specialist:{label:'搜索专家', role:'全网搜索专家', rank:'支撑能力', emoji:'🌐', color:'#36cfc9'}
+};
+const AGENT_LABEL_TO_ID = Object.fromEntries(Object.entries(AGENT_ARCHITECTURE).flatMap(([id, meta]) => [
+  [id, id],
+  [meta.label, id],
+  [meta.role, id]
+]));
 const DEPT_COLOR = {
-  '总控中心':'#e8a040','规划中心':'#a07aff','评审中心':'#6a9eff','调度中心':'#6aef9a',
-  '文案专家':'#f5c842','数据专家':'#ff9a6a','代码专家':'#44aaff','合规专家':'#cc4444','部署专家':'#14b8a6','Agent管理专家':'#9b59b6','情报简报':'#36cfc9',
-  '任务入口':'#ffd700','结果报告':'#2ecc8a','专业执行组':'#44aaff',
-  /* legacy aliases */
-  '太子':'#e8a040','中书省':'#a07aff','门下省':'#6a9eff','尚书省':'#6aef9a','礼部':'#f5c842','户部':'#ff9a6a','兵部':'#44aaff','刑部':'#cc4444','工部':'#14b8a6','吏部':'#9b59b6','皇上':'#ffd700','任务发起人':'#ffd700','回奏':'#2ecc8a','六部':'#44aaff'
+  '任务入口':'#ffd700',
+  '结果归档':'#2ecc8a',
+  '专业执行组':'#44aaff',
+  ...Object.fromEntries(Object.values(AGENT_ARCHITECTURE).map(meta => [meta.label, meta.color]))
 };
-const LEGACY_DEPT_LABEL_MAP = {
-  '太子':'总控中心',
-  '中书省':'规划中心',
-  '门下省':'评审中心',
-  '尚书省':'调度中心',
-  '礼部':'文案专家',
-  '户部':'数据专家',
-  '兵部':'代码专家',
-  '刑部':'合规专家',
-  '工部':'部署专家',
-  '吏部':'Agent管理专家',
-  '史部':'Agent管理专家',
-  '六部':'专业执行组',
-  '皇上':'任务发起人',
-  '回奏':'结果报告'
-};
-const AGENT_PRESENTATION_MAP = {
-  main:{label:'总控中心', role:'总控中心值守 Agent'},
-  taizi:{label:'总控中心', role:'总控中心值守 Agent'},
-  zhongshu:{label:'规划中心', role:'规划中心 Agent'},
-  menxia:{label:'评审中心', role:'评审中心 Agent'},
-  shangshu:{label:'调度中心', role:'调度中心 Agent'},
-  libu:{label:'文案专家', role:'文案专家 Agent'},
-  hubu:{label:'数据专家', role:'数据专家 Agent'},
-  bingbu:{label:'代码专家', role:'代码专家 Agent'},
-  xingbu:{label:'合规专家', role:'合规专家 Agent'},
-  gongbu:{label:'部署专家', role:'部署专家 Agent'},
-  libu_hr:{label:'Agent管理专家', role:'Agent管理专家'},
-  zaochao:{label:'情报简报', role:'情报简报 Agent'}
-};
-function deptColor(d){return DEPT_COLOR[d]||'#6a9eff'}
+function agentMetaById(agentId){
+  return AGENT_ARCHITECTURE[agentId] || null;
+}
+function agentMetaByLabel(label){
+  const id = AGENT_LABEL_TO_ID[label];
+  return id ? AGENT_ARCHITECTURE[id] : null;
+}
+function normalizeAgentId(agentId){
+  if(!agentId) return '';
+  return AGENT_LABEL_TO_ID[agentId] || agentId;
+}
 function normalizeDeptLabel(d){
-  return LEGACY_DEPT_LABEL_MAP[d] || d || '';
+  if(!d) return '';
+  const meta = agentMetaByLabel(d) || agentMetaById(d);
+  return meta ? meta.label : d;
+}
+function deptColor(d){
+  const meta = agentMetaByLabel(d) || agentMetaById(d);
+  return (meta && meta.color) || DEPT_COLOR[d] || '#6a9eff';
 }
 function normalizeUserText(text){
-  let output = text == null ? '' : String(text);
-  Object.entries(LEGACY_DEPT_LABEL_MAP).forEach(([legacy, modern])=>{
-    output = output.split(legacy).join(modern);
-  });
-  return output;
+  if(text == null) return '';
+  return String(text)
+    .replace(/结果报告/g,'结果归档')
+    .replace(/合规专家/g,'审计专家')
+    .replace(/Agent管理专家/g,'管理专家');
 }
 function normalizeAgentPresentation(agent){
   const base = agent || {};
-  const preset = AGENT_PRESENTATION_MAP[base.id] || {};
+  const normalizedId = normalizeAgentId(base.id);
+  const preset = agentMetaById(normalizedId) || agentMetaByLabel(base.label) || null;
   return {
     ...base,
-    label: normalizeDeptLabel(base.label || preset.label || base.id || ''),
-    role: normalizeUserText(base.role || preset.role || ''),
+    id: normalizedId || base.id,
+    label: normalizeDeptLabel(normalizeUserText(base.label || preset?.label || base.id || '')),
+    role: normalizeUserText(base.role || preset?.role || ''),
+    group: normalizeDeptLabel(normalizeUserText(base.group || preset?.rank || '')),
+    rank: normalizeUserText(base.rank || preset?.rank || ''),
     statusLabel: normalizeUserText(base.statusLabel || ''),
-    emoji: base.emoji || preset.emoji || '🏛️'
+    emoji: base.emoji || preset?.emoji || '🏛️'
   };
 }
 
@@ -1184,11 +1191,11 @@ function applyLiveStatus(payload, opts={}){
   const hasDiff = !!opts.forceFull || !previous || !!inc.fullRebuild || changedIds.length > 0 || removedIds.length > 0;
 
   if(hasDiff){
-    renderEdicts(tasks);
+    renderTasks(tasks);
     renderMonitor(tasks);
     renderSessions(tasks);
-    if(activeTab==='memorials') renderMemorials();
-    if(activeTab==='officials' && officialsData) loadOfficials();
+    if(activeTab==='archives') renderArchives();
+    if(activeTab==='agents' && agentsOverviewData) loadAgentsOverview();
   }
 
   refreshOpenedTaskModal(changedIds, removedIds);
@@ -1257,7 +1264,7 @@ function fillDispatchCenterTemplate(kind){
   const templates = {
     '催办': {type:'任务催办', text:`请优先关注${taskId || '该任务'}的推进状态，并同步当前阻塞点、下一步处理人和预计完成时间。`},
     '派发': {type:'派发建议', text:`关于${taskId || '该任务'}，建议优先协调相关专家串行接续处理，并在派发后同步执行顺序与责任边界。`},
-    '修复': {type:'系统修复', text:`此事项属于系统修复范围，请按系统级协作逻辑处理，并明确涉及的 SOUL、看板集成或系统协同改动点。`},
+    '修复': {type:'系统修复', text:`此事项属于系统修复范围，请按系统级协作逻辑处理，并明确涉及的角色规范、看板集成或系统协同改动点。`},
     '同步': {type:'协调请求', text:`请同步${taskId || '当前事项'}的最新调度判断：当前负责人、排队状态、下一步衔接节点，以及是否需要升级协调。`}
   };
   const picked = templates[kind] || templates['同步'];
@@ -1290,7 +1297,7 @@ async function speakToDispatchCenter(){
   btn.textContent = '发送中...';
   if(statusEl){ statusEl.className = 'dt-status'; statusEl.textContent = '发送中...'; }
   try{
-    const r = await postJ(API+'/agent-wake', {agentId:'shangshu', message: finalMsg});
+    const r = await postJ(API+'/agent-wake', {agentId:'dispatch_center', message: finalMsg});
     if(r.ok){
       const st = readDispatchTalkStore();
       const history = [{type:msgType, taskId, message:text, at:new Date().toISOString(), status:'已发送至调度中心'}].concat(st.history||[]).slice(0,8);
@@ -1317,12 +1324,12 @@ async function speakToDispatchCenter(){
     btn.textContent = '发送给调度中心';
   }
 }
-const STATE_LABEL={Inbox:'待受理',Pending:'待处理',Taizi:'总控处理中',Zhongshu:'规划处理中',Menxia:'评审处理中',Assigned:'已派发',Doing:'执行中',Review:'汇总复核中',Done:'已交付',Blocked:'阻塞',Cancelled:'已取消',Next:'待执行'};
+const STATE_LABEL={Inbox:'待受理',Pending:'待处理',ControlCenter:'总控处理中',PlanCenter:'规划处理中',ReviewCenter:'评审处理中',Assigned:'已派发',Doing:'执行中',Review:'汇总复核中',Done:'已交付',Blocked:'阻塞',Cancelled:'已取消',Next:'待执行'};
 // 根据轮次动态生成状态标签
-function stateLabel(t){
+function getStateLabel(t){
   const r = t.review_round||0;
-  if(t.state==='Menxia' && r>1) return `评审复核（第${r}轮）`;
-  if(t.state==='Zhongshu' && r>0) return `规划修订（第${r}轮）`;
+  if(t.state==='ReviewCenter' && r>1) return `评审复核（第${r}轮）`;
+  if(t.state==='PlanCenter' && r>0) return `规划修订（第${r}轮）`;
   return STATE_LABEL[t.state]||t.state;
 }
 function getContextWindowState(t){
@@ -1394,11 +1401,11 @@ function isEdict(t){ return /^JJC-/i.test(t.id||'') }
 function isSession(t){ return /^(OC-|MC-)/i.test(t.id||'') }
 // 归档判定：仅检查显式 archived 标记（Done/Cancelled 留在活跃视图，等用户手动归档）
 function isArchived(t){ return !!t.archived }
-let edictFilter = 'active';  // 'active' | 'archived' | 'all'
-function setEdictFilter(f){
-  edictFilter = f;
+let taskFilter = 'active';  // 'active' | 'archived' | 'all'
+function setTaskFilter(f){
+  taskFilter = f;
   document.querySelectorAll('.archive-bar .ab-btn').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));
-  if(liveStatus) renderEdicts(liveStatus.tasks||[]);
+  if(liveStatus) renderTasks(liveStatus.tasks||[]);
 }
 
 /* ══ PIPE STATUS FOR A TASK ══ */
@@ -1424,34 +1431,34 @@ function miniPipe(t){
   </div>`;
 }
 
-/* ══ EDICT CARDS ══ */
-function renderEdicts(tasks){
-  const allEdicts = tasks.filter(isEdict);
-  const activeEdicts = allEdicts.filter(t=>!isArchived(t));
-  const archivedEdicts = allEdicts.filter(t=>isArchived(t));
+/* ══ TASK CARDS ══ */
+function renderTasks(tasks){
+  const allTasks = tasks.filter(isEdict);
+  const activeTasks = allTasks.filter(t=>!isArchived(t));
+  const archivedTasks = allTasks.filter(t=>isArchived(t));
   // Apply filter
-  let edicts;
-  if(edictFilter==='active') edicts = activeEdicts;
-  else if(edictFilter==='archived') edicts = archivedEdicts;
-  else edicts = allEdicts;
-  edicts.sort((a,b) => {
-    const order = {Doing:0,Review:1,Assigned:2,Menxia:3,Zhongshu:4,Taizi:5,Inbox:6,Blocked:7,Next:8,Done:9,Cancelled:10};
+  let visibleTasks;
+  if(taskFilter==='active') visibleTasks = activeTasks;
+  else if(taskFilter==='archived') visibleTasks = archivedTasks;
+  else visibleTasks = allTasks;
+  visibleTasks.sort((a,b) => {
+    const order = {Doing:0,Review:1,Assigned:2,ReviewCenter:3,PlanCenter:4,ControlCenter:5,Inbox:6,Blocked:7,Next:8,Done:9,Cancelled:10};
     return (order[a.state]??9) - (order[b.state]??9);
   });
   // Tab badge = active count only
-  document.getElementById('tb-e').textContent = activeEdicts.length;
-  document.getElementById('chip-tasks').textContent = activeEdicts.length + ' 个任务';
+  document.getElementById('tb-e').textContent = activeTasks.length;
+  document.getElementById('chip-tasks').textContent = activeTasks.length + ' 个任务';
   // Archive stats
-  document.getElementById('archive-count').textContent = `活跃 ${activeEdicts.length} · 归档 ${archivedEdicts.length} · 共 ${allEdicts.length}`;
+  document.getElementById('archive-count').textContent = `活跃 ${activeTasks.length} · 归档 ${archivedTasks.length} · 共 ${allTasks.length}`;
   // Show "一键归档" button if there are un-archived Done/Cancelled tasks
-  const unArchivedDone = allEdicts.filter(t=>!t.archived && ['Done','Cancelled'].includes(t.state));
+  const unArchivedDone = allTasks.filter(t=>!t.archived && ['Done','Cancelled'].includes(t.state));
   document.getElementById('btn-archive-done').style.display = unArchivedDone.length ? '' : 'none';
   const el = document.getElementById('edict-grid');
-  if(!edicts.length){
+  if(!visibleTasks.length){
     el.innerHTML='<div class="empty" style="grid-column:1/-1">暂无任务<br><small style="font-size:11px;margin-top:6px;display:block;color:var(--muted)">通过飞书提交任务后，由总控中心预处理并转入后续协作流程</small></div>';
     return;
   }
-  el.innerHTML = edicts.map(t => {
+  el.innerHTML = visibleTasks.map(t => {
     const hb = t.heartbeat||{status:'unknown',label:'⚪'};
     const deptCls = 'dt-'+(t.org||'').replace(/\s/g,'');
     const stCls = 'st-'+(t.state||'');
@@ -1522,8 +1529,7 @@ function renderAgentsStatus(data){
   if(!data||!data.ok) return;
   const gw = data.gateway||{};
   const agents = data.agents||[];
-  // 跳过 main（和 taizi 重复）
-  const filtered = agents.filter(a=>a.id!=='main');
+  const filtered = agents;
   const running = filtered.filter(a=>a.status==='running').length;
   const idle = filtered.filter(a=>a.status==='idle').length;
   const offline = filtered.filter(a=>a.status==='offline').length;
@@ -1580,7 +1586,7 @@ async function wakeAgent(agentId, btn){
 async function wakeAllAgents(){
   if(!_agentsStatusData) return;
   const toWake = (_agentsStatusData.agents||[]).filter(a=>
-    a.id!=='main' && a.status!=='running' && a.status!=='unconfigured'
+    a.status!=='running' && a.status!=='unconfigured'
   );
   if(!toWake.length){ toast('所有 Agent 均已在线','ok'); return; }
   toast(`正在唤醒 ${toWake.length} 个 Agent...`,'ok',5000);
@@ -1595,25 +1601,25 @@ async function wakeAllAgents(){
 function renderMonitor(tasks){
   restoreDispatchCenterDraft();
   const DEPTS = [
-    {id:'taizi',   label:'总控中心',     emoji:'🎛️',role:'实时总控',   rank:'核心中枢'},
-    {id:'zhongshu',label:'规划中心',     emoji:'🧭',role:'任务规划',   rank:'核心节点'},
-    {id:'menxia',  label:'评审中心',     emoji:'🔍',role:'质量评审',   rank:'核心节点'},
-    {id:'shangshu',label:'调度中心',     emoji:'📮',role:'调度协调',   rank:'核心节点'},
-    {id:'libu',    label:'文案专家',     emoji:'📝',role:'内容文档专家', rank:'专业执行组'},
-    {id:'hubu',    label:'数据专家',     emoji:'💰',role:'数据资源专家', rank:'专业执行组'},
-    {id:'bingbu',  label:'代码专家',     emoji:'⚔️',role:'工程实现专家', rank:'专业执行组'},
-    {id:'xingbu',  label:'合规专家',     emoji:'⚖️',role:'审计合规专家', rank:'专业执行组'},
-    {id:'gongbu',  label:'部署专家',     emoji:'🔧',role:'部署运维专家', rank:'专业执行组'},
-    {id:'libu_hr', label:'Agent管理专家', emoji:'👔',role:'Agent 管理专家', rank:'专业执行组'},
-    {id:'zaochao', label:'情报简报',     emoji:'📰',role:'情报简报专家', rank:'专业执行组'},
+    {id:'control_center', label:'总控中心', emoji:'🎛️', role:'实时总控', rank:'核心中枢'},
+    {id:'plan_center', label:'规划中心', emoji:'🧭', role:'任务规划', rank:'核心节点'},
+    {id:'review_center', label:'评审中心', emoji:'🔍', role:'质量评审', rank:'核心节点'},
+    {id:'dispatch_center', label:'调度中心', emoji:'📮', role:'调度协调', rank:'核心节点'},
+    {id:'docs_specialist', label:'文案专家', emoji:'📝', role:'内容文档专家', rank:'专业执行组'},
+    {id:'data_specialist', label:'数据专家', emoji:'💰', role:'数据分析专家', rank:'专业执行组'},
+    {id:'code_specialist', label:'代码专家', emoji:'⚔️', role:'工程实现专家', rank:'专业执行组'},
+    {id:'audit_specialist', label:'审计专家', emoji:'⚖️', role:'审计审核专家', rank:'专业执行组'},
+    {id:'deploy_specialist', label:'部署专家', emoji:'🔧', role:'部署运维专家', rank:'专业执行组'},
+    {id:'admin_specialist', label:'管理专家', emoji:'👔', role:'系统管理专家', rank:'专业执行组'},
+    {id:'search_specialist', label:'搜索专家', emoji:'🌐', role:'全网搜索专家', rank:'支撑能力'},
   ];
 
   // 每个中心或专家当前承接的任务：从 JJC 任务里找 org 匹配且非 Done 的
   const activeTasks = tasks.filter(t => isEdict(t) && t.state !== 'Done' && t.state !== 'Next');
   // Agent 统计数据（如已加载）
   const offMap = {};
-  if(officialsData && officialsData.officials){
-    officialsData.officials.forEach(o=>offMap[o.id]=o);
+  if(agentsOverviewData && agentsOverviewData.agents){
+    agentsOverviewData.agents.forEach(o=>offMap[o.id]=o);
   }
 
   let activeCount = 0;
@@ -1749,9 +1755,9 @@ function openTask(id){
       ${canStop ? `<button class="btn-action btn-stop" onclick="confirmAction('${esc(t.id)}','stop')">⏸ 叫停任务</button>
       <button class="btn-action btn-cancel" onclick="confirmAction('${esc(t.id)}','cancel')">🚫 取消任务</button>` : ''}
       ${canResume ? `<button class="btn-action btn-resume" onclick="taskAction('${esc(t.id)}','resume','恢复执行')">▶️ 恢复执行</button>` : ''}
-      ${['Review','Menxia'].includes(t.state) ? `<button class="btn-action" style="background:#2ecc8a22;color:#2ecc8a;border:1px solid #2ecc8a44" onclick="reviewAction('${esc(t.id)}','approve')">✅ 评审通过</button>
+      ${['Review','ReviewCenter'].includes(t.state) ? `<button class="btn-action" style="background:#2ecc8a22;color:#2ecc8a;border:1px solid #2ecc8a44" onclick="reviewAction('${esc(t.id)}','approve')">✅ 评审通过</button>
       <button class="btn-action" style="background:#ff527022;color:#ff5270;border:1px solid #ff527044" onclick="reviewAction('${esc(t.id)}','reject')">🚫 驳回修改</button>` : ''}
-      ${['Pending','Taizi','Zhongshu','Menxia','Assigned','Doing','Review','Next'].includes(t.state) ? `<button class="btn-action" style="background:#7c5cfc18;color:#7c5cfc;border:1px solid #7c5cfc44" onclick="advanceState('${esc(t.id)}','${esc(t.state)}')">⏩ 推进到下一步</button>` : ''}
+      ${['Pending','ControlCenter','PlanCenter','ReviewCenter','Assigned','Doing','Review','Next'].includes(t.state) ? `<button class="btn-action" style="background:#7c5cfc18;color:#7c5cfc;border:1px solid #7c5cfc44" onclick="advanceState('${esc(t.id)}','${esc(t.state)}')">⏩ 推进到下一步</button>` : ''}
     </div>
 
     <!-- 总控调度 -->
@@ -1830,8 +1836,8 @@ function openTask(id){
           const fromLabel = normalizeDeptLabel(fl.from||'');
           const toLabel = normalizeDeptLabel(fl.to||'');
           const col = deptColor(fromLabel||fl.from||'');
-          const isOk = (fl.remark||'').includes('✅') || ['结果报告','任务发起人'].includes(toLabel);
-          const boundaryNodes = ['任务入口','结果报告','任务发起人'];
+          const isOk = (fl.remark||'').includes('✅') || ['结果归档','任务发起人'].includes(toLabel);
+          const boundaryNodes = ['任务入口','结果归档','任务发起人'];
           const dotCls = isOk ? 'fl-ok' : (boundaryNodes.includes(fromLabel)||boundaryNodes.includes(toLabel)) ? 'fl-purple' : 'fl-blue';
           return `<div class="fl-item">
             <div class="fl-time">${fl.at?fl.at.substring(11,16):''}</div>
@@ -2034,7 +2040,7 @@ function renderLiveActivity(data){
   const phaseBar = document.getElementById('la-phase-bar');
   if(phaseBar && data.phaseDurations && data.phaseDurations.length){
     const maxDur = Math.max(...data.phaseDurations.map(p=>p.durationSec||1), 1);
-    const phaseColors = {'总控中心':'#f97316','规划中心':'#3b82f6','评审中心':'#8b5cf6','调度中心':'#10b981','专业执行组':'#06b6d4','文案专家':'#ec4899','数据专家':'#f59e0b','代码专家':'#44aaff','合规专家':'#6366f1','部署专家':'#14b8a6','Agent管理专家':'#d946ef','任务入口':'#eab308','结果报告':'#22c55e',/* legacy aliases */'皇上':'#eab308','任务发起人':'#eab308','太子':'#f97316','中书省':'#3b82f6','门下省':'#8b5cf6','尚书省':'#10b981','六部':'#06b6d4','礼部':'#ec4899','户部':'#f59e0b','兵部':'#44aaff','刑部':'#6366f1','工部':'#14b8a6','吏部':'#d946ef'};
+    const phaseColors = {'总控中心':'#f97316','规划中心':'#3b82f6','评审中心':'#8b5cf6','调度中心':'#10b981','专业执行组':'#06b6d4','文案专家':'#ec4899','数据专家':'#f59e0b','代码专家':'#44aaff','审计专家':'#6366f1','部署专家':'#ff5270','管理专家':'#d946ef','任务入口':'#eab308','结果归档':'#22c55e'};
     let totalDurText = data.totalDuration ? `<span style="margin-left:auto;font-size:10px;color:var(--muted)">总耗时 ${data.totalDuration}</span>` : '';
     phaseBar.innerHTML = `<div style="padding:4px 0 8px;border-bottom:1px solid var(--border)">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="font-size:11px;font-weight:600;color:var(--fg)">⏱ 阶段耗时</span>${totalDurText}</div>
@@ -2100,7 +2106,7 @@ function renderLiveActivity(data){
   if(dot){dot.classList.toggle('idle',!isActive);}
 
   // Agent label map
-  const _agentLabels={main:'总控中心',zhongshu:'规划中心',menxia:'评审中心',shangshu:'调度中心',libu:'文案专家',hubu:'数据专家',bingbu:'代码专家',xingbu:'合规专家',gongbu:'部署专家',libu_hr:'Agent管理专家',zaochao:'情报简报'};
+  const _agentLabels={control_center:'总控中心',plan_center:'规划中心',review_center:'评审中心',dispatch_center:'调度中心',docs_specialist:'文案专家',data_specialist:'数据专家',code_specialist:'代码专家',audit_specialist:'审计专家',deploy_specialist:'部署专家',admin_specialist:'管理专家',search_specialist:'搜索专家'};
 
   const renderEntry=(a)=>{
     const time=a.at?fmtActivityTime(a.at):'';
@@ -2417,8 +2423,8 @@ async function loadLive(opts={}){
   try{
     const payload = await fetchJ(API+'/live-status');
     // 提前加载节点统计数据，供运行调度 Tab 使用
-    if(!officialsData){
-      try{ officialsData = await fetchJ(API+'/officials-stats'); }catch(e){}
+    if(!agentsOverviewData){
+      try{ agentsOverviewData = await fetchJ(API+'/agents-overview'); }catch(e){}
     }
     applyLiveStatus(payload, opts);
   }catch(e){
@@ -2444,9 +2450,9 @@ async function loadAll(opts={}){
   await loadLive(opts);
   if(['models','skills'].includes(activeTab)) await loadAgentConfig();
   if(activeTab==='sessions') renderSessions(liveStatus?liveStatus.tasks:[]);
-  if(activeTab==='memorials') renderMemorials();
+  if(activeTab==='archives') renderArchives();
   if(activeTab==='templates') renderTemplates();
-  if(activeTab==='morning' && !_newsPolling) loadMorning();
+  if(activeTab==='web_search' && !_newsPolling) loadWebSearchBrief();
 }
 
 /* ══ SESSIONS / 小任务 ══ */
@@ -2460,36 +2466,89 @@ let sessFilter = 'all';
 function humanTitle(t){
   let title = t.title||'';
   // "褚凤天 会话" → ok, keep
-  // "agent:shangshu:main 会话" → "调度中心 主会话"
-  // "agent:gongbu:subagent:xxx 会话" → "部署专家 子任务"
-  // "agent:shangshu:cron:xxx 会话" → "调度中心 定时任务"
+  // "agent:deploy_specialist:subagent:xxx 会话" → "部署专家 子任务"
+  // "agent:dispatch_center:cron:xxx 会话" → "调度中心 定时任务"
   // "heartbeat 会话" → "心跳检测"
   if(title==='heartbeat 会话') return '💓 心跳检测';
   const m = title.match(/^agent:(\w+):(\w+)/);
   if(m){
     const agLabel = AGENT_LABEL_MAP[m[1]] || m[1];
-    if(m[2]==='main') return agLabel+' · 主会话';
     if(m[2]==='subagent') return agLabel+' · 子任务执行';
     if(m[2]==='cron') return agLabel+' · 定时任务';
     return agLabel+' · '+m[2];
   }
-  // "兵部：Mission Control 映射验收" — already nice
+  // "代码专家：Mission Control 映射验收" — already nice
   return title.replace(/ 会话$/, '') || t.id;
 }
 
 /* 提取来源渠道 */
 function channelLabel(t){
-  const now = t.now||'';
-  if(now.includes('feishu/direct')) return {icon:'💬', text:'飞书对话'};
-  if(now.includes('feishu'))        return {icon:'💬', text:'飞书'};
-  if(now.includes('wecom'))         return {icon:'📱', text:'企业微信'};
-  if(now.includes('telegram'))      return {icon:'✈️', text:'Telegram'};
-  if(now.includes('discord'))       return {icon:'🎮', text:'Discord'};
-  if(now.includes('slack'))         return {icon:'💬', text:'Slack'};
-  if(now.includes('webchat'))       return {icon:'🌐', text:'WebChat'};
-  if(now.includes('cron'))          return {icon:'⏰', text:'定时'};
-  if(now.includes('direct'))        return {icon:'📨', text:'直连'};
+  const sm = t.sourceMeta||{};
+  const replyMeta = sm.replyMeta||{};
+  const raw = String(replyMeta.channel || sm.channel || sm.originChannel || t.now || '').toLowerCase();
+  if(raw.includes('feishu/direct')) return {icon:'💬', text:'飞书对话'};
+  if(raw.includes('feishu') || raw.includes('lark')) return {icon:'💬', text:'飞书'};
+  if(raw.includes('wecom'))         return {icon:'📱', text:'企业微信'};
+  if(raw.includes('telegram'))      return {icon:'✈️', text:'Telegram'};
+  if(raw.includes('discord'))       return {icon:'🎮', text:'Discord'};
+  if(raw.includes('slack'))         return {icon:'💬', text:'Slack'};
+  if(raw.includes('webchat'))       return {icon:'🌐', text:'WebChat'};
+  if(raw.includes('cron'))          return {icon:'⏰', text:'定时'};
+  if(raw.includes('direct'))        return {icon:'📨', text:'直连'};
   return {icon:'🔗', text:'会话'};
+}
+
+function cleanAssistantText(txt){
+  return String(txt||'')
+    .replace(/^\s*NO_REPLY\b[:：\-\s]*/i,'')
+    .replace(/\[\[.*?\]\]/g,'')
+    .replace(/\*\*/g,'')
+    .replace(/^#+\s/gm,'')
+    .trim();
+}
+
+function replyPolicyLabel(policy){
+  switch(policy){
+    case 'no_reply': return '禁止自动回复';
+    case 'reply_current': return '回复当前消息';
+    case 'reply_thread': return '在线程内回复';
+    case 'reply_root': return '回复根消息';
+    case 'send':
+    default: return '普通发送';
+  }
+}
+
+function replyTone(policy){
+  switch(policy){
+    case 'no_reply':
+      return {text:'静默', color:'#ff5270', border:'#ff527044', bg:'#200a10'};
+    case 'reply_current':
+    case 'reply_thread':
+    case 'reply_root':
+      return {text:'回帖', color:'#6a9eff', border:'#6a9eff44', bg:'#0a1428'};
+    case 'send':
+    default:
+      return {text:'发送', color:'#2ecc8a', border:'#2ecc8a44', bg:'#0a2018'};
+  }
+}
+
+function replyTargets(replyMeta){
+  if(!replyMeta) return [];
+  const rows = [];
+  if(replyMeta.targetMessageId) rows.push(`message_id: ${replyMeta.targetMessageId}`);
+  if(replyMeta.threadId) rows.push(`thread_id: ${replyMeta.threadId}`);
+  if(replyMeta.rootId) rows.push(`root_id: ${replyMeta.rootId}`);
+  if(replyMeta.chatId) rows.push(`chat_id: ${replyMeta.chatId}`);
+  return rows;
+}
+
+function replySummary(replyMeta){
+  if(!replyMeta) return '';
+  const label = replyPolicyLabel(replyMeta.effectivePolicy || replyMeta.policy);
+  const targets = replyTargets(replyMeta);
+  if(targets.length) return `${label} · ${targets[0]}`;
+  if(replyMeta.hasReplyContext) return `${label} · 已捕获回复上下文`;
+  return label;
 }
 
 /* 提取最后一条有意义的 assistant 消息 */
@@ -2498,11 +2557,9 @@ function lastMessage(t){
   for(let i=acts.length-1;i>=0;i--){
     const a=acts[i];
     if(a.kind==='assistant'){
-      let txt = a.text||'';
-      if(txt.startsWith('NO_REPLY')) continue;
+      let txt = cleanAssistantText(a.text||'');
+      if(!txt) continue;
       if(txt.startsWith('Reasoning:')) continue;
-      // 清理 markdown 和 [[reply_to_current]]
-      txt = txt.replace(/\[\[.*?\]\]/g,'').replace(/\*\*/g,'').replace(/^#+\s/gm,'').trim();
       return txt.substring(0,120) + (txt.length>120?'…':'');
     }
   }
@@ -2547,14 +2604,19 @@ function renderSessions(tasks){
     const model = (t.now||'').match(/模型\s*(\S+)/);
     const modelStr = model ? model[1] : '';
     const st = t.state||'Unknown';
+    const replyMeta = sm.replyMeta||null;
+    const replyPolicy = replyMeta ? (replyMeta.effectivePolicy || replyMeta.policy) : '';
+    const replyChip = replyPolicy ? replyTone(replyPolicy) : null;
+    const replyText = replySummary(replyMeta);
 
     return `<div class="sess-card" onclick="openSessionDetail(${JSON.stringify(JSON.stringify(t))})">
       <div class="sc-top">
         <span class="sc-emoji">${emoji}</span>
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="sc-agent">${esc(agLabel)}</span>
             <span style="font-size:10px;color:var(--muted);background:var(--panel2);padding:2px 6px;border-radius:4px">${ch.icon} ${ch.text}</span>
+            ${replyChip?`<span style="font-size:10px;font-weight:700;color:${replyChip.color};background:${replyChip.bg};border:1px solid ${replyChip.border};padding:2px 6px;border-radius:999px">${replyChip.text}</span>`:''}
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px">
@@ -2564,6 +2626,7 @@ function renderSessions(tasks){
       </div>
       <div class="sc-title">${esc(title)}</div>
       ${msg?`<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px;border-left:2px solid var(--line);padding-left:8px;max-height:40px;overflow:hidden">${esc(msg)}</div>`:''}
+      ${replyText?`<div style="font-size:10px;color:var(--muted);line-height:1.5;margin-bottom:8px">💬 ${esc(replyText)}</div>`:''}
       <div class="sc-meta">
         ${modelStr?`<span style="font-size:10px;color:var(--acc);font-weight:600">${esc(modelStr)}</span>`:''}
         ${totalTk?`<span style="font-size:10px;color:var(--muted)">🪙 ${totalTk.toLocaleString()} tokens</span>`:''}
@@ -2586,6 +2649,11 @@ function openSessionDetail(jsonStr){
   const acts = t.activity||[];
   const model = (t.now||'').match(/模型\s*(\S+)/);
   const st = t.state||'Unknown';
+  const replyMeta = sm.replyMeta||null;
+  const replyPolicy = replyMeta ? (replyMeta.effectivePolicy || replyMeta.policy) : '';
+  const replyChip = replyPolicy ? replyTone(replyPolicy) : null;
+  const replyTargetsList = replyTargets(replyMeta);
+  const replySourcePaths = replyMeta && replyMeta.sourcePaths ? Object.entries(replyMeta.sourcePaths) : [];
 
   document.getElementById('modal-body').innerHTML=`
     <div style="font-size:11px;color:var(--acc);font-weight:700;letter-spacing:.04em;margin-bottom:4px">${esc(t.id)}</div>
@@ -2605,6 +2673,25 @@ function openSessionDetail(jsonStr){
       ${sm.outputTokens!=null?`<div style="background:var(--panel2);padding:10px 16px;border-radius:8px;font-size:12px"><div style="font-size:16px;font-weight:700">${(sm.outputTokens||0).toLocaleString()}</div><div style="color:var(--muted);font-size:10px">输出</div></div>`:''}
     </div>
 
+    ${replyMeta?`<div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text)">💬 飞书回复上下文</div>
+    <div style="margin-bottom:18px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        ${replyChip?`<span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;color:${replyChip.color};border:1px solid ${replyChip.border};background:${replyChip.bg}">${replyChip.text}</span>`:''}
+        <span style="font-size:11px;color:var(--text)">${esc(replyPolicyLabel(replyPolicy || replyMeta.policy))}</span>
+        ${replyMeta.channel?`<span style="font-size:11px;color:var(--muted)">渠道：${esc(replyMeta.channel)}</span>`:''}
+        ${replyMeta.fallbackMode&&replyMeta.fallbackMode!=='none'?`<span style="font-size:11px;color:var(--muted)">降级：${esc(replyMeta.fallbackMode)}</span>`:''}
+        ${replyMeta.transport?`<span style="font-size:11px;color:var(--muted)">传输：${esc(replyMeta.transport)}</span>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
+        <div style="background:var(--panel);border-radius:8px;padding:10px 12px"><div style="font-size:10px;color:var(--muted);margin-bottom:4px">回复策略</div><div style="font-size:12px;font-weight:700">${esc(replyPolicyLabel(replyMeta.policy))}</div></div>
+        <div style="background:var(--panel);border-radius:8px;padding:10px 12px"><div style="font-size:10px;color:var(--muted);margin-bottom:4px">生效策略</div><div style="font-size:12px;font-weight:700">${esc(replyPolicyLabel(replyPolicy || replyMeta.policy))}</div></div>
+        <div style="background:var(--panel);border-radius:8px;padding:10px 12px"><div style="font-size:10px;color:var(--muted);margin-bottom:4px">上下文状态</div><div style="font-size:12px;font-weight:700">${replyMeta.hasReplyContext?'已捕获回复目标':'未捕获回复目标'}</div></div>
+      </div>
+      ${replyTargetsList.length?`<div><div style="font-size:11px;font-weight:700;margin-bottom:6px">回复目标</div><div style="display:flex;flex-direction:column;gap:6px">${replyTargetsList.map(item=>`<div style="font-size:11px;color:var(--muted);word-break:break-all;background:var(--panel);border-radius:8px;padding:8px 10px">${esc(item)}</div>`).join('')}</div></div>`:''}
+      ${replyMeta.markers&&replyMeta.markers.length?`<div><div style="font-size:11px;font-weight:700;margin-bottom:6px">意图标记</div><div style="display:flex;gap:6px;flex-wrap:wrap">${replyMeta.markers.map(marker=>`<span style="font-size:10px;color:var(--acc);border:1px solid #6a9eff44;background:#0a1228;border-radius:999px;padding:3px 8px">${esc(marker)}</span>`).join('')}</div></div>`:''}
+      ${replySourcePaths.length?`<div><div style="font-size:11px;font-weight:700;margin-bottom:6px">字段来源</div><div style="display:flex;flex-direction:column;gap:6px">${replySourcePaths.map(([key,val])=>`<div style="font-size:11px;color:var(--muted);word-break:break-all;background:var(--panel);border-radius:8px;padding:8px 10px">${esc(key)}: ${esc(val)}</div>`).join('')}</div></div>`:''}
+    </div>`:''}
+
     <!-- 最近活动 -->
     <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text)">📋 最近活动 <span style="font-weight:400;color:var(--muted)">(${acts.length} 条)</span></div>
     <div style="max-height:350px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel2)">
@@ -2613,7 +2700,7 @@ function openSessionDetail(jsonStr){
         const kind = a.kind||'';
         const kIcon = kind==='assistant'?'🤖':kind==='tool'?'🔧':kind==='user'?'👤':'📝';
         const kLabel = kind==='assistant'?'回复':kind==='tool'?'工具':kind==='user'?'用户':'事件';
-        let txt = (a.text||'').replace(/\[\[.*?\]\]/g,'').replace(/\*\*/g,'').trim();
+        let txt = cleanAssistantText(a.text||'');
         if(txt.length>200) txt=txt.substring(0,200)+'…';
         const time = (a.at||'').substring(11,19);
         return `<div style="padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px;line-height:1.5">
@@ -2638,11 +2725,10 @@ function extractAgent(t){
   // MC-* or other prefixes: check sourceMeta
   const sm = t.sourceMeta||{};
   if(sm.agentId){
-    // "mc-gateway-xxx" → try to match known agents
-    const known = ['taizi','zhongshu','menxia','shangshu','hubu','libu','bingbu','xingbu','gongbu','zaochao'];
-    for(const k of known){ if(sm.agentId.includes(k)) return k; }
+    const known = ['control_center','plan_center','review_center','dispatch_center','docs_specialist','data_specialist','code_specialist','audit_specialist','deploy_specialist','admin_specialist','search_specialist'];
+    for(const k of known){ if(sm.agentId.includes(k)) return normalizeAgentId(k); }
   }
-  return (t.org||'').replace(/省|部/g,'').toLowerCase();
+  return '';
 }
 
 function timeAgo(iso){
@@ -2668,7 +2754,7 @@ function filterSessions(filter, el){
   renderSessions(liveStatus?liveStatus.tasks:[]);
 }
 
-/* ══ MORNING BRIEF (情报简报) ══ */
+/* ══ WEB SEARCH BRIEF (全网搜索摘要) ══ */
 const CAT_META = {
   '政治': {icon:'🏛️', color:'#6a9eff', desc:'全球政治动态'},
   '军事': {icon:'⚔️',  color:'#ff5270', desc:'军事与冲突'},
@@ -2681,7 +2767,7 @@ const DEFAULT_CATS = ['政治','军事','经济','AI大模型'];
 let subConfig = null;
 
 async function loadSubConfig(){
-  try{ subConfig = await fetchJ(API+'/morning-config'); }
+  try{ subConfig = await fetchJ(API+'/search-config'); }
   catch(e){ subConfig = { categories: DEFAULT_CATS.map(c=>({name:c,enabled:true})), keywords:[], custom_feeds:[], notification:{enabled:true,channel:'feishu',webhook:''} }; }
 }
 
@@ -2796,36 +2882,36 @@ async function saveSubConfig(){
   const st = document.getElementById('sub-status');
   st.style.display='block'; st.style.color='var(--acc)'; st.textContent='⟳ 保存中…';
   try{
-    const r = await postJ(API+'/morning-config', subConfig);
+    const r = await postJ(API+'/search-config', subConfig);
     if(r.ok){ st.style.color='var(--ok)'; st.textContent='✅ 配置已保存'; toast('订阅配置已保存','ok'); }
     else{ st.style.color='var(--danger)'; st.textContent='❌ '+(r.error||'保存失败'); }
   }catch(e){ st.style.color='var(--danger)'; st.textContent='❌ 服务器连接失败'; }
   setTimeout(()=>st.style.display='none', 3000);
 }
 
-// --- News rendering ---
-async function loadMorning(){
+// --- Web search brief rendering ---
+async function loadWebSearchBrief(){
   const body = document.getElementById('mb-body');
-  body.innerHTML = '<div class="mb-loading">⟳ 加载要闻中…</div>';
+  body.innerHTML = '<div class="mb-loading">⟳ 加载搜索摘要中…</div>';
   try{
-    const d = await fetchJ(API+'/morning-brief');
+    const d = await fetchJ(API+'/search-brief');
     await loadSubConfig();
-    renderMorning(d);
+    renderWebSearchBrief(d);
   }catch(e){
-    body.innerHTML = '<div class="mb-empty">⚠️ 暂无数据，请点击「立即采集」</div>';
+    body.innerHTML = '<div class="mb-empty">⚠️ 暂无数据，请点击「立即刷新」</div>';
   }
 }
 
-function renderMorning(d){
+function renderWebSearchBrief(d){
   const sub = document.getElementById('mb-subtitle');
   if(d.generated_at){
     const dateStr = d.date ? d.date.replace(/(\d{4})(\d{2})(\d{2})/,'$1年$2月$3日') : '';
-    sub.textContent = `${dateStr} | 采集于 ${d.generated_at} | 共 ${Object.values(d.categories||{}).flat().length} 条要闻`;
+    sub.textContent = `${dateStr} | 刷新于 ${d.generated_at} | 共 ${Object.values(d.categories||{}).flat().length} 条摘要`;
   }
   const body = document.getElementById('mb-body');
   const cats = d.categories||{};
   if(!Object.keys(cats).length){
-    body.innerHTML='<div class="mb-empty">暂无数据，点击右上角「立即采集」获取今日简报</div>';
+    body.innerHTML='<div class="mb-empty">暂无数据，点击右上角「立即刷新」获取最新搜索摘要</div>';
     return;
   }
   // Filter by enabled categories
@@ -2878,17 +2964,17 @@ function renderMorning(d){
 let _newsPolling = null;
 let _lastBriefDate = null;
 
-async function refreshNews(){
+async function refreshSearchBrief(){
   const btn = document.getElementById('mb-refresh-btn');
-  btn.disabled = true; btn.textContent = '⟳ 采集中…';
+  btn.disabled = true; btn.textContent = '⟳ 刷新中…';
   try{
-    // 记录采集前的数据时间戳
+    // 记录刷新前的数据时间戳
     try{
-      const old = await fetchJ(API+'/morning-brief');
+      const old = await fetchJ(API+'/search-brief');
       _lastBriefDate = old.generated_at || null;
     }catch(e){ _lastBriefDate = null; }
-    const r = await postJ(API+'/morning-brief/refresh', {});
-    toast(r.message||'采集已触发，自动检测更新中…', 'ok', 5000);
+    const r = await postJ(API+'/search-brief/refresh', {});
+    toast(r.message||'刷新已触发，正在自动检查更新…', 'ok', 5000);
     // 轮询检测更新（每5秒检查一次，最多2分钟）
     if(_newsPolling) clearInterval(_newsPolling);
     let pollCount = 0;
@@ -2897,38 +2983,38 @@ async function refreshNews(){
       if(pollCount > 24){ // 2分钟超时
         clearInterval(_newsPolling);
         _newsPolling = null;
-        btn.disabled = false; btn.textContent = '⟳ 立即采集';
-        toast('采集超时，请重试', 'err');
+        btn.disabled = false; btn.textContent = '⟳ 立即刷新';
+        toast('刷新超时，请重试', 'err');
         return;
       }
       try{
-        const fresh = await fetchJ(API+'/morning-brief');
+        const fresh = await fetchJ(API+'/search-brief');
         if(fresh.generated_at && fresh.generated_at !== _lastBriefDate){
           // 数据已更新
           clearInterval(_newsPolling);
           _newsPolling = null;
-          btn.disabled = false; btn.textContent = '⟳ 立即采集';
-          await loadMorning();
-          toast('✅ 情报简报已更新', 'ok');
+          btn.disabled = false; btn.textContent = '⟳ 立即刷新';
+          await loadWebSearchBrief();
+          toast('✅ 搜索摘要已更新', 'ok');
         } else {
-          btn.textContent = `⟳ 采集中… (${pollCount * 5}s)`;
+          btn.textContent = `⟳ 刷新中… (${pollCount * 5}s)`;
         }
       }catch(e){}
     }, 5000);
   }catch(e){
     toast('触发失败', 'err');
-    btn.disabled = false; btn.textContent = '⟳ 立即采集';
+    btn.disabled = false; btn.textContent = '⟳ 立即刷新';
   }
 }
 
-/* ══ OFFICIALS ══ */
-let officialsData = null;
-let selectedOfficial = null;
+/* ══ AGENTS OVERVIEW ══ */
+let agentsOverviewData = null;
+let selectedAgent = null;
 
-async function loadOfficials(){
+async function loadAgentsOverview(){
   try{
-    officialsData = await fetchJ(API+'/officials-stats');
-    renderOfficials(officialsData);
+    agentsOverviewData = await fetchJ(API+'/agents-overview');
+    renderAgentsOverview(agentsOverviewData);
   }catch(e){
     document.getElementById('off-detail').innerHTML='<div class="od-empty">⚠️ 无法加载，请确认服务器已启动</div>';
   }
@@ -2936,9 +3022,9 @@ async function loadOfficials(){
 
 const MEDALS = ['🥇','🥈','🥉'];
 
-function renderOfficials(data){
-  if(!data||!data.officials) return;
-  const offs = data.officials;
+function renderAgentsOverview(data){
+  if(!data||!data.agents) return;
+  const offs = data.agents.map(normalizeAgentPresentation);
   const totals = data.totals||{};
   const maxTk = Math.max(...offs.map(o=>o.tokens_in+o.tokens_out+o.cache_read+o.cache_write),1);
 
@@ -2948,8 +3034,11 @@ function renderOfficials(data){
   if(alive.length){
     actEl.style.display='flex';
     actEl.innerHTML=`<span class="act-label">🟢 当前活跃：</span>`
-      +alive.map(o=>`<span class="act-dot alive">${o.emoji} ${o.role}</span>`).join('')
+      +alive.map(o=>`<span class="act-dot alive">${o.emoji} ${o.label}</span>`).join('')
       +`<span style="color:var(--muted);font-size:11px;margin-left:auto">其余节点待命</span>`;
+  } else {
+    actEl.style.display='none';
+    actEl.innerHTML='';
   }
 
   // KPI 行
@@ -2957,7 +3046,7 @@ function renderOfficials(data){
     <div class="kpi"><div class="kpi-v blue">${offs.length}</div><div class="kpi-l">已注册节点</div></div>
     <div class="kpi"><div class="kpi-v gold">${totals.tasks_done||0}</div><div class="kpi-l">累计完成任务</div></div>
     <div class="kpi"><div class="kpi-v ${(totals.cost_cny||0)>20?'warn':'green'}">¥${totals.cost_cny||0}</div><div class="kpi-l">累计费用（含缓存）</div></div>
-    <div class="kpi"><div class="kpi-v" style="font-size:16px;padding-top:4px">${esc(data.top_official||'—')}</div><div class="kpi-l">综合表现最佳</div></div>`;
+    <div class="kpi"><div class="kpi-v" style="font-size:16px;padding-top:4px">${esc(data.top_agent||'—')}</div><div class="kpi-l">综合表现最佳</div></div>`;
 
   // 左侧排行榜
   document.getElementById('off-ranklist').innerHTML=`
@@ -2965,7 +3054,7 @@ function renderOfficials(data){
     +offs.map(o=>{
       const hb=o.heartbeat||{status:'idle'};
       const emoji = o.emoji || AGENT_EMOJI_MAP[o.id] || (o.group==='总控中心'?'🎛️':o.group==='专业执行组'?'🧠':'🛰️');
-      return `<div class="orl-item${selectedOfficial===o.id?' selected':''}" onclick="selectOfficial('${o.id}',this)">
+      return `<div class="orl-item${selectedAgent===o.id?' selected':''}" onclick="selectAgentOverview('${o.id}',this)">
         <span class="orl-medal">${o.merit_rank<=3?MEDALS[o.merit_rank-1]:'#'+o.merit_rank}</span>
         <span class="orl-emoji">${emoji}</span>
         <span class="orl-name"><div class="orl-role">${esc(o.role)}</div><div class="orl-org">${esc(o.label)}</div></span>
@@ -2975,23 +3064,24 @@ function renderOfficials(data){
     }).join('');
 
   // 默认选中第一个
-  if(!selectedOfficial && offs.length) selectOfficial(offs[0].id);
+  if(!selectedAgent && offs.length) selectAgentOverview(offs[0].id);
 }
 
-function selectOfficial(id, el){
-  selectedOfficial = id;
+function selectAgentOverview(id, el){
+  selectedAgent = id;
   // 高亮行
   document.querySelectorAll('.orl-item').forEach(x=>x.classList.remove('selected'));
   if(el) el.classList.add('selected');
   // 渲染详情
-  if(!officialsData) return;
-  const o = officialsData.officials.find(x=>x.id===id);
-  if(!o) return;
+  if(!agentsOverviewData) return;
+  const raw = agentsOverviewData.agents.find(x=>x.id===id);
+  if(!raw) return;
+  const o = normalizeAgentPresentation(raw);
   const hb = o.heartbeat||{status:'idle',label:'⚪ 待命'};
   const totTk = o.tokens_in+o.tokens_out+o.cache_read+o.cache_write;
-  const maxTk = Math.max(...officialsData.officials.map(x=>x.tokens_in+x.tokens_out+x.cache_read+x.cache_write),1);
+  const maxTk = Math.max(...agentsOverviewData.agents.map(x=>x.tokens_in+x.tokens_out+x.cache_read+x.cache_write),1);
   const costCls = o.cost_cny>10?'hi':o.cost_cny>3?'md':'lo';
-  const edicts = o.participated_edicts||[];
+  const tasks = o.participated_tasks||[];
   const queue = o.queue||{};
   const realtime = o.realtime||{};
   const systemRepair = o.systemRepair||{};
@@ -3016,8 +3106,8 @@ function selectOfficial(id, el){
     <div class="od-hero">
       <div class="od-emoji">${emoji}</div>
       <div>
-        <div class="od-name">${esc(o.role)}</div>
-        <div class="od-role">${esc(o.label)} · ${esc(o.group||'协作节点')} · <span style="color:var(--acc)">${esc(o.model_short||o.model)}</span></div>
+        <div class="od-name">${esc(o.label)}</div>
+        <div class="od-role">${esc(o.role)} · ${esc(o.group||'协作节点')} · <span style="color:var(--acc)">${esc(o.model_short||o.model)}</span></div>
         <div class="od-rank-badge">🏅 ${esc(o.rank)} · 协作分 ${o.merit_score}</div>
       </div>
       <div class="od-hb">
@@ -3027,7 +3117,7 @@ function selectOfficial(id, el){
       </div>
     </div>
 
-    <!-- 核心功绩 -->
+    <!-- 核心贡献 -->
     <div class="od-section">
       <div class="od-sec-title">运行统计</div>
       <div class="od-stats">
@@ -3079,10 +3169,10 @@ function selectOfficial(id, el){
 
     <!-- 参与任务 -->
     <div class="od-section">
-      <div class="od-sec-title">参与任务（${edicts.length} 个）</div>
-      ${!edicts.length
+      <div class="od-sec-title">参与任务（${tasks.length} 个）</div>
+      ${!tasks.length
         ? '<div style="font-size:12px;color:var(--muted);padding:8px 0">暂无任务记录</div>'
-        : `<div class="od-edict-list">${edicts.map(e=>`
+        : `<div class="od-edict-list">${tasks.map(e=>`
           <div class="oe-item" onclick='openTask(${JSON.stringify(e.id)})'>
             <span class="oe-id">${esc(e.id)}</span>
             <span class="oe-title">${esc(e.title.substring(0,35))}</span>
@@ -3131,7 +3221,7 @@ async function reviewAction(taskId, action){
 }
 
 /* ══ ADVANCE STATE (手动推进到下一步) ══ */
-const _NEXT_LABELS = {Taizi:'规划中心拆解', Zhongshu:'评审中心核验', Menxia:'调度中心派发', Assigned:'开始执行', Doing:'进入复核', Review:'完成交付'};
+const _NEXT_LABELS = {ControlCenter:'规划中心拆解', PlanCenter:'评审中心核验', ReviewCenter:'调度中心派发', Assigned:'开始执行', Doing:'进入复核', Review:'完成交付'};
 async function advanceState(taskId, curState){
   const next = _NEXT_LABELS[curState] || '下一步';
   const comment = prompt(`⏩ 手动推进 ${taskId}\n当前: ${curState} → 下一步: ${next}\n\n请输入说明（可留空）：`);
@@ -3299,11 +3389,11 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   t.classList.add('active');activeTab=t.dataset.tab;
   document.getElementById('panel-'+activeTab).classList.add('active');
   if(['models','skills'].includes(activeTab))loadAgentConfig();
-  if(activeTab==='officials')loadOfficials();
+  if(activeTab==='agents')loadAgentsOverview();
   if(activeTab==='monitor')loadAgentsStatus();
-  if(activeTab==='morning')loadMorning();
+  if(activeTab==='web_search')loadWebSearchBrief();
   if(activeTab==='sessions')renderSessions(liveStatus?liveStatus.tasks:[]);
-  if(activeTab==='memorials')renderMemorials();
+  if(activeTab==='archives')renderArchives();
   if(activeTab==='templates')renderTemplates();
 }));
 
@@ -3367,20 +3457,20 @@ function skipCeremony(){
 }
 
 /* ══ REPORT ARCHIVE (结果归档) ══ */
-function renderMemorials(){
+function renderArchives(){
   const tasks = liveStatus ? (liveStatus.tasks||[]) : [];
   const filter = (document.getElementById('mem-filter')||{}).value || 'all';
-  // Only JJC edicts that are Done or Cancelled
+  // Only JJC tasks that are Done or Cancelled
   let mems = tasks.filter(t=>(t.id||'').startsWith('JJC-') && ['Done','Cancelled'].includes(t.state));
   if(filter!=='all') mems = mems.filter(t=>t.state===filter);
   document.getElementById('tb-mem').textContent = mems.length;
 
   const el = document.getElementById('mem-list');
-  if(!mems.length){ el.innerHTML='<div class="mem-empty">暂无归档记录 — 任务完成后自动生成</div>'; return; }
+  if(!mems.length){ el.innerHTML='<div class="mem-empty">暂无归档记录 — 任务完成后可在看板中归档或批量归档</div>'; return; }
 
   el.innerHTML = mems.map(t=>{
     const fl = t.flow_log||[];
-    const depts = [...new Set(fl.map(f=>f.from).concat(fl.map(f=>f.to)).filter(x=>x && x!=='皇上' && x!=='任务发起人' && x!=='任务入口' && x!=='总控中心')).map(d=>normalizeDeptLabel(d))];
+    const depts = [...new Set(fl.map(f=>f.from).concat(fl.map(f=>f.to)).filter(x=>x && x!=='任务发起人' && x!=='任务入口' && x!=='总控中心')).map(d=>normalizeDeptLabel(d))];
     const firstAt = fl.length ? (fl[0].at||'').substring(0,16).replace('T',' ') : '';
     const lastAt = fl.length ? (fl[fl.length-1].at||'').substring(0,16).replace('T',' ') : '';
     const stIcon = t.state==='Done'?'✅':'🚫';
@@ -3404,16 +3494,16 @@ function openMemorial(jsonStr){
   const fl = t.flow_log||[];
   const st = t.state||'Unknown';
   const stIcon = st==='Done'?'✅':st==='Cancelled'?'🚫':'🔄';
-    const depts = [...new Set(fl.map(f=>f.from).concat(fl.map(f=>f.to)).filter(x=>x && x!=='皇上' && x!=='任务发起人' && x!=='任务入口' && x!=='总控中心')).map(d=>normalizeDeptLabel(d))];
+    const depts = [...new Set(fl.map(f=>f.from).concat(fl.map(f=>f.to)).filter(x=>x && x!=='任务发起人' && x!=='任务入口' && x!=='总控中心')).map(d=>normalizeDeptLabel(d))];
 
 
   // 基于 flow_log 重建现代流程分段，并兼容旧节点名称
   let originLog=[], planLog=[], reviewLog=[], execLog=[], resultLog=[];
   for(const f of fl){
-    if(['皇上','任务发起人','任务入口','总控中心'].includes(f.from)) originLog.push(f);
-    else if(['中书省','规划中心'].includes(f.to)||['中书省','规划中心'].includes(f.from)) planLog.push(f);
-    else if(['门下省','评审中心'].includes(f.to)||['门下省','评审中心'].includes(f.from)) reviewLog.push(f);
-    else if(f.remark&&(f.remark.includes('完成')||f.remark.includes('回奏')||f.remark.includes('交付')||f.remark.includes('结果报告'))) resultLog.push(f);
+    if(['任务发起人','任务入口','总控中心'].includes(f.from)) originLog.push(f);
+    else if(['规划中心'].includes(f.to)||['规划中心'].includes(f.from)) planLog.push(f);
+    else if(['评审中心'].includes(f.to)||['评审中心'].includes(f.from)) reviewLog.push(f);
+    else if(f.remark&&(f.remark.includes('完成')||f.remark.includes('归档')||f.remark.includes('交付')||f.remark.includes('结果归档'))) resultLog.push(f);
     else execLog.push(f);
   }
 
@@ -3453,7 +3543,7 @@ function openMemorial(jsonStr){
     ${renderPhase('规划中心', '📋', planLog)}
     ${renderPhase('评审中心', '🔍', reviewLog)}
     ${renderPhase('专业执行阶段', '⚙️', execLog)}
-    ${renderPhase('结果报告', '📨', resultLog)}
+    ${renderPhase('结果归档', '📨', resultLog)}
 
     ${t.output&&t.output!=='-'?`<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
       <div style="font-size:11px;font-weight:600;margin-bottom:4px">📦 产出物</div>
@@ -3787,7 +3877,7 @@ function openFeedback(){
     ? encodeURIComponent('## 问题描述\n\n## 复现步骤\n1. \n2. \n3. \n\n## 期望行为\n\n## 实际行为\n\n## 环境信息\n- OS: \n- Browser: \n')
     : encodeURIComponent('## 功能描述\n\n## 使用场景\n\n## 期望效果\n\n## 其他信息\n');
   const label = isBug ? 'bug' : 'enhancement';
-  window.open(`https://github.com/cft0808/edict/issues/new?title=${title}&body=${tmpl}&labels=${label}`, '_blank');
+  window.open(`https://github.com/JiangNanGenius/multi-agent-orchestrator/issues/new?title=${title}&body=${tmpl}&labels=${label}`, '_blank');
 }
 
 /* ══ INIT ══ */

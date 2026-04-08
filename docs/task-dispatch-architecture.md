@@ -139,13 +139,13 @@ Review --> [*]: 业务终止
 DAY 1:
   10:00 - 用户提交任务："为多Agent智作中枢编写完整自动化测试方案"
           总控中心接收。state = Taizi, org = 总控中心
-          自动派发总控中心 Agent（内部 ID：taizi） → 处理此任务
+          自动派发总控中心 Agent（内部 ID：control_center） → 处理此任务
   
   10:30 - 总控中心预处理完毕。判定为「正式任务」（非闲聊）
           建任务 JJC-20260228-E2E
           flow_log 记录："用户 → 总控中心：提交任务"
           state: Taizi → Zhongshu（内部状态代号）, org: 总控中心 → 规划中心
-          自动派发规划中心 Agent（内部 ID：zhongshu）
+          自动派发规划中心 Agent（内部 ID：plan_center）
 
 DAY 2:
   09:00 - 规划中心接收任务，开始规划
@@ -156,7 +156,7 @@ DAY 2:
           todos 快照：需求分析✅、方案设计✅、待审核🔄
           flow_log 记录："规划中心 → 评审中心：方案提交审核"
           state: Zhongshu → Menxia（内部状态代号）, org: 规划中心 → 评审中心
-          自动派发评审中心 Agent（内部 ID：menxia）
+          自动派发评审中心 Agent（内部 ID：review_center）
 
 DAY 3:
   09:00 - 评审中心开始审核
@@ -168,20 +168,20 @@ DAY 3:
           flow_log 记录："评审中心 → 调度中心：✅ 审核通过（5条建议）"
           state: Menxia → Assigned（内部状态代号）, org: 评审中心 → 调度中心
           OPTIONAL：规划中心收到建议，主动优化方案
-          自动派发调度中心 Agent（内部 ID：shangshu）
+          自动派发调度中心 Agent（内部 ID：dispatch_center）
 
 DAY 4:
   10:00 - 调度中心接到审核通过结果
           分析："该测试方案应派给部署专家 + 合规专家 + 文案专家协力完成"
           flow_log 记录："调度中心 → 专业执行组：派发执行（代码/合规/文案协作）"
           state: Assigned → Doing（内部状态代号）, org: 调度中心 → 代码专家+合规专家+文案专家
-          自动派发代码专家 / 合规专家 / 文案专家三个 Agent（内部 ID：bingbu / xingbu / libu，并行）
+          自动派发代码专家 / 合规专家 / 文案专家三个 Agent（内部 ID：code_specialist / audit_specialist / docs_specialist，并行）
 
 DAY 4-5:
   (各专家并行执行)
-  - 代码专家（内部 ID：bingbu）：实现 pytest + unittest 测试框架
-  - 合规专家（内部 ID：xingbu）：编写测试覆盖所有关键函数
-  - 文案专家（内部 ID：libu）：整理测试文档和用例说明
+  - 代码专家（内部 ID：code_specialist）：实现 pytest + unittest 测试框架
+  - 合规专家（内部 ID：audit_specialist）：编写测试覆盖所有关键函数
+  - 文案专家（内部 ID：docs_specialist）：整理测试文档和用例说明
   
   实时汇报（hourly progress）：
   - 代码专家："✅ 已实现 16 个单元测试"
@@ -211,7 +211,7 @@ DAY 3 [封驳场景]：
           review_round += 1
           flow_log 记录："评审中心 → 规划中心：🚫 退回修订（需补充性能测试）"
           state: Menxia → Zhongshu（内部状态代号）  # 返回规划中心修改
-          自动派发规划中心 Agent（内部 ID：zhongshu，重新规划）
+          自动派发规划中心 Agent（内部 ID：plan_center，重新规划）
 
 DAY 3-4：
   16:00 - 规划中心收到退回修订通知（唤醒 Agent）
@@ -219,7 +219,7 @@ DAY 3-4：
           progress："已整合性能测试需求，修正方案如下..."
           flow_log 记录："规划中心 → 评审中心：修订方案（第2轮审核）"
           state: Zhongshu → Menxia（内部状态代号）
-          自动派发评审中心 Agent（内部 ID：menxia）
+          自动派发评审中心 Agent（内部 ID：review_center）
 
   18:00 - 评审中心重新审核
           判定："✅ 本次通过"
@@ -299,7 +299,7 @@ DAY 7：全部完成（比理想路径晚1-2天）
   "progress_log": [
     {
       "at": "2026-02-28T10:35:00Z",
-      "agent": "zhongshu",              // 汇报 Agent 内部 ID
+      "agent": "plan_center",              // 汇报 Agent 内部 ID
       "agentLabel": "规划中心",
       "text": "已接收任务。分析测试需求，拟定三层测试方案...",
       "state": "Zhongshu",              // 汇报时的状态快照（内部代号兼容历史实现）
@@ -372,18 +372,18 @@ _STATE_FLOW = {
 }
 ```
 
-每个状态自动关联 Agent ID（见 `_STATE_AGENT_MAP`；显示名称由现代中文体系映射，内部 ID 兼容历史实现）：
+每个状态自动关联 Agent ID（见 `_STATE_AGENT_MAP`；显示名称与内部 ID 均采用现代命名体系，无历史兼容别名）：
 
 ```python
 _STATE_AGENT_MAP = {
-    'Taizi':    'taizi',
-    'Zhongshu': 'zhongshu',
-    'Menxia':   'menxia',
-    'Assigned': 'shangshu',
+    'Taizi':    'control_center',
+    'Zhongshu': 'plan_center',
+    'Menxia':   'review_center',
+    'Assigned': 'dispatch_center',
     'Doing':    None,      # 从 org 推断（专业执行组之一）
     'Next':     None,      # 从 org 推断
-    'Review':   'shangshu',
-    'Pending':  'zhongshu',
+    'Review':   'dispatch_center',
+    'Pending':  'plan_center',
 }
 ```
 
@@ -398,10 +398,10 @@ _STATE_AGENT_MAP = {
    └─ 若无法推断则跳过派发（如 Done / Cancelled）
 
 2. 构造派发消息（针对性促使对应 Agent 立即进入处理）
-   ├─ taizi: "📜 新任务已进入总控中心，请完成预处理并明确目标..."
-   ├─ zhongshu: "📜 任务已到规划中心，请完成拆解并形成执行方案..."
-   ├─ menxia: "📋 规划中心方案已提交评审，请完成审核并给出结论..."
-   ├─ shangshu: "📮 评审已通过，请启动调度与执行派发..."
+   ├─ control_center: "📜 新任务已进入总控中心，请完成预处理并明确目标..."
+   ├─ plan_center: "📜 任务已到规划中心，请完成拆解并形成执行方案..."
+   ├─ review_center: "📋 规划中心方案已提交评审，请完成审核并给出结论..."
+   ├─ dispatch_center: "📮 评审已通过，请启动调度与执行派发..."
    └─ 专业执行组: "📌 你已收到执行任务，请按分工处理并持续回报进展..."
 
 3. 后台异步派发（非阻塞）
@@ -436,27 +436,27 @@ _STATE_AGENT_MAP = {
 {
   "agents": [
     {
-      "id": "taizi",
+      "id": "control_center",
       "label": "总控中心",
-      "allowAgents": ["zhongshu"]
+      "allowAgents": ["plan_center"]
     },
     {
-      "id": "zhongshu",
+      "id": "plan_center",
       "label": "规划中心",
-      "allowAgents": ["menxia", "shangshu"]
+      "allowAgents": ["review_center", "dispatch_center"]
     },
     {
-      "id": "menxia",
+      "id": "review_center",
       "label": "评审中心",
-      "allowAgents": ["shangshu", "zhongshu"]
+      "allowAgents": ["dispatch_center", "plan_center"]
     },
     {
-      "id": "shangshu",
+      "id": "dispatch_center",
       "label": "调度中心",
-      "allowAgents": ["libu", "hubu", "bingbu", "xingbu", "gongbu", "libu_hr"]
+      "allowAgents": ["docs_specialist", "data_specialist", "code_specialist", "audit_specialist", "deploy_specialist", "admin_specialist"]
     },
     {
-      "id": "libu",
+      "id": "docs_specialist",
       "label": "文案专家",
       "allowAgents": []
     },
@@ -685,7 +685,7 @@ _scheduler = {
     
     # 派发追踪
     'lastDispatchStatus': 'success',  # queued|success|failed|timeout|gateway-offline|error
-    'lastDispatchAgent': 'zhongshu',
+    'lastDispatchAgent': 'plan_center',
     'lastDispatchTrigger': 'state-transition',
     'lastDispatchError': '',          # 错误堆栈（如有）
     
@@ -718,14 +718,14 @@ FOR EACH 任务:
   IF retryCount < maxRetry:
     ✅ 执行【重试】
     - increment retryCount
-    - `dispatch_for_state(task, new_state, trigger='taizi-scan-retry')`  # 触发器字符串保持兼容
+    - `dispatch_for_state(task, new_state, trigger='control-center-rescan')`
     - flow_log: "停滞180秒，触发自动重试第N次"
     - NEXT task
   
   IF escalationLevel < 2:
     ✅ 执行【升级】
     - nextLevel = escalationLevel + 1
-    - `target_agent = menxia`（L=1，评审中心内部 ID）否则 `shangshu`（L=2，调度中心内部 ID）
+    - `target_agent = review_center`（L=1，评审中心内部 ID）否则 `dispatch_center`（L=2，调度中心内部 ID）
     - `wake_agent(target_agent, "💬 任务停滞，请介入协调推进")`
     - flow_log: "升级至{target_agent}协调"
     - NEXT task
@@ -763,8 +763,8 @@ T+180:
   
   ✅ 阶段1：重试
   - retryCount: 0 → 1
-  - `dispatch_for_state('JJC-20260228-E2E', 'Zhongshu', trigger='taizi-scan-retry')`
-  - 派发消息发送到规划中心（内部仍由 `zhongshu` Agent 承接，可用于唤醒或重启）
+  - `dispatch_for_state('JJC-20260228-E2E', 'Zhongshu', trigger='control-center-rescan')`
+  - 派发消息发送到规划中心（内部由 `plan_center` Agent 承接，可用于唤醒或重启）
   - flow_log: "停滞180秒，自动重试第1次"
 
 T+ 240:
@@ -781,7 +781,7 @@ T+360 (若仍未恢复):
   
   ✅ 阶段2：升级
   - escalationLevel: 0 → 1
-  - `wake_agent('menxia', "💬 任务 JJC-20260228-E2E 停滞，规划中心无响应，请介入")`
+  - `wake_agent('review_center', "💬 任务 JJC-20260228-E2E 停滞，规划中心无响应，请介入")`
   - `flow_log`: “升级至评审中心协调”
   
   评审中心 Agent 被唤醒后，可以：
@@ -795,7 +795,7 @@ T+540 (若仍未解决):
   
   ✅ 阶段3：再次升级
   - escalationLevel: 1 → 2
-  - `wake_agent('shangshu', "💬 任务长期停滞，规划中心 + 评审中心均无法推进，请调度中心介入协调")`
+  - `wake_agent('dispatch_center', "💬 任务长期停滞，规划中心 + 评审中心均无法推进，请调度中心介入协调")`
   - `flow_log`: “升级至调度中心协调”
 
 T+720 (若仍未解决):
@@ -805,7 +805,7 @@ T+720 (若仍未解决):
   ✅ 阶段4：自动回滚
   - snapshot.state = 'Assigned' (前一个稳定状态)
   - task.state: Zhongshu → Assigned
-  - dispatch_for_state('JJC-20260228-E2E', 'Assigned', trigger='taizi-auto-rollback')
+  - dispatch_for_state('JJC-20260228-E2E', 'Assigned', trigger='control-center-auto-rollback')
   - `flow_log`: “连续停滞，自动回滚到 Assigned，由调度中心重新派发”
   
   结果：
@@ -860,7 +860,7 @@ GET /api/task-activity/JJC-20260228-E2E
     "block": "无",
     "priority": "normal"
   },
-  "agentId": "shangshu",
+  "agentId": "dispatch_center",
   "agentLabel": "调度中心",
   
   // ── 完整活动流（59条示例）──
@@ -878,7 +878,7 @@ GET /api/task-activity/JJC-20260228-E2E
       "at": "2026-02-28T10:35:00Z",
       "kind": "progress",
       "text": "已接旨。分析测试需求，拟定三层测试方案...",
-      "agent": "zhongshu",
+      "agent": "plan_center",
       "agentLabel": "规划中心",
       "state": "Zhongshu",
       "org": "规划中心",
@@ -895,7 +895,7 @@ GET /api/task-activity/JJC-20260228-E2E
         {"id": "2", "title": "方案设计", "status": "in-progress"},
         {"id": "3", "title": "等待评审", "status": "not-started"}
       ],
-      "agent": "zhongshu",
+      "agent": "plan_center",
       "diff": {
         "changed": [{"id": "2", "from": "not-started", "to": "in-progress"}],
         "added": [],
@@ -926,7 +926,7 @@ GET /api/task-activity/JJC-20260228-E2E
   ],
   
   "activitySource": "progress+session",
-  "relatedAgents": ["taizi", "zhongshu", "menxia"],
+  "relatedAgents": ["control_center", "plan_center", "review_center"],
   "phaseDurations": [
     {
       "phase": "总控中心",
@@ -979,7 +979,7 @@ GET /api/task-activity/JJC-20260228-E2E
   "message": "JJC-20260228-E2E 已推进到下一阶段 (已自动派发 Agent)",
   "oldState": "Zhongshu",
   "newState": "Menxia",
-  "targetAgent": "menxia"
+  "targetAgent": "review_center"
 }
 ```
 
@@ -1042,7 +1042,7 @@ python3 scripts/kanban_update.py state \
 # 效果：
 # - task.state = Menxia
 # - task.org 自动推断为 "门下省"
-# - 触发派发 menxia agent
+# - 触发派发 review_center agent
 # - flow_log 记录转移
 ```
 
@@ -1184,18 +1184,18 @@ if task_seems_done:
 **分层协作的“严格”方式**
 ```python
 # 任务状态严格受限，下一步由系统决定
-if task.state == 'Zhongshu' and agent_id == 'zhongshu':
+if task.state == 'Zhongshu' and agent_id == 'plan_center':
     # 只能做Zhongshu该做的事（起草方案）
-    deliver_plan_to_menxia()
+    deliver_plan_to_review_center()
     
     # 状态转移只能通过API，不能绕过
     # 中书不能直接转尚书，必须经过门下审议
     
     # 若想绕过门下审议
     try:
-        dispatch_to(shangshu)  # ❌ 权限检查拦截
+        dispatch_to(dispatch_center)  # ❌ 权限检查拦截
     except PermissionError:
-        log.error(f'zhongshu 无权越权调用 shangshu')
+        log.error(f'plan_center 无权越权调用 dispatch_center')
 ```
 
 ---
@@ -1235,7 +1235,7 @@ if task.state == 'Zhongshu' and agent_id == 'zhongshu':
 
 ### 场景2：Agent作恶（伪造数据）
 
-假设 `zhongshu` agent 想骗过系统：
+假设 `plan_center` agent 想骗过系统：
 
 ```python
 # 尝试伪造评审中心的审核通过（直接改 JSON）
@@ -1247,13 +1247,13 @@ task['flow_log'].append({
 
 # 系统防御：
 # 1. 权限验证：API 层检查 HTTP 请求者身份
-#    ├─ 来自 zhongshu agent 的请求不能直接 flow
+#    ├─ 来自 plan_center agent 的请求不能直接 flow
 #    ├─ 必须通过 flow_log 记录，且签名验证
 #    └─ 签名不匹配则拒绝
 # 2. 状态机验证：状态转移受控
 #    ├─ 即使 flow_log 被篡改，state 仍然是 Zhongshu
 #    ├─ 下一步只能由 gate-keeper 系统转移
-#    └─ zhongshu 无权自己改 state
+#    └─ plan_center 无权自己改 state
 
 # 结果：❌ Agent 的伪造被系统拦截
 ```
@@ -1263,17 +1263,17 @@ task['flow_log'].append({
 ```python
 # 规划中心想绕过评审中心审议，直接咨询调度中心
 try:
-    result = dispatch_to_agent('shangshu', '请帮我审查一下这个方案')
+    result = dispatch_to_agent('dispatch_center', '请帮我审查一下这个方案')
 except PermissionError:
     # ❌ 权限矩阵拦截
-    log.error('zhongshu 无权调用 shangshu (仅限: menxia, shangshu)')
+    log.error('plan_center 无权调用 dispatch_center (仅限: review_center, dispatch_center)')
 
 # 评审中心想升级到总控中心
 try:
-    result = dispatch_to_agent('taizi', '我需要总控中心进一步指示')
+    result = dispatch_to_agent('control_center', '我需要总控中心进一步指示')
 except PermissionError:
     # ❌ 权限矩阵拦截
-    log.error('menxia 无权调用 taizi')
+    log.error('review_center 无权调用 control_center')
 ```
 
 ---
@@ -1362,7 +1362,7 @@ GET /api/agents-status
   },
   "agents": [
     {
-      "id": "taizi",
+      "id": "control_center",
       "label": "总控中心",
       "status": "running",        // running|idle|offline|unconfigured
       "statusLabel": "🟢 运行中",

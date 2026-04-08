@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""同步各 Agent 统计数据 → data/officials_stats.json"""
+"""同步各 Agent 总览统计数据 → data/agents_overview.json"""
 import json
 import pathlib
 import datetime
 import logging
 from file_lock import atomic_json_write
 
-log = logging.getLogger('officials')
+log = logging.getLogger('agents_overview')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(message)s', datefmt='%H:%M:%S')
 
 BASE = pathlib.Path(__file__).resolve().parent.parent
@@ -26,21 +26,21 @@ MODEL_PRICING = {
     'google/gemini-2.5-pro':        {'in':1.25,'out':10.0, 'cr':0,    'cw':0},
 }
 
-LEGACY_OFFICIALS = [
-    {'id':'taizi',   'label':'总控中心',     'role':'总控专家',     'group':'总控中心',   'rank':'核心枢纽'},
-    {'id':'zhongshu','label':'规划中心',     'role':'规划专家',     'group':'流程中枢',   'rank':'核心节点'},
-    {'id':'menxia',  'label':'评审中心',     'role':'评审专家',     'group':'流程中枢',   'rank':'核心节点'},
-    {'id':'shangshu','label':'调度中心',     'role':'调度专家',     'group':'流程中枢',   'rank':'核心节点'},
-    {'id':'libu',    'label':'文案专家',     'role':'文案专家',     'group':'专业执行组', 'rank':'专业专家'},
-    {'id':'hubu',    'label':'数据专家',     'role':'数据专家',     'group':'专业执行组', 'rank':'专业专家'},
-    {'id':'bingbu',  'label':'代码专家',     'role':'代码专家',     'group':'专业执行组', 'rank':'专业专家'},
-    {'id':'xingbu',  'label':'合规专家',     'role':'合规专家',     'group':'专业执行组', 'rank':'专业专家'},
-    {'id':'gongbu',  'label':'部署专家',     'role':'部署专家',     'group':'专业执行组', 'rank':'专业专家'},
-    {'id':'libu_hr', 'label':'Agent管理专家','role':'Agent管理专家','group':'专业执行组', 'rank':'专业专家'},
-    {'id':'zaochao', 'label':'晨报中心',     'role':'晨报专家',     'group':'支持中心',   'rank':'支持节点'},
+DEFAULT_AGENTS = [
+    {'id':'control_center',  'label':'总控中心',       'role':'总控中心值守 Agent', 'group':'总控中心',   'rank':'核心枢纽'},
+    {'id':'plan_center',     'label':'规划中心',       'role':'规划中心 Agent',     'group':'流程中枢',   'rank':'核心节点'},
+    {'id':'review_center',   'label':'评审中心',       'role':'评审中心 Agent',     'group':'流程中枢',   'rank':'核心节点'},
+    {'id':'dispatch_center', 'label':'调度中心',       'role':'调度中心 Agent',     'group':'流程中枢',   'rank':'核心节点'},
+    {'id':'docs_specialist', 'label':'文案专家',       'role':'文案专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
+    {'id':'data_specialist', 'label':'数据专家',       'role':'数据专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
+    {'id':'code_specialist', 'label':'代码专家',       'role':'代码专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
+    {'id':'audit_specialist','label':'合规专家',       'role':'合规专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
+    {'id':'deploy_specialist','label':'部署专家',      'role':'部署专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
+    {'id':'admin_specialist','label':'Agent管理专家',  'role':'Agent管理专家',      'group':'专业执行组', 'rank':'专业专家'},
+    {'id':'search_specialist','label':'搜索专家',      'role':'全网搜索 Agent',     'group':'支持中心',   'rank':'支持节点'},
 ]
 
-CONTROL_CENTER_ALIAS = {'taizi', 'main'}
+CONTROL_CENTER_ALIAS = {'control_center'}
 _OPENCLAW_CACHE = None
 
 
@@ -72,10 +72,6 @@ def get_model(agent_id):
     for a in cfg.get('agents', {}).get('list', []):
         if a.get('id') == agent_id:
             return normalize_model(a.get('model', default), default)
-    if agent_id == 'taizi':
-        for a in cfg.get('agents', {}).get('list', []):
-            if a.get('id') == 'main':
-                return normalize_model(a.get('model', default), default)
     return default
 
 
@@ -90,7 +86,7 @@ def load_agent_profiles():
         agent_id = str(agent.get('id') or '').strip()
         if not agent_id:
             continue
-        canonical_id = 'taizi' if agent_id in CONTROL_CENTER_ALIAS else agent_id
+        canonical_id = 'control_center' if agent_id in CONTROL_CENTER_ALIAS else agent_id
         if canonical_id in seen:
             continue
         seen.add(canonical_id)
@@ -110,16 +106,14 @@ def load_agent_profiles():
         })
 
     if not profiles:
-        profiles = LEGACY_OFFICIALS
+        profiles = DEFAULT_AGENTS
 
-    profiles.sort(key=lambda item: (0 if item['id'] == 'taizi' else 1, item['group'], item['label']))
+    profiles.sort(key=lambda item: (0 if item['id'] == 'control_center' else 1, item['group'], item['label']))
     return profiles
 
 
 def scan_agent(agent_id):
     session_roots = [agent_id]
-    if agent_id == 'taizi':
-        session_roots = ['taizi', 'main']
 
     tin = tout = cr = cw = 0
     last_ts = None
@@ -189,7 +183,7 @@ def calc_cost(s, model):
 
 def matches_agent(task, agent_id):
     source_agent_id = str(task.get('sourceMeta', {}).get('agentId') or '')
-    if agent_id == 'taizi':
+    if agent_id == 'control_center':
         return source_agent_id in CONTROL_CENTER_ALIAS
     return source_agent_id == agent_id
 
@@ -206,7 +200,7 @@ def get_task_stats(agent_id, tasks):
         'tasks_active': len(active),
         'tasks_blocked': blocked,
         'flow_participations': flow_logs,
-        'participated_edicts': participated,
+        'participated_tasks': participated,
     }
 
 
@@ -214,7 +208,7 @@ def get_agent_live(agent_id, live):
     live_tasks = live.get('tasks', []) if isinstance(live, dict) else []
     for item in live.get('agentStatuses', []) if isinstance(live, dict) else []:
         current_id = item.get('agentId')
-        if agent_id == 'taizi' and current_id in CONTROL_CENTER_ALIAS:
+        if agent_id == 'control_center' and current_id in CONTROL_CENTER_ALIAS:
             return item
         if current_id == agent_id:
             return item
@@ -242,14 +236,14 @@ def get_agent_live(agent_id, live):
             'blockedTaskIds': [],
         },
         'realtime': {
-            'tier': 'highest' if agent_id == 'taizi' else 'standard',
-            'keepRealtimeByDefault': agent_id == 'taizi',
+            'tier': 'highest' if agent_id == 'control_center' else 'standard',
+            'keepRealtimeByDefault': agent_id == 'control_center',
             'heartbeatSeconds': 15,
             'staleAfterSeconds': 45,
         },
         'systemRepair': {
             'scope': [],
-            'onlyLongRunning': agent_id == 'taizi',
+            'onlyLongRunning': agent_id == 'control_center',
             'activeTaskIds': [],
         },
         'runtimePolicy': {
@@ -301,7 +295,7 @@ def main():
             'tasks_active': task_stats['tasks_active'],
             'tasks_blocked': task_stats['tasks_blocked'],
             'flow_participations': task_stats['flow_participations'],
-            'participated_edicts': task_stats['participated_edicts'],
+            'participated_tasks': task_stats['participated_tasks'],
             'queue': queue,
             'realtime': realtime,
             'systemRepair': system_repair,
@@ -333,12 +327,12 @@ def main():
     payload = {
         'generatedAt': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'productName': '多Agent智作中枢',
-        'officials': result,
+        'agents': result,
         'totals': totals,
-        'top_official': top.get('label', ''),
+        'top_agent': top.get('label', ''),
         'runtimeSummary': live.get('runtimeSummary', {}),
     }
-    atomic_json_write(DATA / 'officials_stats.json', payload)
+    atomic_json_write(DATA / 'agents_overview.json', payload)
     log.info(f'{len(result)} agents | cost=¥{totals["cost_cny"]} | top={top.get("label","")}')
 
 

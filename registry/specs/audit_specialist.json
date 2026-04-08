@@ -1,0 +1,116 @@
+{
+  "schemaVersion": "1.0.0",
+  "productName": "多Agent智作中枢",
+  "agentId": "audit_specialist",
+  "display": {
+    "label": "审计专家",
+    "roleName": "审计专家",
+    "group": "专家执行组",
+    "expertCategory": "审计专家",
+    "summary": "审核、审计追踪与风险控制",
+    "icon": "⚖️"
+  },
+  "identity": {
+    "positioning": "作为专家执行组下的审计专家，负责对应专业域的具体执行。",
+    "coreResponsibilities": [
+      "承担审核、审计追踪与风险控制",
+      "在关键节点更新看板状态与进展",
+      "按允许的协作关系进行转交、回退或汇报"
+    ],
+    "directHandleScope": [
+      "审计专家"
+    ],
+    "mustEscalateScope": [
+      "超出本角色职责的任务",
+      "需要跨角色协作的任务"
+    ],
+    "systemRepairScope": [],
+    "upstream": [],
+    "downstream": [
+      "dispatch_center"
+    ],
+    "handoffRule": "默认按允许协作关系进行转交；阻塞或超边界任务必须及时回退或升级。",
+    "tone": "直接、稳定、清晰，避免封建化措辞。"
+  },
+  "routing": {
+    "acceptTaskTypes": [
+      "审计专家",
+      "通用任务"
+    ],
+    "rejectTaskTypes": [],
+    "preferredSources": [],
+    "allowedTargets": [
+      "dispatch_center"
+    ],
+    "fallbackTargets": [
+      "dispatch_center"
+    ],
+    "priorityClass": "standard"
+  },
+  "runtimePolicy": {
+    "executionMode": "serial",
+    "maxConcurrentTasks": 1,
+    "realtimeTier": "standard",
+    "keepRealtimeByDefault": false,
+    "allowLongRunningExecution": false,
+    "directHandleScope": [],
+    "systemRepairScope": [],
+    "systemRepairOnlyLongRunning": false,
+    "heartbeatSeconds": 15,
+    "staleAfterSeconds": 45,
+    "queueStrategy": "single-agent-single-task"
+  },
+  "soulGeneration": {
+    "mode": "full_document",
+    "autoGenerate": true,
+    "source": "agent_registry_spec",
+    "targetFile": "SOUL.md",
+    "templateVersion": "1.0.0",
+    "mustIncludeSections": [
+      "角色定义",
+      "核心职责",
+      "任务处理流程",
+      "看板操作",
+      "实时进展上报",
+      "异常与阻塞处理",
+      "语气"
+    ],
+    "commandReferences": [
+      "python3 scripts/kanban_update.py create <id> \"<标题>\" <state> <org> <owner>",
+      "python3 scripts/kanban_update.py state <id> <state> \"<说明>\"",
+      "python3 scripts/kanban_update.py flow <id> \"<from>\" \"<to>\" \"<remark>\"",
+      "python3 scripts/kanban_update.py done <id> \"<output>\" \"<summary>\"",
+      "python3 scripts/kanban_update.py progress <id> \"<当前在做什么>\" \"<计划1✅|计划2🔄|计划3>\"",
+      "python3 scripts/kanban_update.py todo <id> <todo_id> \"<title>\" <status> --detail \"<产出详情>\""
+    ],
+    "styleGuide": {
+      "tone": "中文、直接、清晰、便于Agent执行",
+      "keepFullSoul": true,
+      "avoidFeudalWording": true
+    }
+  },
+  "deployment": {
+    "projectSourcePath": "agents/audit_specialist/SOUL.md",
+    "workspaceTargetPath": "/home/ubuntu/.openclaw/workspace-audit_specialist/soul.md",
+    "legacyTargets": [],
+    "deployOnSync": true,
+    "writeSpecSidecar": true,
+    "writeGeneratedSoulSnapshot": true,
+    "syncScripts": true
+  },
+  "visibility": {
+    "showInDashboard": true,
+    "showInRegistry": true,
+    "tags": [
+      "多Agent智作中枢",
+      "专家执行组",
+      "审计专家"
+    ]
+  },
+  "metadata": {
+    "generatedBy": "scripts/sync_agent_config.py",
+    "updatedAt": "2026-04-08 03:01:43",
+    "workspace": "/home/ubuntu/.openclaw/workspace-audit_specialist",
+    "model": "unknown"
+  }
+}

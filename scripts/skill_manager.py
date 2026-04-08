@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """
-三省六部 · Skill 管理工具
+Center/Specialist · Skill 管理工具
 支持从本地或远程 URL 添加、更新、查看和移除 skills
 
 Usage:
-  python3 scripts/skill_manager.py add-remote --agent zhongshu --name code_review \\
-    --source https://raw.githubusercontent.com/org/skills/main/code_review/SKILL.md \\
+  python3 scripts/skill_manager.py add-remote --agent plan_center --name code_review \
+    --source https://raw.githubusercontent.com/org/skills/main/code_review/SKILL.md \
     --description "代码审查"
   
   python3 scripts/skill_manager.py list-remote
   
-  python3 scripts/skill_manager.py update-remote --agent zhongshu --name code_review
+  python3 scripts/skill_manager.py update-remote --agent plan_center --name code_review
   
-  python3 scripts/skill_manager.py remove-remote --agent zhongshu --name code_review
+  python3 scripts/skill_manager.py remove-remote --agent plan_center --name code_review
   
-  python3 scripts/skill_manager.py import-official-hub --agents zhongshu,menxia,shangshu
+  python3 scripts/skill_manager.py import-official-hub --agents plan_center,review_center,dispatch_center
 """
+
 import sys
 import json
 import pathlib
@@ -246,12 +247,12 @@ OFFICIAL_SKILLS_HUB = {
 }
 
 SKILL_AGENT_MAPPING = {
-    'code_review': ('bingbu', 'xingbu', 'menxia'),
-    'api_design': ('bingbu', 'gongbu', 'menxia'),
-    'security_audit': ('xingbu', 'menxia'),
-    'data_analysis': ('hubu', 'menxia'),
-    'doc_generation': ('libu', 'menxia'),
-    'test_framework': ('gongbu', 'xingbu', 'menxia'),
+    'code_review': ('code_specialist', 'audit_specialist', 'review_center'),
+    'api_design': ('code_specialist', 'deploy_specialist', 'review_center'),
+    'security_audit': ('audit_specialist', 'review_center'),
+    'data_analysis': ('data_specialist', 'review_center'),
+    'doc_generation': ('docs_specialist', 'review_center'),
+    'test_framework': ('deploy_specialist', 'audit_specialist', 'review_center'),
 }
 
 
@@ -273,7 +274,7 @@ def import_official_hub(agent_ids: list) -> bool:
         # 确定目标 agents
         target_agents = agent_ids
         if not agent_ids:
-            target_agents = SKILL_AGENT_MAPPING.get(skill_name, ['menxia'])
+            target_agents = SKILL_AGENT_MAPPING.get(skill_name, ['review_center'])
         
         print(f'\n📥 正在导入 skill: {skill_name}')
         print(f'   目标 agents: {", ".join(target_agents)}')
@@ -312,7 +313,7 @@ def import_official_hub(agent_ids: list) -> bool:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='三省六部 Skill 管理工具', 
+    parser = argparse.ArgumentParser(description='Center/Specialist Skill 管理工具', 
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     subparsers = parser.add_subparsers(dest='cmd', help='命令')
     

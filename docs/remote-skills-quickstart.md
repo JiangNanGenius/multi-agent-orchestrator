@@ -7,23 +7,23 @@
 ```bash
 # 确保你在项目根目录
 python3 dashboard/server.py
-# 输出: 三省六部看板启动 → http://127.0.0.1:7891
+# 输出: Edict 看板启动 → http://127.0.0.1:7891
 ```
 
 ### 2. 添加官方 Skill（CLI）
 
 ```bash
-# 为中书省添加代码审查 skill
+# 为规划中心添加代码审查 skill
 python3 scripts/skill_manager.py add-remote \
-  --agent zhongshu \
+  --agent plan_center \
   --name code_review \
   --source https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/code_review/SKILL.md \
   --description "代码审查能力"
 
 # 输出:
 # ⏳ 正在从 https://raw.githubusercontent.com/... 下载...
-# ✅ 技能 code_review 已添加到 zhongshu
-#    路径: /Users/xxx/.openclaw/workspace-zhongshu/skills/code_review/SKILL.md
+# ✅ 技能 code_review 已添加到 plan_center
+#    路径: /Users/xxx/.openclaw/workspace-plan_center/skills/code_review/SKILL.md
 #    大小: 2048 字节
 ```
 
@@ -37,7 +37,7 @@ python3 scripts/skill_manager.py list-remote
 # 
 # Agent       | Skill 名称           | 描述                           | 添加时间
 # ------------|----------------------|--------------------------------|----------
-# zhongshu    | code_review          | 代码审查能力                   | 2026-03-02
+# plan_center | code_review          | 代码审查能力                   | 2026-03-02
 ```
 
 ### 4. 查看 API 响应
@@ -51,10 +51,10 @@ curl http://localhost:7891/api/remote-skills-list | jq .
 #   "remoteSkills": [
 #     {
 #       "skillName": "code_review",
-#       "agentId": "zhongshu",
+#       "agentId": "plan_center",
 #       "sourceUrl": "https://raw.githubusercontent.com/...",
 #       "description": "代码审查能力",
-#       "localPath": "/Users/xxx/.openclaw/workspace-zhongshu/skills/code_review/SKILL.md",
+#       "localPath": "/Users/xxx/.openclaw/workspace-plan_center/skills/code_review/SKILL.md",
 #       "addedAt": "2026-03-02T14:30:00Z",
 #       "lastUpdated": "2026-03-02T14:30:00Z",
 #       "status": "valid"
@@ -73,28 +73,28 @@ curl http://localhost:7891/api/remote-skills-list | jq .
 
 ```bash
 python3 scripts/skill_manager.py import-official-hub \
-  --agents zhongshu,menxia,shangshu,bingbu,xingbu
+  --agents plan_center,review_center,dispatch_center,code_specialist,audit_specialist
 ```
 
 这会自动为每个 agent 添加：
-- **zhongshu**: code_review, api_design, doc_generation
-- **menxia**: code_review, api_design, security_audit, data_analysis, doc_generation, test_framework
-- **shangshu**: 同 menxia（协调者）
-- **bingbu**: code_review, api_design, test_framework
-- **xingbu**: code_review, security_audit, test_framework
+- **plan_center**: code_review, api_design, doc_generation
+- **review_center**: code_review, api_design, security_audit, data_analysis, doc_generation, test_framework
+- **dispatch_center**: 与 review_center 类似，用于协调执行侧技能装配
+- **code_specialist**: code_review, api_design, test_framework
+- **audit_specialist**: code_review, security_audit, test_framework
 
 ### 更新某个 Skill 到最新版本
 
 ```bash
 python3 scripts/skill_manager.py update-remote \
-  --agent zhongshu \
+  --agent plan_center \
   --name code_review
 
 # 输出:
 # ⏳ 正在从 https://raw.githubusercontent.com/... 下载...
-# ✅ 技能 code_review 已添加到 zhongshu
+# ✅ 技能 code_review 已添加到 plan_center
 # ✅ 技能已更新
-#    路径: /Users/xxx/.openclaw/workspace-zhongshu/skills/code_review/SKILL.md
+#    路径: /Users/xxx/.openclaw/workspace-plan_center/skills/code_review/SKILL.md
 #    大小: 2156 字节
 ```
 
@@ -102,11 +102,11 @@ python3 scripts/skill_manager.py update-remote \
 
 ```bash
 python3 scripts/skill_manager.py remove-remote \
-  --agent zhongshu \
+  --agent plan_center \
   --name code_review
 
 # 输出:
-# ✅ 技能 code_review 已从 zhongshu 移除
+# ✅ 技能 code_review 已从 plan_center 移除
 ```
 
 ---
@@ -119,7 +119,7 @@ python3 scripts/skill_manager.py remove-remote \
 2. 进入 🔧 **技能配置** 面板
 3. 点击 **➕ 添加远程 Skill** 按钮
 4. 填写表单：
-   - **Agent**: 从下拉列表选择（如 zhongshu）
+   - **Agent**: 从下拉列表选择（如 plan_center）
    - **Skill 名称**: 输入内部 ID 如 `code_review`
    - **远程 URL**: 粘贴 GitHub URL 如 `https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/code_review/SKILL.md`
    - **中文描述**: 可选，如 `代码审查能力`
@@ -193,7 +193,7 @@ git push -u origin main
 
 ```bash
 python3 scripts/skill_manager.py add-remote \
-  --agent zhongshu \
+  --agent plan_center \
   --name my_skill \
   --source https://raw.githubusercontent.com/yourname/my-skills-hub/main/my_skill/SKILL.md \
   --description "我的定制技能"
@@ -212,7 +212,7 @@ python3 scripts/skill_manager.py add-remote \
 curl -X POST http://localhost:7891/api/add-remote-skill \
   -H "Content-Type: application/json" \
   -d '{
-    "agentId": "zhongshu",
+    "agentId": "plan_center",
     "skillName": "code_review",
     "sourceUrl": "https://raw.githubusercontent.com/...",
     "description": "代码审查"
@@ -223,11 +223,11 @@ curl -X POST http://localhost:7891/api/add-remote-skill \
 ```json
 {
   "ok": true,
-  "message": "技能 code_review 已从远程源添加到 zhongshu",
+  "message": "技能 code_review 已从远程源添加到 plan_center",
   "skillName": "code_review",
-  "agentId": "zhongshu",
+  "agentId": "plan_center",
   "source": "https://raw.githubusercontent.com/...",
-  "localPath": "/Users/xxx/.openclaw/workspace-zhongshu/skills/code_review/SKILL.md",
+  "localPath": "/Users/xxx/.openclaw/workspace-plan_center/skills/code_review/SKILL.md",
   "size": 2048,
   "addedAt": "2026-03-02T14:30:00Z"
 }
@@ -248,10 +248,10 @@ curl http://localhost:7891/api/remote-skills-list
   "remoteSkills": [
     {
       "skillName": "code_review",
-      "agentId": "zhongshu",
+      "agentId": "plan_center",
       "sourceUrl": "https://raw.githubusercontent.com/...",
       "description": "代码审查能力",
-      "localPath": "/Users/xxx/.openclaw/workspace-zhongshu/skills/code_review/SKILL.md",
+      "localPath": "/Users/xxx/.openclaw/workspace-plan_center/skills/code_review/SKILL.md",
       "addedAt": "2026-03-02T14:30:00Z",
       "lastUpdated": "2026-03-02T14:30:00Z",
       "status": "valid"
@@ -270,7 +270,7 @@ curl http://localhost:7891/api/remote-skills-list
 curl -X POST http://localhost:7891/api/update-remote-skill \
   -H "Content-Type: application/json" \
   -d '{
-    "agentId": "zhongshu",
+    "agentId": "plan_center",
     "skillName": "code_review"
   }'
 ```
@@ -283,7 +283,7 @@ curl -X POST http://localhost:7891/api/update-remote-skill \
 curl -X POST http://localhost:7891/api/remove-remote-skill \
   -H "Content-Type: application/json" \
   -d '{
-    "agentId": "zhongshu",
+    "agentId": "plan_center",
     "skillName": "code_review"
   }'
 ```
@@ -323,7 +323,7 @@ description: 描述
 python3 scripts/skill_manager.py list-remote
 
 # 检查本地文件
-ls -la ~/.openclaw/workspace-zhongshu/skills/
+ls -la ~/.openclaw/workspace-plan_center/skills/
 ```
 
 ---

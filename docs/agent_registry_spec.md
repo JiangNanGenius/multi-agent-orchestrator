@@ -38,7 +38,7 @@
 |---|---|---|
 | `schemaVersion` | string | 规范版本号 |
 | `productName` | string | 产品名，固定为“多Agent智作中枢” |
-| `agentId` | string | 运行时兼容 ID，例如 `taizi`、`bingbu` |
+| `agentId` | string | 运行时唯一 ID，例如 `control_center`、`code_specialist` |
 | `display` | object | 用户可见名称、角色名、分组、简述 |
 | `identity` | object | 角色定位、职责、边界、协作关系 |
 | `routing` | object | 可接任务、可升级流转、可回退目标、优先级 |
@@ -52,7 +52,7 @@
 
 ### 4.1 display
 
-`display` 用于统一用户可见表达。它不改变运行时 `agent_id`，但决定看板、文档、管理页、注册中心和自动生成 SOUL 中的展示称呼。
+`display` 用于统一用户可见表达。它与运行时 `agentId` 保持一致的现代命名体系，并决定看板、文档、管理页、注册中心和自动生成 SOUL 中的展示称呼。
 
 | 字段 | 类型 | 说明 | 示例 |
 |---|---|---|---|
@@ -145,7 +145,6 @@
 |---|---|---|
 | `projectSourcePath` | string | 项目内 Agent 目录路径 |
 | `workspaceTargetPath` | string | `~/.openclaw/workspace-{agentId}/soul.md` |
-| `legacyTargets` | string[] | 兼容旧运行结构的补充路径 |
 | `deployOnSync` | boolean | 同步配置时是否自动部署 |
 | `writeSpecSidecar` | boolean | 是否写入 `.registry.json` 之类 sidecar |
 | `writeGeneratedSoulSnapshot` | boolean | 是否保留最近生成快照 |
@@ -161,7 +160,7 @@
 | 不直接修改 | 本次改造不自动写回、不覆盖 `openclaw.json` |
 | 可给建议 | 允许在文档中输出建议配置项、建议字段与接入说明 |
 | 项目侧落地 | Registry 规范、SOUL 快照、sidecar、`data/agent_config.json` 等均在项目侧维护 |
-| 保持兼容 | 若 `openclaw.json` 缺失，可回退读取项目内 `agents.json` 继续完成规范生成与部署 |
+| 项目兜底 | 若 `openclaw.json` 缺失，可读取项目内 `agents.json` 继续完成规范生成与部署，但仍只接受现代命名体系 |
 
 建议输出的内容应是“**建议配置**”而不是“**自动改写结果**”。例如，可以说明总控中心建议使用更高频心跳、所有 Agent 建议保持单 Agent 单任务串行策略、建议补充 registry sidecar 感知字段，但不应直接将这些内容写入 OpenClaw 主配置。
 
@@ -180,13 +179,13 @@
 
 ## 6. 推荐 JSON 示例
 
-下面给出总控中心的推荐规范对象示例。运行时 `agentId` 仍可保留 `taizi` 以兼容旧链路，但用户可见名称、分组、职责与运行策略都按新产品表达输出。
+下面给出总控中心的推荐规范对象示例。该示例直接使用现代命名体系，不再保留任何历史兼容字段或旧目录假设。
 
 ```json
 {
   "schemaVersion": "1.0.0",
   "productName": "多Agent智作中枢",
-  "agentId": "taizi",
+  "agentId": "control_center",
   "display": {
     "label": "总控中心",
     "roleName": "总控专家",
@@ -254,9 +253,8 @@
     ]
   },
   "deployment": {
-    "projectSourcePath": "agents/taizi/SOUL.md",
-    "workspaceTargetPath": "~/.openclaw/workspace-taizi/soul.md",
-    "legacyTargets": ["~/.openclaw/agents/main/SOUL.md"],
+    "projectSourcePath": "agents/control_center/SOUL.md",
+    "workspaceTargetPath": "~/.openclaw/workspace-control_center/soul.md",
     "deployOnSync": true,
     "writeSpecSidecar": true,
     "writeGeneratedSoulSnapshot": true,

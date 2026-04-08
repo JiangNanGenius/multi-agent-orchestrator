@@ -20,20 +20,47 @@ OPENCLAW_CFG = pathlib.Path.home() / '.openclaw' / 'openclaw.json'
 SCHEMA_VERSION = '1.0.0'
 SOUL_TEMPLATE_VERSION = '1.0.0'
 
-ID_LABEL = {
-    'taizi':    {'label': '总控中心',     'role': '总控专家',       'duty': '任务受理、首轮处理与异常升级',    'emoji': '🎛️'},
-    'main':     {'label': '总控中心',     'role': '总控专家',       'duty': '任务受理、首轮处理与异常升级',    'emoji': '🎛️'},  # 兼容旧配置
-    'zhongshu': {'label': '规划中心',     'role': '规划专家',       'duty': '任务拆解、方案生成与流程编排',    'emoji': '🧭'},
-    'menxia':   {'label': '评审中心',     'role': '评审专家',       'duty': '质量核验、约束检查与回退把关',    'emoji': '🔍'},
-    'shangshu': {'label': '调度中心',     'role': '调度专家',       'duty': '任务派发、升级协调与状态汇总',    'emoji': '📮'},
-    'libu':     {'label': '文案专家',     'role': '文案专家',       'duty': '文档撰写、汇报整理与表达优化',    'emoji': '📝'},
-    'hubu':     {'label': '数据专家',     'role': '数据专家',       'duty': '数据分析、成本评估与资源测算',    'emoji': '💰'},
-    'bingbu':   {'label': '代码专家',     'role': '代码专家',       'duty': '工程实现、缺陷修复与架构设计',    'emoji': '⚔️'},
-    'xingbu':   {'label': '合规专家',     'role': '合规专家',       'duty': '合规审查、审计追踪与风险控制',    'emoji': '⚖️'},
-    'gongbu':   {'label': '部署专家',     'role': '部署专家',       'duty': '基础设施、部署运维与环境处理',    'emoji': '🔧'},
-    'libu_hr':  {'label': 'Agent管理专家', 'role': 'Agent管理专家', 'duty': 'Agent 注册、培训、管理与配置维护', 'emoji': '👔'},
-    'zaochao':  {'label': '晨报中心',     'role': '晨报专家',       'duty': '每日新闻采集、简报整理与订阅推送', 'emoji': '📰'},
+DEFAULT_AGENT_META = {
+    'control_center':    {'label': '总控中心', 'role': '总控中心', 'duty': '任务受理、首轮处理、快速分流与异常升级', 'emoji': '🎛️'},
+    'plan_center':       {'label': '规划中心', 'role': '规划中心', 'duty': '任务拆解、方案生成与流程编排', 'emoji': '🧭'},
+    'review_center':     {'label': '评审中心', 'role': '评审中心', 'duty': '质量核验、约束检查与回退把关', 'emoji': '🔍'},
+    'dispatch_center':   {'label': '调度中心', 'role': '调度中心', 'duty': '任务派发、升级协调与状态汇总', 'emoji': '📮'},
+    'docs_specialist':   {'label': '文案专家', 'role': '文案专家', 'duty': '文档撰写、汇报整理与表达优化', 'emoji': '📝'},
+    'data_specialist':   {'label': '数据专家', 'role': '数据专家', 'duty': '数据分析、成本评估与资源测算', 'emoji': '💰'},
+    'code_specialist':   {'label': '代码专家', 'role': '代码专家', 'duty': '工程实现、缺陷修复与架构设计', 'emoji': '⚔️'},
+    'audit_specialist':  {'label': '审计专家', 'role': '审计专家', 'duty': '审核、审计追踪与风险控制', 'emoji': '⚖️'},
+    'deploy_specialist': {'label': '部署专家', 'role': '部署专家', 'duty': '基础设施、部署运维与环境处理', 'emoji': '🔧'},
+    'admin_specialist':  {'label': '管理专家', 'role': '管理专家', 'duty': 'Agent 注册、培训、管理与配置维护', 'emoji': '👔'},
+    'search_specialist': {'label': '搜索专家', 'role': '搜索专家', 'duty': '全网检索、资料汇总、线索筛选与搜索结果整理', 'emoji': '📰'},
 }
+
+MODERN_AGENT_ID_ORDER = [
+    'control_center',
+    'plan_center',
+    'review_center',
+    'dispatch_center',
+    'docs_specialist',
+    'data_specialist',
+    'code_specialist',
+    'audit_specialist',
+    'deploy_specialist',
+    'admin_specialist',
+    'search_specialist',
+]
+MODERN_AGENT_ID_SET = set(MODERN_AGENT_ID_ORDER)
+
+
+def is_specialist_agent(agent_id: str) -> bool:
+    return agent_id.endswith('_specialist')
+
+
+def is_center_agent(agent_id: str) -> bool:
+    return agent_id.endswith('_center')
+
+
+def _titleize_agent_token(text: str) -> str:
+    parts = [part for part in text.replace('-', '_').split('_') if part]
+    return ' '.join(part.capitalize() for part in parts) if parts else text
 
 KNOWN_MODELS = [
     {'id': 'anthropic/claude-sonnet-4-6', 'label': 'Claude Sonnet 4.6', 'provider': 'Anthropic'},
@@ -53,9 +80,11 @@ KNOWN_MODELS = [
 ]
 
 PRODUCT_NAME = '多Agent智作中枢'
-CONTROL_CENTER_IDS = {'taizi', 'main'}
-EXPERT_AGENT_IDS = {'libu', 'hubu', 'bingbu', 'xingbu', 'gongbu', 'libu_hr'}
-SUPPORT_CENTER_IDS = {'zaochao'}
+CONTROL_CENTER_IDS = {'control_center'}
+DEFAULT_CENTER_AGENT_IDS = {'control_center', 'plan_center', 'review_center', 'dispatch_center'}
+DEFAULT_SPECIALIST_AGENT_IDS = {'docs_specialist', 'data_specialist', 'code_specialist', 'audit_specialist', 'deploy_specialist', 'admin_specialist', 'search_specialist'}
+CENTER_AGENT_IDS = set(DEFAULT_CENTER_AGENT_IDS)
+SPECIALIST_AGENT_IDS = set(DEFAULT_SPECIALIST_AGENT_IDS)
 SYSTEM_REPAIR_SCOPE = [
     '修改 SOUL',
     '修改看板对接',
@@ -87,7 +116,7 @@ SOUL_REQUIRED_SECTIONS = [
 ]
 
 COMMAND_REFERENCES = [
-    'python3 scripts/kanban_update.py create <id> "<标题>" <state> <org> <official>',
+    'python3 scripts/kanban_update.py create <id> "<标题>" <state> <org> <owner>',
     'python3 scripts/kanban_update.py state <id> <state> "<说明>"',
     'python3 scripts/kanban_update.py flow <id> "<from>" "<to>" "<remark>"',
     'python3 scripts/kanban_update.py done <id> "<output>" "<summary>"',
@@ -96,18 +125,74 @@ COMMAND_REFERENCES = [
 ]
 
 
+def _has_required_soul_sections(text: str) -> bool:
+    """检查 SOUL 文档是否包含标准化部署所需的必需章节。"""
+    if not text:
+        return False
+    return all(section in text for section in SOUL_REQUIRED_SECTIONS)
+
+
+def _build_effective_soul_text(agent_id: str, source_text: str, spec: dict | None = None) -> str:
+    """生成可直接部署的 SOUL 文本。
+
+    若仓库中的正式 SOUL 已包含标准章节，则原样保留；
+    若仍是历史手写版本，则以前置标准骨架 + 原始细则附录的方式补齐，
+    避免在不删减原始提示词细节的前提下因结构缺失影响直接部署。
+    """
+    source_text = source_text or ''
+    if _has_required_soul_sections(source_text):
+        return source_text
+    spec = spec or {}
+    generated_text = render_soul_from_registry(spec) if spec else ''
+    if not generated_text:
+        return source_text
+    preserved = source_text.strip()
+    if not preserved:
+        return generated_text
+    return (
+        generated_text.rstrip()
+        + '\n\n---\n\n'
+        + '## 角色专用细则\n'
+        + '以下内容保留该角色原始提示词中的专用流程、领域规则与执行细节；部署时必须与上面的标准章节共同生效，不得删减。\n\n'
+        + preserved
+        + '\n'
+    )
+
+
+def _write_soul_validation_report(agents: list):
+    """输出 SOUL 完整性检查结果，便于部署前核对。"""
+    report = {
+        'generatedAt': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'requiredSections': SOUL_REQUIRED_SECTIONS,
+        'agents': [],
+    }
+    agents_dir = BASE / 'agents'
+    for agent in agents:
+        source_path = agents_dir / agent['id'] / 'SOUL.md'
+        source_text = source_path.read_text(encoding='utf-8', errors='ignore') if source_path.exists() else ''
+        missing = [section for section in SOUL_REQUIRED_SECTIONS if section not in source_text]
+        report['agents'].append({
+            'agentId': agent['id'],
+            'sourcePath': str(source_path),
+            'hasRequiredSections': not missing,
+            'missingSections': missing,
+            'deployStrategy': 'source' if not missing else 'generated_scaffold_plus_source',
+        })
+    atomic_json_write(REGISTRY / 'soul_validation_report.json', report)
+
+
 def classify_agent_group(agent_id: str) -> str:
     if agent_id in CONTROL_CENTER_IDS:
         return '总控中心'
-    if agent_id in EXPERT_AGENT_IDS:
-        return '专业执行组'
-    if agent_id in SUPPORT_CENTER_IDS:
-        return '支撑中心'
-    return '流程中枢'
+    if agent_id in CENTER_AGENT_IDS or is_center_agent(agent_id):
+        return '流程中心'
+    if agent_id in SPECIALIST_AGENT_IDS or is_specialist_agent(agent_id):
+        return '专家执行组'
+    return '协作节点'
 
 
 def infer_expert_category(agent_id: str, meta: dict) -> str:
-    if agent_id in EXPERT_AGENT_IDS:
+    if agent_id in SPECIALIST_AGENT_IDS or is_specialist_agent(agent_id):
         return meta.get('label', '')
     return ''
 
@@ -134,7 +219,7 @@ def build_registry_meta(agent_id: str, meta: dict) -> dict:
         'group': group,
         'groupLabel': group,
         'isControlCenter': agent_id in CONTROL_CENTER_IDS,
-        'isExpert': agent_id in EXPERT_AGENT_IDS,
+        'isExpert': agent_id in SPECIALIST_AGENT_IDS,
         'expertCategory': infer_expert_category(agent_id, meta),
         'supportsAutoDeploy': True,
         'soulMode': 'full_document',
@@ -150,20 +235,18 @@ def build_registry_meta(agent_id: str, meta: dict) -> dict:
 def build_identity(agent_id: str, meta: dict, allow_agents=None) -> dict:
     allow_agents = allow_agents or []
     is_control_center = agent_id in CONTROL_CENTER_IDS
-    is_expert = agent_id in EXPERT_AGENT_IDS
+    is_specialist = agent_id in SPECIALIST_AGENT_IDS or is_specialist_agent(agent_id)
     positioning = meta['duty']
     if is_control_center:
         positioning = '系统统一入口，负责受理任务、首轮处理、快速分流与异常升级。'
-    elif agent_id == 'zhongshu':
+    elif agent_id == 'plan_center':
         positioning = '负责拆解任务、制定方案并推动后续流程进入评审与执行。'
-    elif agent_id == 'menxia':
+    elif agent_id == 'review_center':
         positioning = '负责质量核验、约束检查与回退把关。'
-    elif agent_id == 'shangshu':
+    elif agent_id == 'dispatch_center':
         positioning = '负责任务派发、升级协调、汇总执行状态与结果。'
-    elif is_expert:
-        positioning = f'作为专业执行组下的{meta["label"]}，负责对应专业域的具体执行。'
-    elif agent_id == 'zaochao':
-        positioning = '负责新闻采集、晨报整理与订阅推送等支撑任务。'
+    elif is_specialist:
+        positioning = f'作为专家执行组下的{meta["label"]}，负责对应专业域的具体执行。'
     return {
         'positioning': positioning,
         'coreResponsibilities': [
@@ -191,6 +274,10 @@ def build_registry_spec(agent: dict) -> dict:
     allow_agents = agent.get('allowAgents', []) or []
     registry = agent.get('registry') or build_registry_meta(agent['id'], meta)
     runtime_policy = agent.get('runtimePolicy') or build_runtime_policy(agent['id'])
+    existing_spec = agent.get('existingSpec') or {}
+    existing_deployment = existing_spec.get('deployment') or {}
+    existing_visibility = existing_spec.get('visibility') or {}
+    existing_metadata = existing_spec.get('metadata') or {}
     group = registry.get('groupLabel') or classify_agent_group(agent['id'])
     return {
         'schemaVersion': SCHEMA_VERSION,
@@ -215,9 +302,9 @@ def build_registry_spec(agent: dict) -> dict:
         },
         'runtimePolicy': {
             **runtime_policy,
-            'heartbeatSeconds': 5 if runtime_policy.get('realtimeTier') == 'highest' else 15,
-            'staleAfterSeconds': 20 if runtime_policy.get('realtimeTier') == 'highest' else 45,
-            'queueStrategy': 'single-agent-single-task',
+            'heartbeatSeconds': runtime_policy.get('heartbeatSeconds', 5 if runtime_policy.get('realtimeTier') == 'highest' else 15),
+            'staleAfterSeconds': runtime_policy.get('staleAfterSeconds', 20 if runtime_policy.get('realtimeTier') == 'highest' else 45),
+            'queueStrategy': runtime_policy.get('queueStrategy', 'single-agent-single-task'),
         },
         'soulGeneration': {
             'mode': 'full_document',
@@ -234,20 +321,21 @@ def build_registry_spec(agent: dict) -> dict:
             },
         },
         'deployment': {
-            'projectSourcePath': f'agents/{agent["id"]}/SOUL.md',
-            'workspaceTargetPath': str(pathlib.Path.home() / f'.openclaw/workspace-{agent["id"]}' / 'soul.md'),
-            'legacyTargets': [str(pathlib.Path.home() / '.openclaw/agents/main/SOUL.md')] if agent['id'] in CONTROL_CENTER_IDS else [],
-            'deployOnSync': True,
-            'writeSpecSidecar': True,
-            'writeGeneratedSoulSnapshot': True,
-            'syncScripts': True,
+            'projectSourcePath': existing_deployment.get('projectSourcePath') or f'agents/{agent["id"]}/SOUL.md',
+            'workspaceTargetPath': existing_deployment.get('workspaceTargetPath') or str(pathlib.Path.home() / f'.openclaw/workspace-{agent["id"]}' / 'soul.md'),
+            'legacyTargets': [],
+            'deployOnSync': existing_deployment.get('deployOnSync', True),
+            'writeSpecSidecar': existing_deployment.get('writeSpecSidecar', True),
+            'writeGeneratedSoulSnapshot': existing_deployment.get('writeGeneratedSoulSnapshot', True),
+            'syncScripts': existing_deployment.get('syncScripts', True),
         },
         'visibility': {
-            'showInDashboard': True,
-            'showInRegistry': True,
-            'tags': [PRODUCT_NAME, group, agent['role']],
+            'showInDashboard': existing_visibility.get('showInDashboard', True),
+            'showInRegistry': existing_visibility.get('showInRegistry', True),
+            'tags': existing_visibility.get('tags', [PRODUCT_NAME, group, agent['role']]),
         },
         'metadata': {
+            **existing_metadata,
             'generatedBy': 'scripts/sync_agent_config.py',
             'updatedAt': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'workspace': agent.get('workspace', ''),
@@ -311,7 +399,7 @@ def render_soul_from_registry(spec: dict) -> str:
 - 若任务超出职责边界，必须及时转交，不得长期占用执行链路。
 - 若出现阻塞，必须明确说明原因、影响与所需协助。
 - 当前角色允许的系统性修复范围如下：
-{system_repair_text}
+''' + system_repair_text + f'''
 
 ## 运行约束
 - executionMode: {runtime_policy.get('executionMode', 'serial')}
@@ -319,7 +407,6 @@ def render_soul_from_registry(spec: dict) -> str:
 - keepRealtimeByDefault: {runtime_policy.get('keepRealtimeByDefault', False)}
 - allowLongRunningExecution: {runtime_policy.get('allowLongRunningExecution', False)}
 - queueStrategy: {runtime_policy.get('queueStrategy', 'single-agent-single-task')}
-
 ## 语气
 {identity.get('tone', '直接、稳定、清晰，便于 Agent 理解和执行。')}
 '''
@@ -328,6 +415,16 @@ def render_soul_from_registry(spec: dict) -> str:
 def write_registry_artifacts(agents: list):
     REGISTRY_SPECS.mkdir(parents=True, exist_ok=True)
     REGISTRY_GENERATED.mkdir(parents=True, exist_ok=True)
+    valid_agent_ids = {agent['id'] for agent in agents}
+
+    for stale_spec in REGISTRY_SPECS.glob('*.json'):
+        if stale_spec.stem not in valid_agent_ids:
+            stale_spec.unlink(missing_ok=True)
+    for stale_generated in REGISTRY_GENERATED.glob('*.SOUL.md'):
+        stale_agent_id = stale_generated.name[:-len('.SOUL.md')]
+        if stale_agent_id not in valid_agent_ids:
+            stale_generated.unlink(missing_ok=True)
+
     generated_count = 0
     for agent in agents:
         spec = build_registry_spec(agent)
@@ -356,6 +453,170 @@ def normalize_workspace_path(agent_id: str, workspace_value: str) -> str:
     if '<your_user>' in normalized or normalized.startswith('c:/users/'):
         return str(pathlib.Path.home() / f'.openclaw/workspace-{agent_id}')
     return workspace_value
+
+
+def discover_project_agent_ids() -> list[str]:
+    agents_dir = BASE / 'agents'
+    if not agents_dir.is_dir():
+        return []
+    return sorted(
+        item.name
+        for item in agents_dir.iterdir()
+        if item.is_dir() and (item / 'SOUL.md').exists()
+    )
+
+
+def load_existing_registry_spec(agent_id: str) -> dict:
+    spec_path = REGISTRY_SPECS / f'{agent_id}.json'
+    if not spec_path.exists():
+        return {}
+    try:
+        return json.loads(spec_path.read_text(encoding='utf-8'))
+    except Exception as e:
+        log.warning(f'cannot read registry spec for {agent_id}: {e}')
+        return {}
+
+
+def infer_agent_meta(agent_id: str, existing_spec: dict | None = None) -> dict:
+    if agent_id in DEFAULT_AGENT_META:
+        return DEFAULT_AGENT_META[agent_id].copy()
+    existing_spec = existing_spec or {}
+    display = existing_spec.get('display') or {}
+    label = display.get('label')
+    role = display.get('roleName')
+    duty = display.get('summary')
+    emoji = display.get('icon') or '🤖'
+    base_name = _titleize_agent_token(agent_id.removesuffix('_specialist').removesuffix('_center'))
+    if not label:
+        if is_specialist_agent(agent_id):
+            label = f'{base_name}专家'
+        elif is_center_agent(agent_id):
+            label = f'{base_name}中心'
+        else:
+            label = _titleize_agent_token(agent_id)
+    if not role:
+        role = label
+    if not duty:
+        if is_specialist_agent(agent_id):
+            duty = f'承担{base_name}相关执行、分析与交付工作'
+        elif is_center_agent(agent_id):
+            duty = f'承担{base_name}相关流程协调、分流与结果汇总'
+        else:
+            duty = f'承担{label}相关协作工作'
+    return {'label': label, 'role': role, 'duty': duty, 'emoji': emoji}
+
+
+def build_default_allow_agents(agent_id: str, candidate_ids: list[str]) -> list[str]:
+    candidate_set = set(candidate_ids)
+    specialists = [item for item in candidate_ids if is_specialist_agent(item)]
+    if agent_id == 'control_center':
+        return [item for item in ['plan_center'] if item in candidate_set]
+    if agent_id == 'plan_center':
+        return [item for item in ['review_center', 'dispatch_center'] if item in candidate_set]
+    if agent_id == 'review_center':
+        return [item for item in ['dispatch_center', 'plan_center'] if item in candidate_set]
+    if agent_id == 'dispatch_center':
+        seeds = ['plan_center', 'review_center', *specialists]
+        return [item for item in seeds if item in candidate_set and item != agent_id]
+    if is_specialist_agent(agent_id):
+        return [item for item in ['dispatch_center'] if item in candidate_set]
+    if is_center_agent(agent_id):
+        return [item for item in ['dispatch_center'] if item in candidate_set and item != agent_id]
+    return []
+
+
+def merge_allow_agents(agent_id: str, explicit_allow_agents, candidate_ids: list[str]) -> list[str]:
+    explicit_allow_agents = explicit_allow_agents or []
+    default_allow_agents = build_default_allow_agents(agent_id, candidate_ids)
+    merged = explicit_allow_agents[:]
+    if agent_id in {'control_center', 'plan_center', 'review_center', 'dispatch_center'}:
+        merged.extend(default_allow_agents)
+    elif not merged:
+        merged = default_allow_agents
+    candidate_set = set(candidate_ids)
+    ordered = []
+    for item in merged:
+        if item == agent_id or item not in candidate_set or item in ordered:
+            continue
+        ordered.append(item)
+    return ordered
+
+
+def merge_runtime_policy(agent_id: str, existing_spec: dict | None = None) -> dict:
+    base_policy = build_runtime_policy(agent_id)
+    spec_policy = (existing_spec or {}).get('runtimePolicy') or {}
+    return {**base_policy, **spec_policy}
+
+
+def merge_registry_meta(agent_id: str, meta: dict, existing_spec: dict | None = None) -> dict:
+    existing_spec = existing_spec or {}
+    base_meta = build_registry_meta(agent_id, meta)
+    existing_visibility = existing_spec.get('visibility') or {}
+    existing_metadata = existing_spec.get('metadata') or {}
+    if existing_visibility.get('tags'):
+        base_meta['tags'] = existing_visibility['tags']
+    if existing_metadata.get('source'):
+        base_meta['source'] = existing_metadata['source']
+    return base_meta
+
+
+def collect_candidate_agent_ids(agents_list: list[dict]) -> list[str]:
+    runtime_ids = {
+        str(item.get('id', '')).strip()
+        for item in agents_list
+        if isinstance(item, dict) and str(item.get('id', '')).strip()
+    }
+    unknown_runtime_ids = sorted(agent_id for agent_id in runtime_ids if agent_id not in MODERN_AGENT_ID_SET)
+    if unknown_runtime_ids:
+        log.warning('ignore legacy or unknown runtime agent ids: %s', ', '.join(unknown_runtime_ids))
+    return MODERN_AGENT_ID_ORDER[:]
+
+
+def resolve_runtime_workspace(agent_id: str, runtime_agent: dict, existing_spec: dict | None = None) -> str:
+    existing_spec = existing_spec or {}
+    workspace_value = runtime_agent.get('workspace') or (existing_spec.get('metadata') or {}).get('workspace') or ''
+    return normalize_workspace_path(agent_id, workspace_value)
+
+
+def extract_runtime_allow_agents(runtime_agent: dict, existing_spec: dict | None = None) -> list[str]:
+    if 'allowAgents' in runtime_agent:
+        return runtime_agent.get('allowAgents', []) or []
+    if runtime_agent.get('subagents'):
+        return runtime_agent.get('subagents', {}).get('allowAgents', []) or []
+    existing_spec = existing_spec or {}
+    return (existing_spec.get('routing') or {}).get('allowedTargets', []) or []
+
+
+def build_agent_entry(agent_id: str, runtime_agent: dict, default_model: str, candidate_ids: list[str]) -> dict:
+    existing_spec = load_existing_registry_spec(agent_id)
+    meta = infer_agent_meta(agent_id, existing_spec)
+    workspace = resolve_runtime_workspace(agent_id, runtime_agent, existing_spec)
+    allow_agents = merge_allow_agents(agent_id, extract_runtime_allow_agents(runtime_agent, existing_spec), candidate_ids)
+    runtime_policy = merge_runtime_policy(agent_id, existing_spec)
+    if is_center_agent(agent_id):
+        CENTER_AGENT_IDS.add(agent_id)
+    if is_specialist_agent(agent_id):
+        SPECIALIST_AGENT_IDS.add(agent_id)
+    return {
+        'id': agent_id,
+        'label': meta['label'],
+        'role': meta['role'],
+        'duty': meta['duty'],
+        'emoji': meta['emoji'],
+        'model': normalize_model(runtime_agent.get('model', default_model), default_model),
+        'defaultModel': default_model,
+        'workspace': workspace,
+        'skills': get_skills(workspace),
+        'allowAgents': allow_agents,
+        'registry': merge_registry_meta(agent_id, meta, existing_spec),
+        'runtimePolicy': runtime_policy,
+        'existingSpec': existing_spec,
+        'isDiscoveredFromProject': agent_id in discover_project_agent_ids(),
+    }
+
+
+def get_sync_target_ids(agents=None) -> list[str]:
+    return MODERN_AGENT_ID_ORDER[:]
 
 
 def load_runtime_agent_sources() -> tuple[dict, list]:
@@ -451,59 +712,13 @@ def main():
     agents_cfg = cfg.get('agents', {})
     default_model = normalize_model(agents_cfg.get('defaults', {}).get('model', {}), 'unknown')
     merged_models = _collect_openclaw_models(cfg)
+    candidate_ids = collect_candidate_agent_ids(agents_list)
+    runtime_agents_by_id = {item.get('id', ''): item for item in agents_list if item.get('id')}
 
-    result = []
-    seen_ids = set()
-    for ag in agents_list:
-        ag_id = ag.get('id', '')
-        if ag_id not in ID_LABEL:
-            continue
-        meta = ID_LABEL[ag_id]
-        workspace = normalize_workspace_path(ag_id, ag.get('workspace', str(pathlib.Path.home() / f'.openclaw/workspace-{ag_id}')))
-        if 'allowAgents' in ag:
-            allow_agents = ag.get('allowAgents', []) or []
-        else:
-            allow_agents = ag.get('subagents', {}).get('allowAgents', [])
-        result.append({
-            'id': ag_id,
-            'label': meta['label'], 'role': meta['role'], 'duty': meta['duty'], 'emoji': meta['emoji'],
-            'model': normalize_model(ag.get('model', default_model), default_model),
-            'defaultModel': default_model,
-            'workspace': workspace,
-            'skills': get_skills(workspace),
-            'allowAgents': allow_agents,
-            'registry': build_registry_meta(ag_id, meta),
-            'runtimePolicy': build_runtime_policy(ag_id),
-        })
-        seen_ids.add(ag_id)
-
-    # 补充不在 openclaw.json agents list 中的 agent（兼容旧版 main 与历史运行目录）
-    EXTRA_AGENTS = {
-        'taizi':   {'model': default_model, 'workspace': str(pathlib.Path.home() / '.openclaw/workspace-taizi'),
-                    'allowAgents': ['zhongshu']},
-        'main':    {'model': default_model, 'workspace': str(pathlib.Path.home() / '.openclaw/workspace-main'),
-                    'allowAgents': ['zhongshu','menxia','shangshu','hubu','libu','bingbu','xingbu','gongbu','libu_hr']},
-        'zaochao': {'model': default_model, 'workspace': str(pathlib.Path.home() / '.openclaw/workspace-zaochao'),
-                    'allowAgents': []},
-        'libu_hr': {'model': default_model, 'workspace': str(pathlib.Path.home() / '.openclaw/workspace-libu_hr'),
-                    'allowAgents': ['shangshu']},
-    }
-    for ag_id, extra in EXTRA_AGENTS.items():
-        if ag_id in seen_ids or ag_id not in ID_LABEL:
-            continue
-        meta = ID_LABEL[ag_id]
-        result.append({
-            'id': ag_id,
-            'label': meta['label'], 'role': meta['role'], 'duty': meta['duty'], 'emoji': meta['emoji'],
-            'model': extra['model'],
-            'defaultModel': default_model,
-            'workspace': extra['workspace'],
-            'skills': get_skills(extra['workspace']),
-            'allowAgents': extra['allowAgents'],
-            'isDefaultModel': True,
-            'registry': build_registry_meta(ag_id, meta),
-            'runtimePolicy': build_runtime_policy(ag_id),
-        })
+    result = [
+        build_agent_entry(agent_id, runtime_agents_by_id.get(agent_id, {}), default_model, candidate_ids)
+        for agent_id in candidate_ids
+    ]
 
     # 保留已有的 dispatchChannel 配置 (Fix #139)
     existing_cfg = {}
@@ -527,28 +742,14 @@ def main():
     DATA.mkdir(exist_ok=True)
     atomic_json_write(DATA / 'agent_config.json', payload)
     write_registry_artifacts(result)
+    _write_soul_validation_report(result)
     log.info(f'{len(result)} agents synced')
 
     # 自动部署 SOUL.md 到 workspace（如果项目里有更新）
     deploy_soul_files(result)
     # 同步 scripts/ 到各 workspace（保持 kanban_update.py 等最新）
-    sync_scripts_to_workspaces()
+    sync_scripts_to_workspaces(result)
 
-
-    # 项目 agents/ 目录名 → 运行时 agent_id 映射（保留旧目录名以兼容现有 OpenClaw 运行结构）
-_SOUL_DEPLOY_MAP = {
-    'taizi': 'taizi',
-    'zhongshu': 'zhongshu',
-    'menxia': 'menxia',
-    'shangshu': 'shangshu',
-    'libu': 'libu',
-    'hubu': 'hubu',
-    'bingbu': 'bingbu',
-    'xingbu': 'xingbu',
-    'gongbu': 'gongbu',
-    'libu_hr': 'libu_hr',
-    'zaochao': 'zaochao',
-}
 
 def _sync_script_symlink(src_file: pathlib.Path, dst_file: pathlib.Path) -> bool:
     """Create a symlink dst_file → src_file (resolved).
@@ -583,7 +784,7 @@ def _sync_script_symlink(src_file: pathlib.Path, dst_file: pathlib.Path) -> bool
     return True
 
 
-def sync_scripts_to_workspaces():
+def sync_scripts_to_workspaces(agents=None):
     """将项目 scripts/ 目录同步到各 agent workspace（保持 kanban_update.py 等最新）
 
     Uses symlinks so that ``__file__`` in workspace copies resolves to the
@@ -594,7 +795,7 @@ def sync_scripts_to_workspaces():
     if not scripts_src.is_dir():
         return
     synced = 0
-    for proj_name, runtime_id in _SOUL_DEPLOY_MAP.items():
+    for runtime_id in get_sync_target_ids(agents):
         ws_scripts = pathlib.Path.home() / f'.openclaw/workspace-{runtime_id}' / 'scripts'
         ws_scripts.mkdir(parents=True, exist_ok=True)
         for src_file in scripts_src.iterdir():
@@ -606,18 +807,7 @@ def sync_scripts_to_workspaces():
                     synced += 1
             except Exception:
                 continue
-    # also sync to workspace-main for legacy compatibility
-    ws_main_scripts = pathlib.Path.home() / '.openclaw/workspace-main/scripts'
-    ws_main_scripts.mkdir(parents=True, exist_ok=True)
-    for src_file in scripts_src.iterdir():
-        if src_file.suffix not in ('.py', '.sh') or src_file.stem.startswith('__'):
-            continue
-        dst_file = ws_main_scripts / src_file.name
-        try:
-            if _sync_script_symlink(src_file, dst_file):
-                synced += 1
-        except Exception:
-            pass
+
     if synced:
         log.info(f'{synced} script symlinks synced to workspaces')
 
@@ -625,7 +815,7 @@ def sync_scripts_to_workspaces():
 def deploy_soul_files(agents=None):
     """将项目 agents/xxx/SOUL.md 部署到 ~/.openclaw/workspace-xxx/soul.md，并写入 registry sidecar。 
 
-    当前阶段保留旧目录与 agent_id，以兼容现有 OpenClaw 串行执行结构；
+    当前阶段采用无兼容的一一对应目录与 agent_id；
     用户可见名称与职责定义由现代中文元数据统一输出。若正式 SOUL 文件尚不存在，
     则回退使用 registry 自动生成的 SOUL 快照完成首次部署。
     """
@@ -633,11 +823,13 @@ def deploy_soul_files(agents=None):
     deployed = 0
     agents = agents or []
     specs_by_id = {agent['id']: build_registry_spec(agent) for agent in agents}
-    for proj_name, runtime_id in _SOUL_DEPLOY_MAP.items():
-        src = agents_dir / proj_name / 'SOUL.md'
-        generated_src = REGISTRY_GENERATED / f'{proj_name}.SOUL.md'
+    for runtime_id in get_sync_target_ids(agents):
+        src = agents_dir / runtime_id / 'SOUL.md'
+        generated_src = REGISTRY_GENERATED / f'{runtime_id}.SOUL.md'
+        spec = specs_by_id.get(runtime_id)
         if src.exists():
-            src_text = src.read_text(encoding='utf-8', errors='ignore')
+            raw_src_text = src.read_text(encoding='utf-8', errors='ignore')
+            src_text = _build_effective_soul_text(runtime_id, raw_src_text, spec)
         elif generated_src.exists():
             src_text = generated_src.read_text(encoding='utf-8', errors='ignore')
         else:
@@ -651,19 +843,10 @@ def deploy_soul_files(agents=None):
         if src_text != dst_text:
             ws_dst.write_text(src_text, encoding='utf-8')
             deployed += 1
-        spec = specs_by_id.get(proj_name)
         if spec:
             sidecar = ws_dst.parent / '.registry.json'
             atomic_json_write(sidecar, spec)
-        if runtime_id == 'taizi':
-            ag_dst = pathlib.Path.home() / '.openclaw/agents/main/SOUL.md'
-            ag_dst.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                ag_text = ag_dst.read_text(encoding='utf-8', errors='ignore')
-            except FileNotFoundError:
-                ag_text = ''
-            if src_text != ag_text:
-                ag_dst.write_text(src_text, encoding='utf-8')
+
         sess_dir = pathlib.Path.home() / f'.openclaw/agents/{runtime_id}/sessions'
         sess_dir.mkdir(parents=True, exist_ok=True)
     if deployed:

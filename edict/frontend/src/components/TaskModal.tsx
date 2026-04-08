@@ -5,6 +5,7 @@ import type {
   Task,
   TaskActivityData,
   SchedulerStateData,
+  SchedulerInfo,
   ActivityEntry,
   TodoItem,
   PhaseDuration,
@@ -12,23 +13,23 @@ import type {
 
 const AGENT_LABELS: Record<string, string> = {
   main: '总控中心',
-  taizi: '总控中心',
-  zhongshu: '规划中心',
-  menxia: '评审中心',
-  shangshu: '调度中心',
-  libu: '文案专家',
-  hubu: '数据专家',
-  bingbu: '部署专家',
-  xingbu: '合规专家',
-  gongbu: '代码专家',
-  libu_hr: 'Agent管理专家',
-  zaochao: '情报简报',
+  control_center: '总控中心',
+  plan_center: '规划中心',
+  review_center: '评审中心',
+  dispatch_center: '调度中心',
+  code_specialist: '代码专家',
+  deploy_specialist: '部署专家',
+  data_specialist: '数据专家',
+  docs_specialist: '文案专家',
+  audit_specialist: '审计专家',
+  admin_specialist: '管理专家',
+  search_specialist: '搜索专家',
 };
 
 const NEXT_LABELS: Record<string, string> = {
-  Taizi: '转入规划中心拆解',
-  Zhongshu: '转入评审中心核验',
-  Menxia: '转入调度中心派发',
+  ControlCenter: '转入规划中心拆解',
+  PlanCenter: '转入评审中心核验',
+  ReviewCenter: '转入调度中心派发',
   Assigned: '开始执行',
   Doing: '进入汇总复核',
   Review: '完成交付',
@@ -53,6 +54,20 @@ function fmtActivityTime(ts: number | string | undefined): string {
   return String(ts).substring(0, 8);
 }
 
+function buildSchedulerForm(scheduler?: SchedulerInfo | null): Required<Pick<SchedulerInfo, 'enabled' | 'stallThresholdSec' | 'maxRetry' | 'autoRollback' | 'maxRollback'>> {
+  return {
+    enabled: scheduler?.enabled !== false,
+    stallThresholdSec: Math.max(60, Number(scheduler?.stallThresholdSec || 600)),
+    maxRetry: Math.max(0, Number(scheduler?.maxRetry ?? scheduler?.retryCount ?? 2)),
+    autoRollback: scheduler?.autoRollback !== false,
+    maxRollback: Math.max(0, Number(scheduler?.maxRollback ?? 3)),
+  };
+}
+
+function isAutomationFlowRemark(remark: string): boolean {
+  return remark.includes('自动') || remark.includes('重试') || remark.includes('升级') || remark.includes('回滚') || remark.includes('调度');
+}
+
 export default function TaskModal() {
   const modalTaskId = useStore((s) => s.modalTaskId);
   const setModalTaskId = useStore((s) => s.setModalTaskId);
@@ -62,6 +77,9 @@ export default function TaskModal() {
 
   const [activityData, setActivityData] = useState<TaskActivityData | null>(null);
   const [schedData, setSchedData] = useState<SchedulerStateData | null>(null);
+  const [schedForm, setSchedForm] = useState(buildSchedulerForm());
+  const [schedDirty, setSchedDirty] = useState(false);
+  const [schedSaving, setSchedSaving] = useState(false);
   const laTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -113,6 +131,16 @@ export default function TaskModal() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [activityData?.activity?.length]);
 
+  useEffect(() => {
+    if (!schedDirty) {
+      setSchedForm(buildSchedulerForm(schedData?.scheduler));
+    }
+  }, [schedData, schedDirty]);
+
+  useEffect(() => {
+    setSchedDirty(false);
+  }, [modalTaskId]);
+
   if (!modalTaskId || !task) return null;
 
   const close = () => setModalTaskId(null);
@@ -121,6 +149,7 @@ export default function TaskModal() {
   const activeStage = stages.find((s) => s.status === 'active');
   const hb = task.heartbeat || { status: 'unknown' as const, label: '⚪ 无数据' };
   const flowLog = task.flow_log || [];
+  const automationFlow = flowLog.filter((fl) => isAutomationFlowRemark(fl.remark || '')).slice().reverse();
   const todos = task.todos || [];
   const todoDone = todos.filter((x) => x.status === 'completed').length;
   const todoTotal = todos.length;
@@ -209,6 +238,42 @@ export default function TaskModal() {
     }
   };
 
+  const handleSchedField = (key: keyof typeof schedForm, value: boolean | number) => {
+    setSchedDirty(true);
+    setSchedForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const saveSchedConfig = async () => {
+    setSchedSaving(true);
+    try {
+      const payload: SchedulerInfo = {
+        enabled: !!schedForm.enabled,
+        stallThresholdSec: Math.max(60, Number(schedForm.stallThresholdSec || 600)),
+        maxRetry: Math.max(0, Number(schedForm.maxRetry || 0)),
+        autoRollback: !!schedForm.autoRollback,
+        maxRollback: Math.max(0, Number(schedForm.maxRollback || 0)),
+      };
+      const r = await api.schedulerConfig(task.id, payload);
+      if (r.ok) {
+        toast(r.message || '自动化配置已保存', 'ok');
+        setSchedDirty(false);
+        await fetchSched();
+        loadAll();
+      } else {
+        toast(r.error || '保存失败', 'err');
+      }
+    } catch {
+      toast('服务器连接失败', 'err');
+    } finally {
+      setSchedSaving(false);
+    }
+  };
+
+  const resetSchedForm = () => {
+    setSchedDirty(false);
+    setSchedForm(buildSchedulerForm(schedData?.scheduler));
+  };
+
   const handleStop = () => {
     const reason = prompt('请输入叫停原因（可留空）：');
     if (reason === null) return;
@@ -276,13 +341,13 @@ export default function TaskModal() {
             {canResume && (
               <button className="btn-action btn-resume" onClick={() => doTaskAction('resume', '恢复执行')}>▶️ 恢复执行</button>
             )}
-            {['Review', 'Menxia'].includes(task.state) && (
+            {['Review', 'ReviewCenter'].includes(task.state) && (
               <>
                 <button className="btn-action" style={{ background: '#2ecc8a22', color: '#2ecc8a', border: '1px solid #2ecc8a44' }} onClick={() => doReview('approve')}>✅ 通过评审</button>
                 <button className="btn-action" style={{ background: '#ff527022', color: '#ff5270', border: '1px solid #ff527044' }} onClick={() => doReview('reject')}>🚫 退回修订</button>
               </>
             )}
-            {['Pending', 'Taizi', 'Zhongshu', 'Menxia', 'Assigned', 'Doing', 'Review', 'Next'].includes(task.state) && (
+            {['Pending', 'ControlCenter', 'PlanCenter', 'ReviewCenter', 'Assigned', 'Doing', 'Review', 'Next'].includes(task.state) && (
               <button className="btn-action" style={{ background: '#7c5cfc18', color: '#7c5cfc', border: '1px solid #7c5cfc44' }} onClick={doAdvance}>⏩ 推进到下一步</button>
             )}
           </div>
@@ -297,7 +362,7 @@ export default function TaskModal() {
             </div>
             <div className="sched-grid">
               <div className="sched-kpi"><div className="k">停滞时长</div><div className="v">{fmtStalled(stalledSec)}</div></div>
-              <div className="sched-kpi"><div className="k">重试次数</div><div className="v">{sched?.retryCount || 0}</div></div>
+              <div className="sched-kpi"><div className="k">重试次数</div><div className="v">{sched?.retryCount || 0}/{sched?.maxRetry ?? '—'}</div></div>
               <div className="sched-kpi"><div className="k">升级级别</div><div className="v">{!sched?.escalationLevel ? '无' : sched.escalationLevel === 1 ? '评审中心' : '调度中心'}</div></div>
               <div className="sched-kpi"><div className="k">派发状态</div><div className="v">{sched?.lastDispatchStatus || 'idle'}</div></div>
             </div>
@@ -306,16 +371,82 @@ export default function TaskModal() {
                 {sched.lastProgressAt && <span>最近进展 {(sched.lastProgressAt || '').replace('T', ' ').substring(0, 19)}</span>}
                 {sched.lastDispatchAt && <span>最近派发 {(sched.lastDispatchAt || '').replace('T', ' ').substring(0, 19)}</span>}
                 <span>自动回滚 {sched.autoRollback === false ? '关闭' : '开启'}</span>
-                  {sched.lastDispatchAgent && <span>目标 {normalizeDeptLabel(AGENT_LABELS[sched.lastDispatchAgent] || sched.lastDispatchAgent)}</span>}
-
+                <span>最大回滚 {sched.maxRollback ?? 3} 次</span>
+                {sched.lastDispatchAgent && <span>目标 {normalizeDeptLabel(AGENT_LABELS[sched.lastDispatchAgent] || sched.lastDispatchAgent)}</span>}
               </div>
             )}
+            <div className="sched-form">
+              <div className="sched-form-grid">
+                <label className="sched-field sched-switch">
+                  <span className="sched-field-top">
+                    <span className="sched-label">启用自动托管</span>
+                    <input type="checkbox" checked={!!schedForm.enabled} onChange={(e) => handleSchedField('enabled', e.target.checked)} />
+                  </span>
+                  <span className="sched-help">关闭后，当前任务将跳过自动扫描、自动重试与自动升级。</span>
+                </label>
+                <label className="sched-field sched-switch">
+                  <span className="sched-field-top">
+                    <span className="sched-label">自动回滚</span>
+                    <input type="checkbox" checked={!!schedForm.autoRollback} onChange={(e) => handleSchedField('autoRollback', e.target.checked)} />
+                  </span>
+                  <span className="sched-help">当任务多次停滞后，允许系统恢复到最近稳定快照。</span>
+                </label>
+                <label className="sched-field">
+                  <span className="sched-label">停滞阈值（秒）</span>
+                  <input className="sched-input" type="number" min={60} step={60} value={schedForm.stallThresholdSec} onChange={(e) => handleSchedField('stallThresholdSec', Number(e.target.value || 60))} />
+                  <span className="sched-help">建议不低于 60 秒，用于判定任务多久未推进即视为停滞。</span>
+                </label>
+                <label className="sched-field">
+                  <span className="sched-label">最大重试次数</span>
+                  <input className="sched-input" type="number" min={0} step={1} value={schedForm.maxRetry} onChange={(e) => handleSchedField('maxRetry', Number(e.target.value || 0))} />
+                  <span className="sched-help">达到上限后，系统会转入升级协调或回滚流程。</span>
+                </label>
+                <label className="sched-field">
+                  <span className="sched-label">最大回滚次数</span>
+                  <input className="sched-input" type="number" min={0} step={1} value={schedForm.maxRollback} onChange={(e) => handleSchedField('maxRollback', Number(e.target.value || 0))} />
+                  <span className="sched-help">仅在开启自动回滚后生效，超出上限将自动挂起等待人工处理。</span>
+                </label>
+                <div className="sched-field sched-snapshot">
+                  <span className="sched-label">稳定快照</span>
+                  <div className="sched-snapshot-box">
+                    <div>状态：{sched?.snapshot?.state || '—'}</div>
+                    <div>节点：{normalizeDeptLabel(sched?.snapshot?.org || '') || '—'}</div>
+                    <div>保存时间：{sched?.snapshot?.savedAt ? sched.snapshot.savedAt.replace('T', ' ').substring(0, 19) : '—'}</div>
+                    <div>备注：{sched?.snapshot?.note || '—'}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="sched-actions sched-actions-config">
+                <button className="sched-btn primary" disabled={!schedDirty || schedSaving} onClick={saveSchedConfig}>{schedSaving ? '保存中...' : '💾 保存自动化配置'}</button>
+                <button className="sched-btn" disabled={!schedDirty || schedSaving} onClick={resetSchedForm}>还原改动</button>
+              </div>
+            </div>
             <div className="sched-actions">
               <button className="sched-btn" onClick={() => doSchedAction('retry')}>🔁 重试派发</button>
               <button className="sched-btn warn" onClick={() => doSchedAction('escalate')}>📣 升级协调</button>
               <button className="sched-btn danger" onClick={() => doSchedAction('rollback')}>↩️ 回滚稳定点</button>
               <button className="sched-btn" onClick={() => doSchedAction('scan')}>🔍 立即扫描</button>
             </div>
+            {automationFlow.length > 0 && (
+              <div className="auto-inline-log">
+                <div className="m-sec-label" style={{ marginBottom: 8 }}>自动动作日志（{automationFlow.length} 条）</div>
+                <div className="auto-inline-list">
+                  {automationFlow.slice(0, 8).map((fl, i) => (
+                    <div className="auto-inline-item" key={`${fl.at || 't'}-${i}`}>
+                      <div className="auto-inline-time">{fl.at ? fl.at.replace('T', ' ').substring(5, 19) : '—'}</div>
+                      <div className="auto-inline-main">
+                        <div className="auto-inline-route">
+                          <span style={{ color: deptColor(fl.from || '') }}>{normalizeDeptLabel(fl.from || '')}</span>
+                          <span style={{ color: 'var(--muted)' }}> → </span>
+                          <span style={{ color: deptColor(fl.to || '') }}>{normalizeDeptLabel(fl.to || '') || '当前节点'}</span>
+                        </div>
+                        <div className="auto-inline-remark">{normalizeFlowRemark(fl.remark || '')}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Todo List */}

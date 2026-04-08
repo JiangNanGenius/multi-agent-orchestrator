@@ -1,0 +1,41 @@
+flowchart TB
+    D[Dispatch Center / 调度中心]
+
+    subgraph E[Specialist Execution / 专业执行]
+      direction LR
+      S1[Code Specialist / 代码专家]
+      S2[Data Specialist / 数据专家]
+      S3[Docs Specialist / 文档专家]
+      S4[Search Specialist / 搜索专家]
+      S5[Deploy Specialist / 部署专家]
+    end
+
+    D --> S1
+    D --> S2
+    D --> S3
+    D --> S4
+    D --> S5
+
+    S1 --> X[Context Snapshot / 上下文整理压缩]
+    S2 --> X
+    S3 --> X
+    S4 --> X
+    S5 --> X
+    X --> A[Result Archive / 结果归档]
+    A --> C{Final QA Check / 最终交付检查}
+    C -->|Pass / 通过| O([Delivery / 最终交付])
+    C -->|Fix Needed / 需修复| R[Repair Loop / 继续修复]
+    R --> D
+    C -->|Decision Needed / 需确认| U[/Ask User / 询问用户/]
+    U --> D
+
+    classDef io fill:#0b3b2e,stroke:#34d399,color:#eafff7,stroke-width:1.5px;
+    classDef main fill:#0f172a,stroke:#60a5fa,color:#e5eefc,stroke-width:1.5px;
+    classDef specialist fill:#3b0764,stroke:#c084fc,color:#faf5ff,stroke-width:1.5px;
+    classDef decision fill:#3a2a05,stroke:#fbbf24,color:#fff8db,stroke-width:1.5px;
+    classDef action fill:#1f2937,stroke:#93c5fd,color:#eff6ff,stroke-width:1.5px;
+    class O io;
+    class D,A,X main;
+    class S1,S2,S3,S4,S5 specialist;
+    class C decision;
+    class R,U action;

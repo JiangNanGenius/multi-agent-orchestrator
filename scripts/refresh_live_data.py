@@ -14,7 +14,7 @@ DATA = BASE / 'data'
 DEFAULT_HEARTBEAT_SECONDS = 15
 DEFAULT_STALE_SECONDS = 45
 ACTIVE_STATES = {'Doing', 'Assigned', 'Review', 'Blocked'}
-CONTROL_CENTER_ALIAS = {'taizi', 'main'}
+CONTROL_CENTER_AGENT_ID = 'control_center'
 
 
 def output_meta(path):
@@ -61,10 +61,6 @@ def load_agent_runtime_map():
 def resolve_runtime_profile(agent_id, runtime_map):
     if agent_id in runtime_map:
         return runtime_map[agent_id]
-    if agent_id in CONTROL_CENTER_ALIAS:
-        for alias in CONTROL_CENTER_ALIAS:
-            if alias in runtime_map:
-                return runtime_map[alias]
     return {
         'id': agent_id or '',
         'label': agent_id or '未知Agent',
@@ -133,11 +129,6 @@ def build_agent_statuses(tasks, runtime_map):
     statuses = []
     for agent_id, profile in runtime_map.items():
         agent_tasks = grouped.get(agent_id, [])
-        if not agent_tasks and agent_id in CONTROL_CENTER_ALIAS:
-            for alias in CONTROL_CENTER_ALIAS:
-                if alias == agent_id:
-                    continue
-                agent_tasks.extend(grouped.get(alias, []))
         sorted_tasks = sorted(
             agent_tasks,
             key=lambda t: t.get('sourceMeta', {}).get('updatedAt') or 0,
@@ -253,8 +244,8 @@ def build_incremental_meta(tasks, previous_payload):
 
 
 def main():
-    officials_data = read_json(DATA / 'officials_stats.json', {})
-    officials = officials_data.get('officials', []) if isinstance(officials_data, dict) else officials_data
+    agents_overview = read_json(DATA / 'agents_overview.json', {})
+    agents = agents_overview.get('agents', []) if isinstance(agents_overview, dict) else agents_overview
     tasks = atomic_json_read(DATA / 'tasks_source.json', [])
     if not tasks:
         tasks = read_json(DATA / 'tasks.json', [])
@@ -264,7 +255,7 @@ def main():
     runtime_map = load_agent_runtime_map()
 
     org_map = {}
-    for o in officials:
+    for o in agents:
         label = o.get('label', o.get('name', ''))
         if label:
             org_map[label] = label
@@ -283,7 +274,7 @@ def main():
         per_agent_active_index.setdefault(agent_id, []).append(task.get('id'))
 
     for t in tasks:
-        t['org'] = t.get('org') or org_map.get(t.get('official', ''), '')
+        t['org'] = t.get('org') or org_map.get(t.get('owner') or t.get('official', ''), '')
         t['outputMeta'] = output_meta(t.get('output', ''))
 
         agent_id = t.get('sourceMeta', {}).get('agentId', '')
@@ -342,7 +333,7 @@ def main():
             lm = t.get('outputMeta', {}).get('lastModified')
             history.append({
                 'at': lm or '未知',
-                'official': t.get('official'),
+                'owner': t.get('owner') or t.get('official'),
                 'task': t.get('title'),
                 'out': t.get('output'),
                 'qa': '通过' if t.get('outputMeta', {}).get('exists') else '待补成果'
@@ -354,11 +345,11 @@ def main():
     payload = {
         'generatedAt': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'taskSource': 'tasks_source.json' if (DATA / 'tasks_source.json').exists() else 'tasks.json',
-        'officials': officials,
+        'agents': agents,
         'tasks': tasks,
         'history': history,
         'metrics': {
-            'officialCount': len(officials),
+            'agentCount': len(agents),
             'todayDone': today_done,
             'totalDone': total_done,
             'inProgress': in_progress,
@@ -374,7 +365,7 @@ def main():
         'runtimeSummary': {
             'serialExecutionModel': 'single-agent-single-task',
             'highestRealtimeAgentIds': [item.get('agentId') for item in agent_statuses if item.get('realtime', {}).get('tier') == 'highest'],
-            'systemRepairScope': runtime_map.get('taizi', runtime_map.get('main', {})).get('systemRepairScope', []),
+            'systemRepairScope': runtime_map.get(CONTROL_CENTER_AGENT_ID, {}).get('systemRepairScope', []),
         },
         'incremental': incremental,
     }

@@ -1,0 +1,20 @@
+flowchart TB
+    U([User / 用户]) --> I[Task Intake / 任务入口]
+    I --> C[Control Center / 总控中心]
+    C --> P[Planning Center / 规划中心]
+    P --> R[Review Center / 评审中心]
+    R --> D[Dispatch Center / 调度中心]
+
+    subgraph G[Governed Main Path / 治理主链路]
+      direction TB
+      I
+      C
+      P
+      R
+      D
+    end
+
+    classDef io fill:#0b3b2e,stroke:#34d399,color:#eafff7,stroke-width:1.5px;
+    classDef main fill:#0f172a,stroke:#60a5fa,color:#e5eefc,stroke-width:1.5px;
+    class U io;
+    class I,C,P,R,D main;

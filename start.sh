@@ -1,6 +1,6 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════
-# 三省六部 · 一键启动脚本
+# EDICT · 一键启动脚本
 # 同时启动看板服务器 + 数据刷新循环
 # ══════════════════════════════════════════════════════════════
 
@@ -25,8 +25,8 @@ done
 [ ! -f "$REPO_DIR/data/pending_model_changes.json" ] && echo '[]' > "$REPO_DIR/data/pending_model_changes.json"
 [ ! -f "$REPO_DIR/data/tasks_source.json" ] && echo '[]' > "$REPO_DIR/data/tasks_source.json"
 [ ! -f "$REPO_DIR/data/tasks.json" ] && echo '[]' > "$REPO_DIR/data/tasks.json"
-[ ! -f "$REPO_DIR/data/officials.json" ] && echo '[]' > "$REPO_DIR/data/officials.json"
-[ ! -f "$REPO_DIR/data/officials_stats.json" ] && echo '{}' > "$REPO_DIR/data/officials_stats.json"
+[ ! -f "$REPO_DIR/data/agents.json" ] && echo '[]' > "$REPO_DIR/data/agents.json"
+[ ! -f "$REPO_DIR/data/agents_overview.json" ] && echo '{}' > "$REPO_DIR/data/agents_overview.json"
 
 cleanup() {
   echo ""
@@ -40,7 +40,7 @@ trap cleanup SIGINT SIGTERM
 
 echo ""
 echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║  🏛️  三省六部 · 服务启动中               ║${NC}"
+echo -e "${BLUE}║  🏛️  EDICT · 服务启动中                  ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"
 echo ""
 

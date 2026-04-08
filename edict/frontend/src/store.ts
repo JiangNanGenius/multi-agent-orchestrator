@@ -4,109 +4,302 @@
  */
 
 import { create } from 'zustand';
+import { applyLocale, detectLocale, formatRelativeTime, persistLocale, type Locale } from './i18n';
 import {
   api,
   type Task,
   type LiveStatus,
   type AgentConfig,
-  type OfficialsData,
+  type AgentsOverviewData,
   type AgentsStatusData,
-  type MorningBrief,
+  type SearchBrief,
   type SubConfig,
   type ChangeLogEntry,
+  type SchedulerInfo,
 } from './api';
 
 // ── Pipeline Definition (PIPE) ──
 
 export const PIPE = [
-  { key: 'Inbox',    dept: '任务入口',   icon: '🗂️', action: '提交' },
-  { key: 'Taizi',    dept: '总控中心',   icon: '🎛️', action: '预处理' },
-  { key: 'Zhongshu', dept: '规划中心',   icon: '🧭', action: '拆解' },
-  { key: 'Menxia',   dept: '评审中心',   icon: '🔍', action: '核验' },
-  { key: 'Assigned', dept: '调度中心',   icon: '📮', action: '派发' },
-  { key: 'Doing',    dept: '专业执行组', icon: '⚙️', action: '执行' },
-  { key: 'Review',   dept: '调度中心',   icon: '🧾', action: '汇总' },
-  { key: 'Done',     dept: '结果报告',   icon: '✅', action: '交付' },
+  { key: 'Inbox',         dept: '任务入口',   deptEn: 'Inbox',              icon: '🗂️', action: '提交', actionEn: 'Submit' },
+  { key: 'ControlCenter', dept: '总控中心',   deptEn: 'Control Center',     icon: '🎛️', action: '统筹', actionEn: 'Coordinate' },
+  { key: 'PlanCenter',    dept: '规划中心',   deptEn: 'Plan Center',        icon: '🧭', action: '规划', actionEn: 'Plan' },
+  { key: 'ReviewCenter',  dept: '评审中心',   deptEn: 'Review Center',      icon: '🔍', action: '核验', actionEn: 'Review' },
+  { key: 'Assigned',      dept: '调度中心',   deptEn: 'Dispatch Center',    icon: '📮', action: '派发', actionEn: 'Dispatch' },
+  { key: 'Doing',         dept: '专业执行组', deptEn: 'Execution Team',     icon: '⚙️', action: '执行', actionEn: 'Execute' },
+  { key: 'Review',        dept: '调度中心',   deptEn: 'Dispatch Center',    icon: '🧾', action: '汇总', actionEn: 'Summarize' },
+  { key: 'Done',          dept: '结果归档',   deptEn: 'Result Archive',     icon: '✅', action: '归档', actionEn: 'Archive' },
 ] as const;
 
 export const PIPE_STATE_IDX: Record<string, number> = {
-  Inbox: 0, Pending: 0, Taizi: 1, Zhongshu: 2, Menxia: 3,
+  Inbox: 0, Pending: 0, ControlCenter: 1, PlanCenter: 2, ReviewCenter: 3,
   Assigned: 4, Doing: 5, Review: 6, Done: 7, Blocked: 5, Cancelled: 5, Next: 4,
 };
 
+export const AGENT_ARCHITECTURE = {
+  control_center: {
+    label: '总控中心',
+    labelEn: 'Control Center',
+    role: '全局统筹中心',
+    roleEn: 'Global Orchestration Hub',
+    rank: '核心中枢',
+    rankEn: 'Core Hub',
+    emoji: '🎛️',
+    color: '#e8a040',
+  },
+  plan_center: {
+    label: '规划中心',
+    labelEn: 'Plan Center',
+    role: '任务规划中心',
+    roleEn: 'Task Planning Center',
+    rank: '核心节点',
+    rankEn: 'Core Node',
+    emoji: '🧭',
+    color: '#a07aff',
+  },
+  review_center: {
+    label: '评审中心',
+    labelEn: 'Review Center',
+    role: '质量评审中心',
+    roleEn: 'Quality Review Center',
+    rank: '核心节点',
+    rankEn: 'Core Node',
+    emoji: '🔍',
+    color: '#6a9eff',
+  },
+  dispatch_center: {
+    label: '调度中心',
+    labelEn: 'Dispatch Center',
+    role: '调度协同中心',
+    roleEn: 'Dispatch Coordination Center',
+    rank: '核心节点',
+    rankEn: 'Core Node',
+    emoji: '📮',
+    color: '#6aef9a',
+  },
+  docs_specialist: {
+    label: '文案专家',
+    labelEn: 'Docs Specialist',
+    role: '内容文档专家',
+    roleEn: 'Content Documentation Specialist',
+    rank: '专业执行组',
+    rankEn: 'Execution Team',
+    emoji: '📝',
+    color: '#f5c842',
+  },
+  data_specialist: {
+    label: '数据专家',
+    labelEn: 'Data Specialist',
+    role: '数据分析专家',
+    roleEn: 'Data Analysis Specialist',
+    rank: '专业执行组',
+    rankEn: 'Execution Team',
+    emoji: '💰',
+    color: '#ff9a6a',
+  },
+  code_specialist: {
+    label: '代码专家',
+    labelEn: 'Code Specialist',
+    role: '工程实现专家',
+    roleEn: 'Engineering Implementation Specialist',
+    rank: '专业执行组',
+    rankEn: 'Execution Team',
+    emoji: '⚔️',
+    color: '#44aaff',
+  },
+  audit_specialist: {
+    label: '审计专家',
+    labelEn: 'Audit Specialist',
+    role: '审计审核专家',
+    roleEn: 'Audit Review Specialist',
+    rank: '专业执行组',
+    rankEn: 'Execution Team',
+    emoji: '⚖️',
+    color: '#cc4444',
+  },
+  deploy_specialist: {
+    label: '部署专家',
+    labelEn: 'Deploy Specialist',
+    role: '部署运维专家',
+    roleEn: 'Deployment Operations Specialist',
+    rank: '专业执行组',
+    rankEn: 'Execution Team',
+    emoji: '🔧',
+    color: '#ff5270',
+  },
+  admin_specialist: {
+    label: '管理专家',
+    labelEn: 'Admin Specialist',
+    role: '系统管理专家',
+    roleEn: 'System Administration Specialist',
+    rank: '专业执行组',
+    rankEn: 'Execution Team',
+    emoji: '👔',
+    color: '#9b59b6',
+  },
+  search_specialist: {
+    label: '搜索专家',
+    labelEn: 'Search Specialist',
+    role: '全网搜索专家',
+    roleEn: 'Web Search Specialist',
+    rank: '支撑能力',
+    rankEn: 'Support Function',
+    emoji: '🌐',
+    color: '#36cfc9',
+  },
+} as const;
+
+export type AgentArchitectureId = keyof typeof AGENT_ARCHITECTURE;
+
 export const DEPT_COLOR: Record<string, string> = {
-  '总控中心': '#e8a040', '规划中心': '#a07aff', '评审中心': '#6a9eff', '调度中心': '#6aef9a',
-  '文案专家': '#f5c842', '数据专家': '#ff9a6a', '代码专家': '#44aaff', '合规专家': '#cc4444',
-  '部署专家': '#ff5270', 'Agent管理专家': '#9b59b6', '情报简报': '#36cfc9', '晨报中心': '#36cfc9', '晨报专家': '#36cfc9',
-  '专业执行组': '#44aaff', '任务入口': '#ffd700', '结果报告': '#2ecc8a',
-  '太子': '#e8a040', '中书省': '#a07aff', '门下省': '#6a9eff', '尚书省': '#6aef9a',
-  '礼部': '#f5c842', '户部': '#ff9a6a', '兵部': '#ff5270', '刑部': '#cc4444',
-  '工部': '#44aaff', '吏部': '#9b59b6', '钦天监': '#36cfc9', '早朝官': '#36cfc9', '皇上': '#ffd700', '回奏': '#2ecc8a',
+  '任务入口': '#ffd700',
+  '专业执行组': '#44aaff',
+  '结果归档': '#2ecc8a',
+  ...Object.fromEntries(
+    Object.values(AGENT_ARCHITECTURE).map((meta) => [meta.label, meta.color])
+  ),
 };
 
-export const STATE_LABEL: Record<string, string> = {
-  Inbox: '待受理', Pending: '待处理', Taizi: '总控处理中', Zhongshu: '规划处理中',
-  Menxia: '评审处理中', Assigned: '已派发', Doing: '执行中', Review: '汇总复核中',
-  Done: '已交付', Blocked: '阻塞', Cancelled: '已取消', Next: '待执行',
-};
+export const AGENT_LABEL_TO_ID: Record<string, AgentArchitectureId> = Object.fromEntries(
+  Object.entries(AGENT_ARCHITECTURE).flatMap(([id, meta]) => [
+    [id, id],
+    [meta.label, id],
+    [meta.labelEn, id],
+    [meta.role, id],
+    [meta.roleEn, id],
+  ])
+) as Record<string, AgentArchitectureId>;
 
-export const LEGACY_DEPT_ALIAS: Record<string, string> = {
-  '皇上': '任务发起人',
-  '太子': '总控中心',
-  '中书省': '规划中心',
-  '门下省': '评审中心',
-  '尚书省': '调度中心',
-  '礼部': '文案专家',
-  '户部': '数据专家',
-  '兵部': '代码专家',
-  '刑部': '合规专家',
-  '工部': '部署专家',
-  '吏部': 'Agent管理专家',
-  '钦天监': '晨报中心',
-  '早朝官': '晨报中心',
-  '六部': '专业执行组',
-  '回奏': '结果报告',
-};
+export function agentMetaById(id: string) {
+  return AGENT_ARCHITECTURE[id as AgentArchitectureId];
+}
+
+export function agentMetaByLabel(label: string) {
+  const id = AGENT_LABEL_TO_ID[label];
+  return id ? AGENT_ARCHITECTURE[id] : undefined;
+}
+
+export function normalizeAgentId(input: string): string {
+  if (!input) return input;
+  return AGENT_LABEL_TO_ID[input] || input;
+}
 
 export function normalizeDeptLabel(label: string): string {
-  return LEGACY_DEPT_ALIAS[label] || label;
+  if (!label) return label;
+  const meta = agentMetaByLabel(label) || agentMetaById(label);
+  return meta?.label || label;
+}
+
+export function deptMeta(input: string, locale: Locale = 'zh') {
+  const meta = agentMetaByLabel(input) || agentMetaById(input);
+  if (!meta) {
+    return {
+      id: input,
+      label: input,
+      role: input,
+      rank: '',
+      emoji: '🧩',
+      color: '#6a9eff',
+    };
+  }
+  return {
+    id: normalizeAgentId(input),
+    label: locale === 'en' ? meta.labelEn : meta.label,
+    role: locale === 'en' ? meta.roleEn : meta.role,
+    rank: locale === 'en' ? meta.rankEn : meta.rank,
+    emoji: meta.emoji,
+    color: meta.color,
+  };
+}
+
+export function deptMetaZh(id: string) {
+  const meta = agentMetaById(id);
+  if (!meta) return undefined;
+  return { label: meta.label, role: meta.role, rank: meta.rank, emoji: meta.emoji, color: meta.color };
+}
+
+export function deptMetaEn(id: string) {
+  const meta = agentMetaById(id);
+  if (!meta) return undefined;
+  return { label: meta.labelEn, role: meta.roleEn, rank: meta.rankEn, emoji: meta.emoji, color: meta.color };
 }
 
 export function deptColor(d: string): string {
-  return DEPT_COLOR[normalizeDeptLabel(d)] || DEPT_COLOR[d] || '#6a9eff';
+  return deptMeta(d).color;
 }
 
 export function normalizeFlowRemark(text: string): string {
   if (!text) return text;
   return text
-    .replace(/皇上/g, '任务发起人')
-    .replace(/太子/g, '总控中心')
-    .replace(/中书省/g, '规划中心')
-    .replace(/门下省/g, '评审中心')
-    .replace(/尚书省/g, '调度中心')
-    .replace(/礼部/g, '文案专家')
-    .replace(/户部/g, '数据专家')
-    .replace(/兵部/g, '代码专家')
-    .replace(/刑部/g, '合规专家')
-    .replace(/工部/g, '部署专家')
-    .replace(/吏部/g, 'Agent管理专家')
-    .replace(/钦天监/g, '晨报中心')
-    .replace(/早朝官/g, '晨报中心')
-    .replace(/六部/g, '专业执行组')
-    .replace(/圣旨/g, '任务单')
-    .replace(/旨意/g, '任务单')
-    .replace(/奏折/g, '结果报告')
-    .replace(/军机处/g, '协作中枢')
-    .replace(/准奏/g, '通过')
-    .replace(/封驳/g, '退回');
+    .replace(/结果报告/g, '结果归档')
+    .replace(/Result report/g, 'Result archive')
+    .replace(/Agent管理专家/g, '管理专家')
+    .replace(/全网搜索简报/g, '全网搜索简报');
 }
 
-export function stateLabel(t: Task): string {
+export const DEPTS = Object.entries(AGENT_ARCHITECTURE).map(([id, meta]) => ({
+  id,
+  label: meta.label,
+  emoji: meta.emoji,
+  role: meta.role,
+  rank: meta.rank,
+}));
+
+export const DEPT_ALIAS: Record<string, string> = Object.fromEntries(
+  Object.entries(AGENT_ARCHITECTURE).flatMap(([id, meta]) => [
+    [id, meta.label],
+    [meta.label, meta.label],
+    [meta.role, meta.label],
+  ])
+);
+
+export function normalizeDeptLabelLegacySafe(label: string): string {
+  return normalizeDeptLabel(label);
+}
+
+
+export const STATE_LABEL: Record<string, string> = {
+  Inbox: '待受理',
+  Pending: '待处理',
+  ControlCenter: '总控处理中',
+  PlanCenter: '规划处理中',
+  ReviewCenter: '评审处理中',
+  Assigned: '已派发',
+  Doing: '执行中',
+  Review: '汇总复核中',
+  Done: '已交付',
+  Blocked: '阻塞',
+  Cancelled: '已取消',
+  Next: '待执行',
+};
+
+
+export function stateLabel(t: Task, locale: Locale = 'zh'): string {
   const r = t.review_round || 0;
-  if (t.state === 'Menxia' && r > 1) return `评审复核（第${r}轮）`;
-  if (t.state === 'Zhongshu' && r > 0) return `规划修订（第${r}轮）`;
+  if (locale === 'en') {
+    if (t.state === 'ReviewCenter' && r > 1) return `Review Round ${r}`;
+    if (t.state === 'PlanCenter' && r > 0) return `Plan Revision ${r}`;
+    return STATE_LABEL_EN[t.state] || t.state;
+  }
+  if (t.state === 'ReviewCenter' && r > 1) return `评审复核（第${r}轮）`;
+  if (t.state === 'PlanCenter' && r > 0) return `规划修订（第${r}轮）`;
   return STATE_LABEL[t.state] || t.state;
 }
+
+export const STATE_LABEL_EN: Record<string, string> = {
+  Inbox: 'Queued',
+  Pending: 'Pending',
+  ControlCenter: 'Under Control Review',
+  PlanCenter: 'Planning',
+  ReviewCenter: 'Reviewing',
+  Assigned: 'Assigned',
+  Doing: 'In Progress',
+  Review: 'Final Review',
+  Done: 'Delivered',
+  Blocked: 'Blocked',
+  Cancelled: 'Cancelled',
+  Next: 'Up Next',
+};
 
 export function isEdict(t: Task): boolean {
   return /^JJC-/i.test(t.id || '');
@@ -122,48 +315,141 @@ export function isArchived(t: Task): boolean {
 
 export type PipeStatus = { key: string; dept: string; icon: string; action: string; status: 'done' | 'active' | 'pending' };
 
-export function getPipeStatus(t: Task): PipeStatus[] {
+export function getPipeStatus(t: Task, locale: Locale = 'zh'): PipeStatus[] {
   const stateIdx = PIPE_STATE_IDX[t.state] ?? 4;
   return PIPE.map((stage, i) => ({
-    ...stage,
+    key: stage.key,
+    icon: stage.icon,
+    dept: locale === 'en' ? stage.deptEn : stage.dept,
+    action: locale === 'en' ? stage.actionEn : stage.action,
     status: (i < stateIdx ? 'done' : i === stateIdx ? 'active' : 'pending') as 'done' | 'active' | 'pending',
   }));
+}
+
+export function getTaskScheduler(t: Task): SchedulerInfo | undefined {
+  return (t as Task & { _scheduler?: SchedulerInfo })._scheduler;
+}
+
+export function getSchedulerSummary(t: Task, locale: Locale = 'zh'): { tone: 'ok' | 'warn' | 'danger' | 'muted'; icon: string; label: string; detail: string } {
+  const sched = getTaskScheduler(t);
+  if (!sched) {
+    return locale === 'en'
+      ? { tone: 'muted', icon: '🧭', label: 'Not Configured', detail: 'Task-level automation is not configured yet' }
+      : { tone: 'muted', icon: '🧭', label: '未配置', detail: '尚未生成任务级自动化配置' };
+  }
+  if (sched.enabled === false) {
+    return locale === 'en'
+      ? { tone: 'muted', icon: '⏸', label: 'Manual Control', detail: 'Automation is disabled for this task' }
+      : { tone: 'muted', icon: '⏸', label: '人工托管', detail: '已关闭自动托管' };
+  }
+  const escalationLevel = Number(sched.escalationLevel || 0);
+  const retryCount = Number(sched.retryCount || 0);
+  const maxRetry = Number(sched.maxRetry ?? 2);
+  const rollbackCount = Number(sched.rollbackCount || 0);
+  const maxRollback = Number(sched.maxRollback ?? 3);
+  const status = String(sched.lastDispatchStatus || 'idle');
+
+  if (rollbackCount > 0) {
+    return locale === 'en'
+      ? {
+          tone: 'danger',
+          icon: '↩️',
+          label: 'Rolled Back',
+          detail: `Rollback triggered ${rollbackCount}/${maxRollback} time(s)`,
+        }
+      : {
+          tone: 'danger',
+          icon: '↩️',
+          label: '已回滚',
+          detail: `已触发回滚 ${rollbackCount}/${maxRollback} 次`,
+        };
+  }
+  if (escalationLevel > 0) {
+    return locale === 'en'
+      ? {
+          tone: 'danger',
+          icon: '📣',
+          label: escalationLevel === 1 ? 'Escalated to Review' : 'Escalated to Dispatch',
+          detail: escalationLevel === 1 ? 'Escalated to review center for coordination' : 'Escalated to dispatch center for coordination',
+        }
+      : {
+          tone: 'danger',
+          icon: '📣',
+          label: escalationLevel === 1 ? '升级评审' : '升级调度',
+          detail: escalationLevel === 1 ? '已升级到评审中心协调' : '已升级到调度中心协调',
+        };
+  }
+  if (retryCount > 0) {
+    return locale === 'en'
+      ? {
+          tone: 'warn',
+          icon: '🔁',
+          label: 'Retrying',
+          detail: `Auto retried ${retryCount}/${maxRetry} time(s)`,
+        }
+      : {
+          tone: 'warn',
+          icon: '🔁',
+          label: '自动重试中',
+          detail: `已自动重试 ${retryCount}/${maxRetry} 次`,
+        };
+  }
+  if (status && status !== 'idle') {
+    return locale === 'en'
+      ? {
+          tone: 'ok',
+          icon: '⚙️',
+          label: 'Automation Active',
+          detail: `Last dispatch status: ${status}`,
+        }
+      : {
+          tone: 'ok',
+          icon: '⚙️',
+          label: '自动托管中',
+          detail: `最近派发状态：${status}`,
+        };
+  }
+  return locale === 'en'
+    ? {
+        tone: 'ok',
+        icon: '🟢',
+        label: 'Automation Healthy',
+        detail: `Stall threshold ${Number(sched.stallThresholdSec || 600)} sec`,
+      }
+    : {
+        tone: 'ok',
+        icon: '🟢',
+        label: '自动托管正常',
+        detail: `停滞阈值 ${Number(sched.stallThresholdSec || 600)} 秒`,
+      };
 }
 
 // ── Tabs ──
 
 export type TabKey =
-  | 'edicts' | 'monitor' | 'officials' | 'models'
-  | 'skills' | 'sessions' | 'memorials' | 'templates' | 'morning' | 'court';
+  | 'tasks' | 'monitor' | 'agents' | 'models'
+  | 'skills' | 'sessions' | 'archives' | 'templates' | 'web_search' | 'court' | 'automation';
 
-export const TAB_DEFS: { key: TabKey; label: string; icon: string }[] = [
-  { key: 'edicts',    label: '任务看板', icon: '📋' },
-  { key: 'court',     label: '协同讨论', icon: '🏛️' },
-  { key: 'monitor',   label: '运行监控', icon: '🔌' },
-  { key: 'officials', label: 'Agent 总览', icon: '👔' },
-  { key: 'models',    label: '模型配置', icon: '🤖' },
-  { key: 'skills',    label: '技能配置', icon: '🎯' },
-  { key: 'sessions',  label: '快速任务', icon: '💬' },
-  { key: 'memorials', label: '结果归档', icon: '🗄️' },
-  { key: 'templates', label: '模板中心', icon: '📋' },
-  { key: 'morning',   label: '晨报中心', icon: '🌅' },
+export const TAB_DEFS: { key: TabKey; label: string; labelEn: string; icon: string }[] = [
+  { key: 'tasks',       label: '任务看板', icon: '📋', labelEn: 'Task Board' },
+  { key: 'court',       label: '协同讨论', icon: '🏛️', labelEn: 'Collaboration' },
+  { key: 'monitor',     label: '运行监控', icon: '🔌', labelEn: 'Runtime Monitor' },
+  { key: 'automation',  label: '自动化中心', icon: '🧭', labelEn: 'Automation Center' },
+  { key: 'agents',      label: 'Agent 总览', icon: '👔', labelEn: 'Agent Overview' },
+  { key: 'models',      label: '模型配置', icon: '🤖', labelEn: 'Model Config' },
+  { key: 'skills',      label: '技能配置', icon: '🎯', labelEn: 'Skills Config' },
+  { key: 'sessions',    label: '快速任务', icon: '💬', labelEn: 'Quick Tasks' },
+  { key: 'archives',    label: '结果归档', icon: '🗄️', labelEn: 'Archives' },
+  { key: 'templates',   label: '模板中心', icon: '📋', labelEn: 'Templates' },
+  { key: 'web_search',  label: '全网搜索', icon: '🌐', labelEn: 'Web Search' },
 ];
+
+export function tabLabel(tab: { label: string; labelEn: string }, locale: Locale): string {
+  return locale === 'en' ? tab.labelEn : tab.label;
+}
 
 // ── DEPTS for monitor ──
 
-export const DEPTS = [
-  { id: 'taizi',    label: '总控中心',     emoji: '🎛️', role: '实时总控',   rank: '核心中枢' },
-  { id: 'zhongshu', label: '规划中心',     emoji: '🧭', role: '任务规划',   rank: '核心节点' },
-  { id: 'menxia',   label: '评审中心',     emoji: '🔍', role: '质量评审',   rank: '核心节点' },
-  { id: 'shangshu', label: '调度中心',     emoji: '📮', role: '调度协调',   rank: '核心节点' },
-  { id: 'libu',     label: '文案专家',     emoji: '📝', role: '内容文档专家', rank: '专业执行组' },
-  { id: 'hubu',     label: '数据专家',     emoji: '💰', role: '数据资源专家', rank: '专业执行组' },
-  { id: 'bingbu',   label: '代码专家',     emoji: '⚔️', role: '工程实现专家', rank: '专业执行组' },
-  { id: 'xingbu',   label: '合规专家',     emoji: '⚖️', role: '审计合规专家', rank: '专业执行组' },
-  { id: 'gongbu',   label: '部署专家',     emoji: '🔧', role: '部署运维专家', rank: '专业执行组' },
-  { id: 'libu_hr',  label: 'Agent管理专家', emoji: '👔', role: 'Agent 管理专家', rank: '专业执行组' },
-  { id: 'zaochao',  label: '情报简报',     emoji: '📰', role: '情报简报 Agent', rank: '支撑能力' },
-];
 
 // ── Templates ──
 
@@ -204,7 +490,7 @@ export const TEMPLATES: Template[] = [
   {
     id: 'tpl-code-review', cat: '工程开发', icon: '🔍', name: '代码审查',
     desc: '对指定代码仓库/文件进行质量审查，输出问题清单和改进建议',
-    depts: ['代码专家', '合规专家'], est: '~20分钟', cost: '¥2',
+    depts: ['代码专家', '审计专家'], est: '~20分钟', cost: '¥2',
     params: [
       { key: 'repo', label: '仓库/文件路径', type: 'text', required: true },
       { key: 'scope', label: '审查范围', type: 'select', options: ['全量', '增量(最近commit)', '指定文件'], default: '增量(最近commit)' },
@@ -259,11 +545,11 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'tpl-deploy', cat: '工程开发', icon: '🚀', name: '部署方案',
-    desc: '生成完整的部署检查单、Docker配置、CI/CD流程',
+    desc: '生成完整的部署检查单、AI 部署建议与 CI/CD 流程',
     depts: ['代码专家', '部署专家'], est: '~25分钟', cost: '¥2',
     params: [
       { key: 'project', label: '项目名称/描述', type: 'text', required: true },
-      { key: 'env', label: '部署环境', type: 'select', options: ['Docker', 'K8s', 'VPS', 'Serverless'], default: 'Docker' },
+      { key: 'env', label: '部署环境', type: 'select', options: ['AI 部署', 'K8s', 'VPS', 'Serverless'], default: 'AI 部署' },
       { key: 'ci', label: 'CI/CD 工具', type: 'select', options: ['GitHub Actions', 'GitLab CI', '无'], default: 'GitHub Actions' },
     ],
     command: '为项目「{project}」生成{env}部署方案，CI/CD使用{ci}',
@@ -301,33 +587,36 @@ export const TPL_CATS = [
 // ── Main Store ──
 
 interface AppStore {
+  locale: Locale;
   // Data
   liveStatus: LiveStatus | null;
   agentConfig: AgentConfig | null;
   changeLog: ChangeLogEntry[];
-  officialsData: OfficialsData | null;
+  agentsOverviewData: AgentsOverviewData | null;
   agentsStatusData: AgentsStatusData | null;
-  morningBrief: MorningBrief | null;
+   searchBrief: SearchBrief | null;
   subConfig: SubConfig | null;
 
   // UI State
   activeTab: TabKey;
-  edictFilter: 'active' | 'archived' | 'all';
+  taskFilter: 'active' | 'archived' | 'all';
   sessFilter: string;
   tplCatFilter: string;
-  selectedOfficial: string | null;
+  selectedAgent: string | null;
   modalTaskId: string | null;
   countdown: number;
+  setLocale: (locale: Locale) => void;
+  toggleLocale: () => void;
 
   // Toast
   toasts: { id: number; msg: string; type: 'ok' | 'err' }[];
 
   // Actions
   setActiveTab: (tab: TabKey) => void;
-  setEdictFilter: (f: 'active' | 'archived' | 'all') => void;
+  setTaskFilter: (f: 'active' | 'archived' | 'all') => void;
   setSessFilter: (f: string) => void;
   setTplCatFilter: (f: string) => void;
-  setSelectedOfficial: (id: string | null) => void;
+  setSelectedAgent: (id: string | null) => void;
   setModalTaskId: (id: string | null) => void;
   setCountdown: (n: number) => void;
   toast: (msg: string, type?: 'ok' | 'err') => void;
@@ -335,9 +624,9 @@ interface AppStore {
   // Data fetching
   loadLive: () => Promise<void>;
   loadAgentConfig: () => Promise<void>;
-  loadOfficials: () => Promise<void>;
+  loadAgentsOverview: () => Promise<void>;
   loadAgentsStatus: () => Promise<void>;
-  loadMorning: () => Promise<void>;
+  loadWebSearch: () => Promise<void>;
   loadSubConfig: () => Promise<void>;
   loadAll: () => Promise<void>;
 }
@@ -348,18 +637,19 @@ export const useStore = create<AppStore>((set, get) => ({
   liveStatus: null,
   agentConfig: null,
   changeLog: [],
-  officialsData: null,
+  agentsOverviewData: null,
   agentsStatusData: null,
-  morningBrief: null,
+  searchBrief: null,
   subConfig: null,
 
-  activeTab: 'edicts',
-  edictFilter: 'active',
+  activeTab: 'tasks',
+  taskFilter: 'active',
   sessFilter: 'all',
   tplCatFilter: '全部',
-  selectedOfficial: null,
+  selectedAgent: null,
   modalTaskId: null,
   countdown: 5,
+  locale: detectLocale(),
 
   toasts: [],
 
@@ -367,16 +657,27 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ activeTab: tab });
     const s = get();
     if (['models', 'skills', 'sessions'].includes(tab) && !s.agentConfig) s.loadAgentConfig();
-    if (tab === 'officials' && !s.officialsData) s.loadOfficials();
+    if (tab === 'agents' && !s.agentsOverviewData) s.loadAgentsOverview();
     if (tab === 'monitor') s.loadAgentsStatus();
-    if (tab === 'morning' && !s.morningBrief) s.loadMorning();
+    if (tab === 'web_search' && !s.searchBrief) s.loadWebSearch();
   },
-  setEdictFilter: (f) => set({ edictFilter: f }),
+  setTaskFilter: (f) => set({ taskFilter: f }),
   setSessFilter: (f) => set({ sessFilter: f }),
   setTplCatFilter: (f) => set({ tplCatFilter: f }),
-  setSelectedOfficial: (id) => set({ selectedOfficial: id }),
+  setSelectedAgent: (id) => set({ selectedAgent: id }),
   setModalTaskId: (id) => set({ modalTaskId: id }),
   setCountdown: (n) => set({ countdown: n }),
+  setLocale: (locale) => {
+    persistLocale(locale);
+    applyLocale(locale);
+    set({ locale });
+  },
+  toggleLocale: () => {
+    const next = get().locale === 'en' ? 'zh' : 'en';
+    persistLocale(next);
+    applyLocale(next);
+    set({ locale: next });
+  },
 
   toast: (msg, type = 'ok') => {
     const id = ++_toastId;
@@ -390,10 +691,10 @@ export const useStore = create<AppStore>((set, get) => ({
     try {
       const data = await api.liveStatus();
       set({ liveStatus: data });
-      // Also preload officials for monitor tab
+      // Also preload agents overview for monitor tab
       const s = get();
-      if (!s.officialsData) {
-        api.officialsStats().then((d) => set({ officialsData: d })).catch(() => {});
+      if (!s.agentsOverviewData) {
+        api.agentsOverview().then((d) => set({ agentsOverviewData: d })).catch(() => {});
       }
     } catch {
       // silently fail
@@ -410,10 +711,10 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
-  loadOfficials: async () => {
+  loadAgentsOverview: async () => {
     try {
-      const data = await api.officialsStats();
-      set({ officialsData: data });
+      const data = await api.agentsOverview();
+      set({ agentsOverviewData: data });
     } catch {
       // silently fail
     }
@@ -428,10 +729,10 @@ export const useStore = create<AppStore>((set, get) => ({
     }
   },
 
-  loadMorning: async () => {
+  loadWebSearch: async () => {
     try {
-      const [brief, config] = await Promise.all([api.morningBrief(), api.morningConfig()]);
-      set({ morningBrief: brief, subConfig: config });
+      const [brief, config] = await Promise.all([api.searchBrief(), api.searchConfig()]);
+      set({ searchBrief: brief, subConfig: config });
     } catch {
       // silently fail
     }
@@ -439,7 +740,7 @@ export const useStore = create<AppStore>((set, get) => ({
 
   loadSubConfig: async () => {
     try {
-      const config = await api.morningConfig();
+      const config = await api.searchConfig();
       set({ subConfig: config });
     } catch {
       // silently fail
@@ -491,18 +792,15 @@ export function esc(s: string | undefined | null): string {
     .replace(/"/g, '&quot;');
 }
 
-export function timeAgo(iso: string | undefined): string {
+export function timeAgo(iso: string | undefined, locale: Locale = 'zh'): string {
   if (!iso) return '';
   try {
     const d = new Date(iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z');
     if (isNaN(d.getTime())) return '';
     const diff = Date.now() - d.getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return '刚刚';
-    if (mins < 60) return mins + '分钟前';
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return hrs + '小时前';
-    return Math.floor(hrs / 24) + '天前';
+    return formatRelativeTime(locale, mins, hrs);
   } catch {
     return '';
   }

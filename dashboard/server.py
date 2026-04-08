@@ -4,7 +4,7 @@
 Port: 7891 (可通过 --port 修改)
 
 Endpoints:
-  GET  /                       → dashboard.html
+  GET  /                       → dashboard/dist/index.html（若存在）
   GET  /api/live-status        → data/live_status.json
   GET  /api/agent-config       → data/agent_config.json
   POST /api/set-model          → {agentId, model}
@@ -19,7 +19,8 @@ from urllib.request import Request, urlopen
 # JWT 认证模块
 from auth import init as auth_init, requires_auth, extract_token, verify_token, \
     is_enabled as auth_enabled, is_configured as auth_configured, \
-    setup_password, verify_password, create_token
+    setup_password, authenticate, create_token, get_auth_status, \
+    complete_first_change, change_password, change_username, get_config
 
 # 引入文件锁工具，确保与其他脚本并发安全
 scripts_dir = str(pathlib.Path(__file__).parent.parent / 'scripts')
@@ -546,9 +547,68 @@ def _compute_checksum(content: str) -> str:
     return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 
+SEARCH_BRIEF_FILES = {
+    'config': 'search_brief_config.json',
+    'brief': 'search_brief.json',
+    'script': 'fetch_search_brief.py',
+}
+
+
+def _first_existing_path(preferred: pathlib.Path, legacy_name: str) -> pathlib.Path:
+    if preferred.exists():
+        return preferred
+    legacy = preferred.with_name(legacy_name)
+    if legacy.exists():
+        return legacy
+    return preferred
+
+
+def _read_json_with_legacy_fallback(preferred: pathlib.Path, legacy_name: str, default=None):
+    legacy = preferred.with_name(legacy_name)
+    return read_json(preferred, read_json(legacy, default))
+
+
+def get_search_config_path() -> pathlib.Path:
+    return DATA / SEARCH_BRIEF_FILES['config']
+
+
+def read_search_config(default=None):
+    if default is None:
+        default = {}
+    return read_json(DATA / SEARCH_BRIEF_FILES['config'], default)
+
+
+def read_search_brief(default=None):
+    if default is None:
+        default = {}
+    return read_json(DATA / SEARCH_BRIEF_FILES['brief'], default)
+
+
+def read_search_brief_by_date(date_clean: str, default=None):
+    if default is None:
+        default = {}
+    return read_json(DATA / f'search_brief_{date_clean}.json', default)
+
+
+def is_search_brief_route(path: str) -> bool:
+    return path == '/api/search-brief'
+
+
+def is_search_config_route(path: str) -> bool:
+    return path == '/api/search-config'
+
+
+def is_search_brief_refresh_route(path: str) -> bool:
+    return path == '/api/search-brief/refresh'
+
+
+def is_search_brief_history_route(path: str) -> bool:
+    return path.startswith('/api/search-brief/')
+
+
 def migrate_notification_config():
     """自动迁移旧配置 (feishu_webhook) 到新结构 (notification)"""
-    cfg_path = DATA / 'morning_brief_config.json'
+    cfg_path = get_search_config_path()
     cfg = read_json(cfg_path, {})
     if not cfg:
         return
@@ -571,7 +631,7 @@ def migrate_notification_config():
 
 def push_notification():
     """通用消息推送 (支持多渠道)"""
-    cfg = read_json(DATA / 'morning_brief_config.json', {})
+    cfg = read_search_config({})
     notification = cfg.get('notification', {})
     if not notification and cfg.get('feishu_webhook'):
         notification = {'enabled': True, 'channel': 'feishu', 'webhook': cfg['feishu_webhook']}
@@ -588,7 +648,7 @@ def push_notification():
     if not channel_cls.validate_webhook(webhook):
         log.warning(f'{channel_cls.label} Webhook URL 不合法: {webhook}')
         return
-    brief = read_json(DATA / 'morning_brief.json', {})
+    brief = read_search_brief({})
     date_str = brief.get('date', '')
     total = sum(len(v) for v in (brief.get('categories') or {}).values())
     if not total:
@@ -599,16 +659,22 @@ def push_notification():
             cat_lines.append(f'  {cat}: {len(items)} 条')
     summary = '\n'.join(cat_lines)
     date_fmt = date_str[:4] + '年' + date_str[4:6] + '月' + date_str[6:] + '日' if len(date_str) == 8 else date_str
-    title = f'📰 天下要闻 · {date_fmt}'
-    content = f'共 **{total}** 条要闻已更新\n{summary}'
+    title = f'🔎 全网搜索简报 · {date_fmt}'
+    content = f'共 **{total}** 条搜索结果已更新\n{summary}'
     url = f'http://127.0.0.1:{_DASHBOARD_PORT}'
     success = channel_cls.send(webhook, title, content, url)
     print(f'[{channel_cls.label}] 推送{"成功" if success else "失败"}')
 
 
 def push_to_feishu():
-    """Push morning brief link to Feishu via webhook. (已弃用，使用 push_notification)"""
+    """兼容别名：将搜索简报链接推送到飞书 Webhook。"""
     push_notification()
+
+
+def get_search_fetch_script() -> pathlib.Path:
+    """优先使用新的 search 抓取脚本，旧脚本仅作为回退。"""
+    preferred = SCRIPTS / 'fetch_search_brief.py'
+    return _first_existing_path(preferred, LEGACY_SEARCH_BRIEF_FILES['script'])
 
 
 # 任务标题最低要求
@@ -620,7 +686,7 @@ _JUNK_TITLES = {
 }
 
 
-def handle_create_task(title, org='规划中心', official='规划负责人', priority='normal', template_id='', params=None, target_dept=''):
+def handle_create_task(title, org='规划中心', owner='规划负责人', priority='normal', template_id='', params=None, target_dept=''):
     """从看板创建新任务（支持现代中文任务提交流程）。"""
     if not title or not title.strip():
         return {'ok': False, 'error': '任务标题不能为空'}
@@ -646,15 +712,15 @@ def handle_create_task(title, org='规划中心', official='规划负责人', pr
         nums = [int(tid.split('-')[-1]) for tid in today_ids if tid.split('-')[-1].isdigit()]
         seq = max(nums) + 1 if nums else 1
     task_id = f'JJC-{today}-{seq:03d}'
-    # 兼容旧状态编码：任务先进入总控中心预处理，再继续后续流转
-    # target_dept 记录模板建议的最终执行部门（仅供调度中心派发参考）
+    # 新架构状态编码：任务先进入总控中心预处理，再继续后续流转
+    # target_dept 记录模板建议的目标执行节点（仅供调度中心派发参考）
     initial_org = '总控中心'
     new_task = {
         'id': task_id,
         'title': title,
-        'official': official,
+        'owner': owner,
         'org': initial_org,
-        'state': 'Taizi',
+        'state': 'ControlCenter',
         'now': '等待总控中心预处理与分拣',
         'eta': '-',
         'block': '无',
@@ -682,7 +748,7 @@ def handle_create_task(title, org='规划中心', official='规划负责人', pr
     save_tasks(tasks)
     log.info(f'创建任务: {task_id} | {title[:40]}')
 
-    dispatch_for_state(task_id, new_task, 'Taizi', trigger='imperial-edict')
+    dispatch_for_state(task_id, new_task, 'ControlCenter', trigger='task-created')
 
     return {'ok': True, 'taskId': task_id, 'message': f'任务 {task_id} 已创建，正在进入总控中心预处理'}
 
@@ -693,14 +759,14 @@ def handle_review_action(task_id, action, comment=''):
     task = next((t for t in tasks if t.get('id') == task_id), None)
     if not task:
         return {'ok': False, 'error': f'任务 {task_id} 不存在'}
-    if task.get('state') not in ('Review', 'Menxia'):
+    if task.get('state') not in ('Review', 'ReviewCenter'):
         return {'ok': False, 'error': f'任务 {task_id} 当前状态为 {task.get("state")}，无法执行评审动作'}
 
     _ensure_scheduler(task)
     _scheduler_snapshot(task, f'review-before-{action}')
 
     if action == 'approve':
-        if task['state'] == 'Menxia':
+        if task['state'] == 'ReviewCenter':
             task['state'] = 'Assigned'
             task['now'] = '评审中心已通过，移交调度中心派发'
             remark = f'✅ 评审通过：{comment or "评审中心已通过"}'
@@ -709,11 +775,11 @@ def handle_review_action(task_id, action, comment=''):
             task['state'] = 'Done'
             task['now'] = '总控中心确认完成，任务结束'
             remark = f'✅ 最终确认：{comment or "总控中心确认完成"}'
-            to_dept = '结果报告'
+            to_dept = '结果归档'
     elif action == 'reject':
         round_num = (task.get('review_round') or 0) + 1
         task['review_round'] = round_num
-        task['state'] = 'Zhongshu'
+        task['state'] = 'PlanCenter'
         task['now'] = f'评审退回规划中心修订（第{round_num}轮）'
         remark = f'🚫 退回修订：{comment or "请补充或修正方案"}'
         to_dept = '规划中心'
@@ -743,17 +809,17 @@ def handle_review_action(task_id, action, comment=''):
 # ══ Agent 在线状态检测 ══
 
 _AGENT_DEPTS = [
-    {'id':'taizi',   'label':'总控中心',    'emoji':'🤴', 'role':'总控中心值守 Agent', 'rank':'核心编排'},
-    {'id':'zhongshu','label':'规划中心',    'emoji':'📜', 'role':'规划中心 Agent',     'rank':'核心编排'},
-    {'id':'menxia',  'label':'评审中心',    'emoji':'🔍', 'role':'评审中心 Agent',     'rank':'核心编排'},
-    {'id':'shangshu','label':'调度中心',    'emoji':'📮', 'role':'调度中心 Agent',     'rank':'核心编排'},
-    {'id':'hubu',    'label':'数据专家',    'emoji':'💰', 'role':'数据专家 Agent',     'rank':'专业执行组'},
-    {'id':'libu',    'label':'文案专家',    'emoji':'📝', 'role':'文案专家 Agent',     'rank':'专业执行组'},
-    {'id':'bingbu',  'label':'部署专家',    'emoji':'⚔️', 'role':'部署专家 Agent',     'rank':'专业执行组'},
-    {'id':'xingbu',  'label':'合规专家',    'emoji':'⚖️', 'role':'合规专家 Agent',     'rank':'专业执行组'},
-    {'id':'gongbu',  'label':'代码专家',    'emoji':'🔧', 'role':'代码专家 Agent',     'rank':'专业执行组'},
-    {'id':'libu_hr', 'label':'Agent管理专家','emoji':'👔', 'role':'Agent管理专家',      'rank':'专业执行组'},
-    {'id':'zaochao', 'label':'情报简报',    'emoji':'📰', 'role':'情报简报 Agent',     'rank':'支撑能力'},
+    {'id':'control_center',   'label':'总控中心', 'emoji':'🎛️', 'role':'全局统筹中心',     'rank':'核心中枢'},
+    {'id':'plan_center',      'label':'规划中心', 'emoji':'🧭', 'role':'任务规划中心',     'rank':'核心节点'},
+    {'id':'review_center',    'label':'评审中心', 'emoji':'🔍', 'role':'质量评审中心',     'rank':'核心节点'},
+    {'id':'dispatch_center',  'label':'调度中心', 'emoji':'📮', 'role':'调度协同中心',     'rank':'核心节点'},
+    {'id':'docs_specialist',  'label':'文案专家', 'emoji':'📝', 'role':'内容文档专家',     'rank':'专业执行组'},
+    {'id':'data_specialist',  'label':'数据专家', 'emoji':'💰', 'role':'数据分析专家',     'rank':'专业执行组'},
+    {'id':'code_specialist',  'label':'代码专家', 'emoji':'⚔️', 'role':'工程实现专家',     'rank':'专业执行组'},
+    {'id':'audit_specialist', 'label':'审计专家', 'emoji':'⚖️', 'role':'审计审核专家',     'rank':'专业执行组'},
+    {'id':'deploy_specialist','label':'部署专家', 'emoji':'🔧', 'role':'部署运维专家',     'rank':'专业执行组'},
+    {'id':'admin_specialist', 'label':'管理专家', 'emoji':'👔', 'role':'系统管理专家',     'rank':'专业执行组'},
+    {'id':'search_specialist','label':'搜索专家', 'emoji':'🌐', 'role':'全网搜索专家',     'rank':'支撑能力'},
 ]
 
 
@@ -960,22 +1026,27 @@ def wake_agent(agent_id, message=''):
 
 # 状态 → agent_id 映射
 _STATE_AGENT_MAP = {
-    'Taizi': 'taizi',
-    'Zhongshu': 'zhongshu',
-    'Menxia': 'menxia',
-    'Assigned': 'shangshu',
-    'Doing': None,         # 专业执行组，需从 org 推断
-    'Review': 'shangshu',
-    'Next': None,          # 待执行，从 org 推断
-    'Pending': 'zhongshu', # 待处理，默认规划中心
+    'ControlCenter': 'control_center',
+    'PlanCenter': 'plan_center',
+    'ReviewCenter': 'review_center',
+    'Assigned': 'dispatch_center',
+    'Doing': None,              # 专业执行组，需从 org 推断
+    'Review': 'dispatch_center',
+    'Next': None,               # 待执行，从 org 推断
+    'Pending': 'plan_center',   # 待处理，默认规划中心
 }
 _ORG_AGENT_MAP = {
-    '礼部': 'libu', '户部': 'hubu', '兵部': 'bingbu',
-    '刑部': 'xingbu', '工部': 'gongbu', '吏部': 'libu_hr',
-    '中书省': 'zhongshu', '门下省': 'menxia', '尚书省': 'shangshu', '太子': 'taizi',
-    '总控中心': 'taizi', '规划中心': 'zhongshu', '评审中心': 'menxia', '调度中心': 'shangshu',
-    '文案专家': 'libu', '数据专家': 'hubu', '代码专家': 'bingbu', '合规专家': 'xingbu',
-    '部署专家': 'gongbu', 'Agent管理专家': 'libu_hr',
+    '总控中心': 'control_center',
+    '规划中心': 'plan_center',
+    '评审中心': 'review_center',
+    '调度中心': 'dispatch_center',
+    '文案专家': 'docs_specialist',
+    '数据专家': 'data_specialist',
+    '代码专家': 'code_specialist',
+    '审计专家': 'audit_specialist',
+    '部署专家': 'deploy_specialist',
+    '管理专家': 'admin_specialist',
+    '搜索专家': 'search_specialist',
 }
 
 _TERMINAL_STATES = {'Done', 'Cancelled'}
@@ -1084,6 +1155,58 @@ def get_scheduler_state(task_id):
     }
 
 
+def handle_scheduler_config(task_id, config):
+    tasks = load_tasks()
+    task = next((t for t in tasks if t.get('id') == task_id), None)
+    if not task:
+        return {'ok': False, 'error': f'任务 {task_id} 不存在'}
+
+    sched = _ensure_scheduler(task)
+    payload = config or {}
+
+    enabled = payload.get('enabled', sched.get('enabled', True))
+    stall_threshold = payload.get('stallThresholdSec', sched.get('stallThresholdSec', 600))
+    max_retry = payload.get('maxRetry', sched.get('maxRetry', 2))
+    auto_rollback = payload.get('autoRollback', sched.get('autoRollback', True))
+    max_rollback = payload.get('maxRollback', sched.get('maxRollback', 3))
+
+    try:
+        stall_threshold = max(60, int(stall_threshold or 600))
+        max_retry = max(0, int(max_retry or 0))
+        max_rollback = max(0, int(max_rollback or 0))
+    except Exception:
+        return {'ok': False, 'error': '自动化配置格式不正确'}
+
+    sched['enabled'] = bool(enabled)
+    sched['stallThresholdSec'] = stall_threshold
+    sched['maxRetry'] = max_retry
+    sched['autoRollback'] = bool(auto_rollback)
+    sched['maxRollback'] = max_rollback
+    if not sched.get('lastProgressAt'):
+        sched['lastProgressAt'] = task.get('updatedAt') or now_iso()
+
+    _scheduler_add_flow(
+        task,
+        (
+            f'更新自动化配置：'
+            f'{"启用" if sched["enabled"] else "停用"}自动托管，'
+            f'停滞阈值 {stall_threshold}s，'
+            f'最大重试 {max_retry} 次，'
+            f'自动回滚 {"开启" if sched["autoRollback"] else "关闭"}，'
+            f'最大回滚 {max_rollback} 次'
+        )
+    )
+    task['updatedAt'] = now_iso()
+    save_tasks(tasks)
+
+    return {
+        'ok': True,
+        'message': f'{task_id} 自动化配置已保存',
+        'scheduler': sched,
+        'checkedAt': now_iso(),
+    }
+
+
 def handle_scheduler_retry(task_id, reason=''):
     tasks = load_tasks()
     task = next((t for t in tasks if t.get('id') == task_id), None)
@@ -1096,12 +1219,12 @@ def handle_scheduler_retry(task_id, reason=''):
     sched = _ensure_scheduler(task)
     sched['retryCount'] = int(sched.get('retryCount') or 0) + 1
     sched['lastRetryAt'] = now_iso()
-    sched['lastDispatchTrigger'] = 'taizi-retry'
+    sched['lastDispatchTrigger'] = 'control-center-retry'
     _scheduler_add_flow(task, f'触发重试第{sched["retryCount"]}次：{reason or "超时未推进"}')
     task['updatedAt'] = now_iso()
     save_tasks(tasks)
 
-    dispatch_for_state(task_id, task, state, trigger='taizi-retry')
+    dispatch_for_state(task_id, task, state, trigger='control-center-retry')
     return {'ok': True, 'message': f'{task_id} 已触发重试派发', 'retryCount': sched['retryCount']}
 
 
@@ -1117,7 +1240,7 @@ def handle_scheduler_escalate(task_id, reason=''):
     sched = _ensure_scheduler(task)
     current_level = int(sched.get('escalationLevel') or 0)
     next_level = min(current_level + 1, 2)
-    target = 'menxia' if next_level == 1 else 'shangshu'
+    target = 'review_center' if next_level == 1 else 'dispatch_center'
     target_label = '评审中心' if next_level == 1 else '调度中心'
 
     sched['escalationLevel'] = next_level
@@ -1164,7 +1287,7 @@ def handle_scheduler_rollback(task_id, reason=''):
     save_tasks(tasks)
 
     if snap_state not in _TERMINAL_STATES:
-        dispatch_for_state(task_id, task, snap_state, trigger='taizi-rollback')
+        dispatch_for_state(task_id, task, snap_state, trigger='control-center-rollback')
 
     return {'ok': True, 'message': f'{task_id} 已回滚到 {snap_state}'}
 
@@ -1188,6 +1311,8 @@ def handle_scheduler_scan(threshold_sec=600):
             continue
 
         sched = _ensure_scheduler(task)
+        if sched.get('enabled', True) is False:
+            continue
         task_threshold = int(sched.get('stallThresholdSec') or threshold_sec)
         last_progress = _parse_iso(sched.get('lastProgressAt') or task.get('updatedAt'))
         if not last_progress:
@@ -1207,7 +1332,7 @@ def handle_scheduler_scan(threshold_sec=600):
         if retry_count < max_retry:
             sched['retryCount'] = retry_count + 1
             sched['lastRetryAt'] = now_iso()
-            sched['lastDispatchTrigger'] = 'taizi-scan-retry'
+            sched['lastDispatchTrigger'] = 'control-center-scan-retry'
             _scheduler_add_flow(task, f'停滞{stalled_sec}秒，触发自动重试第{sched["retryCount"]}次')
             pending_retries.append((task_id, state))
             actions.append({'taskId': task_id, 'action': 'retry', 'stalledSec': stalled_sec})
@@ -1216,7 +1341,7 @@ def handle_scheduler_scan(threshold_sec=600):
 
         if level < 2:
             next_level = level + 1
-            target = 'menxia' if next_level == 1 else 'shangshu'
+            target = 'review_center' if next_level == 1 else 'dispatch_center'
             target_label = '评审中心' if next_level == 1 else '调度中心'
             sched['escalationLevel'] = next_level
             sched['lastEscalatedAt'] = now_iso()
@@ -1263,7 +1388,7 @@ def handle_scheduler_scan(threshold_sec=600):
     for task_id, state in pending_retries:
         retry_task = next((t for t in tasks if t.get('id') == task_id), None)
         if retry_task:
-            dispatch_for_state(task_id, retry_task, state, trigger='taizi-scan-retry')
+            dispatch_for_state(task_id, retry_task, state, trigger='control-center-scan-retry')
 
     for task_id, state, target, target_label, stalled_sec in pending_escalates:
         msg = (
@@ -1279,7 +1404,7 @@ def handle_scheduler_scan(threshold_sec=600):
     for task_id, state in pending_rollbacks:
         rollback_task = next((t for t in tasks if t.get('id') == task_id), None)
         if rollback_task and state not in _TERMINAL_STATES:
-            dispatch_for_state(task_id, rollback_task, state, trigger='taizi-auto-rollback')
+            dispatch_for_state(task_id, rollback_task, state, trigger='control-center-auto-rollback')
 
     return {
         'ok': True,
@@ -1327,16 +1452,16 @@ def handle_repair_flow_order():
             continue
 
         first = flow_log[0]
-        if first.get('from') != '皇上' or first.get('to') != '中书省':
+        if first.get('from') != '任务发起人' or first.get('to') != '规划中心':
             continue
 
-        first['to'] = '太子'
+        first['to'] = '总控中心'
         remark = first.get('remark', '')
         if isinstance(remark, str) and remark.startswith('下旨：'):
             first['remark'] = remark
 
-        if task.get('state') == 'Zhongshu' and task.get('org') == '中书省' and len(flow_log) == 1:
-            task['state'] = 'Taizi'
+        if task.get('state') == 'PlanCenter' and task.get('org') == '规划中心' and len(flow_log) == 1:
+            task['state'] = 'ControlCenter'
             task['org'] = '总控中心'
             task['now'] = '等待总控中心受理与预处理'
 
@@ -1985,17 +2110,17 @@ def get_task_activity(task_id):
 
 # 状态推进顺序（手动推进用）
 _STATE_FLOW = {
-    'Pending':  ('Taizi', '任务入口', '总控中心', '待处理任务转交总控中心预处理'),
-    'Taizi':    ('Zhongshu', '总控中心', '规划中心', '总控中心预处理完成，转规划中心拆解'),
-    'Zhongshu': ('Menxia', '规划中心', '评审中心', '规划中心方案提交评审中心核验'),
-    'Menxia':   ('Assigned', '评审中心', '调度中心', '评审中心通过，转调度中心派发'),
-    'Assigned': ('Doing', '调度中心', '专业执行组', '调度中心开始派发执行'),
-    'Next':     ('Doing', '调度中心', '专业执行组', '待执行任务开始执行'),
-    'Doing':    ('Review', '专业执行组', '调度中心', '执行完成，进入调度中心汇总'),
-    'Review':   ('Done', '调度中心', '总控中心', '流程完成，回传总控中心准备交付'),
+    'Pending':        ('ControlCenter', '任务入口', '总控中心', '待处理任务转交总控中心预处理'),
+    'ControlCenter':  ('PlanCenter', '总控中心', '规划中心', '总控中心预处理完成，转规划中心拆解'),
+    'PlanCenter':     ('ReviewCenter', '规划中心', '评审中心', '规划中心方案提交评审中心核验'),
+    'ReviewCenter':   ('Assigned', '评审中心', '调度中心', '评审中心通过，转调度中心派发'),
+    'Assigned':       ('Doing', '调度中心', '专业执行组', '调度中心开始派发执行'),
+    'Next':           ('Doing', '调度中心', '专业执行组', '待执行任务开始执行'),
+    'Doing':          ('Review', '专业执行组', '调度中心', '执行完成，进入调度中心汇总'),
+    'Review':         ('Done', '调度中心', '结果归档', '流程完成，进入结果归档并等待交付'),
 }
 _STATE_LABELS = {
-    'Pending': '待处理', 'Taizi': '总控中心', 'Zhongshu': '规划中心', 'Menxia': '评审中心',
+    'Pending': '待处理', 'ControlCenter': '总控中心', 'PlanCenter': '规划中心', 'ReviewCenter': '评审中心',
     'Assigned': '调度中心', 'Next': '待执行', 'Doing': '执行中', 'Review': '汇总复核', 'Done': '已完成',
 }
 
@@ -2025,28 +2150,28 @@ def dispatch_for_state(task_id, task, new_state, trigger='state-transition'):
 
     # 根据 agent_id 构造针对性消息
     _msgs = {
-        'taizi': (
+        'control_center': (
             f'📥 新任务需要总控中心处理\n'
             f'任务ID: {task_id}\n'
             f'任务标题: {title}\n'
             f'⚠️ 看板已有此任务，请勿重复创建。直接用 kanban_update.py 更新状态。\n'
             f'请先判断是否可直接快速处理；若不适合直办，请立即转交规划中心。'
         ),
-        'zhongshu': (
+        'plan_center': (
             f'🧭 任务已到规划中心，请完成方案拆解\n'
             f'任务ID: {task_id}\n'
             f'任务标题: {title}\n'
             f'⚠️ 看板已有此任务记录，请勿重复创建。直接用 kanban_update.py state 更新状态。\n'
             f'请立即输出执行方案，并推动后续进入评审与调度流程。'
         ),
-        'menxia': (
+        'review_center': (
             f'🔍 规划方案已提交评审中心核验\n'
             f'任务ID: {task_id}\n'
             f'任务标题: {title}\n'
             f'⚠️ 看板已有此任务，请勿重复创建。\n'
             f'请核验方案质量与约束，给出通过或退回意见。'
         ),
-        'shangshu': (
+        'dispatch_center': (
             f'📮 评审已通过，请调度中心安排执行\n'
             f'任务ID: {task_id}\n'
             f'任务标题: {title}\n'
@@ -2265,12 +2390,17 @@ class Handler(BaseHTTPRequestHandler):
         p = urlparse(self.path).path.rstrip('/')
         # 认证状态端点（公开）
         if p == '/api/auth/status':
-            self.send_json({'enabled': auth_enabled(), 'configured': auth_configured()})
+            token = extract_token(self.headers)
+            self.send_json(get_auth_status(token))
             return
         if self._check_auth():
             return
         if p in ('', '/dashboard', '/dashboard.html'):
-            self.send_file(BASE / 'dashboard.html')
+            idx = DIST / 'index.html'
+            if idx.exists():
+                self.send_file(idx)
+            else:
+                self.send_file(BASE / 'dashboard.html')
         elif p == '/healthz':
             task_data_dir = get_task_data_dir()
             checks = {'dataDir': task_data_dir.is_dir(), 'tasksReadable': (task_data_dir / 'tasks_source.json').exists()}
@@ -2286,13 +2416,13 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(read_json(DATA / 'model_change_log.json', []))
         elif p == '/api/last-result':
             self.send_json(read_json(DATA / 'last_model_change_result.json', {}))
-        elif p == '/api/officials-stats':
-            self.send_json(read_json(DATA / 'officials_stats.json', {}))
-        elif p == '/api/morning-brief':
-            self.send_json(read_json(DATA / 'morning_brief.json', {}))
-        elif p == '/api/morning-config':
+        elif p == '/api/agents-overview':
+            self.send_json(read_json(DATA / 'agents_overview.json', {}))
+        elif is_search_brief_route(p):
+            self.send_json(read_search_brief({}))
+        elif is_search_config_route(p):
             migrate_notification_config()
-            self.send_json(read_json(DATA / 'morning_brief_config.json', {
+            self.send_json(read_search_config({
                 'categories': [
                     {'name': '政治', 'enabled': True},
                     {'name': '军事', 'enabled': True},
@@ -2304,14 +2434,14 @@ class Handler(BaseHTTPRequestHandler):
             }))
         elif p == '/api/notification-channels':
             self.send_json({'ok': True, 'channels': get_channel_info()})
-        elif p.startswith('/api/morning-brief/'):
+        elif is_search_brief_history_route(p):
             date = p.split('/')[-1]
             # 标准化日期格式为 YYYYMMDD（兼容 YYYY-MM-DD 输入）
             date_clean = date.replace('-', '')
             if not date_clean.isdigit() or len(date_clean) != 8:
                 self.send_json({'ok': False, 'error': f'日期格式无效: {date}，请使用 YYYYMMDD'}, 400)
                 return
-            self.send_json(read_json(DATA / f'morning_brief_{date_clean}.json', {}))
+            self.send_json(read_search_brief_by_date(date_clean, {}))
         elif p == '/api/remote-skills-list':
             self.send_json(get_remote_skills_list())
         elif p.startswith('/api/skill-content/'):
@@ -2367,8 +2497,8 @@ class Handler(BaseHTTPRequestHandler):
         # ── 朝堂议政 ──
         elif p == '/api/court-discuss/list':
             self.send_json({'ok': True, 'sessions': cd_list()})
-        elif p == '/api/court-discuss/officials':
-            self.send_json({'ok': True, 'officials': CD_PROFILES})
+        elif p == '/api/court-discuss/agents':
+            self.send_json({'ok': True, 'agents': CD_PROFILES})
         elif p.startswith('/api/court-discuss/session/'):
             sid = p.replace('/api/court-discuss/session/', '')
             data = cd_get(sid)
@@ -2408,14 +2538,23 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(setup_password(pw))
             return
         if p == '/api/auth/login':
+            username = body.get('username', 'admin')
             pw = body.get('password', '')
+            if not isinstance(username, str) or not username.strip():
+                self.send_json({'ok': False, 'error': '请提供用户名'}, 400)
+                return
             if not isinstance(pw, str) or not pw:
                 self.send_json({'ok': False, 'error': '请提供密码'}, 400)
                 return
-            if verify_password(pw):
-                token = create_token()
-                resp = {'ok': True, 'token': token}
-                # 同时设置 HttpOnly cookie
+            auth_res = authenticate(username.strip(), pw)
+            if auth_res.get('ok'):
+                token = create_token(auth_res.get('username', username.strip()))
+                resp = {
+                    'ok': True,
+                    'token': token,
+                    'username': auth_res.get('username', username.strip()),
+                    'mustChangePassword': bool(auth_res.get('must_change_password', False)),
+                }
                 try:
                     body_bytes = json.dumps(resp, ensure_ascii=False).encode()
                     self.send_response(200)
@@ -2428,14 +2567,79 @@ class Handler(BaseHTTPRequestHandler):
                 except (BrokenPipeError, ConnectionResetError):
                     pass
             else:
-                self.send_json({'ok': False, 'error': '密码错误'}, 401)
+                self.send_json({'ok': False, 'error': auth_res.get('error', '登录失败')}, 401)
+            return
+        if p == '/api/auth/logout':
+            try:
+                body_bytes = json.dumps({'ok': True, 'message': '已退出登录'}, ensure_ascii=False).encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.send_header('Content-Length', str(len(body_bytes)))
+                self.send_header('Set-Cookie', 'edict_token=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0')
+                cors_headers(self)
+                self.end_headers()
+                self.wfile.write(body_bytes)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
             return
 
         # ── 认证检查 ──
         if self._check_auth():
             return
 
-        if p == '/api/morning-config':
+        token = extract_token(self.headers)
+        auth_payload = verify_token(token) if token else None
+        current_username = str((auth_payload or {}).get('username', ''))
+
+        if p == '/api/auth/first-change':
+            current_password = body.get('currentPassword', '')
+            new_password = body.get('newPassword', '')
+            new_username = body.get('newUsername')
+            result = complete_first_change(current_username, current_password, new_password, new_username)
+            if result.get('ok'):
+                new_token = create_token(result.get('username', current_username))
+                resp = dict(result)
+                resp['token'] = new_token
+                try:
+                    body_bytes = json.dumps(resp, ensure_ascii=False).encode()
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json; charset=utf-8')
+                    self.send_header('Content-Length', str(len(body_bytes)))
+                    self.send_header('Set-Cookie', f'edict_token={new_token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
+                    cors_headers(self)
+                    self.end_headers()
+                    self.wfile.write(body_bytes)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+            else:
+                self.send_json(result, 400)
+            return
+        if p == '/api/auth/change-password':
+            result = change_password(current_username, body.get('currentPassword', ''), body.get('newPassword', ''))
+            self.send_json(result, 200 if result.get('ok') else 400)
+            return
+        if p == '/api/auth/change-username':
+            result = change_username(current_username, body.get('currentPassword', ''), body.get('newUsername', ''))
+            if result.get('ok'):
+                new_token = create_token(result.get('username', current_username))
+                resp = dict(result)
+                resp['token'] = new_token
+                try:
+                    body_bytes = json.dumps(resp, ensure_ascii=False).encode()
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json; charset=utf-8')
+                    self.send_header('Content-Length', str(len(body_bytes)))
+                    self.send_header('Set-Cookie', f'edict_token={new_token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
+                    cors_headers(self)
+                    self.end_headers()
+                    self.wfile.write(body_bytes)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+            else:
+                self.send_json(result, 400)
+            return
+
+        if is_search_config_route(p):
             if not isinstance(body, dict):
                 self.send_json({'ok': False, 'error': '请求体必须是 JSON 对象'}, 400)
                 return
@@ -2468,9 +2672,9 @@ class Handler(BaseHTTPRequestHandler):
             webhook_legacy = body.get('feishu_webhook', '').strip()
             if webhook_legacy and 'notification' not in body:
                 body['notification'] = {'enabled': True, 'channel': 'feishu', 'webhook': webhook_legacy}
-            cfg_path = DATA / 'morning_brief_config.json'
+            cfg_path = DATA / 'search_brief_config.json'
             cfg_path.write_text(json.dumps(body, ensure_ascii=False, indent=2))
-            self.send_json({'ok': True, 'message': '订阅配置已保存'})
+            self.send_json({'ok': True, 'message': '搜索简报配置已保存'})
             return
 
         if p == '/api/scheduler-scan':
@@ -2480,6 +2684,16 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(result)
             except Exception as e:
                 self.send_json({'ok': False, 'error': f'scheduler scan failed: {e}'}, 500)
+            return
+
+        if p == '/api/scheduler-config':
+            task_id = body.get('taskId', '').strip()
+            config = body.get('config', {})
+            if not task_id:
+                self.send_json({'ok': False, 'error': 'taskId required'}, 400)
+                return
+            result = handle_scheduler_config(task_id, config)
+            self.send_json(result)
             return
 
         if p == '/api/repair-flow-order':
@@ -2516,11 +2730,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(handle_scheduler_rollback(task_id, reason))
             return
 
-        if p == '/api/morning-brief/refresh':
+        if is_search_brief_refresh_route(p):
             force = body.get('force', True)  # 从看板手动触发默认强制
             def do_refresh():
                 try:
-                    cmd = ['python3', str(SCRIPTS / 'fetch_morning_news.py')]
+                    script_path = get_search_fetch_script()
+                    cmd = ['python3', str(script_path)]
                     if force:
                         cmd.append('--force')
                     subprocess.run(cmd, timeout=120)
@@ -2528,7 +2743,7 @@ class Handler(BaseHTTPRequestHandler):
                 except Exception as e:
                     print(f'[refresh error] {e}', file=sys.stderr)
             threading.Thread(target=do_refresh, daemon=True).start()
-            self.send_json({'ok': True, 'message': '采集已触发，约30-60秒后刷新'})
+            self.send_json({'ok': True, 'message': '全网搜索简报刷新已触发，约 30-60 秒后更新'})
             return
 
         if p == '/api/add-skill':
@@ -2626,7 +2841,7 @@ class Handler(BaseHTTPRequestHandler):
         if p == '/api/create-task':
             title = body.get('title', '').strip()
             org = body.get('org', '总控中心').strip()
-            official = body.get('official', '总控中心值守').strip()
+            owner = (body.get('owner') or body.get('official') or '总控中心值守').strip()
             priority = body.get('priority', 'normal').strip()
             template_id = body.get('templateId', '')
             params = body.get('params', {})
@@ -2634,7 +2849,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({'ok': False, 'error': 'title required'}, 400)
                 return
             target_dept = body.get('targetDept', '').strip()
-            result = handle_create_task(title, org, official, priority, template_id, params, target_dept)
+            result = handle_create_task(title, org, owner, priority, template_id, params, target_dept)
             self.send_json(result)
             return
 
@@ -2711,21 +2926,21 @@ class Handler(BaseHTTPRequestHandler):
         # ── 朝堂议政 POST ──
         elif p == '/api/court-discuss/start':
             topic = body.get('topic', '').strip()
-            officials = body.get('officials', [])
+            agents = body.get('agents', []) or body.get('officials', [])
             task_id = body.get('taskId', '').strip()
             if not topic:
                 self.send_json({'ok': False, 'error': 'topic required'}, 400)
                 return
-            if not officials or not isinstance(officials, list):
-                self.send_json({'ok': False, 'error': 'officials list required'}, 400)
+            if not agents or not isinstance(agents, list):
+                self.send_json({'ok': False, 'error': 'agents list required'}, 400)
                 return
-            # 校验官员 ID
+            # 校验 Agent ID
             valid_ids = set(CD_PROFILES.keys())
-            officials = [o for o in officials if o in valid_ids]
-            if len(officials) < 2:
-                self.send_json({'ok': False, 'error': '至少选择2位官员'}, 400)
+            agents = [agent_id for agent_id in agents if agent_id in valid_ids]
+            if len(agents) < 2:
+                self.send_json({'ok': False, 'error': '至少选择2个 Agent'}, 400)
                 return
-            self.send_json(cd_create(topic, officials, task_id))
+            self.send_json(cd_create(topic, agents, task_id))
 
         elif p == '/api/court-discuss/advance':
             sid = body.get('sessionId', '').strip()
@@ -2772,10 +2987,8 @@ def main():
     print(f'   按 Ctrl+C 停止')
 
     auth_init(DATA)
-    if auth_enabled():
-        log.info('🔒 JWT 认证已启用')
-    else:
-        log.info('🔓 认证未配置，所有 API 公开访问（POST /api/auth/setup 设置密码）')
+    auth_cfg = get_config(redact=True)
+    log.info(f"🔒 看板认证已启用，当前用户名: {auth_cfg.get('username', 'admin')}，首次登录需改密: {'是' if auth_cfg.get('must_change_password') else '否'}")
 
     migrate_notification_config()
 

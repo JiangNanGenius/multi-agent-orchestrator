@@ -29,6 +29,8 @@ log = logging.getLogger("edict.task_service")
 
 
 class TaskService:
+    """EDICT 中心与专家协作任务服务。"""
+
     def __init__(self, db: AsyncSession, event_bus=None):
         self.db = db
         # event_bus 保留用于 request_dispatch 等直接发布场景
@@ -42,9 +44,9 @@ class TaskService:
         description: str = "",
         priority: str = "中",
         assignee_org: str | None = None,
-        creator: str = "emperor",
+        creator: str = "system",
         tags: list[str] | None = None,
-        initial_state: TaskState = TaskState.Taizi,
+        initial_state: TaskState = TaskState.ControlCenter,
         meta: dict | None = None,
     ) -> Task:
         """创建任务，事件写入 outbox 表（同一事务原子提交）。"""
@@ -177,7 +179,7 @@ class TaskService:
         target_agent: str,
         message: str = "",
     ):
-        """发布 task.dispatch 事件到 outbox，由 OutboxRelay 投递后 DispatchWorker 消费。"""
+        """发布 task.dispatch 事件到 outbox，由 OutboxRelay 投递后交给目标中心或专家消费。"""
         task = await self._get_task(task_id)
         outbox = OutboxEvent(
             topic=TOPIC_TASK_DISPATCH,
@@ -193,7 +195,7 @@ class TaskService:
         )
         self.db.add(outbox)
         await self.db.commit()
-        log.info(f"Dispatch requested: task {task_id} → agent {target_agent}")
+        log.info(f"Dispatch requested: task {task_id} → target {target_agent}")
 
     # ── 进度/备注更新 ──
 
@@ -266,7 +268,7 @@ class TaskService:
         return list(result.scalars().all())
 
     async def get_live_status(self) -> dict[str, Any]:
-        """生成兼容旧 live_status.json 格式的全局状态。"""
+        """生成统一的全局实时状态数据。"""
         tasks = await self.list_tasks(limit=200)
         active_tasks = {}
         completed_tasks = {}

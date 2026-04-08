@@ -52,17 +52,17 @@ class DispatchError(Exception):
 
 # Agent 分组映射 — 用于加载 group 级 prompt
 _GROUP_MAP = {
-    "taizi": "sansheng",
-    "zhongshu": "sansheng",
-    "menxia": "sansheng",
-    "shangshu": "sansheng",
-    "hubu": "liubu",
-    "libu": "liubu",
-    "bingbu": "liubu",
-    "xingbu": "liubu",
-    "gongbu": "liubu",
-    "libu_hr": "liubu",
-    "zaochao": None,
+    "control_center": "sansheng",
+    "plan_center": "sansheng",
+    "review_center": "sansheng",
+    "dispatch_center": "sansheng",
+    "data_specialist": "liubu",
+    "docs_specialist": "liubu",
+    "code_specialist": "liubu",
+    "audit_specialist": "liubu",
+    "deploy_specialist": "liubu",
+    "admin_specialist": "liubu",
+    "search_specialist": None,
 }
 
 
@@ -155,8 +155,8 @@ def _build_reminder(agent_id: str, payload: dict) -> str:
         reminders.append("先创建 todo 分解任务，再开始执行。每完成一步立即用 progress 上报。")
     elif state == "Review":
         reminders.append("这是复审任务。审核完毕后用 state 命令流转状态，附带审核意见。")
-    elif state == "Menxia":
-        reminders.append("门下省审核：通过则流转 Assigned，不通过则退回 Zhongshu 并说明原因。")
+    elif state == "ReviewCenter":
+        reminders.append("评审中心复核：通过则流转 Assigned，不通过则退回 PlanCenter 并说明原因。")
 
     # 如果有未完成的 todos，提醒继续
     todos = payload.get("todos", [])
@@ -510,10 +510,10 @@ async def _persist_context_window_state(task_id: str, context_window: dict) -> N
 class DispatchWorker:
     """Agent 派发 Worker — 快慢 Agent 分桶并发控制。"""
 
-    # 快/慢 Agent 分桶 — 互不阻塞
+    # 快/慢 Agent 分桶 — 中心优先快响应，专家独立限流
     _BUCKET_CONFIG = {
-        "fast": {"agents": {"taizi", "zhongshu", "menxia", "shangshu", "zaochao"}, "limit": 4},
-        "slow": {"agents": {"hubu", "libu", "bingbu", "xingbu", "gongbu", "libu_hr"}, "limit": 3},
+        "fast": {"agents": {"control_center", "plan_center", "review_center", "dispatch_center"}, "limit": 4},
+        "slow": {"agents": {"data_specialist", "docs_specialist", "code_specialist", "audit_specialist", "deploy_specialist", "admin_specialist", "search_specialist"}, "limit": 3},
     }
 
     def __init__(self):

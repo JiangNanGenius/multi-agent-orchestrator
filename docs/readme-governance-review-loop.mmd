@@ -1,0 +1,11 @@
+flowchart LR
+    P[Planning Center / 规划中心] --> R[Review Center / 评审中心]
+    R -. Revise Required / 退回修订 .-> P
+    R --> Q{Approved? / 是否通过?}
+    Q -->|Yes / 是| D[Dispatch Center / 调度中心]
+    Q -->|No / 否| P
+
+    classDef main fill:#0f172a,stroke:#60a5fa,color:#e5eefc,stroke-width:1.5px;
+    classDef decision fill:#3b0764,stroke:#c084fc,color:#faf5ff,stroke-width:1.5px;
+    class P,R,D main;
+    class Q decision;

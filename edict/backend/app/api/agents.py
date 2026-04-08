@@ -11,15 +11,17 @@ router = APIRouter()
 
 # Agent 元信息（对应 agents/ 目录下的 SOUL.md）
 AGENT_META = {
-    "zaochao": {"name": "情报简报", "role": "简报汇总与议程管理", "icon": "🏛️"},
-    "shangshu": {"name": "调度中心", "role": "任务派发、协调推进与结果汇总", "icon": "📮"},
-    "zhongshu": {"name": "规划中心", "role": "任务拆解、方案规划与执行编排", "icon": "🧭"},
-    "menxia": {"name": "评审中心", "role": "方案评审、风险把关与退回修订", "icon": "🔍"},
-    "libu": {"name": "文案专家", "role": "文档撰写、信息表达与对外说明", "icon": "📝"},
-    "hubu": {"name": "数据专家", "role": "数据分析、指标统计与资源评估", "icon": "💰"},
-    "gongbu": {"name": "部署专家", "role": "工程交付、自动化与部署实施", "icon": "🔧"},
-    "xingbu": {"name": "合规专家", "role": "质量审查、测试校验与合规把关", "icon": "⚖️"},
-    "bingbu": {"name": "代码专家", "role": "代码实现、技术方案与问题修复", "icon": "🛡️"},
+    "control_center": {"name": "总控中心", "role": "统一接收任务、判定入口与驱动整体协作", "icon": "🎛️"},
+    "plan_center": {"name": "规划中心", "role": "任务拆解、方案规划与执行编排", "icon": "🧭"},
+    "review_center": {"name": "评审中心", "role": "方案评审、风险把关与退回修订", "icon": "🔍"},
+    "dispatch_center": {"name": "调度中心", "role": "任务派发、协调推进与结果汇总", "icon": "📮"},
+    "data_specialist": {"name": "数据专家", "role": "数据分析、指标统计与资源评估", "icon": "💰"},
+    "docs_specialist": {"name": "文案专家", "role": "文档撰写、信息表达与对外说明", "icon": "📝"},
+    "code_specialist": {"name": "代码专家", "role": "代码实现、技术方案与问题修复", "icon": "🛡️"},
+    "audit_specialist": {"name": "审计专家", "role": "质量审查、测试校验与审计把关", "icon": "⚖️"},
+    "deploy_specialist": {"name": "部署专家", "role": "工程交付、自动化与部署实施", "icon": "🔧"},
+    "admin_specialist": {"name": "管理专家", "role": "后台管理、配置维护与运营支持", "icon": "🗂️"},
+    "search_specialist": {"name": "搜索专家", "role": "全网搜索、信息检索与线索汇总", "icon": "🌐"},
 }
 
 

@@ -1,5 +1,4 @@
-﻿# ══════════════════════════════════════════════════════════════
-# 三省六部 · OpenClaw Multi-Agent System 一键安装脚本 (Windows)
+# EDICT · OpenClaw 安装脚本 (Windows)
 # PowerShell 版本 — 对应 install.sh
 # ══════════════════════════════════════════════════════════════
 #Requires -Version 5.1
@@ -8,12 +7,25 @@ $ErrorActionPreference = "Stop"
 $REPO_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $OC_HOME = Join-Path $env:USERPROFILE ".openclaw"
 $OC_CFG = Join-Path $OC_HOME "openclaw.json"
+$AGENTS = @(
+    "control_center",
+    "plan_center",
+    "review_center",
+    "dispatch_center",
+    "data_specialist",
+    "docs_specialist",
+    "code_specialist",
+    "audit_specialist",
+    "deploy_specialist",
+    "admin_specialist",
+    "search_specialist"
+)
 
 function Write-Banner {
     Write-Host ""
     Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Blue
-    Write-Host "║  🏛️  三省六部 · OpenClaw Multi-Agent     ║" -ForegroundColor Blue
-    Write-Host "║       安装向导 (Windows)                  ║" -ForegroundColor Blue
+    Write-Host "║  EDICT · OpenClaw 本地对接辅助 (Win)   ║" -ForegroundColor Blue
+    Write-Host "║  AI 部署优先，脚本仅用于本地补齐       ║" -ForegroundColor Blue
     Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Blue
     Write-Host ""
 }
@@ -23,7 +35,6 @@ function Warn  { param($msg) Write-Host "⚠️  $msg" -ForegroundColor Yellow }
 function Error { param($msg) Write-Host "❌ $msg" -ForegroundColor Red }
 function Info  { param($msg) Write-Host "ℹ️  $msg" -ForegroundColor Blue }
 
-# ── Step 0: 依赖检查 ──
 function Check-Deps {
     Info "检查依赖..."
 
@@ -52,7 +63,6 @@ function Check-Deps {
     Log "openclaw.json: $OC_CFG"
 }
 
-# ── Step 0.5: 备份已有 Agent 数据 ──
 function Backup-Existing {
     $hasExisting = Get-ChildItem -Path $OC_HOME -Directory -Filter "workspace-*" -ErrorAction SilentlyContinue
     if ($hasExisting) {
@@ -68,16 +78,19 @@ function Backup-Existing {
         if (Test-Path $OC_CFG) {
             Copy-Item $OC_CFG (Join-Path $backupDir "openclaw.json")
         }
+
+        if (Test-Path (Join-Path $OC_HOME "agents")) {
+            Copy-Item (Join-Path $OC_HOME "agents") (Join-Path $backupDir "agents") -Recurse
+        }
+
         Log "已备份到: $backupDir"
     }
 }
 
-# ── Step 1: 创建 Workspace ──
 function Create-Workspaces {
     Info "创建 Agent Workspace..."
 
-    $agents = @("taizi","zhongshu","menxia","shangshu","hubu","libu","bingbu","xingbu","gongbu","libu_hr","zaochao")
-    foreach ($agent in $agents) {
+    foreach ($agent in $AGENTS) {
         $ws = Join-Path $OC_HOME "workspace-$agent"
         New-Item -ItemType Directory -Path (Join-Path $ws "skills") -Force | Out-Null
 
@@ -93,82 +106,76 @@ function Create-Workspaces {
             Set-Content -Path $soulDst -Value $content -Encoding UTF8
         }
         Log "Workspace 已创建: $ws"
+    }
 
-        # AGENTS.md
+    foreach ($agent in $AGENTS) {
+        $ws = Join-Path $OC_HOME "workspace-$agent"
         $agentsMd = @"
 # AGENTS.md · 工作协议
 
-1. 接到任务先回复"已接旨"。
-2. 输出必须包含：任务ID、结果、证据/文件路径、阻塞项。
-3. 需要协作时，回复尚书省请求转派，不跨部直连。
-4. 涉及删除/外发动作必须明确标注并等待批准。
+1. 接到任务先回复“已接收任务”。
+2. 输出必须包含：任务 ID、结果、证据或文件路径、阻塞项。
+3. 需要协作时，通过统一调度方请求转派，不直接跨角色并行写入。
+4. 涉及删除、外发或高风险动作时，必须明确标注并等待批准。
 "@
         Set-Content -Path (Join-Path $ws "AGENTS.md") -Value $agentsMd -Encoding UTF8
     }
 }
 
-# ── Step 2: 注册 Agents ──
 function Register-Agents {
-    Info "注册三省六部 Agents..."
+    Info "检查 OpenClaw 运行时 Agent 注册情况（只读模式）..."
 
-    $ts = Get-Date -Format "yyyyMMdd-HHmmss"
-    Copy-Item $OC_CFG "$OC_CFG.bak.sansheng-$ts"
-    Log "已备份配置: $OC_CFG.bak.*"
-
+    $env:REPO_DIR = $REPO_DIR
     $pyScript = @"
-import json, pathlib, sys, os
+import json, pathlib, os, datetime
 
 cfg_path = pathlib.Path(os.environ['USERPROFILE']) / '.openclaw' / 'openclaw.json'
 cfg = json.loads(cfg_path.read_text(encoding='utf-8'))
-
-AGENTS = [
-    {"id": "taizi",    "subagents": {"allowAgents": ["zhongshu"]}},
-    {"id": "zhongshu", "subagents": {"allowAgents": ["menxia", "shangshu"]}},
-    {"id": "menxia",   "subagents": {"allowAgents": ["shangshu", "zhongshu"]}},
-    {"id": "shangshu", "subagents": {"allowAgents": ["zhongshu", "menxia", "hubu", "libu", "bingbu", "xingbu", "gongbu", "libu_hr"]}},
-    {"id": "hubu",     "subagents": {"allowAgents": ["shangshu"]}},
-    {"id": "libu",     "subagents": {"allowAgents": ["shangshu"]}},
-    {"id": "bingbu",   "subagents": {"allowAgents": ["shangshu"]}},
-    {"id": "xingbu",   "subagents": {"allowAgents": ["shangshu"]}},
-    {"id": "gongbu",   "subagents": {"allowAgents": ["shangshu"]}},
-    {"id": "libu_hr",  "subagents": {"allowAgents": ["shangshu"]}},
-    {"id": "zaochao",  "subagents": {"allowAgents": []}},
+required = [
+    {'id': 'control_center', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-control_center'), 'subagents': {'allowAgents': ['plan_center']}},
+    {'id': 'plan_center', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-plan_center'), 'subagents': {'allowAgents': ['review_center', 'dispatch_center']}},
+    {'id': 'review_center', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-review_center'), 'subagents': {'allowAgents': ['dispatch_center', 'plan_center']}},
+    {'id': 'dispatch_center', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-dispatch_center'), 'subagents': {'allowAgents': ['plan_center', 'review_center', 'data_specialist', 'docs_specialist', 'code_specialist', 'audit_specialist', 'deploy_specialist', 'admin_specialist', 'search_specialist']}},
+    {'id': 'data_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-data_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
+    {'id': 'docs_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-docs_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
+    {'id': 'code_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-code_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
+    {'id': 'audit_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-audit_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
+    {'id': 'deploy_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-deploy_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
+    {'id': 'admin_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-admin_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
+    {'id': 'search_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-search_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
 ]
+existing = {item.get('id') for item in cfg.get('agents', {}).get('list', []) if item.get('id')}
+missing = [item for item in required if item['id'] not in existing]
 
-agents_cfg = cfg.setdefault('agents', {})
-agents_list = agents_cfg.get('list', [])
-existing_ids = {a['id'] for a in agents_list}
+suggestions_path = pathlib.Path(os.environ['REPO_DIR']) / 'data' / 'openclaw_registry_suggestions.json'
+suggestions_path.parent.mkdir(parents=True, exist_ok=True)
+suggestions_path.write_text(json.dumps({
+    'generatedAt': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    'mode': 'readonly_reference',
+    'message': '本文件仅输出建议注册项，install.ps1 不再直接改写 openclaw.json。',
+    'missingAgents': missing,
+}, ensure_ascii=False, indent=2), encoding='utf-8')
 
-added = 0
-for ag in AGENTS:
-    ag_id = ag['id']
-    ws = str(pathlib.Path(os.environ['USERPROFILE']) / f'.openclaw/workspace-{ag_id}')
-    if ag_id not in existing_ids:
-        entry = {'id': ag_id, 'workspace': ws, **{k:v for k,v in ag.items() if k!='id'}}
-        agents_list.append(entry)
-        added += 1
-        print(f'  + added: {ag_id}')
-    else:
-        print(f'  ~ exists: {ag_id} (skipped)')
-
-agents_cfg['list'] = agents_list
-
-# Fix #142: clean invalid binding pattern
-bindings = cfg.get('bindings', [])
-for b in bindings:
-    match = b.get('match', {})
-    if isinstance(match, dict) and 'pattern' in match:
-        del match['pattern']
-        print(f'  cleaned invalid pattern from binding: {b.get("agentId", "?")}')
-
-cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding='utf-8')
-print(f'Done: {added} agents added')
+print(f'已注册 Agent: {len(existing)}')
+if missing:
+    print('缺少的 Agent 注册项（未自动写回 openclaw.json）:')
+    for item in missing:
+        print(f"  - {item['id']} -> {item['workspace']}")
+    print(f'建议清单已写入: {suggestions_path}')
+else:
+    print('运行时 Agent 注册已齐全，无需额外建议。')
 "@
     & $global:PYTHON -c $pyScript
-    Log "Agents 注册完成"
+
+    $suggestions = Join-Path $REPO_DIR "data\openclaw_registry_suggestions.json"
+    if (Test-Path $suggestions) {
+        Warn "install.ps1 当前仅提供本地只读对接辅助：不会直接改写 openclaw.json。"
+        Info "推荐优先使用 AI 部署；如需本地补齐运行时注册，请参考 data/openclaw_registry_suggestions.json 中的建议项手动处理。"
+    }
+
+    Log "运行时 Agent 注册检查完成"
 }
 
-# ── Step 3: 初始化 Data ──
 function Init-Data {
     Info "初始化数据目录..."
     $dataDir = Join-Path $REPO_DIR "data"
@@ -176,22 +183,56 @@ function Init-Data {
 
     foreach ($f in @("live_status.json","agent_config.json","model_change_log.json")) {
         $fp = Join-Path $dataDir $f
-        if (-not (Test-Path $fp)) { Set-Content $fp "{}" -Encoding UTF8 }
+        if (-not (Test-Path $fp)) {
+            Set-Content $fp "{}" -Encoding UTF8
+        }
     }
     Set-Content (Join-Path $dataDir "pending_model_changes.json") "[]" -Encoding UTF8
-    Log "数据目录初始化完成"
+
+    $tasksSource = Join-Path $dataDir "tasks_source.json"
+    if (-not (Test-Path $tasksSource)) {
+        $env:REPO_DIR = $REPO_DIR
+        $pyScript = @"
+import json, pathlib, os
+
+tasks = [{
+    'id': 'JJC-DEMO-001',
+    'title': '🎉 系统初始化完成',
+    'owner': '系统看板',
+    'org': 'EDICT',
+    'state': 'Done',
+    'now': 'EDICT 系统已就绪',
+    'eta': '-',
+    'block': '无',
+    'output': '',
+    'ac': '系统正常运行',
+    'flow_log': [
+        {'at': '2024-01-01T00:00:00Z', 'from': 'system', 'to': 'control_center', 'remark': '初始化 EDICT 系统'},
+        {'at': '2024-01-01T00:01:00Z', 'from': 'control_center', 'to': 'plan_center', 'remark': '提交初始化方案规划'},
+        {'at': '2024-01-01T00:02:00Z', 'from': 'plan_center', 'to': 'review_center', 'remark': '提交初始化方案审核'},
+        {'at': '2024-01-01T00:03:00Z', 'from': 'review_center', 'to': 'dispatch_center', 'remark': '✅ 审核通过并进入派发'},
+        {'at': '2024-01-01T00:04:00Z', 'from': 'dispatch_center', 'to': 'code_specialist', 'remark': '✅ 完成系统初始化'},
+    ]
+}]
+
+data_dir = pathlib.Path(os.environ['REPO_DIR']) / 'data'
+data_dir.mkdir(exist_ok=True)
+(data_dir / 'tasks_source.json').write_text(json.dumps(tasks, ensure_ascii=False, indent=2), encoding='utf-8')
+print('tasks_source.json 已初始化')
+"@
+        & $global:PYTHON -c $pyScript
+    }
+
+    Log "数据目录初始化完成: $dataDir"
 }
 
-# ── Step 3.3: 创建 data/scripts 目录连接 (Junction) ──
 function Link-Resources {
     Info "创建 data/scripts 目录连接..."
     $linked = 0
-    $agents = @("taizi","zhongshu","menxia","shangshu","hubu","libu","bingbu","xingbu","gongbu","libu_hr","zaochao")
-    foreach ($agent in $agents) {
+    foreach ($agent in $AGENTS) {
         $ws = Join-Path $OC_HOME "workspace-$agent"
         New-Item -ItemType Directory -Path $ws -Force | Out-Null
 
-        # data 目录
         $wsData = Join-Path $ws "data"
         $srcData = Join-Path $REPO_DIR "data"
         if (-not (Test-Path $wsData)) {
@@ -204,7 +245,6 @@ function Link-Resources {
             $linked++
         }
 
-        # scripts 目录
         $wsScripts = Join-Path $ws "scripts"
         $srcScripts = Join-Path $REPO_DIR "scripts"
         if (-not (Test-Path $wsScripts)) {
@@ -220,7 +260,6 @@ function Link-Resources {
     Log "已创建 $linked 个目录连接 (data/scripts → 项目目录)"
 }
 
-# ── Step 3.5: 设置 Agent 间通信可见性 ──
 function Setup-Visibility {
     Info "配置 Agent 间消息可见性..."
     try {
@@ -231,15 +270,70 @@ function Setup-Visibility {
     }
 }
 
-# ── Step 4: 构建前端 ──
+function Sync-Auth {
+    Info "同步 API Key 到所有 Agent..."
+
+    $mainAuth = $null
+    $authFilename = $null
+    $agentBase = Join-Path $OC_HOME "agents\control_center\agent"
+
+    foreach ($candidate in @("models.json", "auth-profiles.json")) {
+        $candidatePath = Join-Path $agentBase $candidate
+        if (Test-Path $candidatePath) {
+            $mainAuth = $candidatePath
+            $authFilename = $candidate
+            break
+        }
+    }
+
+    if (-not $mainAuth) {
+        foreach ($candidate in @("models.json", "auth-profiles.json")) {
+            $found = Get-ChildItem -Path (Join-Path $OC_HOME "agents") -Filter $candidate -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($found) {
+                $mainAuth = $found.FullName
+                $authFilename = $candidate
+                break
+            }
+        }
+    }
+
+    if (-not $mainAuth -or -not (Test-Path $mainAuth)) {
+        Warn "未找到已有的 models.json 或 auth-profiles.json"
+        Warn "请先为任意 Agent 配置 API Key:"
+        Write-Host "    openclaw agents add control_center"
+        Write-Host "  然后重新运行 install.ps1，或手动执行整个安装流程。"
+        return
+    }
+
+    try {
+        & $global:PYTHON -c "import json; d=json.load(open(r'$mainAuth', encoding='utf-8')); assert d"
+    } catch {
+        Warn "$authFilename 为空或无效，请先配置 API Key:"
+        Write-Host "    openclaw agents add control_center"
+        return
+    }
+
+    $synced = 0
+    foreach ($agent in $AGENTS) {
+        $agentDir = Join-Path $OC_HOME "agents\$agent\agent"
+        New-Item -ItemType Directory -Path $agentDir -Force | Out-Null
+        Copy-Item $mainAuth (Join-Path $agentDir $authFilename) -Force
+        $synced++
+    }
+
+    Log "API Key 已同步到 $synced 个 Agent"
+    Info "来源: $mainAuth"
+}
+
 function Build-Frontend {
     Info "构建 React 前端..."
     $node = Get-Command node -ErrorAction SilentlyContinue
     if (-not $node) {
-        Warn "未找到 node，跳过前端构建。"
+        Warn "未找到 node，跳过前端构建。看板将使用预构建版本（如果存在）"
         Warn "请安装 Node.js 18+ 后运行: cd edict\frontend && npm install && npm run build"
         return
     }
+
     $pkgJson = Join-Path $REPO_DIR "edict\frontend\package.json"
     if (Test-Path $pkgJson) {
         Push-Location (Join-Path $REPO_DIR "edict\frontend")
@@ -252,10 +346,11 @@ function Build-Frontend {
         } else {
             Warn "前端构建可能失败，请手动检查"
         }
+    } else {
+        Warn "未找到 edict\frontend\package.json，跳过前端构建"
     }
 }
 
-# ── Step 5: 首次数据同步 ──
 function First-Sync {
     Info "执行首次数据同步..."
     Push-Location $REPO_DIR
@@ -267,7 +362,6 @@ function First-Sync {
     Log "首次同步完成"
 }
 
-# ── Step 6: 重启 Gateway ──
 function Restart-Gateway {
     Info "重启 OpenClaw Gateway..."
     try {
@@ -278,7 +372,6 @@ function Restart-Gateway {
     }
 }
 
-# ── Main ──
 Write-Banner
 Check-Deps
 Backup-Existing
@@ -287,22 +380,25 @@ Register-Agents
 Init-Data
 Link-Resources
 Setup-Visibility
+Sync-Auth
 Build-Frontend
 First-Sync
 Restart-Gateway
 
 Write-Host ""
 Write-Host "╔══════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║  🎉  三省六部安装完成！                          ║" -ForegroundColor Green
+Write-Host "║  EDICT 安装完成！                               ║" -ForegroundColor Green
 Write-Host "╚══════════════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""
 Write-Host "下一步："
-Write-Host "  1. 配置 API Key（如尚未配置）:"
-Write-Host "     openclaw agents add taizi     # 按提示输入 Anthropic API Key"
-Write-Host "     .\install.ps1                 # 重新运行以同步到所有 Agent"
-Write-Host "  2. 启动数据刷新循环:  bash scripts/run_loop.sh"
-Write-Host "  3. 启动看板服务器:    python dashboard/server.py"
-Write-Host "  4. 打开看板:          http://127.0.0.1:7891"
+Write-Host "  1. 推荐方案：优先使用 AI 部署完成环境接入与编排。"
+Write-Host "  2. 如需本地补齐 API Key（可选）:"
+Write-Host "     openclaw agents add control_center     # 按提示输入模型密钥"
+Write-Host "     .\install.ps1                          # 重新运行以同步到所有 Agent"
+Write-Host "  3. 本地运行数据刷新循环:  bash scripts/run_loop.sh"
+Write-Host "  4. 本地启动看板服务器:    python dashboard/server.py"
+Write-Host "  5. 打开看板:              http://127.0.0.1:7891"
 Write-Host ""
-Warn "首次安装必须配置 API Key，否则 Agent 会报错"
-Info "文档: docs/getting-started.md"
+Warn "若采用本地脚本模式，首次运行前仍需先配置可用模型密钥"
+Info "当前安装流程不会直接改写 openclaw.json；如需补齐运行时 Agent 注册，请查看 data/openclaw_registry_suggestions.json"
+Info "文档口径已调整为优先推荐 AI 部署，详情见 docs/getting-started.md"

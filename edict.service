@@ -1,12 +1,12 @@
 # ══════════════════════════════════════════════════════════════
-# 三省六部 · systemd 服务模板
+# Edict · systemd 服务模板
 # 部署说明: 复制到 /etc/systemd/system/edict.service
 #   sudo cp edict.service /etc/systemd/system/
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now edict
 # ══════════════════════════════════════════════════════════════
 [Unit]
-Description=三省六部 Multi-Agent Orchestration Dashboard
+Description=Edict Multi-Agent Orchestration Dashboard
 After=network.target
 
 [Service]

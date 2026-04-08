@@ -1,15 +1,15 @@
 """Orchestrator Worker — 消费事件总线，驱动任务状态机。
 
 监听 topic:
-- task.created → 自动派发给太子 agent
-- task.status → 处理各种状态变更，自动派发下游 agent
+- task.created → 自动派发给总控中心
+- task.status → 处理各种状态变更，自动派发下游中心或专家
 - task.completed → 记录任务完成日志
 - task.stalled → 处理停滞任务（重试 → 升级 → 阻塞）
 
 附加定时任务:
 - _check_stalled → 每 60s 扫描 Doing 状态超时任务，发布 task.stalled 事件
 
-这是系统的核心编排器，取代旧架构中 daemon 线程 + 定时扫描的角色。
+这是系统的核心编排器，负责驱动中心与专家协作流程。
 得益于 Redis Streams ACK 机制：即使 worker 崩溃，未 ACK 的事件
 会被其他消费者自动认领，永不丢失。
 """
@@ -49,13 +49,13 @@ STALL_RETRY_BACKOFF = [30, 60, 120]  # 重试退避时间（秒）
 STALL_CHECK_INTERVAL_SEC = 60   # 检查间隔（秒）
 STALL_THRESHOLD_SEC = 600       # 超过 10 分钟无心跳视为停滞
 
-# 升级路径: 卡在某部门时向上级升级
+# 升级路径：任务卡住时按中心层级逐级升级
 _ESCALATION_PATH = {
-    "Doing": TaskState.Assigned,   # 六部卡住 → 退回尚书省重新派发
+    "Doing": TaskState.Assigned,              # 专家执行卡住 → 回到调度中心重新派发
     "Next": TaskState.Assigned,
-    "Assigned": TaskState.Menxia,  # 尚书省卡住 → 退回门下省复核
-    "Menxia": TaskState.Zhongshu,  # 门下省卡住 → 退回中书省重新规划
-    "Zhongshu": TaskState.Taizi,   # 中书省卡住 → 退回太子重新起草
+    "Assigned": TaskState.ReviewCenter,       # 调度中心卡住 → 回到评审中心复核
+    "ReviewCenter": TaskState.PlanCenter,     # 评审中心卡住 → 回到规划中心重整方案
+    "PlanCenter": TaskState.ControlCenter,    # 规划中心卡住 → 回到总控中心重新决策
 }
 
 # 需要监听的 topics
@@ -164,10 +164,10 @@ class OrchestratorWorker:
             await self._on_task_stalled(payload, trace_id)
 
     async def _on_task_created(self, payload: dict, trace_id: str):
-        """任务创建 → 派发给太子 agent 起草。"""
+        """任务创建后自动派发给总控中心处理入口决策。"""
         task_id = payload.get("task_id")
-        state = payload.get("state", "taizi")
-        agent = STATE_AGENT_MAP.get(TaskState(state), "taizi")
+        state = payload.get("state", TaskState.ControlCenter.value)
+        agent = STATE_AGENT_MAP.get(TaskState(state), "control_center")
 
         await self.bus.publish(
             topic=TOPIC_TASK_DISPATCH,
@@ -196,19 +196,18 @@ class OrchestratorWorker:
         # 如果新状态有对应 agent，自动派发
         agent = STATE_AGENT_MAP.get(new_state)
 
-        # 如果进入 assigned 状态，需要查找六部对应 agent
+        # 如果进入 Assigned 状态，需要查找目标专家
         if new_state == TaskState.Assigned:
             org = payload.get("assignee_org", "")
             if org:
                 agent = ORG_AGENT_MAP.get(org, agent)
             else:
-                # assignee_org 为空时，无法确定目标部门
-                # 派发给尚书省让其决定分配
+                # assignee_org 为空时，回退到调度中心手动分配
                 log.warning(
                     f"Task {task_id} entering Assigned without assignee_org, "
-                    f"dispatching to shangshu for manual routing"
+                    f"dispatching to dispatch_center for manual routing"
                 )
-                agent = "shangshu"
+                agent = "dispatch_center"
 
         if agent:
             await self.bus.publish(
@@ -233,9 +232,9 @@ class OrchestratorWorker:
         """任务停滞 → 自动重试或升级。
 
         恢复策略：
-        1. 第一次停滞：在当前状态重新派发 agent（重试）
-        2. 重试耗尽：向上级升级（如六部→尚书省→门下省）
-        3. 升级到顶（太子）仍失败：标记 Blocked + 通知人工介入
+        1. 第一次停滞：在当前状态重新派发对应中心或专家（重试）
+        2. 重试耗尽：按中心层级逐级升级（如专家 → 调度中心 → 评审中心）
+        3. 升级到顶（总控中心）仍失败：标记 Blocked 并通知人工介入
         """
         task_id = payload.get("task_id")
         current_state = payload.get("state", "")
@@ -275,7 +274,7 @@ class OrchestratorWorker:
         if escalation_level < MAX_ESCALATION_LEVEL:
             escalate_to = _ESCALATION_PATH.get(current_state)
             if escalate_to:
-                escalate_agent = STATE_AGENT_MAP.get(escalate_to, "shangshu")
+                escalate_agent = STATE_AGENT_MAP.get(escalate_to, "control_center")
                 log.info(
                     f"⬆️ Escalating task {task_id}: {current_state} → {escalate_to.value} "
                     f"(level {escalation_level + 1})"

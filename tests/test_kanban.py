@@ -17,22 +17,22 @@ def test_create_and_get(tmp_path):
     original = kb.TASKS_FILE
     kb.TASKS_FILE = tasks_file
     try:
-        kb.cmd_create('TEST-001', '测试任务创建和查询功能验证', 'Inbox', '工部', '工部尚书')
+        kb.cmd_create('TEST-001', '测试任务创建和查询功能验证', 'ControlCenter', '总控中心', '总控负责人')
         tasks = json.loads(tasks_file.read_text())
         assert any(t.get('id') == 'TEST-001' for t in tasks)
         t = next(t for t in tasks if t['id'] == 'TEST-001')
         assert t['title'] == '测试任务创建和查询功能验证'
-        assert t['state'] == 'Inbox'
-        assert t['org'] == '工部'
+        assert t['state'] == 'ControlCenter'
+        assert t['org'] == '总控中心'
     finally:
         kb.TASKS_FILE = original
 
 
 def test_move_state(tmp_path):
-    """kanban move changes task state."""
+    """kanban move changes task state when the transition is legal."""
     tasks_file = tmp_path / 'tasks_source.json'
     tasks_file.write_text(json.dumps([
-        {'id': 'T-1', 'title': 'test', 'state': 'Inbox'}
+        {'id': 'T-1', 'title': 'test', 'state': 'Assigned', 'org': '调度中心'}
     ]))
 
     original = kb.TASKS_FILE
@@ -67,18 +67,18 @@ def test_flow_log(tmp_path):
     """cmd_flow appends a flow_log entry."""
     tasks_file = tmp_path / 'tasks_source.json'
     tasks_file.write_text(json.dumps([
-        {'id': 'T-3', 'title': 'flow test', 'state': 'Zhongshu', 'flow_log': []}
+        {'id': 'T-3', 'title': 'flow test', 'state': 'PlanCenter', 'flow_log': []}
     ]))
 
     original = kb.TASKS_FILE
     kb.TASKS_FILE = tasks_file
     try:
-        kb.cmd_flow('T-3', '中书省', '门下省', '规划方案提交审核')
+        kb.cmd_flow('T-3', '规划中心', '评审中心', '规划方案提交审核')
         tasks = json.loads(tasks_file.read_text())
         t = tasks[0]
         assert len(t['flow_log']) == 1
-        assert t['flow_log'][0]['from'] == '中书省'
-        assert t['flow_log'][0]['to'] == '门下省'
+        assert t['flow_log'][0]['from'] == '规划中心'
+        assert t['flow_log'][0]['to'] == '评审中心'
     finally:
         kb.TASKS_FILE = original
 
@@ -87,7 +87,7 @@ def test_done(tmp_path):
     """cmd_done marks task as Done with output and flow_log entry."""
     tasks_file = tmp_path / 'tasks_source.json'
     tasks_file.write_text(json.dumps([
-        {'id': 'T-4', 'title': 'done test', 'state': 'Doing', 'org': '兵部', 'flow_log': []}
+        {'id': 'T-4', 'title': 'done test', 'state': 'Doing', 'org': '代码专家', 'flow_log': []}
     ]))
 
     original = kb.TASKS_FILE
@@ -108,7 +108,7 @@ def test_progress(tmp_path):
     """cmd_progress updates now text and appends to progress_log."""
     tasks_file = tmp_path / 'tasks_source.json'
     tasks_file.write_text(json.dumps([
-        {'id': 'T-5', 'title': 'progress test', 'state': 'Doing', 'org': '工部'}
+        {'id': 'T-5', 'title': 'progress test', 'state': 'Doing', 'org': '代码专家'}
     ]))
 
     original = kb.TASKS_FILE
@@ -155,7 +155,7 @@ def test_progress_log_capped(tmp_path):
     """progress_log should not exceed MAX_PROGRESS_LOG entries."""
     tasks_file = tmp_path / 'tasks_source.json'
     tasks_file.write_text(json.dumps([
-        {'id': 'T-7', 'title': '日志上限测试', 'state': 'Doing', 'org': '礼部'}
+        {'id': 'T-7', 'title': '日志上限测试', 'state': 'Doing', 'org': 'Agent管理专家'}
     ]))
 
     original = kb.TASKS_FILE

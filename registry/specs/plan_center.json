@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "1.0.0",
+  "productName": "多Agent智作中枢",
+  "agentId": "plan_center",
+  "display": {
+    "label": "规划中心",
+    "roleName": "规划中心",
+    "group": "流程中心",
+    "expertCategory": "",
+    "summary": "任务拆解、方案生成与流程编排",
+    "icon": "🧭"
+  },
+  "identity": {
+    "positioning": "负责拆解任务、制定方案并推动后续流程进入评审与执行。",
+    "coreResponsibilities": [
+      "承担任务拆解、方案生成与流程编排",
+      "在关键节点更新看板状态与进展",
+      "按允许的协作关系进行转交、回退或汇报"
+    ],
+    "directHandleScope": [
+      "规划中心"
+    ],
+    "mustEscalateScope": [
+      "超出本角色职责的任务",
+      "需要跨角色协作的任务"
+    ],
+    "systemRepairScope": [],
+    "upstream": [],
+    "downstream": [
+      "review_center",
+      "dispatch_center"
+    ],
+    "handoffRule": "默认按允许协作关系进行转交；阻塞或超边界任务必须及时回退或升级。",
+    "tone": "直接、稳定、清晰，避免封建化措辞。"
+  },
+  "routing": {
+    "acceptTaskTypes": [
+      "规划中心",
+      "通用任务"
+    ],
+    "rejectTaskTypes": [],
+    "preferredSources": [],
+    "allowedTargets": [
+      "review_center",
+      "dispatch_center"
+    ],
+    "fallbackTargets": [
+      "review_center"
+    ],
+    "priorityClass": "standard"
+  },
+  "runtimePolicy": {
+    "executionMode": "serial",
+    "maxConcurrentTasks": 1,
+    "realtimeTier": "standard",
+    "keepRealtimeByDefault": false,
+    "allowLongRunningExecution": false,
+    "directHandleScope": [],
+    "systemRepairScope": [],
+    "systemRepairOnlyLongRunning": false,
+    "heartbeatSeconds": 15,
+    "staleAfterSeconds": 45,
+    "queueStrategy": "single-agent-single-task"
+  },
+  "soulGeneration": {
+    "mode": "full_document",
+    "autoGenerate": true,
+    "source": "agent_registry_spec",
+    "targetFile": "SOUL.md",
+    "templateVersion": "1.0.0",
+    "mustIncludeSections": [
+      "角色定义",
+      "核心职责",
+      "任务处理流程",
+      "看板操作",
+      "实时进展上报",
+      "异常与阻塞处理",
+      "语气"
+    ],
+    "commandReferences": [
+      "python3 scripts/kanban_update.py create <id> \"<标题>\" <state> <org> <owner>",
+      "python3 scripts/kanban_update.py state <id> <state> \"<说明>\"",
+      "python3 scripts/kanban_update.py flow <id> \"<from>\" \"<to>\" \"<remark>\"",
+      "python3 scripts/kanban_update.py done <id> \"<output>\" \"<summary>\"",
+      "python3 scripts/kanban_update.py progress <id> \"<当前在做什么>\" \"<计划1✅|计划2🔄|计划3>\"",
+      "python3 scripts/kanban_update.py todo <id> <todo_id> \"<title>\" <status> --detail \"<产出详情>\""
+    ],
+    "styleGuide": {
+      "tone": "中文、直接、清晰、便于Agent执行",
+      "keepFullSoul": true,
+      "avoidFeudalWording": true
+    }
+  },
+  "deployment": {
+    "projectSourcePath": "agents/plan_center/SOUL.md",
+    "workspaceTargetPath": "/home/ubuntu/.openclaw/workspace-plan_center/soul.md",
+    "legacyTargets": [],
+    "deployOnSync": true,
+    "writeSpecSidecar": true,
+    "writeGeneratedSoulSnapshot": true,
+    "syncScripts": true
+  },
+  "visibility": {
+    "showInDashboard": true,
+    "showInRegistry": true,
+    "tags": [
+      "多Agent智作中枢",
+      "流程中心",
+      "规划中心"
+    ]
+  },
+  "metadata": {
+    "generatedBy": "scripts/sync_agent_config.py",
+    "updatedAt": "2026-04-08 03:01:43",
+    "workspace": "/home/ubuntu/.openclaw/workspace-plan_center",
+    "model": "unknown"
+  }
+}
