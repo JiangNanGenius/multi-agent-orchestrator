@@ -4,7 +4,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useStore, DEPTS, deptMeta } from '../store';
-import { api, type CollabDiscussResult, type CollabMinute, type CollabAgentBusyEntry } from '../api';
+import { api, type CollabDiscussResult, type CollabMinute, type CollabAgentBusyEntry, type CollabRunStatus } from '../api';
 import { pickLocaleText, type Locale } from '../i18n';
 
 const EMOTION_EMOJI: Record<string, string> = {
@@ -104,6 +104,50 @@ interface CollabSession {
   busy_snapshot?: CollabAgentBusyEntry[];
 }
 
+const SESSION_CACHE_KEY = 'edict:collab:session-cache';
+
+function readSessionCache(): CollabSession | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(SESSION_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CollabSession;
+    return parsed?.session_id ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionCache(session: CollabSession | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!session?.session_id) {
+      window.localStorage.removeItem(SESSION_CACHE_KEY);
+      return;
+    }
+    window.localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(session));
+  } catch {
+    // ignore local cache failures
+  }
+}
+
+function mergeRunStatus(prev: CollabSession, status: CollabRunStatus): CollabSession {
+  return {
+    ...prev,
+    phase: status.phase ?? prev.phase,
+    run_state: status.run_state ?? prev.run_state,
+    auto_run: status.auto_run ?? prev.auto_run,
+    auto_round_limit: status.auto_round_limit ?? prev.auto_round_limit,
+    auto_round_count: status.auto_round_count ?? prev.auto_round_count,
+    last_advanced_at: status.last_advanced_at ?? prev.last_advanced_at,
+    next_run_at: status.next_run_at ?? prev.next_run_at,
+    claimed_agents: status.claimed_agents ?? prev.claimed_agents,
+    conflicted_agents: status.conflicted_agents ?? prev.conflicted_agents,
+    yielded_agents: status.yielded_agents ?? prev.yielded_agents,
+    busy_snapshot: status.busy_snapshot ?? prev.busy_snapshot,
+  };
+}
+
 function normalizeSession(res: CollabDiscussResult): CollabSession {
   return {
     session_id: res.session_id || '',
@@ -177,11 +221,16 @@ function mergeAdvanceResult(prev: CollabSession, res: CollabDiscussResult): Coll
     moderator_id: res.moderator_id ?? prev.moderator_id,
     moderator_name: res.moderator_name ?? prev.moderator_name,
     speaker_queue: res.speaker_queue ?? prev.speaker_queue,
+    agenda: res.agenda ?? prev.agenda,
     messages: mergedMessages,
     minutes: res.minutes ?? prev.minutes,
+    trace: (res.trace as TraceEntry[] | undefined) ?? prev.trace,
     decision_items: res.decision_items ?? prev.decision_items,
     open_questions: res.open_questions ?? prev.open_questions,
     action_items: res.action_items ?? prev.action_items,
+    stage_history: res.stage_history ?? prev.stage_history,
+    summary: res.summary ?? prev.summary,
+    select_all: res.select_all ?? prev.select_all,
     run_state: res.run_state ?? prev.run_state,
     auto_run: res.auto_run ?? prev.auto_run,
     run_interval_sec: res.run_interval_sec ?? prev.run_interval_sec,
@@ -238,6 +287,8 @@ export default function CollaborationDiscussion() {
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [emotions, setEmotions] = useState<Record<string, string>>({});
   const [speakerSelection, setSpeakerSelection] = useState<Set<string>>(new Set());
+  const [restorableSession, setRestorableSession] = useState<CollabSession | null>(null);
+  const [syncingRunState, setSyncingRunState] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -270,6 +321,16 @@ export default function CollaborationDiscussion() {
     loadCollabBusy().catch(() => {});
   }, [loadCollabBusy]);
 
+  useEffect(() => {
+    setRestorableSession(readSessionCache());
+  }, []);
+
+  useEffect(() => {
+    if (!session?.session_id) return;
+    writeSessionCache(session);
+    setRestorableSession(session);
+  }, [session]);
+
   const allAgentIds = useMemo(() => DEPTS.map((d) => d.id), []);
   const sessionAgents = session?.agents || [];
   const currentModeratorId = session?.moderator_id || moderatorId;
@@ -289,14 +350,6 @@ export default function CollaborationDiscussion() {
     });
   }, [moderatorId]);
 
-  useEffect(() => {
-    if (!session) return;
-    const queue = session.speaker_queue || [];
-    if (queue.length > 0) {
-      setSpeakerSelection(new Set(queue));
-    }
-  }, [session?.speaker_queue, session?.session_id]);
-
   const toggleAgent = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -308,6 +361,23 @@ export default function CollaborationDiscussion() {
       }
       return next;
     });
+  };
+
+  useEffect(() => {
+    if (!session) return;
+    const queue = session.speaker_queue || [];
+    if (queue.length > 0) {
+      setSpeakerSelection(new Set(queue));
+    }
+  }, [session?.speaker_queue, session?.session_id]);
+
+  const toggleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(allAgentIds));
+      if (!moderatorId) setModeratorId('control_center');
+      return;
+    }
+    setSelectedIds(new Set(moderatorId ? [moderatorId] : []));
   };
 
   const selectAllAgents = () => {
@@ -327,6 +397,52 @@ export default function CollaborationDiscussion() {
       return next;
     });
   };
+
+  const syncRunStatus = useCallback(async (sessionId?: string, seed?: CollabSession | null) => {
+    if (!sessionId) return;
+    setSyncingRunState(true);
+    try {
+      const res = await api.collabDiscussRunStatus(sessionId);
+      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '同步会场状态失败', 'Failed to sync discussion status'));
+      setSession((prev) => {
+        const base = prev?.session_id === sessionId ? prev : seed;
+        return base ? mergeRunStatus(base, res) : prev;
+      });
+      loadCollabBusy().catch(() => {});
+    } catch (e: unknown) {
+      if (!seed) {
+        toast((e as Error).message || pickLocaleText(locale, '同步会场状态失败', 'Failed to sync discussion status'), 'err');
+      }
+    } finally {
+      setSyncingRunState(false);
+    }
+  }, [loadCollabBusy, locale, toast]);
+
+  const handleRestoreSession = useCallback(async () => {
+    const cached = restorableSession || readSessionCache();
+    if (!cached?.session_id) {
+      toast(pickLocaleText(locale, '没有可恢复的会场记录', 'No discussion room is available to restore'), 'err');
+      return;
+    }
+    setSelectedIds(new Set(cached.agents.map((agent) => agent.id)));
+    setModeratorId(cached.moderator_id || 'control_center');
+    setTopic(cached.topic || '');
+    setSpeakerSelection(new Set(cached.speaker_queue || []));
+    setSession(cached);
+    setPhase('session');
+    setAutoPlay(Boolean(cached.auto_run));
+    await syncRunStatus(cached.session_id, cached);
+  }, [locale, restorableSession, syncRunStatus, toast]);
+
+  useEffect(() => {
+    if (!session?.session_id || session.phase === 'concluded') return;
+    const timer = window.setInterval(() => {
+      if (!loading) {
+        syncRunStatus(session.session_id);
+      }
+    }, 8000);
+    return () => window.clearInterval(timer);
+  }, [loading, session?.phase, session?.session_id, syncRunStatus]);
 
   const animateMessages = (messages: CollabMessage[]) => {
     const aiMsgs = messages
@@ -541,6 +657,8 @@ export default function CollaborationDiscussion() {
         loadCollabBusy().catch(() => {});
       });
     }
+    writeSessionCache(null);
+    setRestorableSession(null);
     setPhase('setup');
     setSession(null);
     setAutoPlay(false);
@@ -571,12 +689,29 @@ export default function CollaborationDiscussion() {
   const openQuestions = session?.open_questions || [];
   const actionItems = session?.action_items || [];
   const trace = session?.trace || [];
+  const stageHistory = session?.stage_history || [];
   const busyEntries = collabAgentBusyData?.busy || [];
   const busyByAgent = new Map(busyEntries.map((entry) => [entry.agent_id, entry]));
   const activeBusySessions = collabAgentBusyData?.sessions || [];
   const sessionBusySnapshot = session?.busy_snapshot?.length
     ? session.busy_snapshot
     : (sessionAgents.map((agent) => busyByAgent.get(agent.id)).filter(Boolean) as CollabAgentBusyEntry[]);
+  const lastAdvancedLabel = formatTimestampLabel(session?.last_advanced_at, locale);
+  const nextRunLabel = formatTimestampLabel(session?.next_run_at, locale);
+
+  const handleTakeOverRound = () => {
+    const availableSpeakers = speakerPool
+      .filter((agent) => {
+        const busy = busyByAgent.get(agent.id);
+        return !(busy && busy.session_id && busy.session_id !== session?.session_id && busy.state !== 'idle');
+      })
+      .map((agent) => agent.id);
+    const nextSelection = (session?.speaker_queue && session.speaker_queue.length > 0)
+      ? session.speaker_queue
+      : availableSpeakers;
+    setAutoPlay(false);
+    setSpeakerSelection(new Set(nextSelection));
+  };
 
   if (phase === 'setup') {
     return (
@@ -593,6 +728,52 @@ export default function CollaborationDiscussion() {
             )}
           </p>
         </div>
+
+        {restorableSession?.session_id && (
+          <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)] mb-4">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <div className="text-sm font-semibold">{pickLocaleText(locale, '🪄 后台续会', '🪄 Resume in Background')}</div>
+                <div className="text-xs text-[var(--muted)] mt-1">
+                  {pickLocaleText(locale, '检测到你上次离开的会场记录，可直接返回会场继续当前主持流程。', 'A previously opened room was detected. You can return to it and continue the moderator flow immediately.')}
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => syncRunStatus(restorableSession.session_id, restorableSession)}
+                  disabled={syncingRunState}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-50 transition"
+                >
+                  {syncingRunState ? pickLocaleText(locale, '同步中...', 'Syncing...') : pickLocaleText(locale, '↻ 同步状态', '↻ Sync Status')}
+                </button>
+                <button
+                  onClick={handleRestoreSession}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-[var(--acc)]40 text-[var(--acc)] hover:bg-[var(--acc)]10 transition"
+                >
+                  {pickLocaleText(locale, '返回会场', 'Return to Room')}
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-3 text-xs">
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3">
+                <div className="text-[10px] text-[var(--muted)] mb-1">{pickLocaleText(locale, '议题', 'Topic')}</div>
+                <div className="font-semibold line-clamp-2">{restorableSession.topic}</div>
+              </div>
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3">
+                <div className="text-[10px] text-[var(--muted)] mb-1">{pickLocaleText(locale, '当前阶段', 'Current Stage')}</div>
+                <div className="font-semibold">{locale === 'en' ? (STAGE_LABEL[restorableSession.stage || '']?.en || restorableSession.stage || '-') : (STAGE_LABEL[restorableSession.stage || '']?.zh || restorableSession.stage || '-')}</div>
+              </div>
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3">
+                <div className="text-[10px] text-[var(--muted)] mb-1">{pickLocaleText(locale, '轮次', 'Round')}</div>
+                <div className="font-semibold">{locale === 'en' ? `Round ${restorableSession.round}` : `第 ${restorableSession.round} 轮`}</div>
+              </div>
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3">
+                <div className="text-[10px] text-[var(--muted)] mb-1">{pickLocaleText(locale, '运行状态', 'Run State')}</div>
+                <div className="font-semibold">{restorableSession.run_state === 'paused' ? pickLocaleText(locale, '已暂停', 'Paused') : restorableSession.phase === 'concluded' ? pickLocaleText(locale, '已结束', 'Concluded') : pickLocaleText(locale, '运行中', 'Running')}</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_.8fr] gap-4">
           <div className="space-y-4">
@@ -780,6 +961,13 @@ export default function CollaborationDiscussion() {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button
+              onClick={() => syncRunStatus(session?.session_id, session)}
+              disabled={!session?.session_id || syncingRunState}
+              className="text-xs px-2.5 py-1 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--text)] disabled:opacity-40 transition"
+            >
+              {syncingRunState ? pickLocaleText(locale, '同步中...', 'Syncing...') : pickLocaleText(locale, '↻ 同步状态', '↻ Sync Status')}
+            </button>
+            <button
               onClick={() => setShowConstraint(!showConstraint)}
               className="text-xs px-2.5 py-1 rounded-lg border border-amber-600/40 text-amber-400 hover:bg-amber-900/20 transition"
             >
@@ -876,9 +1064,7 @@ export default function CollaborationDiscussion() {
       <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_.8fr] gap-4">
         <div className="space-y-4 min-w-0">
           <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] p-4 space-y-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-
-
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 text-xs">
               <MetricCard
                 title={pickLocaleText(locale, '当前模式', 'Current Mode')}
                 value={currentMode === 'meeting' ? pickLocaleText(locale, '正式讨论', 'Formal Discussion') : pickLocaleText(locale, '轻松聊天', 'Chat')}
@@ -895,11 +1081,48 @@ export default function CollaborationDiscussion() {
                 accent={'#6aef9a'}
               />
               <MetricCard
+                title={pickLocaleText(locale, '上次推进', 'Last Advanced')}
+                value={lastAdvancedLabel}
+                accent={'#7dd3fc'}
+              />
+              <MetricCard
+                title={pickLocaleText(locale, '下次自动继续', 'Next Auto Continue')}
+                value={session?.run_state === 'paused' ? pickLocaleText(locale, '已暂停', 'Paused') : nextRunLabel}
+                accent={'#f5c842'}
+              />
+              <MetricCard
                 title={pickLocaleText(locale, '可追溯记录', 'Trace Entries')}
                 value={String(trace.length)}
                 accent={'#ff9a6a'}
               />
             </div>
+            {(session?.agenda || (session?.claimed_agents?.length || 0) > 0 || (session?.conflicted_agents?.length || 0) > 0 || (session?.yielded_agents?.length || 0) > 0) && (
+              <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3 space-y-3">
+                {session?.agenda && (
+                  <div>
+                    <div className="text-[10px] text-[var(--muted)] mb-1">{pickLocaleText(locale, '当前议程', 'Current Agenda')}</div>
+                    <div className="text-xs leading-relaxed">{session.agenda}</div>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2 text-[10px]">
+                  {session?.claimed_agents?.length ? (
+                    <span className="px-2 py-1 rounded-lg border border-emerald-700/30 bg-emerald-950/20 text-emerald-300">
+                      {pickLocaleText(locale, `已占用 ${session.claimed_agents.length} 位成员`, `${session.claimed_agents.length} claimed`) }
+                    </span>
+                  ) : null}
+                  {session?.conflicted_agents?.length ? (
+                    <span className="px-2 py-1 rounded-lg border border-amber-700/30 bg-amber-950/20 text-amber-300">
+                      {pickLocaleText(locale, `冲突 ${session.conflicted_agents.length} 位`, `${session.conflicted_agents.length} conflicted`) }
+                    </span>
+                  ) : null}
+                  {session?.yielded_agents?.length ? (
+                    <span className="px-2 py-1 rounded-lg border border-fuchsia-700/30 bg-fuchsia-950/20 text-fuchsia-300">
+                      {pickLocaleText(locale, `让出 ${session.yielded_agents.length} 位`, `${session.yielded_agents.length} yielded`) }
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] gap-3">
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3">
                 <div className="flex items-center justify-between gap-2 mb-2">
@@ -991,6 +1214,13 @@ export default function CollaborationDiscussion() {
                 })}
               </div>
               <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={handleTakeOverRound}
+                  disabled={loading || session?.run_state === 'paused'}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold border border-amber-600/40 text-amber-300 hover:bg-amber-900/20 disabled:opacity-40"
+                >
+                  {pickLocaleText(locale, '接管本轮', 'Take Over This Round')}
+                </button>
                 <button
                   onClick={() => handleAdvance({
                     intent: 'next_round',
@@ -1192,6 +1422,32 @@ export default function CollaborationDiscussion() {
 
           <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] p-4">
             <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="text-sm font-semibold">{pickLocaleText(locale, '🪜 阶段历史', '🪜 Stage History')}</div>
+              <span className="text-[10px] text-[var(--muted)]">{stageHistory.length}</span>
+            </div>
+            {stageHistory.length > 0 ? (
+              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                {stageHistory.slice().reverse().map((item, idx) => {
+                  const stage = typeof item.stage === 'string' ? item.stage : '';
+                  const resultStage = typeof item.result_stage === 'string' ? item.result_stage : stage;
+                  const round = typeof item.round === 'number' ? item.round : '-';
+                  return (
+                    <div key={`${String(item.at || item.timestamp || idx)}-${idx}`} className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-2 text-xs">
+                      <div className="text-[10px] text-[var(--muted)] mb-1">
+                        {pickLocaleText(locale, '第', 'Round ')}{round}{pickLocaleText(locale, '轮', '')} · {locale === 'en' ? (STAGE_LABEL[resultStage]?.en || resultStage || '-') : (STAGE_LABEL[resultStage]?.zh || resultStage || '-')}
+                      </div>
+                      <div className="leading-relaxed break-words">{renderStageHistory(item, locale)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-xs text-[var(--muted)]">{pickLocaleText(locale, '阶段推进后会在这里留下历史记录。', 'Stage transitions will appear here as the meeting moves forward.')}</div>
+            )}
+          </div>
+
+          <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] p-4">
+            <div className="flex items-center justify-between gap-2 mb-2">
               <div className="text-sm font-semibold">{pickLocaleText(locale, '🧾 可追溯记录', '🧾 Trace Log')}</div>
               <span className="text-[10px] text-[var(--muted)]">{trace.length}</span>
             </div>
@@ -1260,6 +1516,46 @@ function SummaryListCard({
       )}
     </div>
   );
+}
+
+function formatTimestampLabel(timestamp: number | null | undefined, locale: Locale) {
+  if (!timestamp) return pickLocaleText(locale, '暂无', '—');
+  const dt = new Date(timestamp * 1000);
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(dt);
+}
+
+function renderStageHistory(item: Record<string, unknown>, locale: Locale) {
+  const summary = typeof item.summary === 'string' ? item.summary : '';
+  const note = typeof item.note === 'string'
+    ? item.note
+    : typeof item.reason === 'string'
+      ? item.reason
+      : typeof item.content === 'string'
+        ? item.content
+        : '';
+  const resultStage = typeof item.result_stage === 'string' ? item.result_stage : '';
+  const speakers = Array.isArray(item.speaker_ids)
+    ? item.speaker_ids.filter((speaker): speaker is string => typeof speaker === 'string')
+    : [];
+  const parts = [summary, note];
+  if (resultStage) {
+    parts.push(
+      pickLocaleText(
+        locale,
+        `结果阶段：${STAGE_LABEL[resultStage]?.zh || resultStage}`,
+        `Result stage: ${STAGE_LABEL[resultStage]?.en || resultStage}`,
+      ),
+    );
+  }
+  if (speakers.length > 0) {
+    parts.push(pickLocaleText(locale, `参与成员：${speakers.join('、')}`, `Participants: ${speakers.join(', ')}`));
+  }
+  return parts.filter(Boolean).join(' · ') || pickLocaleText(locale, '阶段已推进。', 'Stage advanced.');
 }
 
 function renderTrace(item: TraceEntry, locale: Locale) {

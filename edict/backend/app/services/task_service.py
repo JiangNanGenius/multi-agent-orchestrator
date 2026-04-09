@@ -30,8 +30,10 @@ from .task_workspace import (
     archive_task_workspace,
     build_workspace_meta,
     generate_task_code,
+    push_workspace_notification,
     reactivate_task_workspace,
     run_workspace_watchdog,
+    set_workspace_risk_control,
     sync_workspace_for_task,
 )
 
@@ -503,6 +505,88 @@ class TaskService:
             agent=agent,
             payload={"patch": patch},
             ledger_name="workspace",
+        )
+        await self.db.commit()
+        return task
+
+    async def create_workspace_notification(
+        self,
+        task_id: uuid.UUID,
+        *,
+        title: str,
+        message: str,
+        source: str = "system",
+        kind: str = "info",
+        severity: str = "info",
+        requires_ack: bool = False,
+        meta: dict[str, Any] | None = None,
+    ) -> Task:
+        task = await self._get_task(task_id)
+        task.updated_at = datetime.now(timezone.utc)
+        task.meta = push_workspace_notification(
+            task.to_dict(),
+            title=title,
+            message=message,
+            source=source,
+            kind=kind,
+            severity=severity,
+            requires_ack=requires_ack,
+            meta=meta,
+        )
+        task.meta = self._sync_workspace(
+            task,
+            event="task.notification.created",
+            summary=title,
+            agent=source,
+            payload={
+                "kind": kind,
+                "severity": severity,
+                "message": message,
+                "requires_ack": requires_ack,
+                "meta": meta or {},
+            },
+            ledger_name="notifications",
+        )
+        await self.db.commit()
+        return task
+
+    async def update_workspace_risk_control(
+        self,
+        task_id: uuid.UUID,
+        *,
+        status: str,
+        level: str,
+        summary: str,
+        requested_by: str = "system",
+        requires_user_confirmation: bool = False,
+        confirmation_channel: str = "",
+        approval_status: str = "not_required",
+        approval_reason: str = "",
+        approved_by: str = "",
+        operations: list[dict[str, Any]] | None = None,
+    ) -> Task:
+        task = await self._get_task(task_id)
+        task.updated_at = datetime.now(timezone.utc)
+        task.meta = set_workspace_risk_control(
+            task.to_dict(),
+            status=status,
+            level=level,
+            summary=summary,
+            requested_by=requested_by,
+            requires_user_confirmation=requires_user_confirmation,
+            confirmation_channel=confirmation_channel,
+            approval_status=approval_status,
+            approval_reason=approval_reason,
+            approved_by=approved_by,
+            operations=operations,
+        )
+        task.meta = self._sync_workspace(
+            task,
+            event="task.risk_control.updated",
+            summary=summary or "风险控制状态已更新。",
+            agent=requested_by,
+            payload=((task.meta or {}).get("workspace") or {}).get("risk_control", {}),
+            ledger_name="risk_control",
         )
         await self.db.commit()
         return task

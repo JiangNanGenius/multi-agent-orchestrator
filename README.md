@@ -4,7 +4,26 @@
 >
 > **English Summary:** A production-oriented multi-agent orchestration system for complex task governance, emphasizing **structured intake, visible progress, traceable delivery, recoverable context, and reversible archival**.[1] [2] [3] [4]
 
-当前仓库的重点，不是把多个 Agent 简单堆成一个聊天窗口，而是把任务放进一条**用户能理解、团队能治理、系统能恢复、历史能沉淀**的执行链路中。[1] [2] [3] 经过本轮现代化改造，项目已经补齐任务工作区、文件化账本、冷热分层、冷归档与回迁、`/new` 刷新规则、看门狗巡检修复、飞书汇报回写以及前端操作入口，使其更接近一套可持续演进的公开工程底座，而不是一次性的演示页面。[2] [3] [4]
+当前仓库的重点，不是把多个 Agent 简单堆成一个聊天窗口，而是把任务放进一条**用户能理解、团队能治理、系统能恢复、历史能沉淀**的执行链路中。[1] [2] [3] 经过本轮现代化改造，项目已经补齐任务工作区、文件化账本、冷热分层、冷归档与回迁、`/new` 刷新规则、看门狗巡检修复、飞书汇报回写、风险操作确认链路、看板通知入口以及前端治理操作面，使其更接近一套可持续演进的公开工程底座，而不是一次性的演示页面。[2] [3] [4]
+
+## Table of Contents / 目录
+
+- [Project Overview / 项目概述](#project-overview--项目概述)
+- [Why This Project / 这个项目解决什么问题](#why-this-project--这个项目解决什么问题)
+- [User-Facing Lifecycle / 用户视角的任务主线](#user-facing-lifecycle--用户视角的任务主线)
+- [Key Modernization Highlights / 本轮现代化改造重点](#key-modernization-highlights--本轮现代化改造重点)
+- [Workspace and Ledger Model / 任务工作区与账本模型](#workspace-and-ledger-model--任务工作区与账本模型)
+- [Archival and Reactivation / 归档与回迁机制](#archival-and-reactivation--归档与回迁机制)
+- [Context Refresh and Recovery / 上下文刷新与恢复链](#context-refresh-and-recovery--上下文刷新与恢复链)
+- [Governance, Watchdog, and Reporting / 治理、巡检与汇报闭环](#governance-watchdog-and-reporting--治理巡检与汇报闭环)
+- [Documentation Map / 文档阅读入口](#documentation-map--文档阅读入口)
+- [Demo Preview / 当前界面预览](#demo-preview--当前界面预览)
+- [Classic Screenshots / 经典界面截图](#classic-screenshots--经典界面截图)
+- [Repository Structure / 目录速览](#repository-structure--目录速览)
+- [Attribution / 来源与致谢](#attribution--来源与致谢)
+- [Version Log / 版本日志](#version-log--版本日志)
+- [References](#references)
+
 
 ## Project Overview / 项目概述
 
@@ -59,6 +78,7 @@ The current public version already includes the major foundational upgrades comp
 | Watchdog / 看门狗巡检 | Stalled or inconsistent tasks can be inspected, annotated, and partially repaired / 对停滞或不一致任务进行巡检、标记与修复 [2] [4] | Completed / 已完成 |
 | Feishu Reporting / 飞书汇报 | Key task events can be written back into reporting metadata and report ledgers / 关键任务事件可回写汇报元数据与 reports 账本 [2] [4] | Completed / 已完成 |
 | Frontend Entry Completion / 前端入口补齐 | Dashboard now exposes workspace paths, file entries, archive actions, refresh hints, and watchdog fields / 前端已补齐工作区、归档回迁、刷新建议与巡检状态入口 [2] [4] | Completed / 已完成 |
+| Risk Confirmation and Notifications / 风险确认与通知 | High-risk operations can be escalated to the control layer or dashboard for user confirmation, while board notifications surface watchdog and approval signals / 高风险操作可升级到总控层或看板询问用户，看板通知则用于集中暴露巡检与审批提醒 [2] [4] | Completed / 已完成 |
 
 ## Workspace and Ledger Model / 任务工作区与账本模型
 
@@ -100,7 +120,7 @@ Long tasks eventually face context pressure. Instead of hiding this problem, the
 
 The system is not only designed to move tasks forward; it is also designed to detect when something is drifting, stalled, or incomplete. The watchdog layer provides health status, repair records, and recommended next actions, while reporting metadata helps trace what has been communicated externally.[2] [4]
 
-系统不只是负责把任务往前推进，也负责在任务**漂移、停滞或不完整**时主动发出信号。看门狗层会提供健康状态、修复动作和推荐下一步；汇报回写则用来保留任务对外同步的结构化记录。[2] [4]
+系统不只是负责把任务往前推进，也负责在任务**漂移、停滞或不完整**时主动发出信号。看门狗层会提供健康状态、修复动作和推荐下一步；汇报回写则用来保留任务对外同步的结构化记录。[2] [4] 在最新一轮治理调整中，看门狗还承担了总控中心上下文刷新监督、风险操作前置校验与通知生成职责，而真正执行高风险确认和 `/new` 刷新的权限仍被收束在总控中心或显式用户确认链路上。[2] [4]
 
 ![任务工作区治理联动图](docs/diagrams/technical-workspace-governance-flow.png)
 
@@ -160,12 +180,15 @@ This project is maintained and modernized by **江南奇才** under the public n
 
 本项目由 **江南奇才** 持续整理与改造，对外主名称统一为 **Multi-Agent Orchestrator**。在公开版整理与现代化重构过程中，仓库参考过既有开源实现和仓库组织方式；相关内容现已基本完成吸收、改写与重构，因此 README 仅保留必要范围内的简短致谢说明，并继续遵循 MIT License 的相关要求。[1] [2]
 
+在公开来源说明层面，当前仓库至少明确保留对以下上游公开仓库的简短引用：[`cft0808/edict`](https://github.com/cft0808/edict) 与 [`wanikua/danghuangshang`](https://github.com/wanikua/danghuangshang)。它们主要作为公开演进来源与仓库组织参考被提及，并不表示当前代码结构仍与上游保持逐文件对应关系；但在 MIT License 语境下，保留简洁、可见且不喧宾夺主的致谢说明是必要的。[5] [6]
+
 ## Version Log / 版本日志
 
 | Date / 日期 | Change / 变更 |
 | --- | --- |
 | 2026-04-09 | Rewrote the homepage README into a bilingual Chinese-English entry, updated project positioning, added user and technical documentation links, and integrated new governance flow diagrams / 将首页 README 重写为中英文双语入口，更新项目简介，加入用户文档与技术文档入口，并整合新的治理流程图 [1] [2] [3] [4] |
 | 2026-04-09 | Documented task workspace, file ledger, cold/hot tiering, archive reactivation, `/new` rule, watchdog, Feishu reporting, and frontend governance entries / 同步纳入任务工作区、文件化账本、冷热分层、归档回迁、`/new` 规则、看门狗、飞书汇报与前端治理入口 [2] [3] [4] |
+| 2026-04-10 | Added README table of contents, clarified watchdog-supervised `/new` and risk confirmation governance, and restored concise upstream attribution references required by the public MIT release / 补充首页目录，明确看门狗监督式 `/new` 与风险确认治理，并恢复公开版 MIT 所需的简短上游来源引用 [2] [4] [5] [6] |
 | 2026-04-08 | Completed major public-release cleanup, naming convergence, and dashboard preview consolidation / 完成公开版主线脱敏、命名收口与界面预览整理 [1] [3] |
 
 ## References
@@ -174,3 +197,5 @@ This project is maintained and modernized by **江南奇才** under the public n
 [2]: ./docs/technical-architecture.md "技术文档"
 [3]: ./docs/current_architecture_overview.md "当前架构与处理逻辑总览"
 [4]: ./edict/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"
+[5]: https://github.com/cft0808/edict "cft0808/edict"
+[6]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"

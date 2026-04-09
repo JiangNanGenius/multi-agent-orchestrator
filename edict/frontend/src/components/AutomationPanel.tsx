@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useStore, isEdict, isArchived, getTaskScheduler, getSchedulerSummary, stateLabel } from '../store';
-import { api, type Task } from '../api';
+import { api, type Task, type WorkspaceNotification, type RiskControlState } from '../api';
 import { pickLocaleText } from '../i18n';
 
 function isAutomationRemark(remark: string): boolean {
@@ -24,6 +24,33 @@ function collectAutomationLogs(tasks: Task[], locale: 'zh' | 'en' = 'zh') {
     )
     .sort((a, b) => String(b.at).localeCompare(String(a.at)))
     .slice(0, 18);
+}
+
+function collectBoardNotices(tasks: Task[]) {
+  return tasks
+    .flatMap((task) => {
+      const workspace = task.workspace || {};
+      const notifications = (task.workspaceNotifications || workspace.notifications || []) as WorkspaceNotification[];
+      return notifications.map((item, index) => ({
+        taskId: task.id,
+        title: task.title || '(Untitled)',
+        index,
+        notification: item,
+      }));
+    })
+    .sort((a, b) => String(b.notification?.created_at || '').localeCompare(String(a.notification?.created_at || '')))
+    .slice(0, 8);
+}
+
+function collectRiskApprovals(tasks: Task[]) {
+  return tasks
+    .map((task) => {
+      const workspace = task.workspace || {};
+      const risk = (task.workspaceRiskControl || workspace.risk_control || {}) as RiskControlState;
+      return { task, risk };
+    })
+    .filter(({ risk }) => Boolean(risk?.requires_user_confirmation || risk?.approval_status === 'pending' || risk?.status === 'pending'))
+    .slice(0, 8);
 }
 
 export default function AutomationPanel() {
@@ -72,6 +99,8 @@ export default function AutomationPanel() {
   }, [tasks]);
 
   const recentLogs = useMemo(() => collectAutomationLogs(tasks, locale), [tasks, locale]);
+  const boardNotices = useMemo(() => collectBoardNotices(tasks), [tasks]);
+  const pendingRiskApprovals = useMemo(() => collectRiskApprovals(tasks), [tasks]);
 
   const handleScan = async () => {
     try {
@@ -128,6 +157,16 @@ export default function AutomationPanel() {
           <div className="auto-kpi-value">{summary.rolledBack}</div>
           <div className="auto-kpi-desc">{pickLocaleText(locale, '已触发自动恢复的事项数量', 'Items that have triggered automatic recovery')}</div>
         </div>
+        <div className="auto-kpi-card warn">
+          <div className="auto-kpi-label">{pickLocaleText(locale, '看板通知', 'Board Notices')}</div>
+          <div className="auto-kpi-value">{boardNotices.length}</div>
+          <div className="auto-kpi-desc">{pickLocaleText(locale, '工作区写回后在看板集中展示的提醒条目', 'Reminder items written back from workspaces and displayed centrally on the board')}</div>
+        </div>
+        <div className="auto-kpi-card danger">
+          <div className="auto-kpi-label">{pickLocaleText(locale, '待确认风险', 'Pending Risk Approvals')}</div>
+          <div className="auto-kpi-value">{pendingRiskApprovals.length}</div>
+          <div className="auto-kpi-desc">{pickLocaleText(locale, '需要总控或看板代用户确认的高风险操作', 'High-risk operations waiting for control center or board-side confirmation')}</div>
+        </div>
       </div>
 
       <div className="auto-rule-panel">
@@ -157,6 +196,44 @@ export default function AutomationPanel() {
       </div>
 
       <div className="auto-layout">
+        <div className="auto-panel">
+          <div className="auto-section-title">{pickLocaleText(locale, '看板通知中心', 'Board Notification Center')}</div>
+          <div className="auto-log-list">
+            {boardNotices.length === 0 ? (
+              <div className="empty">{pickLocaleText(locale, '当前还没有工作区通知', 'No workspace notifications yet')}</div>
+            ) : (
+              boardNotices.map((entry) => (
+                <div key={`${entry.taskId}-${entry.notification?.id || entry.index}`} className="auto-log-item" onClick={() => setModalTaskId(entry.taskId)}>
+                  <div className="auto-log-time">{entry.notification?.created_at ? entry.notification.created_at.replace('T', ' ').substring(5, 19) : '—'}</div>
+                  <div className="auto-log-main">
+                    <div className="auto-log-title">{entry.taskId} · {entry.notification?.title || entry.notification?.kind || pickLocaleText(locale, '通知', 'Notice')}</div>
+                    <div className="auto-log-desc">{entry.notification?.source || 'system'} · {entry.notification?.message || pickLocaleText(locale, '暂无内容', 'No details')}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="auto-panel">
+          <div className="auto-section-title">{pickLocaleText(locale, '待确认风险操作', 'Pending Risk Confirmations')}</div>
+          <div className="auto-log-list">
+            {pendingRiskApprovals.length === 0 ? (
+              <div className="empty">{pickLocaleText(locale, '当前没有待确认的高风险操作', 'No pending high-risk operations')}</div>
+            ) : (
+              pendingRiskApprovals.map(({ task, risk }) => (
+                <div key={`${task.id}-${risk.updated_at || risk.summary || 'risk'}`} className="auto-log-item" onClick={() => setModalTaskId(task.id)}>
+                  <div className="auto-log-time">{risk.updated_at ? risk.updated_at.replace('T', ' ').substring(5, 19) : '—'}</div>
+                  <div className="auto-log-main">
+                    <div className="auto-log-title">{task.id} · {risk.level || 'risk'} · {risk.approval_status || risk.status || 'pending'}</div>
+                    <div className="auto-log-desc">{risk.summary || pickLocaleText(locale, '待用户确认', 'Waiting for user confirmation')}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
         <div className="auto-panel">
           <div className="auto-section-title">{pickLocaleText(locale, '重点观察任务', 'Priority Watch Tasks')}</div>
           <div className="auto-task-list">

@@ -202,6 +202,55 @@ async def watchdog_task(args: argparse.Namespace) -> None:
         jprint({"count": len(output), "items": output})
 
 
+async def notify_task(args: argparse.Namespace) -> None:
+    async with async_session() as session:
+        bus = await get_event_bus()
+        svc = TaskService(session, bus)
+        task = await svc.create_workspace_notification(
+            uuid.UUID(args.task_id),
+            title=args.title,
+            message=args.message,
+            source=args.source,
+            kind=args.kind,
+            severity=args.severity,
+            requires_ack=args.requires_ack,
+            meta=parse_meta(args.meta),
+        )
+        jprint(
+            {
+                "message": "notification_created",
+                "task_id": str(task.task_id),
+                "notifications": ((task.meta or {}).get("workspace") or {}).get("notifications", []),
+            }
+        )
+
+
+async def update_risk_control(args: argparse.Namespace) -> None:
+    async with async_session() as session:
+        bus = await get_event_bus()
+        svc = TaskService(session, bus)
+        task = await svc.update_workspace_risk_control(
+            uuid.UUID(args.task_id),
+            status=args.status,
+            level=args.level,
+            summary=args.summary,
+            requested_by=args.requested_by,
+            requires_user_confirmation=args.requires_user_confirmation,
+            confirmation_channel=args.confirmation_channel,
+            approval_status=args.approval_status,
+            approval_reason=args.approval_reason,
+            approved_by=args.approved_by,
+            operations=parse_meta(args.operations) if args.operations else [],
+        )
+        jprint(
+            {
+                "message": "risk_control_updated",
+                "task_id": str(task.task_id),
+                "risk_control": ((task.meta or {}).get("workspace") or {}).get("risk_control", {}),
+            }
+        )
+
+
 def show_index(args: argparse.Namespace) -> None:
     filename = "archive_index.json" if args.kind == "archive" else "task_index.json"
     jprint(load_index(filename))
@@ -272,6 +321,31 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, default=20)
     p.add_argument("--agent", default="watchdog")
     p.set_defaults(func=watchdog_task)
+
+    p = sub.add_parser("notify", help="写入任务工作区通知")
+    p.add_argument("task_id")
+    p.add_argument("title")
+    p.add_argument("message")
+    p.add_argument("--source", default="task_db")
+    p.add_argument("--kind", default="info")
+    p.add_argument("--severity", default="info")
+    p.add_argument("--requires-ack", action="store_true")
+    p.add_argument("--meta", default="{}", help="JSON 字符串")
+    p.set_defaults(func=notify_task)
+
+    p = sub.add_parser("risk-control", help="更新任务风险确认与批准状态")
+    p.add_argument("task_id")
+    p.add_argument("status")
+    p.add_argument("--level", default="low")
+    p.add_argument("--summary", default="")
+    p.add_argument("--requested-by", default="task_db")
+    p.add_argument("--requires-user-confirmation", action="store_true")
+    p.add_argument("--confirmation-channel", default="")
+    p.add_argument("--approval-status", default="not_required")
+    p.add_argument("--approval-reason", default="")
+    p.add_argument("--approved-by", default="")
+    p.add_argument("--operations", default="[]", help="JSON 数组字符串")
+    p.set_defaults(func=update_risk_control)
 
     return parser
 

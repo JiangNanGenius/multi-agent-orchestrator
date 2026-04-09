@@ -239,6 +239,141 @@ def _actual_paths_for_workspace(workspace: dict[str, Any], task_code: str, title
     return workspace_paths(task_code, title, base_root=get_hot_workspace_root())
 
 
+def _default_notifications() -> list[dict[str, Any]]:
+    return []
+
+
+def _default_risk_control() -> dict[str, Any]:
+    return {
+        "status": "none",
+        "level": "normal",
+        "summary": "",
+        "requires_user_confirmation": False,
+        "confirmation_channel": "",
+        "requested_by": "",
+        "approved_by": "",
+        "approval_status": "not_required",
+        "approval_reason": "",
+        "updated_at": "",
+        "operations": [],
+    }
+
+
+def _normalize_notifications(items: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        normalized.append({
+            "id": str(item.get("id") or "").strip() or f"note-{len(normalized) + 1}",
+            "kind": str(item.get("kind") or "info").strip() or "info",
+            "title": str(item.get("title") or "通知").strip() or "通知",
+            "message": str(item.get("message") or "").strip(),
+            "source": str(item.get("source") or item.get("agent") or "system").strip() or "system",
+            "severity": str(item.get("severity") or "info").strip() or "info",
+            "requires_ack": bool(item.get("requires_ack", False)),
+            "acknowledged": bool(item.get("acknowledged", False)),
+            "created_at": str(item.get("created_at") or item.get("at") or utc_now_iso()),
+            "updated_at": str(item.get("updated_at") or item.get("created_at") or item.get("at") or utc_now_iso()),
+            "task_id": str(item.get("task_id") or "").strip(),
+            "task_code": str(item.get("task_code") or "").strip(),
+            "meta": item.get("meta") if isinstance(item.get("meta"), dict) else {},
+        })
+    return normalized[-20:]
+
+
+def _normalize_risk_control(value: dict[str, Any] | None) -> dict[str, Any]:
+    current = value or {}
+    defaults = _default_risk_control()
+    operations = current.get("operations") if isinstance(current.get("operations"), list) else []
+    defaults.update({
+        "status": str(current.get("status") or defaults["status"]),
+        "level": str(current.get("level") or defaults["level"]),
+        "summary": str(current.get("summary") or defaults["summary"]),
+        "requires_user_confirmation": bool(current.get("requires_user_confirmation", defaults["requires_user_confirmation"])),
+        "confirmation_channel": str(current.get("confirmation_channel") or defaults["confirmation_channel"]),
+        "requested_by": str(current.get("requested_by") or defaults["requested_by"]),
+        "approved_by": str(current.get("approved_by") or defaults["approved_by"]),
+        "approval_status": str(current.get("approval_status") or defaults["approval_status"]),
+        "approval_reason": str(current.get("approval_reason") or defaults["approval_reason"]),
+        "updated_at": str(current.get("updated_at") or defaults["updated_at"]),
+        "operations": [op for op in operations if isinstance(op, dict)][-10:],
+    })
+    return defaults
+
+
+def push_workspace_notification(
+    task: dict[str, Any],
+    *,
+    title: str,
+    message: str,
+    source: str = "system",
+    kind: str = "info",
+    severity: str = "info",
+    requires_ack: bool = False,
+    meta: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    task_meta = dict(task.get("meta") or {})
+    workspace = dict(task_meta.get("workspace") or {})
+    notifications = _normalize_notifications(workspace.get("notifications") or _default_notifications())
+    timestamp = utc_now_iso()
+    notifications.append({
+        "id": f"{source}-{len(notifications) + 1}-{timestamp.replace(':', '').replace('-', '')}",
+        "kind": kind,
+        "title": title,
+        "message": message,
+        "source": source,
+        "severity": severity,
+        "requires_ack": requires_ack,
+        "acknowledged": False,
+        "created_at": timestamp,
+        "updated_at": timestamp,
+        "task_id": str(task.get("task_id") or ""),
+        "task_code": str(workspace.get("task_code") or ""),
+        "meta": meta or {},
+    })
+    workspace["notifications"] = _normalize_notifications(notifications)
+    task_meta["workspace"] = workspace
+    task["meta"] = task_meta
+    return task_meta
+
+
+def set_workspace_risk_control(
+    task: dict[str, Any],
+    *,
+    status: str,
+    level: str,
+    summary: str,
+    requested_by: str = "system",
+    requires_user_confirmation: bool = False,
+    confirmation_channel: str = "",
+    approval_status: str = "not_required",
+    approval_reason: str = "",
+    approved_by: str = "",
+    operations: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    task_meta = dict(task.get("meta") or {})
+    workspace = dict(task_meta.get("workspace") or {})
+    risk_control = _normalize_risk_control(workspace.get("risk_control") or _default_risk_control())
+    risk_control.update({
+        "status": status,
+        "level": level,
+        "summary": summary,
+        "requested_by": requested_by,
+        "requires_user_confirmation": requires_user_confirmation,
+        "confirmation_channel": confirmation_channel,
+        "approval_status": approval_status,
+        "approval_reason": approval_reason,
+        "approved_by": approved_by,
+        "updated_at": utc_now_iso(),
+        "operations": [op for op in (operations or risk_control.get("operations") or []) if isinstance(op, dict)][-10:],
+    })
+    workspace["risk_control"] = _normalize_risk_control(risk_control)
+    task_meta["workspace"] = workspace
+    task["meta"] = task_meta
+    return task_meta
+
+
 def build_workspace_meta(
     *,
     task_id: str,
@@ -277,6 +412,8 @@ def build_workspace_meta(
     linked_tasks = workspace.get("linked_tasks") or []
     watchdog = workspace.get("watchdog") or {}
     feishu_reporting = workspace.get("feishu_reporting") or {}
+    notifications = _normalize_notifications(workspace.get("notifications") or _default_notifications())
+    risk_control = _normalize_risk_control(workspace.get("risk_control") or _default_risk_control())
     task_policy = workspace.get("task_policy") or _build_task_policy(task_kind, size_estimate_gb=size_estimate_gb)
 
     return {
@@ -348,6 +485,8 @@ def build_workspace_meta(
                 "last_error": watchdog.get("last_error", ""),
                 "recommended_action": watchdog.get("recommended_action", ""),
             },
+            "notifications": notifications,
+            "risk_control": risk_control,
             "feishu_reporting": feishu_reporting,
             "task_stub": {
                 "task_id": task_id,
@@ -679,6 +818,8 @@ def refresh_workspace_snapshot(task: dict[str, Any]) -> dict[str, Any]:
         str(workspace.get("task_kind") or "standard"),
         size_estimate_gb=float(workspace.get("project_size_gb_estimate") or 0.0),
     )
+    workspace["notifications"] = _normalize_notifications(workspace.get("notifications") or _default_notifications())
+    workspace["risk_control"] = _normalize_risk_control(workspace.get("risk_control") or _default_risk_control())
     workspace["context_resume_files"] = workspace.get("context_resume_files") or workspace["task_policy"].get("resume_files") or []
     workspace["new_refresh"] = _build_new_refresh_advice(task, workspace)
 
@@ -712,6 +853,8 @@ def refresh_workspace_snapshot(task: dict[str, Any]) -> dict[str, Any]:
         "context_resume_files": workspace.get("context_resume_files") or [],
         "linked_tasks": workspace.get("linked_tasks") or [],
         "watchdog": workspace.get("watchdog") or {},
+        "notifications": _normalize_notifications(workspace.get("notifications") or _default_notifications()),
+        "risk_control": _normalize_risk_control(workspace.get("risk_control") or _default_risk_control()),
         "feishu_reporting": workspace.get("feishu_reporting") or {},
         "stats": _build_stats(task),
     }
@@ -730,6 +873,8 @@ def refresh_workspace_snapshot(task: dict[str, Any]) -> dict[str, Any]:
         "stats": task_record["stats"],
         "linked_tasks": task_record["linked_tasks"],
         "watchdog": task_record["watchdog"],
+        "notifications": task_record["notifications"],
+        "risk_control": task_record["risk_control"],
         "feishu_reporting": task_record["feishu_reporting"],
     }
     latest_context = {
@@ -747,6 +892,8 @@ def refresh_workspace_snapshot(task: dict[str, Any]) -> dict[str, Any]:
         "latest_handoff": workspace.get("latest_handoff", ""),
         "task_policy": workspace.get("task_policy") or {},
         "feishu_reporting": workspace.get("feishu_reporting") or {},
+        "notifications": _normalize_notifications(workspace.get("notifications") or _default_notifications()),
+        "risk_control": _normalize_risk_control(workspace.get("risk_control") or _default_risk_control()),
         "new_refresh": workspace.get("new_refresh") or {},
         "todos": task.get("todos") or [],
         "flow_log_tail": (task.get("flow_log") or [])[-10:],
@@ -830,6 +977,8 @@ def update_workspace_indexes(task: dict[str, Any]) -> None:
         "task_policy": workspace.get("task_policy") or {},
         "new_refresh": new_refresh,
         "watchdog": watchdog,
+        "notifications": _normalize_notifications(workspace.get("notifications") or _default_notifications()),
+        "risk_control": _normalize_risk_control(workspace.get("risk_control") or _default_risk_control()),
         "feishu_reporting": workspace.get("feishu_reporting") or {},
     }
     task_index.setdefault("by_task_code", {})[task_code] = item
@@ -848,6 +997,8 @@ def update_workspace_indexes(task: dict[str, Any]) -> None:
         "task_policy": workspace.get("task_policy") or {},
         "new_refresh": new_refresh,
         "watchdog": watchdog,
+        "notifications": _normalize_notifications(workspace.get("notifications") or _default_notifications()),
+        "risk_control": _normalize_risk_control(workspace.get("risk_control") or _default_risk_control()),
         "feishu_reporting": workspace.get("feishu_reporting") or {},
     }
 

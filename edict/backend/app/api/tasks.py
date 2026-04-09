@@ -68,6 +68,29 @@ class TaskWatchdogRequest(BaseModel):
     agent: str = "watchdog"
 
 
+class TaskNotificationCreate(BaseModel):
+    title: str
+    message: str
+    source: str = "system"
+    kind: str = "info"
+    severity: str = "info"
+    requires_ack: bool = False
+    meta: dict = Field(default_factory=dict)
+
+
+class TaskRiskControlUpdate(BaseModel):
+    status: str
+    level: str = "low"
+    summary: str = ""
+    requested_by: str = "system"
+    requires_user_confirmation: bool = False
+    confirmation_channel: str = ""
+    approval_status: str = "not_required"
+    approval_reason: str = ""
+    approved_by: str = ""
+    operations: list[dict] = Field(default_factory=list)
+
+
 class TaskOut(BaseModel):
     task_id: str
     trace_id: str
@@ -259,6 +282,55 @@ async def patch_workspace(
     try:
         task = await svc.update_workspace_meta(task_id, body.patch, agent=body.agent, summary=body.summary)
         return {"message": "ok", "workspace": (task.meta or {}).get("workspace", {})}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{task_id}/workspace/notifications")
+async def create_workspace_notification(
+    task_id: uuid.UUID,
+    body: TaskNotificationCreate,
+    svc: TaskService = Depends(get_task_service),
+):
+    """创建任务工作区通知。"""
+    try:
+        task = await svc.create_workspace_notification(
+            task_id,
+            title=body.title,
+            message=body.message,
+            source=body.source,
+            kind=body.kind,
+            severity=body.severity,
+            requires_ack=body.requires_ack,
+            meta=body.meta,
+        )
+        return {"message": "ok", "notifications": ((task.meta or {}).get("workspace") or {}).get("notifications", [])}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{task_id}/workspace/risk-control")
+async def update_workspace_risk_control(
+    task_id: uuid.UUID,
+    body: TaskRiskControlUpdate,
+    svc: TaskService = Depends(get_task_service),
+):
+    """更新任务工作区风险控制状态。"""
+    try:
+        task = await svc.update_workspace_risk_control(
+            task_id,
+            status=body.status,
+            level=body.level,
+            summary=body.summary,
+            requested_by=body.requested_by,
+            requires_user_confirmation=body.requires_user_confirmation,
+            confirmation_channel=body.confirmation_channel,
+            approval_status=body.approval_status,
+            approval_reason=body.approval_reason,
+            approved_by=body.approved_by,
+            operations=body.operations,
+        )
+        return {"message": "ok", "risk_control": ((task.meta or {}).get("workspace") or {}).get("risk_control", {})}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

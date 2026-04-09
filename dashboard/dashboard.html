@@ -629,6 +629,33 @@
     .sec-title{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:12px}
     code{font-size:11px;background:var(--panel2);padding:2px 6px;border-radius:4px;font-family:monospace}
 
+    /* ══ SETTINGS CENTER ══ */
+    .settings-dock{position:fixed;right:24px;bottom:24px;z-index:180;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:999px;border:1px solid rgba(122,162,255,.28);background:linear-gradient(135deg,rgba(15,21,38,.95),rgba(10,16,30,.92));box-shadow:0 18px 40px rgba(0,0,0,.35);cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+    .settings-dock:hover{transform:translateY(-2px);border-color:rgba(122,162,255,.48);box-shadow:0 24px 50px rgba(0,0,0,.42)}
+    .settings-dock .sd-icon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(122,162,255,.14);color:var(--acc);font-size:16px;font-weight:700}
+    .settings-dock .sd-body{display:flex;flex-direction:column;gap:2px}
+    .settings-dock .sd-title{font-size:12px;font-weight:800;color:var(--text);letter-spacing:.04em}
+    .settings-dock .sd-sub{font-size:11px;color:var(--muted)}
+    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:18px}
+    .settings-card{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+    .settings-card .k{font-size:11px;color:var(--muted);margin-bottom:6px}
+    .settings-card .v{font-size:20px;font-weight:800;color:var(--text)}
+    .settings-card .d{font-size:11px;color:var(--muted);line-height:1.7;margin-top:6px}
+    .settings-section{border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:18px;margin-bottom:16px}
+    .settings-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+    .settings-section-title h3{margin:0;font-size:15px;font-weight:800}
+    .settings-section-title p{margin:4px 0 0;font-size:12px;color:var(--muted);line-height:1.7}
+    .settings-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+    .settings-field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    .settings-field input,.settings-field select{width:100%}
+    .settings-note{font-size:12px;color:var(--muted);line-height:1.8}
+    .settings-inline-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+    .settings-status{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7}
+    .settings-danger{border-color:rgba(255,82,112,.26);background:linear-gradient(135deg,rgba(36,12,20,.9),rgba(25,12,16,.88))}
+    .settings-danger .settings-note{color:#ffc7d1}
+    .settings-modal-title{font-size:24px;font-weight:900;margin-bottom:8px}
+    .settings-modal-sub{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:18px}
+
     /* ══ STARTUP TRANSITION ══ */
     .startup-overlay{position:fixed;inset:0;z-index:9999;background:#07090f;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;animation:crmFadeIn .6s ease forwards;cursor:pointer}
     .startup-overlay.out{animation:crmFadeOut .5s ease forwards}
@@ -717,8 +744,11 @@
   <!-- HEADER -->
   <div class="hdr">
     <div>
-      <div class="logo">多Agent智作中枢</div>
-      <div class="sub">总控中心视角 · 高实时性任务协作</div>
+      <div class="logo" style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <span style="font-size:30px;font-weight:900;letter-spacing:.04em;background:linear-gradient(90deg,#edf3ff 0%,#8fb4ff 45%,#6ea8ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent">Agent智作中枢</span>
+        <span style="font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid rgba(122,162,255,.22);background:rgba(122,162,255,.08);color:var(--acc);font-weight:700;letter-spacing:.08em">Creative Orchestration Hub</span>
+      </div>
+      <div class="sub">多智能体协同编排 · 实时调度 · 全局运营视角</div>
       <div style="font-size:10px;color:var(--muted);margin-top:4px">基于开源项目整理与演进 · 保留 MIT License · 引用来源说明见仓库文档</div>
     </div>
     <div class="hdr-r">
@@ -735,12 +765,14 @@
   <div class="tabs">
     <div class="tab active" data-tab="tasks">📋 任务看板 <span class="tbadge" id="tb-e">0</span></div>
     <div class="tab" data-tab="monitor">🔭 运行调度 <span class="tbadge" id="tb-m">0</span></div>
-    <div class="tab" data-tab="agents">👥 协作节点</div>
+    <div class="tab" data-tab="meeting">🎙️ 智能会商</div>
+    <div class="tab" data-tab="agents">🤖 Agent管理</div>
     <div class="tab" data-tab="models">⚙️ 模型配置</div>
     <div class="tab" data-tab="skills">🛠️ 技能管理</div>
     <div class="tab" data-tab="sessions">💬 快速任务 <span class="tbadge" id="tb-s">0</span></div>
     <div class="tab" data-tab="archives">🗄️ 结果归档 <span class="tbadge" id="tb-mem">0</span></div>
     <div class="tab" data-tab="templates">📚 模板中心</div>
+    <div class="tab" data-tab="settings">🧩 设置</div>
     <div class="tab" data-tab="web_search">📰 全网搜索</div>
   </div>
 
@@ -860,6 +892,48 @@
     <div class="duty-grid" id="duty-grid"></div>
   </div>
 
+  <!-- ══ 智能会商 ══ -->
+  <div class="panel" id="panel-meeting">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+      <div>
+        <div class="sec-title" style="margin-bottom:4px">智能会商 · 多 Agent 协同研讨</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.7">这里集中展示当前多 Agent 协作会议的会场状态、主持人编排、可参会专家与最近纪要。当前面板将直接接入主持人会议的创建、详情查看与阶段推进能力。</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-p" onclick="openMeetingComposer()" style="font-size:12px;padding:8px 14px">发起会议</button>
+        <button class="btn btn-g" onclick="loadMeetingPanel()" style="font-size:12px;padding:8px 14px">刷新会议状态</button>
+        <button class="btn btn-g" onclick="activatePanel('agents')" style="font-size:12px;padding:8px 14px">查看 Agent 管理</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px">
+      <div style="padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">会议风向</div>
+        <div id="meeting-fate" style="font-size:13px;line-height:1.7;color:var(--text)">加载中…</div>
+      </div>
+      <div style="padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">当前会场概览</div>
+        <div id="meeting-summary" style="font-size:13px;line-height:1.8;color:var(--text)">正在读取数据…</div>
+      </div>
+    </div>
+    <div id="meeting-active-room" style="padding:16px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(135deg,rgba(106,158,255,.12),rgba(255,255,255,.02));margin-bottom:16px"></div>
+    <div style="display:grid;grid-template-columns:1.15fr .85fr;gap:14px;align-items:start">
+      <div style="padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel)">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:700">最近会议</div>
+          <div id="meeting-session-count" style="font-size:11px;color:var(--muted)">0 场</div>
+        </div>
+        <div id="meeting-session-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+      <div style="padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel)">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:700">可参会 Agent</div>
+          <div id="meeting-agent-count" style="font-size:11px;color:var(--muted)">0 个</div>
+        </div>
+        <div id="meeting-agent-grid" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ Agent总览 ══ -->
   <div class="panel" id="panel-agents">
     <div id="off-activity" class="off-activity" style="display:none"></div>
@@ -925,6 +999,16 @@
     </div>
     <div class="sec-title" style="margin-bottom:14px">各中心与专家 · 技能管理 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted)">— 点击技能查看详情，底部可添加新技能</span></div>
     <div class="skills-grid" id="skills-grid"></div>
+    <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <div>
+          <div class="sec-title" style="margin-bottom:4px">全局 Skill 仓库</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7">集中查看所有已接入的全局 Skill 来源，便于排查不同 Agent 的共享能力与远程同步状态。</div>
+        </div>
+        <div id="remote-skills-meta" style="font-size:11px;color:var(--muted)">加载中…</div>
+      </div>
+      <div class="skills-grid" id="remote-skills-grid"></div>
+    </div>
   </div>
 
   <!-- ══ 小任务/会话监控 ══ -->
@@ -979,6 +1063,26 @@
       <div style="font-size:11px;color:var(--muted);line-height:1.7">自由发布任务已调整为 <b>任务看板顶部的任务发布入口</b>。现在建议在任务看板页直接用自然语言发布任务，这样可以同时查看最近记录与任务号回流。</div>
     </div>
   </div>
+
+  <!-- ══ 设置页 ══ -->
+  <div class="panel" id="panel-settings">
+    <div style="padding:20px;border:1px dashed var(--line);border-radius:16px;background:var(--panel2)">
+      <div class="sec-title" style="margin-bottom:6px">设置中心已迁移</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:14px">系统设置已升级为更完整的设置中心，可统一管理刷新节奏、默认入口、历史记录保留、启动动效，以及账户安全中的用户名修改、密码修改与凭据重置。</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-p" onclick="openSettingsCenter()" style="font-size:12px;padding:8px 16px">打开设置中心</button>
+        <button class="btn btn-g" onclick="activatePanel('web_search')" style="font-size:12px;padding:8px 16px">打开高级搜索</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="settings-dock" type="button" onclick="openSettingsCenter()" title="打开设置中心">
+    <span class="sd-icon">⚙</span>
+    <span class="sd-body">
+      <span class="sd-title">设置中心</span>
+      <span class="sd-sub">系统参数与账户安全</span>
+    </span>
+  </button>
 
   <!-- ══ 全网搜索 ══ -->
   <div class="panel" id="panel-web_search">
@@ -1124,10 +1228,63 @@ let globalScanHistory = [];
 let _openedTaskId = null;
 let _mainRefreshTimer = null;
 let _mainRefreshBusy = false;
-const MAIN_REFRESH_SECONDS = 5;
+let MAIN_REFRESH_SECONDS = 5;
 const GLOBAL_SCAN_STORAGE_KEY = 'openclaw_global_scan_state_v3';
 const DISPATCH_TALK_STORAGE_KEY = 'openclaw_dispatch_center_talk_v1';
 const WEB_SEARCH_HISTORY_STORAGE_KEY = 'openclaw_web_search_history_v1';
+const SYSTEM_SETTINGS_CACHE_KEY = 'openclaw_system_settings_cache_v1';
+let systemPrefs = {
+  scan_record_retention_days: 7,
+  dashboard_refresh_seconds: 5,
+  default_landing_tab: 'tasks',
+  show_startup_transition: true,
+  task_publish_history_limit: 6,
+  dispatch_history_limit: 8,
+  web_search_history_limit: 10,
+};
+
+function sanitizeSystemSettings(raw={}){
+  const tabs = ['tasks','monitor','meeting','agents','models','skills','sessions','archives','templates','web_search'];
+  const num = (value, fallback, min, max) => {
+    const n = Number(value);
+    if(!Number.isFinite(n)) return fallback;
+    return Math.max(min, Math.min(max, Math.round(n)));
+  };
+  return {
+    scan_record_retention_days: num(raw.scan_record_retention_days, 7, 1, 30),
+    dashboard_refresh_seconds: num(raw.dashboard_refresh_seconds, 5, 5, 60),
+    default_landing_tab: tabs.includes(raw.default_landing_tab) ? raw.default_landing_tab : 'tasks',
+    show_startup_transition: raw.show_startup_transition !== false,
+    task_publish_history_limit: num(raw.task_publish_history_limit, 6, 3, 20),
+    dispatch_history_limit: num(raw.dispatch_history_limit, 8, 3, 20),
+    web_search_history_limit: num(raw.web_search_history_limit, 10, 5, 30),
+  };
+}
+
+function persistSystemPrefs(){
+  try{ localStorage.setItem(SYSTEM_SETTINGS_CACHE_KEY, JSON.stringify(systemPrefs)); }catch(_){ }
+}
+
+function applySystemSettings(raw={}, opts={}){
+  systemPrefs = sanitizeSystemSettings(raw || {});
+  MAIN_REFRESH_SECONDS = systemPrefs.dashboard_refresh_seconds;
+  persistSystemPrefs();
+  if(opts.restartCountdown !== false) startCd();
+}
+
+function bootstrapSystemSettings(){
+  try{
+    const cached = JSON.parse(localStorage.getItem(SYSTEM_SETTINGS_CACHE_KEY) || 'null');
+    if(cached) applySystemSettings(cached, {restartCountdown:false});
+  }catch(_){ }
+}
+
+function historyLimit(kind){
+  if(kind === 'task') return systemPrefs.task_publish_history_limit || 6;
+  if(kind === 'dispatch') return systemPrefs.dispatch_history_limit || 8;
+  if(kind === 'web_search') return systemPrefs.web_search_history_limit || 10;
+  return 6;
+}
 
 function describeGlobalScanResult(count, checkedAt){
   const safeCount = Number(count || 0);
@@ -1320,7 +1477,7 @@ function readDispatchTalkStore(){
       draft: typeof raw.draft === 'string' ? raw.draft : '',
       taskId: typeof raw.taskId === 'string' ? raw.taskId : '',
       type: typeof raw.type === 'string' ? raw.type : '协调请求',
-      history: Array.isArray(raw.history) ? raw.history.slice(0,8) : [],
+      history: Array.isArray(raw.history) ? raw.history.slice(0,historyLimit('dispatch')) : [],
       lastStatus: raw.lastStatus || '待发送'
     };
   }catch(_){
@@ -1332,7 +1489,7 @@ function writeDispatchTalkStore(data){
     draft: data.draft || '',
     taskId: data.taskId || '',
     type: data.type || '协调请求',
-    history: Array.isArray(data.history) ? data.history.slice(0,8) : [],
+    history: Array.isArray(data.history) ? data.history.slice(0,historyLimit('dispatch')) : [],
     lastStatus: data.lastStatus || '待发送'
   }));
 }
@@ -2647,7 +2804,7 @@ function readTaskPublishStore(){
     return {
       draft: typeof raw.draft === 'string' ? raw.draft : '',
       priority: raw.priority === 'high' ? 'high' : 'normal',
-      history: Array.isArray(raw.history) ? raw.history.slice(0,6) : []
+      history: Array.isArray(raw.history) ? raw.history.slice(0,historyLimit('task')) : []
     };
   }catch(_){
     return {draft:'', priority:'normal', history:[]};
@@ -2657,7 +2814,7 @@ function writeTaskPublishStore(data){
   localStorage.setItem(TASK_PUBLISH_STORAGE_KEY, JSON.stringify({
     draft: data.draft || '',
     priority: data.priority === 'high' ? 'high' : 'normal',
-    history: Array.isArray(data.history) ? data.history.slice(0,6) : []
+    history: Array.isArray(data.history) ? data.history.slice(0,historyLimit('task')) : []
   }));
 }
 function removeTaskPublishHistoryItem(taskId){
@@ -3039,6 +3196,768 @@ async function submitAddSkill(e, agentId, agentLabel){
   }catch(e){ toast('服务器连接失败','err'); btn.disabled=false; btn.textContent='📦 创建技能'; }
 }
 
+function normalizeList(raw){
+  if(Array.isArray(raw)) return raw;
+  if(raw && typeof raw === 'object') return Object.values(raw);
+  return [];
+}
+
+function renderGlobalSkills(payload){
+  const wrap = document.getElementById('remote-skills-grid');
+  const meta = document.getElementById('remote-skills-meta');
+  if(!wrap) return;
+  if(payload && payload.ok===false){
+    if(meta) meta.textContent = '暂不可读';
+    wrap.innerHTML = `<div class="empty" style="grid-column:1/-1">${esc(payload.error||'无法读取全局 Skill')}</div>`;
+    return;
+  }
+  const items = normalizeList(payload && payload.remoteSkills);
+  if(meta) meta.textContent = `${items.length} 个全局 Skill`;
+  if(!items.length){
+    wrap.innerHTML = '<div class="empty" style="grid-column:1/-1">当前未发现可展示的全局 Skill</div>';
+    return;
+  }
+  wrap.innerHTML = items.map(item=>`
+    <div class="sk-card">
+      <div class="sk-hdr"><span class="sk-emoji">🌐</span><span class="sk-name">${esc(item.skillName||'未命名 Skill')}</span><span class="sk-cnt">${esc(item.agentId||'-')}</span></div>
+      <div class="sk-list">
+        <div class="sk-item" onclick="openSkill('${esc(item.agentId||'')}','${esc(item.skillName||'')}')">
+          <span class="si-name">📦 ${esc(item.skillName||'未命名 Skill')}</span>
+          <span class="si-desc">${esc(item.description || item.sourceUrl || '点击查看 Skill 内容与来源')}</span>
+          <span class="si-arrow">›</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-top:10px">
+        状态：<b style="color:${(item.status||'')==='valid'?'var(--ok)':'#ffb34d'}">${esc(item.status||'unknown')}</b><br>
+        来源：${esc(item.sourceUrl || '本地缓存')}<br>
+        更新时间：${esc((item.lastUpdated || item.addedAt || '').replace('T',' ').substring(0,19) || '未知')}
+      </div>
+    </div>`).join('');
+}
+
+async function loadGlobalSkills(){
+  try{
+    const r = await fetchJ(API+'/remote-skills-list');
+    renderGlobalSkills(r);
+  }catch(e){
+    renderGlobalSkills({ok:false, error:'服务器连接失败'});
+  }
+}
+
+let _meetingPanelState = {agents:[], sessions:[], busy:{}, activeSessionId:null};
+
+function jsq(v){
+  return JSON.stringify(String(v == null ? '' : v)).replace(/"/g,'&quot;');
+}
+function normalizeMeetingAgents(raw){
+  if(Array.isArray(raw)) return raw.map(item=>({...(item||{}), id:(item&&item.id)||''}));
+  if(raw && typeof raw === 'object') return Object.entries(raw).map(([id, value])=>({id, ...(value||{})}));
+  return [];
+}
+function meetingModeLabel(mode){
+  return ({meeting:'正式会议', chat:'闲聊', auto:'自动判断'})[mode] || (mode || '未设置');
+}
+function meetingStageLabel(stage){
+  return ({meeting_init:'会议建立', moderator_open:'主持人开场', expert_statement:'专家陈述', cross_discussion:'交叉讨论', decision_sync:'结论收敛', meeting_closed:'会议结束', chatting:'自由交流'})[stage] || (stage || '进行中');
+}
+function meetingRunStateLabel(runState, phase){
+  if(phase === 'concluded') return '已结束';
+  return ({running:'运行中', paused:'已暂停', cooldown:'冷却中', idle:'空闲'})[runState] || (phase || '进行中');
+}
+function meetingBusyInfo(agentId, busyMap){
+  const item = busyMap && agentId ? busyMap[agentId] : null;
+  if(!item) return '<span class="tag">空闲</span>';
+  const state = item.state || 'busy';
+  const label = ({active:'会议中', waiting:'候场中', cooldown:'冷却中', busy:'占用中', idle:'空闲'})[state] || state;
+  const claimedBy = item.claimed_by || item.task_title || item.task_id || item.session_id || '';
+  return `<span class="tag">${esc(label)}</span>${claimedBy ? `<span class="tag">${esc(claimedBy)}</span>` : ''}`;
+}
+function meetingLatestSummary(session){
+  const minutes = Array.isArray(session.minutes) ? session.minutes : [];
+  const latestMinute = minutes.length ? (minutes[minutes.length - 1].content || minutes[minutes.length - 1].summary || '') : '';
+  return session.summary || latestMinute || session.scene_note || '当前会议已建立，可继续由主持人推进。';
+}
+function collectMeetingAgentIds(){
+  return Array.from(document.querySelectorAll('.meeting-agent-pick:checked')).map(el=>el.value).filter(Boolean);
+}
+function meetingSessionById(sessionId){
+  const sessions = Array.isArray(_meetingPanelState.sessions) ? _meetingPanelState.sessions : [];
+  return sessions.find(item => (item.session_id || item.id || '') === sessionId) || null;
+}
+function focusMeetingRoom(sessionId, openDetail){
+  _meetingPanelState.activeSessionId = sessionId || null;
+  renderMeetingPanel(_meetingPanelState);
+  if(openDetail){
+    openMeetingDetail(sessionId);
+  }
+}
+async function takeOverMeetingTurn(sessionId){
+  const userMessage = prompt('请输入你要交给主持人的本轮要求；这会以“接管本轮”的方式推进会议。', '请主持人聚焦当前争议点，并要求各专家给出明确判断与行动建议。');
+  if(userMessage === null) return;
+  try{
+    const r = await postJ(API + '/collab-discuss/advance', {sessionId, userMessage: userMessage || '', intent:'user_message'});
+    if(r.ok){
+      toast('已按你的要求接管并推进本轮', 'ok');
+      await loadMeetingPanel();
+      openMeetingDetail(sessionId);
+    }else{
+      toast(r.error || '接管本轮失败', 'err');
+    }
+  }catch(_){
+    toast('接管本轮失败', 'err');
+  }
+}
+function openMeetingComposer(){
+  const agents = Array.isArray(_meetingPanelState.agents) ? _meetingPanelState.agents : [];
+  document.getElementById('modal-body').innerHTML = `
+    <div style="font-size:11px;color:var(--acc);font-weight:700;letter-spacing:.04em;margin-bottom:4px">MODERATED SESSION</div>
+    <div class="modal-title" style="margin-bottom:12px">发起主持人会议</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:18px">正式会议将由主持人控场，并只点名指定专家发言；如果你选择“自动判断”，系统会根据议题自动识别正式会议或闲聊模式。</div>
+    <form onsubmit="submitMeetingComposer(event)">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px">
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">会议议题</div>
+          <input id="meeting-topic-input" class="sub-input" placeholder="例如：评审新版本多 Agent 协作流程" style="width:100%">
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">关联任务号（可选）</div>
+          <input id="meeting-task-id-input" class="sub-input" placeholder="例如：OC-2026-0410-001" style="width:100%">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px">
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">会话模式</div>
+          <select id="meeting-mode-input" class="sub-input" style="width:100%">
+            <option value="auto">自动判断</option>
+            <option value="meeting">正式会议</option>
+            <option value="chat">闲聊</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">主持人</div>
+          <select id="meeting-moderator-input" class="sub-input" style="width:100%">
+            <option value="">自动选择最适合的主持人</option>
+            ${agents.map(agent=>`<option value="${esc(agent.id)}">${esc(agent.name || agent.label || agent.id)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <div style="font-size:12px;font-weight:700;color:var(--text)">参会专家</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)"><input id="meeting-select-all" type="checkbox" checked style="accent-color:#6a9eff"> 默认全选当前可参会 Agent</label>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;max-height:260px;overflow-y:auto;padding-right:4px">
+        ${agents.map(agent=>`<label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02)"><input class="meeting-agent-pick" type="checkbox" value="${esc(agent.id)}" checked style="margin-top:3px;accent-color:#6a9eff"><span><span style="display:block;font-size:13px;font-weight:700;color:var(--text)">${esc(agent.name || agent.label || agent.id)}</span><span style="display:block;font-size:11px;color:var(--muted);line-height:1.7;margin-top:4px">${esc(agent.role || agent.duty || agent.description || '可参与主持人会议')}</span></span></label>`).join('') || '<div class="empty">当前尚未读取到可参会 Agent，请先刷新会商面板。</div>'}
+      </div>
+      <div id="meeting-compose-status" style="font-size:12px;color:var(--muted);margin-bottom:14px">提交后将立即创建新的主持人会议。</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-g" onclick="closeModal()" style="font-size:12px;padding:8px 14px">取消</button>
+        <button type="submit" class="btn btn-p" id="meeting-compose-submit" style="font-size:12px;padding:8px 16px">创建会议</button>
+      </div>
+    </form>`;
+  document.getElementById('modal-bg').classList.add('open');
+  const selectAll = document.getElementById('meeting-select-all');
+  if(selectAll){
+    selectAll.onchange = ()=>{
+      document.querySelectorAll('.meeting-agent-pick').forEach(el=>{ el.checked = !!selectAll.checked; });
+    };
+  }
+}
+async function submitMeetingComposer(e){
+  e.preventDefault();
+  const topic = (document.getElementById('meeting-topic-input')?.value || '').trim();
+  const taskId = (document.getElementById('meeting-task-id-input')?.value || '').trim();
+  const preferredMode = document.getElementById('meeting-mode-input')?.value || 'auto';
+  const moderatorId = document.getElementById('meeting-moderator-input')?.value || '';
+  const selectAll = !!document.getElementById('meeting-select-all')?.checked;
+  const agents = collectMeetingAgentIds();
+  const statusEl = document.getElementById('meeting-compose-status');
+  const btn = document.getElementById('meeting-compose-submit');
+  if(!topic){ toast('请先填写会议议题','err'); return; }
+  if(!agents.length){ toast('请至少选择一位参会 Agent','err'); return; }
+  if(btn){ btn.disabled = true; btn.textContent = '创建中…'; }
+  if(statusEl){ statusEl.textContent = '正在创建会议…'; statusEl.style.color = 'var(--muted)'; }
+  try{
+    const r = await postJ(API+'/collab-discuss/start', {topic, agents, taskId, preferredMode, moderatorId, selectAll});
+    if(r.ok){
+      if(statusEl){ statusEl.textContent = '会议已创建，正在刷新列表…'; statusEl.style.color = 'var(--ok)'; }
+      toast('主持人会议已创建', 'ok');
+      await loadMeetingPanel();
+      if(r.session_id || r.id || r.sessionId){
+        openMeetingDetail(r.session_id || r.id || r.sessionId);
+      }else{
+        closeModal();
+      }
+    }else{
+      if(statusEl){ statusEl.textContent = r.error || '会议创建失败'; statusEl.style.color = '#ff7a95'; }
+      toast(r.error || '会议创建失败', 'err');
+    }
+  }catch(_){
+    if(statusEl){ statusEl.textContent = '服务器连接失败'; statusEl.style.color = '#ff7a95'; }
+    toast('服务器连接失败', 'err');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '创建会议'; }
+  }
+}
+function renderMeetingPanel(data){
+  const fateEl = document.getElementById('meeting-fate');
+  const summaryEl = document.getElementById('meeting-summary');
+  const activeRoomEl = document.getElementById('meeting-active-room');
+  const sessWrap = document.getElementById('meeting-session-list');
+  const agentWrap = document.getElementById('meeting-agent-grid');
+  const sessCount = document.getElementById('meeting-session-count');
+  const agentCount = document.getElementById('meeting-agent-count');
+  if(!fateEl || !summaryEl || !sessWrap || !agentWrap || !activeRoomEl) return;
+  const agents = normalizeMeetingAgents((data.agents && (data.agents.agents || data.agents.items || data.agents.data)) || (data.agents && data.agents.ok ? data.agents : data.agents) || []);
+  const sessions = normalizeList((data.list && (data.list.sessions || data.list.items || data.list.data)) || []);
+  const busyMap = (data.busy && (data.busy.agents || data.busy.busy || data.busy.registry || data.busy.data)) || (data.busy && typeof data.busy === 'object' ? data.busy : {});
+  const prevActiveSessionId = _meetingPanelState.activeSessionId || null;
+  const fallbackActive = sessions.find(item => item.phase !== 'concluded') || sessions[0] || null;
+  const activeSession = sessions.find(item => (item.session_id || item.id || '') === prevActiveSessionId) || fallbackActive;
+  _meetingPanelState = {agents, sessions, busy: busyMap, activeSessionId: activeSession ? (activeSession.session_id || activeSession.id || null) : null};
+  const fate = (data.fate && data.fate.event) || {};
+  fateEl.innerHTML = fate && Object.keys(fate).length
+    ? `<div><b>${esc(fate.title || fate.event || '今日议题')}</b></div><div style="margin-top:6px;color:var(--muted)">${esc(fate.summary || fate.text || fate.description || '已接入会议风向事件流')}</div>`
+    : '<span style="color:var(--muted)">暂无会议风向，待下一次协同触发。</span>';
+  const runningCount = sessions.filter(item => item.phase !== 'concluded').length;
+  const moderatorCount = sessions.filter(item => item.mode === 'meeting' && (item.moderator_id || item.moderator_name)).length;
+  summaryEl.innerHTML = `当前记录到 <b>${sessions.length}</b> 场会话，其中 <b>${runningCount}</b> 场仍在进行，<b>${moderatorCount}</b> 场已明确主持人。<br><span style="color:var(--muted)">现在可直接发起主持人会议，并在详情中推进阶段、暂停或结束会场。</span>`;
+  if(sessCount) sessCount.textContent = `${sessions.length} 场`;
+  if(agentCount) agentCount.textContent = `${agents.length} 个`;
+  if(activeSession){
+    const activeSid = activeSession.session_id || activeSession.id || '';
+    const activeModerator = activeSession.moderator_name || activeSession.moderator_id || '自动选择';
+    const latestSummary = meetingLatestSummary(activeSession);
+    const canResume = activeSession.run_state === 'paused';
+    const canPause = activeSession.phase !== 'concluded' && activeSession.run_state !== 'paused';
+    activeRoomEl.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11px;color:var(--acc);font-weight:700;letter-spacing:.04em;margin-bottom:4px">ACTIVE ROOM</div>
+        <div style="font-size:18px;font-weight:800;color:var(--text)">${esc(activeSession.topic || activeSession.title || activeSid || '当前会场')}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          <span class="tag">${esc(meetingModeLabel(activeSession.mode || activeSession.preferred_mode || 'auto'))}</span>
+          <span class="tag">${esc(meetingStageLabel(activeSession.stage || ''))}</span>
+          <span class="tag">${esc(meetingRunStateLabel(activeSession.run_state, activeSession.phase))}</span>
+          <span class="tag">主持：${esc(activeModerator)}</span>
+          <span class="tag">第 ${esc(String(activeSession.round || 0))} 轮</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-p" style="font-size:12px;padding:8px 14px" onclick="openMeetingDetail(${jsq(activeSid)})">返回会场</button>
+        <button type="button" class="btn btn-g" style="font-size:12px;padding:8px 14px" onclick="takeOverMeetingTurn(${jsq(activeSid)})">接管本轮</button>
+        <button type="button" class="btn btn-g" style="font-size:12px;padding:8px 14px" onclick="operateMeetingSession('advance', ${jsq(activeSid)})">后台续会</button>
+        ${canPause ? `<button type="button" class="btn btn-g" style="font-size:12px;padding:8px 14px" onclick="operateMeetingSession('pause', ${jsq(activeSid)})">暂停</button>` : ''}
+        ${canResume ? `<button type="button" class="btn btn-g" style="font-size:12px;padding:8px 14px" onclick="operateMeetingSession('resume', ${jsq(activeSid)})">恢复</button>` : ''}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.15fr .85fr;gap:12px;align-items:start;margin-top:14px">
+      <div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">会场摘要</div>
+        <div style="font-size:13px;line-height:1.85;color:var(--text)">${esc(latestSummary)}</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">控制提示</div>
+        <div style="font-size:12px;line-height:1.85;color:var(--text)">“后台续会”会直接推进下一轮；“接管本轮”会先写入你的主持指令；“返回会场”则打开完整详情、纪要与阶段流转视图。</div>
+      </div>
+    </div>`;
+  }else{
+    activeRoomEl.innerHTML = `<div style="font-size:11px;color:var(--acc);font-weight:700;letter-spacing:.04em;margin-bottom:4px">ACTIVE ROOM</div><div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px">当前没有正在进行的会场</div><div style="font-size:12px;color:var(--muted);line-height:1.8">你可以直接发起新的主持人会议；一旦存在运行中的会场，这里会显示“后台续会、接管本轮、返回会场”等快捷控制入口。</div>`;
+  }
+  sessWrap.innerHTML = sessions.length ? sessions.slice(0,8).map(s=>{
+    const sid = s.session_id || s.id || '';
+    const moderator = s.moderator_name || s.moderator_id || '自动选择';
+    const updatedAt = (s.updated_at || s.updatedAt || s.created_at || s.createdAt || '').replace('T',' ').substring(0,16) || '时间未知';
+    return `<div style="padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02)">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:700">${esc(s.title || s.topic || sid || '未命名会议')}</div>
+        <div style="font-size:10px;color:var(--muted)">${esc(updatedAt)}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <span class="tag">${esc(meetingModeLabel(s.mode || s.preferred_mode || 'auto'))}</span>
+        <span class="tag">${esc(meetingStageLabel(s.stage || ''))}</span>
+        <span class="tag">${esc(meetingRunStateLabel(s.run_state, s.phase))}</span>
+        <span class="tag">主持：${esc(moderator)}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.7">轮次：${esc(String(s.round || 0))} · 参与专家：${esc(String(s.agent_count || (Array.isArray(s.agents) ? s.agents.length : 0)))} · 消息数：${esc(String(s.message_count || (Array.isArray(s.messages) ? s.messages.length : 0)))}</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.75;margin-top:8px">${esc(meetingLatestSummary(s))}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button type="button" class="btn btn-g" style="font-size:11px;padding:6px 12px" onclick="focusMeetingRoom(${jsq(sid)}, true)">返回会场</button>
+        <button type="button" class="btn btn-g" style="font-size:11px;padding:6px 12px" onclick="takeOverMeetingTurn(${jsq(sid)})">接管本轮</button>
+        <button type="button" class="btn btn-g" style="font-size:11px;padding:6px 12px" onclick="operateMeetingSession('advance', ${jsq(sid)})">后台续会</button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">当前没有可展示的会议记录</div>';
+  agentWrap.innerHTML = agents.length ? agents.slice(0,12).map(a=>`
+    <div style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02)">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+        <div>
+          <div style="font-size:13px;font-weight:700">${esc(a.name || a.label || a.id || '未命名 Agent')}</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-top:4px">${esc(a.role || a.duty || a.description || a.title || '可加入协同讨论')}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${meetingBusyInfo(a.id, busyMap)}</div>
+    </div>`).join('') : '<div class="empty">暂无可展示 Agent</div>';
+}
+async function openMeetingDetail(sessionId){
+  document.getElementById('modal-body').innerHTML = `<div style="font-size:11px;color:var(--acc);font-weight:700;letter-spacing:.04em;margin-bottom:4px">MEETING DETAIL</div><div class="modal-title" style="margin-bottom:14px">会议详情加载中…</div><div style="font-size:12px;color:var(--muted)">正在读取主持人会议详情与纪要，请稍候。</div>`;
+  document.getElementById('modal-bg').classList.add('open');
+  try{
+    const [detail, runStatus] = await Promise.all([
+      fetchJ(API+'/collab-discuss/session/'+encodeURIComponent(sessionId)),
+      fetchJ(API+'/collab-discuss/run-status/'+encodeURIComponent(sessionId)).catch(()=>({ok:false}))
+    ]);
+    if(!detail || detail.ok === false){
+      document.getElementById('modal-body').innerHTML = `<div class="modal-title">会议详情读取失败</div><div style="font-size:12px;color:#ff7a95">${esc((detail && detail.error) || '未找到对应会议')}</div>`;
+      return;
+    }
+    const minutes = Array.isArray(detail.minutes) ? detail.minutes.slice(-6).reverse() : [];
+    const messages = Array.isArray(detail.messages) ? detail.messages.slice(-12).reverse() : [];
+    const speakerQueue = Array.isArray(detail.speaker_queue) ? detail.speaker_queue : [];
+    const stageHistory = Array.isArray(detail.stage_history) ? detail.stage_history.slice(-6).reverse() : [];
+    const moderator = detail.moderator_name || detail.moderator_id || '自动选择';
+    document.getElementById('modal-body').innerHTML = `
+      <div style="font-size:11px;color:var(--acc);font-weight:700;letter-spacing:.04em;margin-bottom:4px">${esc(detail.session_id || sessionId)}</div>
+      <div class="modal-title" style="margin-bottom:10px">${esc(detail.topic || detail.title || '未命名会议')}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <span class="tag">${esc(meetingModeLabel(detail.mode || 'meeting'))}</span>
+        <span class="tag">${esc(meetingStageLabel(detail.stage || ''))}</span>
+        <span class="tag">${esc(meetingRunStateLabel((runStatus && runStatus.run_state) || detail.run_state, detail.phase))}</span>
+        <span class="tag">主持：${esc(moderator)}</span>
+        <span class="tag">第 ${esc(String(detail.round || 0))} 轮</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px">
+        <div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">当前点名发言</div>
+          <div style="font-size:13px;line-height:1.8;color:var(--text)">${speakerQueue.length ? speakerQueue.map(item=>esc(item)).join('、') : '当前未指定，下一轮将由主持人安排。'}</div>
+        </div>
+        <div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">运行状态</div>
+          <div style="font-size:13px;line-height:1.8;color:var(--text)">${esc((runStatus && (runStatus.reason || runStatus.message)) || '会场状态正常')}${runStatus && runStatus.next_run_at ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">下次自动推进：${esc(String(runStatus.next_run_at).replace('T',' ').substring(0,19))}</div>` : ''}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <button type="button" class="btn btn-p" style="font-size:12px;padding:8px 14px" onclick="focusMeetingRoom(${jsq(sessionId)});closeModal();">设为当前会场</button>
+        <button type="button" class="btn btn-g" style="font-size:12px;padding:8px 14px" onclick="takeOverMeetingTurn(${jsq(sessionId)})">接管本轮</button>
+        <button type="button" class="btn btn-g" style="font-size:12px;padding:8px 14px" onclick="operateMeetingSession('advance', ${jsq(sessionId)})">后台续会</button>
+        <button type="button" class="btn btn-g" style="font-size:12px;padding:8px 14px" onclick="operateMeetingSession('next_stage', ${jsq(sessionId)})">推进到下一阶段</button>
+        <button type="button" class="btn btn-g" style="font-size:12px;padding:8px 14px" onclick="operateMeetingSession('pause', ${jsq(sessionId)})">暂停</button>
+        <button type="button" class="btn btn-g" style="font-size:12px;padding:8px 14px" onclick="operateMeetingSession('resume', ${jsq(sessionId)})">恢复</button>
+        <button type="button" class="btn btn-g" style="font-size:12px;padding:8px 14px" onclick="operateMeetingSession('conclude', ${jsq(sessionId)})">结束会议</button>
+        <button type="button" class="btn" style="font-size:12px;padding:8px 14px;border-color:#ff527044;color:#ff879d" onclick="operateMeetingSession('destroy', ${jsq(sessionId)})">删除会话</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1.05fr .95fr;gap:14px;align-items:start">
+        <div style="padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">最近纪要</div>
+          ${minutes.length ? minutes.map(item=>`<div style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02);margin-bottom:8px"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">${esc(String(item.at || item.timestamp || '').replace('T',' ').substring(0,19) || '纪要')}</div><div style="font-size:12px;line-height:1.8;color:var(--text)">${esc(item.content || item.summary || '')}</div></div>`).join('') : '<div class="empty">暂无会议纪要</div>'}
+        </div>
+        <div style="padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)">
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">阶段流转</div>
+          ${stageHistory.length ? stageHistory.map(item=>`<div style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02);margin-bottom:8px"><div style="font-size:12px;font-weight:700;color:var(--text)">${esc(meetingStageLabel(item.stage || ''))}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(String(item.at || '').replace('T',' ').substring(0,19) || '时间未知')} · ${esc(item.reason || '推进')}</div></div>`).join('') : '<div class="empty">暂无阶段记录</div>'}
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">最新发言</div>
+        ${messages.length ? messages.map(item=>`<div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06)"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px"><span style="font-size:12px;font-weight:700;color:var(--text)">${esc(item.agent_name || item.name || item.type || 'system')}</span><span style="font-size:11px;color:var(--muted)">${esc(String(item.timestamp || item.at || '').replace('T',' ').substring(0,19) || '')}</span></div><div style="font-size:12px;line-height:1.8;color:var(--text)">${esc(item.content || '')}</div></div>`).join('') : '<div class="empty">暂无发言记录</div>'}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px">
+        <div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)"><div style="font-size:12px;font-weight:700;margin-bottom:8px">结论项</div>${Array.isArray(detail.decision_items) && detail.decision_items.length ? detail.decision_items.map(item=>`<div style="font-size:12px;line-height:1.8;color:var(--text)">• ${esc(item)}</div>`).join('') : '<div style="font-size:12px;color:var(--muted)">暂无结论项</div>'}</div>
+        <div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)"><div style="font-size:12px;font-weight:700;margin-bottom:8px">待决问题</div>${Array.isArray(detail.open_questions) && detail.open_questions.length ? detail.open_questions.map(item=>`<div style="font-size:12px;line-height:1.8;color:var(--text)">• ${esc(item)}</div>`).join('') : '<div style="font-size:12px;color:var(--muted)">暂无待决问题</div>'}</div>
+        <div style="padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)"><div style="font-size:12px;font-weight:700;margin-bottom:8px">行动项</div>${Array.isArray(detail.action_items) && detail.action_items.length ? detail.action_items.map(item=>`<div style="font-size:12px;line-height:1.8;color:var(--text)">• ${esc(item)}</div>`).join('') : '<div style="font-size:12px;color:var(--muted)">暂无行动项</div>'}</div>
+      </div>`;
+  }catch(_){
+    document.getElementById('modal-body').innerHTML = `<div class="modal-title">会议详情读取失败</div><div style="font-size:12px;color:#ff7a95">服务器连接失败，请稍后重试。</div>`;
+  }
+}
+async function operateMeetingSession(action, sessionId){
+  let endpoint = '';
+  let payload = {sessionId};
+  if(action === 'advance' || action === 'next_stage'){
+    const userMessage = prompt(action === 'next_stage' ? '如需在推进到下一阶段前补充主持指令，请输入；可留空。' : '如需给主持人补充本轮要求，请输入；可留空。', '');
+    if(userMessage === null) return;
+    endpoint = '/collab-discuss/advance';
+    payload = {sessionId, userMessage: userMessage || '', intent:'auto'};
+    if(action === 'next_stage') payload.stageAction = 'next_stage';
+  }else if(action === 'pause'){
+    const reason = prompt('请输入暂停原因（可留空）', '');
+    if(reason === null) return;
+    endpoint = '/collab-discuss/pause';
+    payload = {sessionId, reason: reason || ''};
+  }else if(action === 'resume'){
+    const reason = prompt('请输入恢复原因（可留空）', '');
+    if(reason === null) return;
+    endpoint = '/collab-discuss/resume';
+    payload = {sessionId, reason: reason || ''};
+  }else if(action === 'conclude'){
+    if(!confirm('确认结束当前会议？结束后将生成总结并释放占用中的 Agent。')) return;
+    endpoint = '/collab-discuss/conclude';
+  }else if(action === 'destroy'){
+    if(!confirm('确认删除当前会议会话？此操作会移除当前会话记录。')) return;
+    endpoint = '/collab-discuss/destroy';
+  }else{
+    return;
+  }
+  try{
+    const r = await postJ(API + endpoint, payload);
+    if(r.ok){
+      toast('会议操作已执行', 'ok');
+      if(action === 'destroy' && _meetingPanelState.activeSessionId === sessionId){
+        _meetingPanelState.activeSessionId = null;
+      }else if(action !== 'destroy'){
+        _meetingPanelState.activeSessionId = sessionId;
+      }
+      await loadMeetingPanel();
+      if(action === 'destroy'){
+        closeModal();
+      }else{
+        openMeetingDetail(sessionId);
+      }
+    }else{
+      toast(r.error || '会议操作失败', 'err');
+    }
+  }catch(_){
+    toast('服务器连接失败', 'err');
+  }
+}
+async function loadMeetingPanel(){
+  try{
+    const [agents, list, fate, busy] = await Promise.all([
+      fetchJ(API+'/collab-discuss/agents').catch(err=>({ok:false,error:String(err)})),
+      fetchJ(API+'/collab-discuss/list').catch(err=>({ok:false,error:String(err)})),
+      fetchJ(API+'/collab-discuss/fate').catch(err=>({ok:false,error:String(err)})),
+      fetchJ(API+'/collab-discuss/agent-busy').catch(err=>({ok:false,error:String(err)})),
+    ]);
+    renderMeetingPanel({agents, list, fate, busy});
+  }catch(e){
+    renderMeetingPanel({agents:{agents:[]}, list:{sessions:[]}, fate:{event:{summary:'会议数据读取失败'}}, busy:{}});
+  }
+}
+
+function renderSettingsPanel(payload){
+  if(payload && payload.ok===false){
+    const status = document.getElementById('settings-status');
+    if(status){ status.textContent = payload.error || '设置读取失败'; status.style.color = '#ff7a95'; }
+    return;
+  }
+  applySystemSettings(payload || {}, {restartCountdown:false});
+  const mapping = {
+    'settings-retention-days': systemPrefs.scan_record_retention_days,
+    'settings-refresh-seconds': systemPrefs.dashboard_refresh_seconds,
+    'settings-default-tab': systemPrefs.default_landing_tab,
+    'settings-task-history-limit': systemPrefs.task_publish_history_limit,
+    'settings-dispatch-history-limit': systemPrefs.dispatch_history_limit,
+    'settings-web-search-history-limit': systemPrefs.web_search_history_limit,
+  };
+  Object.entries(mapping).forEach(([id, value])=>{
+    const el = document.getElementById(id);
+    if(el) el.value = String(value);
+  });
+  const startup = document.getElementById('settings-startup-transition');
+  if(startup) startup.checked = !!systemPrefs.show_startup_transition;
+  const status = document.getElementById('settings-status');
+  if(status){
+    status.textContent = `当前已加载：自动刷新 ${systemPrefs.dashboard_refresh_seconds} 秒 · 默认页签 ${systemPrefs.default_landing_tab}。`;
+    status.style.color = 'var(--muted)';
+  }
+  const env = document.getElementById('settings-env');
+  if(env) env.textContent = '公开 Demo';
+}
+
+function openSettingsCenter(){
+  document.getElementById('modal-body').innerHTML = `
+    <div style="font-size:11px;color:var(--acc);font-weight:700;letter-spacing:.04em;margin-bottom:4px">SYSTEM SETTINGS</div>
+    <div class="settings-modal-title">设置中心</div>
+    <div class="settings-modal-sub">这里统一管理看板运行参数、默认进入页、历史记录保留与账户安全。涉及密码修改、用户名修改以及凭据重置的操作，都会立即写入当前系统。</div>
+
+    <div class="settings-grid">
+      <div class="settings-card">
+        <div class="k">自动刷新</div>
+        <div class="v" id="settings-refresh-badge">${esc(String(systemPrefs.dashboard_refresh_seconds))} 秒</div>
+        <div class="d">控制任务、会商与节点状态的自动轮询节奏。</div>
+      </div>
+      <div class="settings-card">
+        <div class="k">默认入口</div>
+        <div class="v" id="settings-landing-badge">${esc(systemPrefs.default_landing_tab)}</div>
+        <div class="d">页面打开后优先进入的工作视图。</div>
+      </div>
+      <div class="settings-card">
+        <div class="k">当前环境</div>
+        <div class="v" id="settings-env">公开 Demo</div>
+        <div class="d">系统级设置会直接作用于当前公开演示环境。</div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <div>
+          <h3>运行与记录设置</h3>
+          <p>调整自动刷新、默认页签、启动动效，以及各类历史记录保留上限。</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-g" type="button" onclick="loadSettingsPanel()" style="font-size:12px;padding:8px 14px">重新读取</button>
+          <button class="btn btn-g" type="button" onclick="activatePanel('web_search')" style="font-size:12px;padding:8px 14px">打开高级搜索</button>
+        </div>
+      </div>
+      <div class="settings-form-grid">
+        <div class="settings-field">
+          <label>巡检记录保留天数</label>
+          <input id="settings-retention-days" class="sub-input" type="number" min="1" max="30" step="1" value="7">
+        </div>
+        <div class="settings-field">
+          <label>主看板自动刷新秒数</label>
+          <input id="settings-refresh-seconds" class="sub-input" type="number" min="5" max="60" step="1" value="5">
+        </div>
+        <div class="settings-field">
+          <label>默认打开页签</label>
+          <select id="settings-default-tab" class="sub-input">
+            <option value="tasks">任务看板</option>
+            <option value="monitor">运行调度</option>
+            <option value="meeting">智能会商</option>
+            <option value="agents">Agent 管理</option>
+            <option value="models">模型配置</option>
+            <option value="skills">技能管理</option>
+            <option value="sessions">快速任务</option>
+            <option value="archives">结果归档</option>
+            <option value="templates">模板中心</option>
+            <option value="web_search">全网搜索</option>
+          </select>
+        </div>
+        <div class="settings-field">
+          <label>任务发布历史条数</label>
+          <input id="settings-task-history-limit" class="sub-input" type="number" min="3" max="20" step="1" value="6">
+        </div>
+        <div class="settings-field">
+          <label>调度消息历史条数</label>
+          <input id="settings-dispatch-history-limit" class="sub-input" type="number" min="3" max="20" step="1" value="8">
+        </div>
+        <div class="settings-field">
+          <label>全网搜索历史条数</label>
+          <input id="settings-web-search-history-limit" class="sub-input" type="number" min="5" max="30" step="1" value="10">
+        </div>
+      </div>
+      <div class="settings-inline-actions">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.02)">
+          <input id="settings-startup-transition" type="checkbox" style="accent-color:#6a9eff">
+          启用启动过渡动画
+        </label>
+        <button class="btn btn-p" type="button" onclick="saveSettingsPanel()" style="font-size:12px;padding:8px 16px">保存系统设置</button>
+      </div>
+      <div id="settings-status" class="settings-status">正在读取当前设置…</div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">
+        <div>
+          <h3>账户安全</h3>
+          <p>支持查看当前账户状态、修改用户名、修改密码，以及在确认当前密码后执行默认凭据重置。</p>
+        </div>
+      </div>
+      <div class="settings-note" id="settings-auth-hint">正在读取账户安全状态…</div>
+      <div class="settings-form-grid" style="margin-top:14px">
+        <div class="settings-field">
+          <label>当前用户名</label>
+          <input id="settings-current-username" class="sub-input" type="text" disabled placeholder="读取中…">
+        </div>
+        <div class="settings-field">
+          <label>当前密码（执行敏感操作时必填）</label>
+          <input id="settings-current-password" class="sub-input" type="password" placeholder="请输入当前密码">
+        </div>
+        <div class="settings-field">
+          <label>新用户名</label>
+          <input id="settings-new-username" class="sub-input" type="text" placeholder="例如：jiangnanqicai">
+        </div>
+        <div class="settings-field">
+          <label>新密码</label>
+          <input id="settings-new-password" class="sub-input" type="password" placeholder="至少 4 个字符">
+        </div>
+      </div>
+      <div class="settings-inline-actions">
+        <button class="btn btn-g" type="button" onclick="submitChangeUsername()" style="font-size:12px;padding:8px 14px">修改用户名</button>
+        <button class="btn btn-g" type="button" onclick="submitChangePassword()" style="font-size:12px;padding:8px 14px">修改密码</button>
+        <button class="btn" type="button" onclick="submitResetCredentials()" style="font-size:12px;padding:8px 14px;border-color:#ff527044;color:#ff879d">重置为默认凭据</button>
+      </div>
+      <div id="settings-auth-status" class="settings-status">可在此直接完成密码修改与凭据重置。</div>
+    </div>
+
+    <div class="settings-section settings-danger">
+      <div class="settings-section-title">
+        <div>
+          <h3>高风险提示</h3>
+          <p>重置默认凭据后，账号会回到 <b>admin / admin</b>，并重新要求首次改密。请仅在确有必要时使用。</p>
+        </div>
+      </div>
+      <div class="settings-note">如果只是需要更新登录口令，优先使用“修改密码”；只有在账户混乱、演示环境需要恢复默认入口时，才建议执行默认凭据重置。</div>
+    </div>
+  `;
+  document.getElementById('modal-bg').classList.add('open');
+  loadSettingsPanel();
+  loadAuthStatus();
+}
+
+async function loadSettingsPanel(){
+  const status = document.getElementById('settings-status');
+  if(status){ status.textContent = '正在读取当前设置…'; status.style.color = 'var(--muted)'; }
+  try{
+    const r = await fetchJ(API+'/system-settings');
+    renderSettingsPanel(r);
+    const refreshBadge = document.getElementById('settings-refresh-badge');
+    if(refreshBadge) refreshBadge.textContent = `${systemPrefs.dashboard_refresh_seconds} 秒`;
+    const landingBadge = document.getElementById('settings-landing-badge');
+    if(landingBadge) landingBadge.textContent = systemPrefs.default_landing_tab;
+  }catch(e){
+    renderSettingsPanel({ok:false, error:'服务器连接失败'});
+  }
+}
+
+async function saveSettingsPanel(){
+  const status = document.getElementById('settings-status');
+  const payload = {
+    scan_record_retention_days: Number(document.getElementById('settings-retention-days')?.value || 7),
+    dashboard_refresh_seconds: Number(document.getElementById('settings-refresh-seconds')?.value || 5),
+    default_landing_tab: String(document.getElementById('settings-default-tab')?.value || 'tasks'),
+    show_startup_transition: !!document.getElementById('settings-startup-transition')?.checked,
+    task_publish_history_limit: Number(document.getElementById('settings-task-history-limit')?.value || 6),
+    dispatch_history_limit: Number(document.getElementById('settings-dispatch-history-limit')?.value || 8),
+    web_search_history_limit: Number(document.getElementById('settings-web-search-history-limit')?.value || 10),
+  };
+  if(status){ status.textContent = '正在保存设置…'; status.style.color = 'var(--muted)'; }
+  try{
+    const r = await postJ(API+'/system-settings', payload);
+    if(r.ok){
+      applySystemSettings(r.settings || payload);
+      renderSettingsPanel(r.settings || payload);
+      renderTaskPublishHistory();
+      renderDispatchTalkHistory();
+      renderWebSearchHistory();
+      const refreshBadge = document.getElementById('settings-refresh-badge');
+      if(refreshBadge) refreshBadge.textContent = `${systemPrefs.dashboard_refresh_seconds} 秒`;
+      const landingBadge = document.getElementById('settings-landing-badge');
+      if(landingBadge) landingBadge.textContent = systemPrefs.default_landing_tab;
+      if(status) status.textContent = `保存成功：自动刷新 ${systemPrefs.dashboard_refresh_seconds} 秒，默认页签 ${systemPrefs.default_landing_tab}。`;
+      toast('系统设置已保存','ok');
+    }else{
+      if(status){ status.textContent = r.error || '保存失败'; status.style.color = '#ff7a95'; }
+      toast(r.error||'保存失败','err');
+    }
+  }catch(e){
+    if(status){ status.textContent = '服务器连接失败'; status.style.color = '#ff7a95'; }
+    toast('服务器连接失败','err');
+  }
+}
+
+function setAuthStatusMessage(msg, ok=false){
+  const el = document.getElementById('settings-auth-status');
+  if(!el) return;
+  el.textContent = msg;
+  el.style.color = ok ? 'var(--ok)' : 'var(--muted)';
+}
+
+async function loadAuthStatus(){
+  const hint = document.getElementById('settings-auth-hint');
+  const username = document.getElementById('settings-current-username');
+  try{
+    const r = await fetchJ(API+'/auth/status');
+    if(username) username.value = r.currentUser || r.username || '';
+    if(hint){
+      hint.style.color = r.mustChangePassword ? '#f5c842' : 'var(--muted)';
+      hint.textContent = r.mustChangePassword
+        ? `当前账户为 ${r.currentUser || r.username || '未知'}，系统要求尽快修改密码。`
+        : `当前账户为 ${r.currentUser || r.username || '未知'}，可直接执行用户名或密码更新。`;
+    }
+    setAuthStatusMessage('账户安全状态已同步。');
+  }catch(e){
+    if(hint){
+      hint.style.color = '#ff7a95';
+      hint.textContent = '账户安全状态读取失败，请稍后重试。';
+    }
+    setAuthStatusMessage('账户安全状态读取失败。');
+  }
+}
+
+function authFormValue(id){ return String(document.getElementById(id)?.value || '').trim(); }
+function authFormPassword(id){ return String(document.getElementById(id)?.value || ''); }
+function clearSensitiveSecurityInputs(){
+  ['settings-current-password','settings-new-password'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+}
+
+async function submitChangeUsername(){
+  const currentPassword = authFormPassword('settings-current-password');
+  const newUsername = authFormValue('settings-new-username');
+  if(!currentPassword){ setAuthStatusMessage('修改用户名前请先输入当前密码。'); return; }
+  if(!newUsername){ setAuthStatusMessage('请填写新的用户名。'); return; }
+  setAuthStatusMessage('正在修改用户名…');
+  try{
+    const r = await postJ(API+'/auth/change-username', {currentPassword, newUsername});
+    if(r.ok){
+      const userEl = document.getElementById('settings-current-username');
+      if(userEl) userEl.value = r.username || newUsername;
+      const newUserEl = document.getElementById('settings-new-username');
+      if(newUserEl) newUserEl.value = '';
+      clearSensitiveSecurityInputs();
+      await loadAuthStatus();
+      setAuthStatusMessage(r.message || '用户名已更新', true);
+      toast(r.message || '用户名已更新','ok');
+    }else{
+      setAuthStatusMessage(r.error || '用户名修改失败');
+      toast(r.error || '用户名修改失败','err');
+    }
+  }catch(e){
+    setAuthStatusMessage('服务器连接失败');
+    toast('服务器连接失败','err');
+  }
+}
+
+async function submitChangePassword(){
+  const currentPassword = authFormPassword('settings-current-password');
+  const newPassword = authFormPassword('settings-new-password');
+  if(!currentPassword){ setAuthStatusMessage('修改密码前请先输入当前密码。'); return; }
+  if(!newPassword){ setAuthStatusMessage('请填写新密码。'); return; }
+  setAuthStatusMessage('正在修改密码…');
+  try{
+    const r = await postJ(API+'/auth/change-password', {currentPassword, newPassword});
+    if(r.ok){
+      clearSensitiveSecurityInputs();
+      await loadAuthStatus();
+      setAuthStatusMessage(r.message || '密码已更新', true);
+      toast(r.message || '密码已更新','ok');
+    }else{
+      setAuthStatusMessage(r.error || '密码修改失败');
+      toast(r.error || '密码修改失败','err');
+    }
+  }catch(e){
+    setAuthStatusMessage('服务器连接失败');
+    toast('服务器连接失败','err');
+  }
+}
+
+async function submitResetCredentials(){
+  const currentPassword = authFormPassword('settings-current-password');
+  if(!currentPassword){ setAuthStatusMessage('重置默认凭据前请先输入当前密码。'); return; }
+  const ok = confirm('重置后账号将恢复为 admin / admin，并重新要求首次改密。确定继续吗？');
+  if(!ok) return;
+  setAuthStatusMessage('正在重置默认凭据…');
+  try{
+    const r = await postJ(API+'/auth/reset-credentials', {currentPassword});
+    if(r.ok){
+      const userEl = document.getElementById('settings-current-username');
+      if(userEl) userEl.value = r.username || 'admin';
+      const newUserEl = document.getElementById('settings-new-username');
+      if(newUserEl) newUserEl.value = '';
+      clearSensitiveSecurityInputs();
+      await loadAuthStatus();
+      setAuthStatusMessage(r.message || '默认凭据已重置', true);
+      toast('默认凭据已重置，请尽快重新修改密码','ok',5000);
+    }else{
+      setAuthStatusMessage(r.error || '凭据重置失败');
+      toast(r.error || '凭据重置失败','err');
+    }
+  }catch(e){
+    setAuthStatusMessage('服务器连接失败');
+    toast('服务器连接失败','err');
+  }
+}
+
 /* ══ DATA LOADING ══ */
 async function loadLive(opts={}){
   try{
@@ -3061,15 +3980,19 @@ async function loadAgentConfig(){
     agentConfig=await fetchJ(API+'/agent-config');
     renderModels(agentConfig);
     renderSkills(agentConfig);
+    loadGlobalSkills();
     const log=await fetchJ(API+'/model-change-log').catch(()=>[]);
     renderCL(log);
   }catch(e){
     document.getElementById('model-grid').innerHTML='<div class="empty" style="grid-column:1/-1">⚠️ 请先启动本地服务器：<code>python3 dashboard/server.py</code></div>';
+    const remoteWrap = document.getElementById('remote-skills-grid');
+    if(remoteWrap) remoteWrap.innerHTML = '<div class="empty" style="grid-column:1/-1">⚠️ 暂时无法读取全局 Skill</div>';
   }
 }
 async function loadAll(opts={}){
   await loadLive(opts);
   if(['models','skills'].includes(activeTab)) await loadAgentConfig();
+  if(activeTab==='meeting') loadMeetingPanel();
   if(activeTab==='sessions') renderSessions(liveStatus?liveStatus.tasks:[]);
   if(activeTab==='archives') renderArchives();
   if(activeTab==='templates') renderTemplates();
@@ -3547,7 +4470,7 @@ function readWebSearchHistoryStore(){
     const raw = JSON.parse(localStorage.getItem(WEB_SEARCH_HISTORY_STORAGE_KEY) || '{}');
     return {
       draft: typeof raw.draft === 'string' ? raw.draft : '',
-      history: Array.isArray(raw.history) ? raw.history.filter(Boolean).map(normalizeWebSearchHistoryItem).slice(0,10) : []
+      history: Array.isArray(raw.history) ? raw.history.filter(Boolean).map(normalizeWebSearchHistoryItem).slice(0,historyLimit('web_search')) : []
     };
   }catch(_){
     return {draft:'', history:[]};
@@ -3556,7 +4479,7 @@ function readWebSearchHistoryStore(){
 function writeWebSearchHistoryStore(data){
   localStorage.setItem(WEB_SEARCH_HISTORY_STORAGE_KEY, JSON.stringify({
     draft: data.draft || '',
-    history: Array.isArray(data.history) ? data.history.filter(Boolean).map(normalizeWebSearchHistoryItem).slice(0,10) : []
+    history: Array.isArray(data.history) ? data.history.filter(Boolean).map(normalizeWebSearchHistoryItem).slice(0,historyLimit('web_search')) : []
   }));
 }
 function getWebSearchHistoryKey(item){
@@ -3572,7 +4495,7 @@ function upsertWebSearchHistoryItem(entry){
   if(!item.query && !item.taskId) return;
   const st = readWebSearchHistoryStore();
   const key = getWebSearchHistoryKey(item);
-  const history = [item, ...(st.history || []).filter(row => getWebSearchHistoryKey(row) !== key)].slice(0,10);
+  const history = [item, ...(st.history || []).filter(row => getWebSearchHistoryKey(row) !== key)].slice(0,historyLimit('web_search'));
   writeWebSearchHistoryStore({draft: item.query || st.draft || '', history});
 }
 function persistWebSearchDraft(){
@@ -4379,6 +5302,11 @@ async function copyGlobalScanReport(){
 /* ══ TABS ══ */
 function activatePanel(tabName){
   const nextTab = String(tabName || 'tasks');
+  if(nextTab === 'settings'){
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===activeTab));
+    openSettingsCenter();
+    return;
+  }
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===nextTab));
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
   const panel = document.getElementById('panel-'+nextTab);
@@ -4386,6 +5314,7 @@ function activatePanel(tabName){
   activeTab = nextTab;
   if(['models','skills'].includes(activeTab)) loadAgentConfig();
   if(activeTab==='agents') loadAgentsOverview();
+  if(activeTab==='meeting') loadMeetingPanel();
   if(activeTab==='monitor') loadAgentsStatus();
   if(activeTab==='web_search') loadWebSearchBrief();
   if(activeTab==='sessions') renderSessions(liveStatus?liveStatus.tasks:[]);
@@ -4422,8 +5351,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementB
 function showStartupTransition(){
   const lastOpen = localStorage.getItem('openclaw_startup_transition_date');
   const today = new Date().toISOString().substring(0,10);
-  const pref = JSON.parse(localStorage.getItem('openclaw_startup_transition_pref')||'{"enabled":true}');
-  if(!pref.enabled || lastOpen === today) return;
+  if(systemPrefs.show_startup_transition === false || lastOpen === today) return;
   localStorage.setItem('openclaw_startup_transition_date', today);
   const el = document.getElementById('startup-overlay');
   el.style.display='flex';
@@ -4892,7 +5820,19 @@ document.addEventListener('change', e=>{
   if(e.target.id==='dispatch-talk-type') persistDispatchCenterDraft();
   if(e.target.id==='task-publish-priority') persistTaskPublishDraft();
 });
-loadAll().then(()=>{ renderTaskPublishHistory(); renderSkillManagerHistory(); loadSkillManagerActivity(); showStartupTransition(); });
+bootstrapSystemSettings();
+loadAll().then(async ()=>{
+  renderTaskPublishHistory();
+  renderSkillManagerHistory();
+  loadSkillManagerActivity();
+  try{
+    const settings = await fetchJ(API+'/system-settings');
+    applySystemSettings(settings, {restartCountdown:false});
+  }catch(_){ }
+  const defaultTab = systemPrefs.default_landing_tab;
+  if(defaultTab && defaultTab !== 'tasks') activatePanel(defaultTab);
+  showStartupTransition();
+});
 startCd();
 </script>
 </body>

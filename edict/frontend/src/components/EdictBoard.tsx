@@ -456,10 +456,10 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>
-            {pickLocaleText(locale, '添加事项', 'Add Item')}
+            {pickLocaleText(locale, '快速发布任务', 'Quick Task Launch')}
           </div>
           <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-            {pickLocaleText(locale, '你可以直接在这里写下要处理的事项，系统会继续安排后续步骤。', 'You can describe what you need here, and we will arrange the next steps for you.')}
+            {pickLocaleText(locale, '你可以直接在这里写下待办事项，系统会按优先级与目标助手继续安排后续步骤。', 'Describe the task here and the system will continue routing it by priority and selected assistants.')}
           </div>
         </div>
       </div>
@@ -500,7 +500,7 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
           />
         </div>
         <button type="submit" className="auth-primary" disabled={submitting} style={{ width: 'auto', minWidth: 140, height: 44 }}>
-          {submitting ? pickLocaleText(locale, '提交中…', 'Submitting...') : pickLocaleText(locale, '添加事项', 'Add Item')}
+          {submitting ? pickLocaleText(locale, '发布中…', 'Publishing...') : pickLocaleText(locale, '发布任务', 'Publish Task')}
         </button>
       </div>
     </form>
@@ -984,7 +984,7 @@ export default function EdictBoard() {
           <div className="empty" style={{ gridColumn: '1/-1' }}>
             {pickLocaleText(locale, '暂无任务单', 'No tasks yet')}<br />
             <small style={{ fontSize: 11, marginTop: 6, display: 'block', color: 'var(--muted)' }}>
-              {pickLocaleText(locale, '你可以从面板内直接发布任务，或等待外部渠道同步后进入现有协作流程。', 'You can create a task directly from the board or wait for external channels to sync tasks into the pipeline.')}
+              {pickLocaleText(locale, '你可以直接从看板发布新任务，或通过提示词中心、搜索面板等入口把需求送入同一协作流程。', 'You can launch a task directly from the board, or send work into the same workflow through the Prompt Center or the search panel.')}
             </small>
           </div>
         ) : (

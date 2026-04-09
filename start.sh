@@ -57,13 +57,14 @@ fi
 
 # 启动看板服务器
 echo -e "${GREEN}▶ 启动看板服务器...${NC}"
-python3 dashboard/server.py &
+python3 dashboard/server.py --host 0.0.0.0 --port 7891 &
 SERVER_PID=$!
 
 sleep 1
 echo ""
 echo -e "${GREEN}✅ 服务已启动！${NC}"
 echo -e "   看板地址: ${BLUE}http://127.0.0.1:7891${NC}"
+echo -e "   对外监听: ${BLUE}0.0.0.0:7891${NC}"
 echo -e "   按 ${YELLOW}Ctrl+C${NC} 关闭所有服务"
 echo ""
 

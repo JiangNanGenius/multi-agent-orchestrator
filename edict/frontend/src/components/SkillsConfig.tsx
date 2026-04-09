@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store';
-import { api, type Task } from '../api';
+import { api, type Task, type RemoteSkillItem } from '../api';
 import { pickLocaleText, formatCount, type Locale } from '../i18n';
 import PersistentAgentChat, { type ChatIntent, type DraftReview } from './PersistentAgentChat';
 
@@ -63,9 +63,31 @@ export default function SkillsConfig() {
   const [formData, setFormData] = useState({ name: '', desc: '', trigger: '' });
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'local' | 'manager'>('local');
+  const [remoteSkills, setRemoteSkills] = useState<RemoteSkillItem[]>([]);
+  const [remoteSkillsLoading, setRemoteSkillsLoading] = useState(false);
+  const [remoteSkillsError, setRemoteSkillsError] = useState('');
+
+  const loadRemoteSkills = async () => {
+    setRemoteSkillsLoading(true);
+    setRemoteSkillsError('');
+    try {
+      const result = await api.remoteSkillsList();
+      if (result.ok) {
+        setRemoteSkills(result.remoteSkills || []);
+      } else {
+        setRemoteSkills([]);
+        setRemoteSkillsError(result.error || pickLocaleText(locale, '全局技能仓库暂时无法读取', 'The global skills repository is temporarily unavailable.'));
+      }
+    } catch {
+      setRemoteSkills([]);
+      setRemoteSkillsError(pickLocaleText(locale, '全局技能仓库读取失败，请稍后再试', 'Failed to load the global skills repository. Please try again later.'));
+    }
+    setRemoteSkillsLoading(false);
+  };
 
   useEffect(() => {
     loadAgentConfig();
+    void loadRemoteSkills();
   }, [loadAgentConfig]);
 
   const getSkillManagerTarget = () => {
@@ -82,19 +104,27 @@ export default function SkillsConfig() {
   };
 
   const skillManagerTarget = getSkillManagerTarget();
+  const totalLocalSkills = useMemo(
+    () => agentConfig?.agents?.reduce((n, a) => n + (a.skills?.length || 0), 0) || 0,
+    [agentConfig?.agents],
+  );
+  const remoteSkillCoverage = useMemo(
+    () => new Set(remoteSkills.map((item) => item.agentId)).size,
+    [remoteSkills],
+  );
 
   const tabItems = useMemo(() => [
     {
       key: 'local' as const,
-      label: pickLocaleText(locale, '🏛️ 可用功能', '🏛️ Available Features'),
-      count: agentConfig?.agents?.reduce((n, a) => n + (a.skills?.length || 0), 0) || 0,
+      label: pickLocaleText(locale, '🏛️ 技能总览', '🏛️ Skills Overview'),
+      count: totalLocalSkills,
     },
     {
       key: 'manager' as const,
       label: pickLocaleText(locale, '🗂️ 功能协助', '🗂️ Feature Help'),
       count: 1,
     },
-  ], [agentConfig?.agents, locale]);
+  ], [locale, totalLocalSkills]);
 
   const openSkill = async (agentId: string, skillName: string) => {
     setSkillModal({ agentId, name: skillName, content: pickLocaleText(locale, '⟳ 加载中…', '⟳ Loading...'), path: '' });
@@ -152,13 +182,13 @@ export default function SkillsConfig() {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: 12, color: 'var(--acc)', fontWeight: 700, letterSpacing: '.05em', marginBottom: 6 }}>
-              {pickLocaleText(locale, '功能中心', 'Feature Center')}
+              {pickLocaleText(locale, '技能管理中心', 'Skills Governance Center')}
             </div>
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>
-              {pickLocaleText(locale, '查看可用功能与新增入口', 'View Available Features & Add New Ones')}
+              {pickLocaleText(locale, '查看 Agent 技能与全局技能仓库', 'Review Agent Skills and the Global Skills Repository')}
             </div>
             <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7, maxWidth: 760 }}>
-              {pickLocaleText(locale, '此处用于查看各成员当前可用的功能，并为指定成员添加新功能。若需要迁移、整理、排查或统一调整，请切换到“功能协助”提交。', 'Use this view to check the features currently available to each member and add new ones. For migration, cleanup, troubleshooting, or broader changes, switch to Feature Help.')}
+              {pickLocaleText(locale, '此处同时展示各 Agent 当前挂载的技能，以及全局技能仓库的远程来源。如果需要做迁移、命名收口、清理重复项或统一治理，请切换到“功能协助”提交。', 'This view shows both the skills currently mounted on each agent and the remote sources in the global skills repository. For migration, naming normalization, duplicate cleanup, or broader governance work, switch to Feature Help.')}
             </div>
           </div>
           <button
@@ -169,6 +199,102 @@ export default function SkillsConfig() {
           </button>
         </div>
       </div>
+
+      <div
+        style={{
+          marginBottom: 18,
+          background: 'var(--panel)',
+          border: '1px solid var(--line)',
+          borderRadius: 14,
+          padding: 16,
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 12, color: '#c79bff', fontWeight: 700, letterSpacing: '.05em', marginBottom: 6 }}>
+              {pickLocaleText(locale, '全局技能仓库', 'Global Skills Repository')}
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>
+              {pickLocaleText(locale, '明确区分本地挂载技能与全局来源', 'Clarify Local Mounted Skills vs Global Sources')}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7, maxWidth: 760 }}>
+              {remoteSkillsError
+                ? remoteSkillsError
+                : pickLocaleText(
+                    locale,
+                    remoteSkills.length
+                      ? '下列记录来自远程技能清单，可用于说明仓库中已经登记的全局来源；点击具体条目可继续查看对应技能内容。'
+                      : '当前返回为空仓库。这里显示的是“已登记的远程来源数量”，不是报错占位；如需补充演示数据或接入真实来源，可从功能协助入口继续提交。',
+                    remoteSkills.length
+                      ? 'The list below comes from the remote skills registry and shows which global sources have already been registered. Click an item to inspect the corresponding skill content.'
+                      : 'The repository currently returns an empty list. This means “registered remote sources = 0”, not a placeholder error state. If demo data or real sources should be added, continue through Feature Help.',
+                  )}
+            </div>
+          </div>
+          <button
+            onClick={() => void loadRemoteSkills()}
+            style={{ padding: '9px 16px', background: 'rgba(199,155,255,.12)', color: '#d9bbff', border: '1px solid rgba(199,155,255,.24)', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}
+            disabled={remoteSkillsLoading}
+          >
+            {remoteSkillsLoading
+              ? pickLocaleText(locale, '⟳ 读取中…', '⟳ Loading...')
+              : pickLocaleText(locale, '⟳ 刷新仓库', '⟳ Refresh Repository')}
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 14 }}>
+          <div style={{ background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 12, padding: 12 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>{pickLocaleText(locale, '本地挂载技能', 'Mounted Local Skills')}</div>
+            <div style={{ fontSize: 22, fontWeight: 800 }}>{totalLocalSkills}</div>
+          </div>
+          <div style={{ background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 12, padding: 12 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>{pickLocaleText(locale, '全局远程来源', 'Global Remote Sources')}</div>
+            <div style={{ fontSize: 22, fontWeight: 800 }}>{remoteSkills.length}</div>
+          </div>
+          <div style={{ background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 12, padding: 12 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>{pickLocaleText(locale, '已覆盖 Agent', 'Agents Covered')}</div>
+            <div style={{ fontSize: 22, fontWeight: 800 }}>{remoteSkillCoverage}</div>
+          </div>
+        </div>
+
+        {remoteSkills.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12, marginTop: 14 }}>
+            {remoteSkills.map((item) => (
+              <div key={`${item.agentId}-${item.skillName}-${item.sourceUrl}`} style={{ background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 12, padding: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800 }}>📦 {item.skillName}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                      {pickLocaleText(locale, '挂载到：', 'Mounted to: ')}
+                      {normalizeAgentLabel(item.agentId, (agentConfig.agents.find((ag) => ag.id === item.agentId)?.label) || item.agentId)}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => openSkill(item.agentId, item.skillName)}
+                    style={{ padding: '6px 10px', background: 'rgba(199,155,255,.12)', color: '#d9bbff', border: '1px solid rgba(199,155,255,.24)', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
+                  >
+                    {pickLocaleText(locale, '查看内容', 'View Content')}
+                  </button>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 8 }}>
+                  {item.description || pickLocaleText(locale, '该远程来源尚未填写描述。', 'No description has been provided for this remote source yet.')}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
+                  <div><b style={{ color: 'var(--text)' }}>{pickLocaleText(locale, '来源：', 'Source: ')}</b>{item.sourceUrl}</div>
+                  <div><b style={{ color: 'var(--text)' }}>{pickLocaleText(locale, '本地路径：', 'Local path: ')}</b>{item.localPath || '—'}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ marginTop: 14, background: 'var(--panel2)', border: '1px dashed var(--line)', borderRadius: 12, padding: 14, fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
+            {remoteSkillsLoading
+              ? pickLocaleText(locale, '正在读取全局技能仓库，请稍候。', 'Loading the global skills repository. Please wait.')
+              : pickLocaleText(locale, '当前未登记任何远程技能来源，因此这里会显示为空仓库。该状态可用于验收“数据为 0”与“读取失败”之间的区别。', 'No remote skill sources are currently registered, so the repository appears as an empty warehouse. This helps distinguish “data = 0” from “loading failed” during validation.')}
+          </div>
+        )}
+      </div>
+
       <div className="skills-grid">
         {agentConfig.agents.map((ag) => (
           <div className="sk-card" key={ag.id}>

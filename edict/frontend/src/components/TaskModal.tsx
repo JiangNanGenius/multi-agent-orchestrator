@@ -194,8 +194,11 @@ export default function TaskModal() {
   const taskPolicy = task.workspaceTaskPolicy || workspace.task_policy || {};
   const refreshState = task.workspaceNewRefresh || workspace.new_refresh || {};
   const watchdog = task.workspaceWatchdog || workspace.watchdog || {};
+  const notifications = task.workspaceNotifications || workspace.notifications || [];
+  const riskControl = task.workspaceRiskControl || workspace.risk_control || {};
   const feishuReporting = task.workspaceFeishuReporting || workspace.feishu_reporting || {};
   const linkedTasks = task.workspaceLinkedTasks || workspace.linked_tasks || [];
+  const unreadNotifications = notifications.filter((item) => !item.read).length;
   const workspacePath = task.workspaceActualPath || workspace.actual_workspace_path || task.workspacePath || workspace.path || '';
   const archiveStatus = task.workspaceArchiveStatus || workspace.archive_status || 'hot';
   const coldArchivePath = task.workspaceColdArchivePath || workspace.cold_archive_path || '';
@@ -262,6 +265,62 @@ export default function TaskModal() {
         loadAll();
       } else {
         toast(r.error || '重新激活失败', 'err');
+      }
+    } catch {
+      toast('当前连接失败，请稍后再试', 'err');
+    }
+  };
+
+  const handleCreateWorkspaceNotification = async () => {
+    const title = prompt('请输入通知标题：', `任务 ${task.id} 提醒`);
+    if (title === null) return;
+    const message = prompt('请输入通知内容：', task.title || '请关注当前任务状态变化');
+    if (message === null) return;
+    try {
+      const r = await api.createWorkspaceNotification(task.id, {
+        title: title || `任务 ${task.id} 提醒`,
+        message: message || '请关注当前任务状态变化',
+        source: 'dashboard',
+        kind: 'board_notice',
+        severity: 'info',
+      });
+      if (r.ok) {
+        toast(r.message || '已写入工作区通知', 'ok');
+        await fetchActivity();
+        await fetchSched();
+        loadAll();
+      } else {
+        toast(r.error || '通知写入失败', 'err');
+      }
+    } catch {
+      toast('当前连接失败，请稍后再试', 'err');
+    }
+  };
+
+  const handleRiskDecision = async (approvalStatus: 'approved' | 'rejected') => {
+    const label = approvalStatus === 'approved' ? '通过' : '拒绝';
+    const reason = prompt(`请输入${label}原因：`, riskControl.summary || '');
+    if (reason === null) return;
+    try {
+      const r = await api.updateWorkspaceRiskControl(task.id, {
+        status: approvalStatus === 'approved' ? 'approved' : (riskControl.status || 'blocked'),
+        level: riskControl.level || 'high',
+        summary: riskControl.summary || '高风险操作待确认',
+        requested_by: riskControl.requested_by || 'unknown',
+        requires_user_confirmation: false,
+        confirmation_channel: riskControl.confirmation_channel || 'dashboard',
+        approval_status: approvalStatus,
+        approval_reason: reason || `${label}风险操作`,
+        approved_by: 'dashboard',
+        operations: Array.isArray(riskControl.operations) ? riskControl.operations : [],
+      });
+      if (r.ok) {
+        toast(r.message || `已${label}风险操作请求`, 'ok');
+        await fetchActivity();
+        await fetchSched();
+        loadAll();
+      } else {
+        toast(r.error || `${label}失败`, 'err');
       }
     } catch {
       toast('当前连接失败，请稍后再试', 'err');
@@ -494,7 +553,7 @@ export default function TaskModal() {
             </div>
           )}
 
-          {(task.taskCode || workspacePath || refreshRecommended || task.workspaceTaskKind || linkedTasks.length > 0 || summaryText || handoffText || watchdog.status || feishuReporting.enabled) && (
+          {(task.taskCode || workspacePath || refreshRecommended || task.workspaceTaskKind || linkedTasks.length > 0 || summaryText || handoffText || watchdog.status || notifications.length > 0 || riskControl.status || feishuReporting.enabled) && (
             <div className="m-section" style={{ marginTop: 14 }}>
               <div className="m-sec-label">任务工作区与续接信息</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
@@ -605,6 +664,43 @@ export default function TaskModal() {
                 </div>
                 <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>工作区通知</div>
+                    <span style={{ fontSize: 11, color: unreadNotifications > 0 ? '#f59e0b' : toneColor(notifications.length ? 'ok' : 'pending'), fontWeight: 700 }}>
+                      {notifications.length ? `${notifications.length} 条 / 未读 ${unreadNotifications}` : '暂无通知'}
+                    </span>
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
+                    最新来源：{notifications[0]?.source || '—'}
+                    <br />
+                    最近通知：{notifications[0]?.created_at ? fmtDateTime(notifications[0]?.created_at) : '—'}
+                    <br />
+                    摘要：{shortText(notifications[0]?.title || notifications[0]?.message || '当前暂无工作区通知', 80)}
+                  </div>
+                  <div style={{ marginTop: 10 }}>
+                    <button className="sched-btn" style={{ padding: '6px 10px' }} onClick={handleCreateWorkspaceNotification}>发送提醒</button>
+                  </div>
+                </div>
+                <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>风险确认链路</div>
+                    <span style={{ fontSize: 11, color: toneColor(riskControl.approval_status || riskControl.status || 'pending'), fontWeight: 700 }}>{riskControl.approval_status || riskControl.status || 'not-set'}</span>
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
+                    风险级别：{riskControl.level || '—'}
+                    <br />
+                    请求方：{riskControl.requested_by || '—'}
+                    <br />
+                    摘要：{shortText(riskControl.summary || '暂无待确认风险操作', 80)}
+                  </div>
+                  {riskControl.requires_user_confirmation && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+                      <button className="sched-btn warn" onClick={() => handleRiskDecision('approved')}>通过确认</button>
+                      <button className="sched-btn danger" onClick={() => handleRiskDecision('rejected')}>拒绝执行</button>
+                    </div>
+                  )}
+                </div>
+                <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
                     <div style={{ fontSize: 12, fontWeight: 700 }}>飞书汇报</div>
                     <span style={{ fontSize: 11, color: toneColor(feishuReporting.last_report_status || (feishuReporting.enabled ? 'enabled' : 'disabled')), fontWeight: 700 }}>{feishuReporting.last_report_status || (feishuReporting.enabled ? 'enabled' : 'disabled')}</span>
                   </div>
@@ -617,6 +713,24 @@ export default function TaskModal() {
                   </div>
                 </div>
               </div>
+
+              {notifications.length > 0 && (
+                <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)', marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>通知明细</div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {notifications.slice(0, 4).map((item, index) => (
+                      <div key={`${item.id || item.created_at || 'notice'}-${index}`} style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '8px 10px', background: 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                          <div style={{ fontWeight: 700, fontSize: 12 }}>{item.title || item.kind || '通知'}</div>
+                          <span style={{ fontSize: 11, color: toneColor(item.severity || (item.read ? 'ok' : 'warning')) }}>{item.severity || (item.read ? '已读' : '未读')}</span>
+                        </div>
+                        <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>{shortText(item.message, 180)}</div>
+                        <div style={{ marginTop: 6, fontSize: 11, color: 'var(--muted)' }}>{item.source || 'system'} · {fmtDateTime(item.created_at)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {(summaryText || handoffText) && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 10 }}>

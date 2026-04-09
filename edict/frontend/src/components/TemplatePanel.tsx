@@ -9,7 +9,9 @@ const CAT_LABELS: Record<string, { zh: string; en: string }> = {
   日常办公: { zh: '日常办公', en: 'Daily Ops' },
   数据分析: { zh: '数据分析', en: 'Data Analysis' },
   工程开发: { zh: '工程开发', en: 'Engineering' },
+  方案与搭建: { zh: '方案与搭建', en: 'Planning & Build' },
   内容创作: { zh: '内容创作', en: 'Content' },
+  内容营销: { zh: '内容营销', en: 'Content & Marketing' },
 };
 
 const DEPT_LABELS: Record<string, { zh: string; en: string }> = {
@@ -241,6 +243,28 @@ export default function TemplatePanel() {
 
   return (
     <div>
+      <div
+        style={{
+          marginBottom: 16,
+          padding: '16px 18px',
+          borderRadius: 18,
+          border: '1px solid var(--line)',
+          background: 'linear-gradient(135deg, rgba(92,123,255,0.10), rgba(76,195,138,0.08))',
+          display: 'grid',
+          gap: 6,
+        }}
+      >
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.04em', color: 'var(--acc)' }}>
+          {pickLocaleText(locale, '提示词中心', 'Prompt Center')}
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 800 }}>
+          {pickLocaleText(locale, '用结构化提示词快速发起任务', 'Launch tasks quickly with structured prompts')}
+        </div>
+        <div style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--muted)' }}>
+          {pickLocaleText(locale, '这里沉淀常用提示词模板、输出要求与协作入口。你可以先预览即将提交的提示词，再把任务发送到总控中心继续流转。', 'This panel keeps reusable prompt templates, output expectations, and collaboration entry points. Preview the generated prompt before sending the task to the Control Center.')}
+        </div>
+      </div>
+
       <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
         {TPL_CATS.map((c) => (
           <span
@@ -269,7 +293,7 @@ export default function TemplatePanel() {
                 {getTplEst(t)} · {t.cost}
               </span>
               <button className="tpl-go" onClick={() => openForm(t)}>
-                {pickLocaleText(locale, '提交任务', 'Submit Task')}
+                {pickLocaleText(locale, '打开模板', 'Open Template')}
               </button>
             </div>
           </div>
@@ -282,7 +306,8 @@ export default function TemplatePanel() {
             <button className="modal-close" onClick={() => setFormTpl(null)}>✕</button>
             <div className="modal-body">
               <div style={{ fontSize: 11, color: 'var(--acc)', fontWeight: 700, letterSpacing: '.04em', marginBottom: 4 }}>
-                {pickLocaleText(locale, '任务模板中心', 'Task Template Center')}
+                  {pickLocaleText(locale, '提示词中心', 'Prompt Center')}
+
               </div>
               <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>
                 {formTpl.icon} {getTplName(formTpl)}
@@ -349,7 +374,7 @@ export default function TemplatePanel() {
                     }}
                   >
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>
-                      {pickLocaleText(locale, '📌 即将提交到总控中心的任务内容：', '📌 Task content to be submitted to the Control Center:')}
+                      {pickLocaleText(locale, '📌 即将生成并提交的提示词任务：', '📌 Prompt task to be generated and submitted:')}
                     </div>
                     <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{previewCmd}</div>
                   </div>
@@ -357,10 +382,10 @@ export default function TemplatePanel() {
 
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   <button type="button" className="btn btn-g" onClick={preview} style={{ padding: '8px 16px', fontSize: 12 }}>
-                    {pickLocaleText(locale, '👁 预览提交内容', '👁 Preview Submission')}
+                    {pickLocaleText(locale, '👁 预览提示词任务', '👁 Preview Prompt Task')}
                   </button>
                   <button type="submit" className="tpl-go" style={{ padding: '8px 20px', fontSize: 13 }}>
-                    {pickLocaleText(locale, '📌 提交到总控中心', '📌 Submit to Control Center')}
+                    {pickLocaleText(locale, '📌 发送到总控中心', '📌 Send to Control Center')}
                   </button>
                 </div>
               </form>

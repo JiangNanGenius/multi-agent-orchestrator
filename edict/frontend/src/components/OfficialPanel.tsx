@@ -164,16 +164,16 @@ export default function AgentOverviewPanel() {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: 12, color: '#7be0ff', fontWeight: 700, letterSpacing: '.06em', marginBottom: 6 }}>
-              {pickLocaleText(locale, '协作成员概览', 'Team Overview')}
+              {pickLocaleText(locale, 'Agent 管理总览', 'Agent Management Overview')}
             </div>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>
-              {pickLocaleText(locale, '查看成员表现与调整分工', 'View Contributions and Update Roles')}
+              {pickLocaleText(locale, '查看 Agent 表现并处理成员调整', 'Review Agent Performance and Team Updates')}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, maxWidth: 820 }}>
+            <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.75, maxWidth: 760 }}>
               {pickLocaleText(
                 locale,
-                '这个页面聚焦于协作成员、贡献情况与成员调整，不承担全局动态监看职责。需要新增成员、移除后加成员或调整分工时，都可以从这里发起；默认成员会被自动保护，不能在这里误删。现在该入口已升级为可持续记录的聊天窗口，支持刷新后继续查看。',
-                'This page focuses on team members, contribution details, and member updates instead of global monitoring. When you need to add a member, remove a later-added member, or adjust responsibilities, you can start here. Default members are automatically protected from accidental removal. The entry now uses a persistent chat window that can be restored after refresh.',
+                '这个页面聚焦于 Agent 表现、贡献情况与成员调整，不承担全局动态监看职责。需要新增成员、移除后加成员或调整分工时，都可以从这里发起；默认成员会被自动保护，不能在这里误删。现在该入口已升级为可持续记录的聊天窗口，支持刷新后继续查看。',
+                'This page focuses on agent performance, contribution details, and team updates instead of global monitoring. When you need to add a member, remove a later-added member, or adjust responsibilities, you can start here. Default members are automatically protected from accidental removal. The entry now uses a persistent chat window that can be restored after refresh.',
               )}
             </div>
           </div>

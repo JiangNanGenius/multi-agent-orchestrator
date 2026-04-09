@@ -89,6 +89,33 @@ export const api = {
     postJ<ActionResult & { workspace?: WorkspaceMeta; archived?: boolean }>(`${API_BASE}/api/tasks/${encodeURIComponent(taskId)}/workspace/archive`, { agent }),
   reactivateWorkspace: (taskId: string, moveToHot = true, agent = 'dashboard') =>
     postJ<ActionResult & { workspace?: WorkspaceMeta; archived?: boolean }>(`${API_BASE}/api/tasks/${encodeURIComponent(taskId)}/workspace/reactivate`, { agent, move_to_hot: moveToHot }),
+  createWorkspaceNotification: (
+    taskId: string,
+    payload: {
+      title: string;
+      message: string;
+      source?: string;
+      kind?: string;
+      severity?: string;
+      requires_ack?: boolean;
+      meta?: Record<string, unknown>;
+    }
+  ) => postJ<ActionResult & { notifications?: WorkspaceNotification[] }>(`${API_BASE}/api/tasks/${encodeURIComponent(taskId)}/workspace/notifications`, payload),
+  updateWorkspaceRiskControl: (
+    taskId: string,
+    payload: {
+      status: string;
+      level: string;
+      summary: string;
+      requested_by?: string;
+      requires_user_confirmation?: boolean;
+      confirmation_channel?: string;
+      approval_status?: string;
+      approval_reason?: string;
+      approved_by?: string;
+      operations?: RiskControlOperation[];
+    }
+  ) => postJ<ActionResult & { risk_control?: RiskControlState }>(`${API_BASE}/api/tasks/${encodeURIComponent(taskId)}/workspace/risk-control`, payload),
   schedulerScan: (thresholdSec = 180) =>
     postJ<ActionResult & { count?: number; actions?: ScanAction[]; checkedAt?: string }>(
       `${API_BASE}/api/scheduler-scan`,
@@ -307,6 +334,43 @@ export interface FeishuReportingState {
   last_report_message?: string;
 }
 
+export interface WorkspaceNotification {
+  id?: string;
+  kind?: string;
+  title?: string;
+  message?: string;
+  source?: string;
+  severity?: string;
+  created_at?: string;
+  read?: boolean;
+  action_label?: string;
+  action_type?: string;
+  meta?: Record<string, unknown>;
+}
+
+export interface RiskControlOperation {
+  name?: string;
+  label?: string;
+  command?: string;
+  scope?: string;
+  rationale?: string;
+  risky?: boolean;
+}
+
+export interface RiskControlState {
+  status?: string;
+  level?: string;
+  summary?: string;
+  requested_by?: string;
+  approved_by?: string;
+  requires_user_confirmation?: boolean;
+  confirmation_channel?: string;
+  approval_status?: string;
+  approval_reason?: string;
+  updated_at?: string;
+  operations?: RiskControlOperation[];
+}
+
 export interface TaskPolicy {
   mode?: string;
   archive_strategy?: string;
@@ -351,6 +415,8 @@ export interface WorkspaceMeta {
   linked_tasks?: LinkedTaskRef[];
   context_resume_files?: string[];
   watchdog?: WatchdogState;
+  notifications?: WorkspaceNotification[];
+  risk_control?: RiskControlState;
   feishu_reporting?: FeishuReportingState;
   created_at?: string;
   last_event_at?: string;
@@ -403,6 +469,8 @@ export interface Task {
   workspaceLatestHandoff?: string;
   workspaceLinkedTasks?: LinkedTaskRef[];
   workspaceWatchdog?: WatchdogState;
+  workspaceNotifications?: WorkspaceNotification[];
+  workspaceRiskControl?: RiskControlState;
   workspaceFeishuReporting?: FeishuReportingState;
   sourceMeta?: SourceMeta;
   activity?: ActivityEntry[];

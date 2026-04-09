@@ -333,6 +333,26 @@ def change_username(username: str, current_password: str, new_username: str) -> 
     return {'ok': True, 'message': '用户名已更新', 'username': cfg['username']}
 
 
+def reset_credentials(username: str, current_password: str) -> dict[str, Any]:
+    cfg = _load_config()
+    if not verify_password(username, current_password):
+        return {'ok': False, 'error': '当前密码错误'}
+    salt = _new_salt()
+    cfg['username'] = DEFAULT_USERNAME
+    cfg['salt'] = salt
+    cfg['password_hash'] = _hash_password(DEFAULT_PASSWORD, salt)
+    cfg['must_change_password'] = True
+    cfg['password_changed_at'] = None
+    cfg['reset_source'] = 'manual-reset'
+    _save_config(cfg)
+    return {
+        'ok': True,
+        'message': '账号凭据已重置为默认值 admin / admin，请立即重新修改密码',
+        'username': DEFAULT_USERNAME,
+        'mustChangePassword': True,
+    }
+
+
 def setup_password(password: str) -> dict[str, Any]:
     """兼容旧接口：保留但改为重置默认账号密码的简化入口。"""
     cfg = _load_config()
@@ -353,9 +373,26 @@ _PUBLIC_PATHS = frozenset({
     '/healthz',
     '/api/auth/login',
     '/api/auth/status',
+    '/api/live-status',
+    '/api/agents-overview',
+    '/api/agents-status',
+    '/api/agent-config',
+    '/api/model-change-log',
+    '/api/system-settings',
+    '/api/remote-skills-list',
+    '/api/collab-discuss/list',
+    '/api/collab-discuss/agents',
+    '/api/collab-discuss/fate',
 })
 
-_PUBLIC_PREFIXES = ('/_assets/', '/assets/')
+_PUBLIC_PREFIXES = (
+    '/_assets/',
+    '/assets/',
+    '/api/skill-content/',
+    '/api/agent-activity/',
+    '/api/collab-discuss/session/',
+    '/api/collab-discuss/run-status/',
+)
 
 
 def requires_auth(path: str) -> bool:

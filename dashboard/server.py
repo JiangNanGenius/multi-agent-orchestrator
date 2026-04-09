@@ -20,14 +20,19 @@ from urllib.request import Request, urlopen
 from auth import init as auth_init, requires_auth, extract_token, verify_token, \
     is_enabled as auth_enabled, is_configured as auth_configured, \
     setup_password, authenticate, create_token, get_auth_status, \
-    complete_first_change, change_password, change_username, get_config
+    complete_first_change, change_password, change_username, reset_credentials, get_config
 
 # 引入文件锁工具，确保与其他脚本并发安全
-scripts_dir = str(pathlib.Path(__file__).parent.parent / 'scripts')
-sys.path.insert(0, scripts_dir)
+PROJECT_ROOT = pathlib.Path(__file__).parent.parent
+scripts_dir = str(PROJECT_ROOT / 'scripts')
+if scripts_dir not in sys.path:
+    sys.path.insert(0, scripts_dir)
+BACKEND_DIR = str(PROJECT_ROOT / 'edict' / 'backend')
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
 from file_lock import atomic_json_read, atomic_json_write, atomic_json_update
 from utils import validate_url, read_json, now_iso
-from services.task_workspace import (
+from app.services.task_workspace import (
     archive_task_workspace,
     build_workspace_meta,
     initialize_task_workspace,
@@ -46,10 +51,8 @@ from court_discuss import (
 log = logging.getLogger('server')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(message)s', datefmt='%H:%M:%S')
 
-CHANNELS_DIR = pathlib.Path(__file__).parent.parent / 'edict' / 'backend' / 'app' / 'channels'
-if str(CHANNELS_DIR.parent) not in sys.path:
-    sys.path.insert(0, str(CHANNELS_DIR.parent))
-from channels import get_channel, get_channel_info, CHANNELS as NOTIFICATION_CHANNELS
+CHANNELS_DIR = PROJECT_ROOT / 'edict' / 'backend' / 'app' / 'channels'
+from app.channels import get_channel, get_channel_info, CHANNELS as NOTIFICATION_CHANNELS
 
 OCLAW_HOME = pathlib.Path.home() / '.openclaw'
 MAX_REQUEST_BODY = 1 * 1024 * 1024  # 1 MB
@@ -63,8 +66,8 @@ _SAFE_NAME_RE = re.compile(r'^[a-zA-Z0-9_\-\u4e00-\u9fff]+$')
 
 BASE = pathlib.Path(__file__).parent
 DIST = BASE / 'dist'          # React 构建产物 (npm run build)
-DATA = BASE.parent / "data"
-SCRIPTS = BASE.parent / 'scripts'
+DATA = PROJECT_ROOT / "data"
+SCRIPTS = PROJECT_ROOT / 'scripts'
 _ACTIVE_TASK_DATA_DIR = None
 
 # 静态资源 MIME 类型
@@ -703,16 +706,52 @@ def is_system_settings_route(path: str) -> bool:
 
 def read_system_settings(default=None):
     if default is None:
-        default = {'scan_record_retention_days': 7}
+        default = {
+            'scan_record_retention_days': 7,
+            'dashboard_refresh_seconds': 5,
+            'default_landing_tab': 'tasks',
+            'show_startup_transition': True,
+            'task_publish_history_limit': 6,
+            'dispatch_history_limit': 8,
+            'web_search_history_limit': 10,
+        }
     raw = read_json(DATA / 'system_settings.json', default)
     if not isinstance(raw, dict):
         raw = {}
+
     try:
-        days = int(raw.get('scan_record_retention_days', default.get('scan_record_retention_days', 7)))
+        retention_days = int(raw.get('scan_record_retention_days', default.get('scan_record_retention_days', 7)))
     except Exception:
-        days = default.get('scan_record_retention_days', 7)
-    days = max(1, min(30, days))
-    return {'scan_record_retention_days': days}
+        retention_days = default.get('scan_record_retention_days', 7)
+    retention_days = max(1, min(30, retention_days))
+
+    try:
+        refresh_seconds = int(raw.get('dashboard_refresh_seconds', default.get('dashboard_refresh_seconds', 5)))
+    except Exception:
+        refresh_seconds = default.get('dashboard_refresh_seconds', 5)
+    refresh_seconds = max(5, min(60, refresh_seconds))
+
+    allowed_tabs = {'tasks', 'monitor', 'meeting', 'agents', 'models', 'skills', 'sessions', 'archives', 'templates', 'web_search'}
+    landing_tab = str(raw.get('default_landing_tab', default.get('default_landing_tab', 'tasks')) or 'tasks')
+    if landing_tab not in allowed_tabs:
+        landing_tab = default.get('default_landing_tab', 'tasks')
+
+    def _limit(key, fallback, min_v, max_v):
+        try:
+            value = int(raw.get(key, default.get(key, fallback)))
+        except Exception:
+            value = default.get(key, fallback)
+        return max(min_v, min(max_v, value))
+
+    return {
+        'scan_record_retention_days': retention_days,
+        'dashboard_refresh_seconds': refresh_seconds,
+        'default_landing_tab': landing_tab,
+        'show_startup_transition': bool(raw.get('show_startup_transition', default.get('show_startup_transition', True))),
+        'task_publish_history_limit': _limit('task_publish_history_limit', 6, 3, 20),
+        'dispatch_history_limit': _limit('dispatch_history_limit', 8, 3, 20),
+        'web_search_history_limit': _limit('web_search_history_limit', 10, 5, 30),
+    }
 
 
 def is_search_brief_refresh_route(path: str) -> bool:
@@ -2925,6 +2964,26 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self.send_json(result, 400)
             return
+        if p == '/api/auth/reset-credentials':
+            result = reset_credentials(current_username, body.get('currentPassword', ''))
+            if result.get('ok'):
+                new_token = create_token(result.get('username', 'admin'))
+                resp = dict(result)
+                resp['token'] = new_token
+                try:
+                    body_bytes = json.dumps(resp, ensure_ascii=False).encode()
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json; charset=utf-8')
+                    self.send_header('Content-Length', str(len(body_bytes)))
+                    self.send_header('Set-Cookie', f'edict_token={new_token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
+                    cors_headers(self)
+                    self.end_headers()
+                    self.wfile.write(body_bytes)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+            else:
+                self.send_json(result, 400)
+            return
 
         if is_search_config_route(p):
             if not isinstance(body, dict):
@@ -2968,20 +3027,67 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(body, dict):
                 self.send_json({'ok': False, 'error': '请求体必须是 JSON 对象'}, 400)
                 return
-            allowed_keys = {'scan_record_retention_days'}
+            allowed_keys = {
+                'scan_record_retention_days',
+                'dashboard_refresh_seconds',
+                'default_landing_tab',
+                'show_startup_transition',
+                'task_publish_history_limit',
+                'dispatch_history_limit',
+                'web_search_history_limit',
+            }
             unknown = set(body.keys()) - allowed_keys
             if unknown:
                 self.send_json({'ok': False, 'error': f'未知字段: {", ".join(unknown)}'}, 400)
                 return
             try:
-                days = int(body.get('scan_record_retention_days', 7))
+                retention_days = int(body.get('scan_record_retention_days', 7))
             except Exception:
                 self.send_json({'ok': False, 'error': 'scan_record_retention_days 必须是整数'}, 400)
                 return
-            if days < 1 or days > 30:
+            if retention_days < 1 or retention_days > 30:
                 self.send_json({'ok': False, 'error': 'scan_record_retention_days 必须在 1 到 30 天之间'}, 400)
                 return
-            payload = {'scan_record_retention_days': days}
+            try:
+                refresh_seconds = int(body.get('dashboard_refresh_seconds', 5))
+            except Exception:
+                self.send_json({'ok': False, 'error': 'dashboard_refresh_seconds 必须是整数'}, 400)
+                return
+            if refresh_seconds < 5 or refresh_seconds > 60:
+                self.send_json({'ok': False, 'error': 'dashboard_refresh_seconds 必须在 5 到 60 秒之间'}, 400)
+                return
+            allowed_tabs = {'tasks', 'monitor', 'meeting', 'agents', 'models', 'skills', 'sessions', 'archives', 'templates', 'web_search'}
+            landing_tab = str(body.get('default_landing_tab', 'tasks') or 'tasks')
+            if landing_tab not in allowed_tabs:
+                self.send_json({'ok': False, 'error': 'default_landing_tab 不合法'}, 400)
+                return
+
+            def _read_limit(key, fallback, min_v, max_v):
+                try:
+                    value = int(body.get(key, fallback))
+                except Exception:
+                    raise ValueError(f'{key} 必须是整数')
+                if value < min_v or value > max_v:
+                    raise ValueError(f'{key} 必须在 {min_v} 到 {max_v} 之间')
+                return value
+
+            try:
+                task_publish_history_limit = _read_limit('task_publish_history_limit', 6, 3, 20)
+                dispatch_history_limit = _read_limit('dispatch_history_limit', 8, 3, 20)
+                web_search_history_limit = _read_limit('web_search_history_limit', 10, 5, 30)
+            except ValueError as exc:
+                self.send_json({'ok': False, 'error': str(exc)}, 400)
+                return
+
+            payload = {
+                'scan_record_retention_days': retention_days,
+                'dashboard_refresh_seconds': refresh_seconds,
+                'default_landing_tab': landing_tab,
+                'show_startup_transition': bool(body.get('show_startup_transition', True)),
+                'task_publish_history_limit': task_publish_history_limit,
+                'dispatch_history_limit': dispatch_history_limit,
+                'web_search_history_limit': web_search_history_limit,
+            }
             (DATA / 'system_settings.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2))
             self.send_json({'ok': True, 'message': '系统设置已保存', 'settings': payload})
             return

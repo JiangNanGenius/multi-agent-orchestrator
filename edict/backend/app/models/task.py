@@ -227,5 +227,7 @@ class Task(Base):
             "workspaceLatestHandoff": workspace.get("latest_handoff", ""),
             "workspaceLinkedTasks": workspace.get("linked_tasks", []),
             "workspaceWatchdog": workspace.get("watchdog", {}),
+            "workspaceNotifications": workspace.get("notifications", []),
+            "workspaceRiskControl": workspace.get("risk_control", {}),
             "workspaceFeishuReporting": workspace.get("feishu_reporting", {}),
         }

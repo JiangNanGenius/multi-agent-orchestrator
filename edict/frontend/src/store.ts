@@ -572,16 +572,16 @@ export type TabKey =
   | 'skills' | 'sessions' | 'archives' | 'templates' | 'web_search' | 'collaboration' | 'automation' | 'system_settings';
 
 export const TAB_DEFS: { key: TabKey; label: string; labelEn: string; icon: string }[] = [
-  { key: 'tasks',       label: '我的事项', icon: '📋', labelEn: 'Tasks' },
+  { key: 'tasks',       label: '任务看板', icon: '📋', labelEn: 'Task Board' },
   { key: 'collaboration', label: '一起讨论', icon: '👥', labelEn: 'Discussion' },
   { key: 'monitor',     label: '最新动态', icon: '📡', labelEn: 'Updates' },
   { key: 'automation',  label: '自动跟进', icon: '🧭', labelEn: 'Auto Follow-up' },
-  { key: 'agents',      label: '协作成员', icon: '👔', labelEn: 'Team' },
+  { key: 'agents',      label: 'Agent 管理', icon: '👔', labelEn: 'Agent Management' },
   { key: 'models',      label: '回复风格', icon: '🤖', labelEn: 'Response Style' },
-  { key: 'skills',      label: '更多能力', icon: '🎯', labelEn: 'More Capabilities' },
+  { key: 'skills',      label: '技能管理', icon: '🎯', labelEn: 'Skills Management' },
   { key: 'sessions',    label: '快捷入口', icon: '💬', labelEn: 'Shortcuts' },
   { key: 'archives',    label: '历史记录', icon: '🗄️', labelEn: 'History' },
-  { key: 'templates',   label: '常用模板', icon: '📋', labelEn: 'Templates' },
+  { key: 'templates',   label: '提示词中心', icon: '🧩', labelEn: 'Prompt Center' },
   { key: 'web_search',  label: '全网搜索', icon: '🌐', labelEn: 'Web Search' },
   { key: 'system_settings', label: '系统设置', icon: '⚙️', labelEn: 'System Settings' },
 ];
@@ -776,6 +776,8 @@ interface AppStore {
 }
 
 let _toastId = 0;
+const initialLocale = detectLocale();
+applyLocale(initialLocale);
 
 export const useStore = create<AppStore>((set, get) => ({
   liveStatus: null,
@@ -794,7 +796,7 @@ export const useStore = create<AppStore>((set, get) => ({
   selectedAgent: null,
   modalTaskId: null,
   countdown: 5,
-  locale: detectLocale(),
+  locale: initialLocale,
 
   toasts: [],
 
