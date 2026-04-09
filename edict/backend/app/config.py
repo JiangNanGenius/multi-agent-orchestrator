@@ -55,9 +55,28 @@ class Settings(BaseSettings):
     context_window_include_flow_limit: int = 10
     context_window_enable_continuation_hint: bool = True
 
+    # ── 任务工作区与冷热分层 ──
+    task_workspace_hot_root: str = "task_workspaces"
+    task_workspace_cold_root: str = "cold_task_archives/openclaw_task_archives"
+    task_workspace_huge_project_threshold_gb: int = 50
+    task_workspace_reactivate_to_hot: bool = True
+
+    # ── 看门狗巡检 ──
+    workspace_watchdog_enabled: bool = True
+    workspace_watchdog_stale_minutes: int = 30
+    workspace_watchdog_missing_file_repair: bool = True
+    workspace_watchdog_auto_refresh_mark: bool = True
+    workspace_watchdog_feishu_webhook: str = ""
+
     # ── 消息通知 ──
     notification_enabled: bool = True
     default_dispatch_channel: str = "feishu"
+    feishu_report_webhook: str = ""
+    feishu_report_enabled: bool = False
+    feishu_report_agents: str = "control_center,plan_center,review_center,dispatch_center,watchdog"
+    feishu_report_events: str = "task.created,task.state.changed,task.progress.appended,task.workspace.archive.confirmed,task.workspace.reactivated.confirmed,task.watchdog.sync"
+    feishu_report_include_summary_only: bool = True
+    feishu_report_max_content_chars: int = 1200
 
     @property
     def database_url(self) -> str:

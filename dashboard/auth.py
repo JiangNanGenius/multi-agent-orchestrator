@@ -248,7 +248,6 @@ def get_auth_status(token: str | None = None) -> dict[str, Any]:
         'mustChangePassword': bool(cfg.get('must_change_password', False)),
         'authenticated': bool(payload),
         'currentUser': payload.get('username') if payload else None,
-        'authFile': str(ensure_auth_file()),
     }
 
 

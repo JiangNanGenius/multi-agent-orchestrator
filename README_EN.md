@@ -172,7 +172,7 @@ multi-agent-orchestrator/
 └── edict/
 ```
 
-The source tree keeps several historical directory names for engineering continuity, including `edict/backend/` and `edict/frontend/`. These are **path names inside the repository**, not the public-facing product name.
+The source tree keeps several historical directory names for engineering continuity, including `edict/backend/` and `edict/frontend/`. These are **internal repository paths only**, not the public-facing project name.
 
 | Path | Purpose | Current expectation |
 | --- | --- | --- |
@@ -470,13 +470,7 @@ If you intend to maintain this repository publicly over time, treat documentatio
 
 ## Attribution
 
-> **Primary referenced source:** the public organization style, repository presentation approach, and attribution treatment of this release primarily reference [`wanikua/danghuangshang`][1].
-
-This public release of **Multi-Agent Orchestrator** is organized and published by **JiangNanGenius**. If you continue modifying, redistributing, or extending this repository, please retain the **MIT License** and keep the attribution note to the primary referenced source.[1]
-
-| Type | Source | Description |
-| --- | --- | --- |
-| Primary referenced source | [`wanikua/danghuangshang`][1] | Important reference for public-facing structure, presentation treatment, and attribution strategy |
+This public release of **Multi-Agent Orchestrator** is organized and published by **JiangNanGenius**. The current public wording keeps project-lineage discussion intentionally brief: if you continue modifying, redistributing, or extending this repository, please retain the **MIT License** and keep only the minimum necessary source acknowledgement where appropriate.[1]
 
 ## Author
 

@@ -10,15 +10,15 @@
 
 ## Short Description
 
-A production-oriented multi-agent orchestration system with planning, review, dispatch, execution, and dashboard-based observability.
+A production-oriented multi-agent orchestration system with governed task intake, workspace-backed execution, ledger-based traceability, reversible archival, and dashboard observability.
 
 ## Extended Description
 
-Multi-Agent Orchestrator is a structured collaboration system for complex AI workflows. Instead of letting multiple agents chat freely without governance, it introduces a clearly defined lifecycle that includes intake, planning, review, dispatch, execution, and archival. The project also provides a dashboard-driven operating interface so task progress, role responsibilities, and results can be observed and managed in real time.
+Multi-Agent Orchestrator is a governed collaboration system for complex AI workflows. Instead of letting multiple agents chat freely without lifecycle control, it introduces a structured execution chain that covers intake, planning, review, dispatch, execution, delivery, archival, and reactivation. The current public release also includes task workspaces, file-based ledgers, cold/hot tiered storage, `/new` refresh guidance, watchdog inspection and repair signals, Feishu reporting write-back, and dashboard-based observability for operational use.
 
 ## Suggested GitHub About
 
-**Production-oriented multi-agent orchestration with planning, review, dispatch, execution, and real-time dashboard observability.**
+**Governed multi-agent orchestration with task workspaces, file ledgers, archive reactivation, and dashboard observability.**
 
 ## Suggested Topics
 
@@ -34,6 +34,8 @@ Multi-Agent Orchestrator is a structured collaboration system for complex AI wor
 | task-orchestration |
 | llm |
 | automation |
+| task-workspace |
+| agent-governance |
 
 ## Author
 

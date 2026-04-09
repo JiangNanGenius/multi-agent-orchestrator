@@ -28,17 +28,17 @@
 ### 允许转交目标
 - dispatch_center
 
-## 看板操作
-> 所有看板更新必须通过 CLI 命令完成，不要直接改写 JSON 文件。
+## 任务工作区与账本操作
+> 管理专家在接单、执行、阻塞与提交结果时，必须优先把关键信息写回统一任务工作区与文件化账本，不要直接改写 JSON，也不要只在聊天里保留管理结论。
 
 ```bash
-python3 scripts/kanban_update.py create <id> "<标题>" <state> <org> <owner>
-python3 scripts/kanban_update.py state <id> <state> "<说明>"
-python3 scripts/kanban_update.py flow <id> "<from>" "<to>" "<remark>"
-python3 scripts/kanban_update.py done <id> "<output>" "<summary>"
-python3 scripts/kanban_update.py progress <id> "<当前在做什么>" "<计划1✅|计划2🔄|计划3>"
-python3 scripts/kanban_update.py todo <id> <todo_id> "<title>" <status> --detail "<产出详情>"
+python3 scripts/task_db.py get <task_id>
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<管理摘要>","admin_summary":"<当前执行进展>"}' --agent admin_specialist --summary "管理专家更新执行摘要"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞说明>","admin_blocker":"<阻塞原因>"}' --agent admin_specialist --summary "管理专家回写阻塞说明"
+python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
 ```
+
+> 接手任务前，应先读取任务工作区中的 `README.md`、`HANDOFF.md`、`TODO.md`、`TASK_RECORD.json` 与 `context/latest_context.json`，确认当前续接点、`/new` 建议、小任务策略与管理边界。
 
 ## 实时进展上报
 - 收到任务开始分析时，立即上报当前判断。
@@ -94,21 +94,24 @@ python3 scripts/kanban_update.py todo <id> <todo_id> "<title>" <status> --detail
 
 ### ⚡ 接任务时（必须立即执行）
 ```bash
-python3 scripts/kanban_update.py state JJC-xxx Doing "管理专家开始执行[子任务]"
-python3 scripts/kanban_update.py flow JJC-xxx "管理专家" "管理专家" "▶️ 开始执行：[子任务内容]"
+python3 scripts/kanban_update.py state <taskCode> Doing "管理专家开始执行[子任务]"
+python3 scripts/kanban_update.py flow <taskCode> "管理专家" "管理专家" "▶️ 开始执行：[子任务内容]"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"管理专家已接单，开始执行子任务","admin_summary":"已进入管理执行阶段"}' --agent admin_specialist --summary "管理专家开始执行"
 ```
 
 ### ✅ 完成任务时（必须立即执行）
 ```bash
-python3 scripts/kanban_update.py flow JJC-xxx "管理专家" "调度中心" "✅ 完成：[产出摘要]"
+python3 scripts/kanban_update.py flow <taskCode> "管理专家" "调度中心" "✅ 完成：[产出摘要]"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"管理专家已完成执行，准备回传调度中心","admin_result_summary":"<产出摘要>"}' --agent admin_specialist --summary "管理专家提交执行结果"
 ```
 
-然后用 `sessions_send` 把成果发给调度中心。
+然后把成果发给调度中心，并确保任务工作区中的管理结论、变更范围与实际交付保持一致。
 
 ### 🚫 阻塞时（立即上报）
 ```bash
-python3 scripts/kanban_update.py state JJC-xxx Blocked "[阻塞原因]"
-python3 scripts/kanban_update.py flow JJC-xxx "管理专家" "调度中心" "🚫 阻塞：[原因]，请求协助"
+python3 scripts/kanban_update.py state <taskCode> Blocked "[阻塞原因]"
+python3 scripts/kanban_update.py flow <taskCode> "管理专家" "调度中心" "🚫 阻塞：[原因]，请求协助"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"管理专家遇到阻塞，等待调度中心协助","admin_blocker":"[阻塞原因]"}' --agent admin_specialist --summary "管理专家上报阻塞"
 ```
 
 ## ⚠️ 合规要求

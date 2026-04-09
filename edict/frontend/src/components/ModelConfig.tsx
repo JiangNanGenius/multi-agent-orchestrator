@@ -64,7 +64,7 @@ export default function ModelConfig() {
   if (!agentConfig?.agents) {
     return (
       <div className="empty" style={{ gridColumn: '1/-1' }}>
-        {pickLocaleText(locale, '⚠️ 请先启动本地服务器', '⚠️ Please start the local server first')}
+        {pickLocaleText(locale, '⚠️ 当前暂时无法加载回复偏好设置', '⚠️ Response preference settings are temporarily unavailable')}
       </div>
     );
   }
@@ -85,7 +85,7 @@ export default function ModelConfig() {
       ...p,
       [agentId]: {
         cls: 'pending',
-        text: pickLocaleText(locale, '⟳ 提交中…', '⟳ Submitting...'),
+        text: pickLocaleText(locale, '⟳ 保存中…', '⟳ Saving...'),
       },
     }));
     try {
@@ -95,10 +95,10 @@ export default function ModelConfig() {
           ...p,
           [agentId]: {
             cls: 'ok',
-            text: pickLocaleText(locale, '✅ 已提交，Gateway 重启中（约5秒）', '✅ Submitted. Gateway is restarting (about 5 seconds)'),
+            text: pickLocaleText(locale, '✅ 已保存，新的回复偏好将在几秒内生效', '✅ Saved. The new response preference will take effect in a few seconds'),
           },
         }));
-        toast(locale === 'en' ? `${agentId} model updated` : `${agentId} 模型已更改`, 'ok');
+        toast(pickLocaleText(locale, '回复偏好已更新', 'Response preference updated'), 'ok');
         setTimeout(() => loadAgentConfig(), 5500);
       } else {
         setStatusMap((p) => ({
@@ -114,7 +114,7 @@ export default function ModelConfig() {
         ...p,
         [agentId]: {
           cls: 'err',
-          text: pickLocaleText(locale, '❌ 无法连接服务器', '❌ Unable to reach server'),
+            text: pickLocaleText(locale, '❌ 当前无法保存，请稍后再试', '❌ Unable to save right now, please try again later'),
         },
       }));
     }
@@ -135,13 +135,13 @@ export default function ModelConfig() {
                 <div>
                   <div className="mc-name">
                     {meta.label || ag.label}{' '}
-                    <span style={{ fontSize: 11, color: 'var(--muted)' }}>{ag.id}</span>
+                    
                   </div>
                   <div className="mc-role">{meta.role || ag.role}</div>
                 </div>
               </div>
               <div className="mc-cur">
-                {pickLocaleText(locale, '当前', 'Current')}: <b>{ag.model}</b>
+                {pickLocaleText(locale, '当前方案', 'Current option')}: <b>{ag.model}</b>
               </div>
               <select className="msel" value={sel} onChange={(e) => handleSelect(ag.id, e.target.value)}>
                 {models.map((m) => (
@@ -152,7 +152,7 @@ export default function ModelConfig() {
               </select>
               <div className="mc-btns">
                 <button className="btn btn-p" disabled={!changed} onClick={() => applyModel(ag.id)}>
-                  {pickLocaleText(locale, '应用', 'Apply')}
+                  {pickLocaleText(locale, '保存', 'Save')}
                 </button>
                 <button className="btn btn-g" onClick={() => resetMC(ag.id)}>
                   {pickLocaleText(locale, '重置', 'Reset')}
@@ -165,7 +165,7 @@ export default function ModelConfig() {
       </div>
 
       <div style={{ marginTop: 24, marginBottom: 8 }}>
-        <div className="sec-title">{pickLocaleText(locale, '派发渠道', 'Dispatch Channel')}</div>
+        <div className="sec-title">{pickLocaleText(locale, '提醒方式', 'Reminder Method')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
           <select
             className="msel"
@@ -185,13 +185,13 @@ export default function ModelConfig() {
                 const r = await api.setDispatchChannel(channelSel);
                 if (r.ok) {
                   setChannelStatus(pickLocaleText(locale, '✅ 已保存', '✅ Saved'));
-                  toast(pickLocaleText(locale, '派发渠道已切换', 'Dispatch channel switched'), 'ok');
+                  toast(pickLocaleText(locale, '提醒方式已更新', 'Reminder method updated'), 'ok');
                   loadAgentConfig();
                 } else {
                   setChannelStatus(`❌ ${r.error || pickLocaleText(locale, '失败', 'Failed')}`);
                 }
               } catch {
-                setChannelStatus(pickLocaleText(locale, '❌ 无法连接', '❌ Unable to connect'));
+                setChannelStatus(pickLocaleText(locale, '❌ 当前连接失败，请稍后再试', '❌ Connection failed. Please try again later.'));
               }
               setTimeout(() => setChannelStatus(''), 3000);
             }}
@@ -205,16 +205,16 @@ export default function ModelConfig() {
           )}
         </div>
         <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-          {pickLocaleText(locale, '自动派发时使用的通知渠道（需在本地通知配置中启用对应 channel）', 'Notification channel used for automatic dispatching. The corresponding channel must be enabled in local notification settings.')}
+          {pickLocaleText(locale, '发送提醒时会使用这里选择的方式。', 'This method will be used when reminders are sent.')}
         </div>
       </div>
 
       <div style={{ marginTop: 24 }}>
-        <div className="sec-title">{pickLocaleText(locale, '变更日志', 'Change Log')}</div>
+        <div className="sec-title">{pickLocaleText(locale, '最近设置记录', 'Recent Updates')}</div>
         <div className="cl-list">
           {!changeLog?.length ? (
             <div style={{ fontSize: 12, color: 'var(--muted)', padding: '8px 0' }}>
-              {pickLocaleText(locale, '暂无变更', 'No changes yet')}
+              {pickLocaleText(locale, '暂无记录', 'No updates yet')}
             </div>
           ) : (
             [...changeLog]
@@ -237,7 +237,7 @@ export default function ModelConfig() {
                           marginLeft: 4,
                         }}
                       >
-                        {pickLocaleText(locale, '⚠ 已回滚', '⚠ Rolled Back')}
+                        {pickLocaleText(locale, '⚠ 已恢复为原方案', '⚠ Restored to previous option')}
                       </span>
                     )}
                   </span>

@@ -43,10 +43,10 @@ function buildRosterDraftReview(text: string, locale: Locale): DraftReview {
   if (!content) {
     return {
       ready: false,
-      title: pickLocaleText(locale, '专家编组治理会话', 'Expert Curation Governance Session'),
+      title: pickLocaleText(locale, '成员调整沟通', 'Team Update Conversation'),
       summary: '',
-      followUp: pickLocaleText(locale, '请先说明你希望专家编组官执行哪类动作：新增专家，还是删除后续增设的专家；并补充对象、理由、约束和期望结果。', 'Please first explain what action you want the Expert Curator to take: add an expert or remove a later-added expert; also include the target, rationale, constraints, and expected result.'),
-      missing: [pickLocaleText(locale, '治理动作', 'governance action')],
+      followUp: pickLocaleText(locale, '请先说明你希望这里帮助处理哪类调整：新增成员，还是移除后续加入的成员；并补充对象、原因、限制和期望结果。', 'Please first explain what kind of team update you need: add a member or remove a later-added member; also include the target, reason, constraints, and expected result.'),
+      missing: [pickLocaleText(locale, '调整类型', 'update type')],
     };
   }
 
@@ -54,17 +54,17 @@ function buildRosterDraftReview(text: string, locale: Locale): DraftReview {
   const wantDelete = /(删除|移除|撤销|remove|delete)/i.test(content);
   const missing: string[] = [];
 
-  if (!wantAdd && !wantDelete) missing.push(pickLocaleText(locale, '明确是新增还是删除', 'whether this is an addition or a removal'));
-  if (content.length < 16) missing.push(pickLocaleText(locale, '更具体的对象与理由', 'a more specific target and rationale'));
+  if (!wantAdd && !wantDelete) missing.push(pickLocaleText(locale, '明确是新增还是移除', 'whether this is an addition or a removal'));
+  if (content.length < 16) missing.push(pickLocaleText(locale, '更具体的对象与原因', 'a more specific target and reason'));
   if (!/(原因|理由|职责|规则|影响|约束|保留|删除|新增|期望|结果)/.test(content)) {
-    missing.push(pickLocaleText(locale, '治理理由或约束', 'the governance rationale or constraints'));
+    missing.push(pickLocaleText(locale, '调整原因或限制条件', 'the reason or constraints for the update'));
   }
 
-  const title = pickLocaleText(locale, `请专家编组官处理：${content.slice(0, 40)}`, `Ask the Expert Curator to handle: ${content.slice(0, 40)}`);
+  const title = pickLocaleText(locale, `请帮我处理成员调整：${content.slice(0, 40)}`, `Please help with this team update: ${content.slice(0, 40)}`);
   const summary = pickLocaleText(
     locale,
-    `处理对象：专家编组官\n治理诉求：${content}\n约束规则：预置专家不得删除；如为删除，仅允许删除后续增设专家；请先补问并形成确认摘要，再创建后台治理任务。`,
-    `Handler: Expert Curator\nGovernance request: ${content}\nConstraint rules: preset experts cannot be deleted; if this is a removal, only later-added experts may be removed; ask follow-up questions and produce a confirmation summary before creating the backend governance task.`,
+    `处理入口：成员调整\n调整诉求：${content}\n注意事项：默认成员不可删除；如需移除，只能移除后续加入的成员；请先补问并形成确认摘要，再正式创建处理单。`,
+    `Entry: Team update\nRequest: ${content}\nNotes: default members cannot be removed; if this is a removal, only later-added members may be removed; ask follow-up questions first, then create a confirmed request.`,
   );
 
   if (missing.length) {
@@ -72,7 +72,7 @@ function buildRosterDraftReview(text: string, locale: Locale): DraftReview {
       ready: false,
       title,
       summary,
-      followUp: pickLocaleText(locale, `为避免误删或误建，请再补充：${missing.join('、')}。`, `To avoid removing or creating the wrong expert, please also add ${missing.join(', ')}.`),
+      followUp: pickLocaleText(locale, `为避免误删或误加，请再补充：${missing.join('、')}。`, `To avoid removing or adding the wrong member, please also add ${missing.join(', ')}.`),
       missing,
     };
   }
@@ -81,7 +81,7 @@ function buildRosterDraftReview(text: string, locale: Locale): DraftReview {
     ready: true,
     title,
     summary,
-    followUp: pickLocaleText(locale, '信息已足够，可以创建治理任务。', 'The information is sufficient and the governance task can be created now.'),
+    followUp: pickLocaleText(locale, '信息已足够，可以正式创建处理单。', 'The information is sufficient and the request can be created now.'),
   };
 }
 
@@ -118,35 +118,35 @@ export default function AgentOverviewPanel() {
   const rosterIntents: ChatIntent[] = [
     {
       key: 'add-expert',
-      labelZh: '新增专家',
-      labelEn: 'Add Expert',
-      prefillZh: '我需要专家编组官按既定规则新增专家。请先确认专家名称、职责边界、纳入名册的原因、预期接入规则，以及是否需要影响既有分工。',
-      prefillEn: 'I need the Expert Curator to add an expert by established rules. Please first confirm the expert name, responsibility boundaries, reason for adding to the roster, expected routing rules, and whether existing responsibilities will be affected.',
-      helperZh: '适用于新设专家、补足能力短板或明确职责边界。',
-      helperEn: 'Use this when creating a new expert, filling a capability gap, or clarifying responsibility boundaries.',
+      labelZh: '新增成员',
+      labelEn: 'Add Member',
+      prefillZh: '我需要新增一位协作成员。请先确认成员名称、负责范围、加入原因，以及是否会影响现有分工。',
+      prefillEn: 'I need to add a team member. Please first confirm the member name, responsibility scope, reason for joining, and whether existing assignments will be affected.',
+      helperZh: '适用于补充新成员、填补能力空缺或明确分工范围。',
+      helperEn: 'Use this when adding a new member, filling a gap, or clarifying responsibilities.',
     },
     {
       key: 'remove-expert',
-      labelZh: '删除增设专家',
-      labelEn: 'Remove Added Expert',
-      prefillZh: '我需要专家编组官按既定规则删除一个后续增设的专家。请先确认专家名称或 ID、删除原因、是否需要迁移职责，以及预置专家不可删除这一约束。',
-      prefillEn: 'I need the Expert Curator to remove a later-added expert by established rules. Please first confirm the expert name or ID, rationale for removal, whether responsibilities need to be migrated, and the constraint that preset experts cannot be deleted.',
-      helperZh: '适用于撤销后续增设专家，并保留系统预置角色。',
-      helperEn: 'Use this when removing a later-added expert while preserving preset system roles.',
+      labelZh: '移除后加成员',
+      labelEn: 'Remove Added Member',
+      prefillZh: '我需要移除一位后续加入的成员。请先确认成员名称或编号、移除原因、是否需要交接负责内容，以及默认成员不可删除这一限制。',
+      prefillEn: 'I need to remove a later-added member. Please first confirm the member name or ID, reason for removal, whether work should be handed over, and the rule that default members cannot be removed.',
+      helperZh: '适用于撤销后续加入的成员，同时保留默认成员。',
+      helperEn: 'Use this when removing a later-added member while keeping default members unchanged.',
     },
     {
       key: 'adjust-boundary',
-      labelZh: '调整职责边界',
-      labelEn: 'Adjust Responsibility Boundaries',
-      prefillZh: '我需要专家编组官调整专家职责边界。请先确认涉及哪些专家、当前冲突或重叠点、调整目标，以及是否需要同步更新路由规则。',
-      prefillEn: 'I need the Expert Curator to adjust responsibility boundaries. Please first confirm which experts are involved, the current conflict or overlap, the target state after adjustment, and whether routing rules should also be updated.',
-      helperZh: '适用于名册结构优化、职责重叠治理与分工重整。',
-      helperEn: 'Use this for roster optimization, overlap governance, and responsibility realignment.',
+      labelZh: '调整分工',
+      labelEn: 'Adjust Responsibilities',
+      prefillZh: '我需要调整成员分工。请先确认涉及哪些成员、当前冲突或重叠点、希望调整成什么样，以及是否需要同步调整后续安排。',
+      prefillEn: 'I need to adjust team responsibilities. Please first confirm which members are involved, the current conflict or overlap, the target arrangement, and whether follow-up assignments should also be updated.',
+      helperZh: '适用于优化分工、处理职责重叠与重新安排协作。',
+      helperEn: 'Use this for improving team responsibilities, resolving overlap, and reorganizing collaboration.',
     },
   ];
 
   if (!agentsOverviewData?.agents) {
-    return <div className="empty">{pickLocaleText(locale, '⚠️ 请确保本地服务器已启动', '⚠️ Please make sure the local server is running')}</div>;
+    return <div className="empty">{pickLocaleText(locale, '⚠️ 当前暂时无法加载成员信息', '⚠️ Team information is temporarily unavailable')}</div>;
   }
 
   return (
@@ -164,16 +164,16 @@ export default function AgentOverviewPanel() {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: 12, color: '#7be0ff', fontWeight: 700, letterSpacing: '.06em', marginBottom: 6 }}>
-              {pickLocaleText(locale, 'AGENT 名册治理', 'AGENT ROSTER GOVERNANCE')}
+              {pickLocaleText(locale, '协作成员概览', 'Team Overview')}
             </div>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>
-              {pickLocaleText(locale, '贡献详情与专家编组入口', 'Contribution Details & Expert Roster Entry')}
+              {pickLocaleText(locale, '查看成员表现与调整分工', 'View Contributions and Update Roles')}
             </div>
             <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, maxWidth: 820 }}>
               {pickLocaleText(
                 locale,
-                '这个页面聚焦于 Agent 名册、贡献画像与治理动作，不承担全局在线监控职责。新增或删除增设专家时，请统一提交给“专家编组官”；预置专家会被系统自动保护，不能从这里发起删除。现在该入口已升级为可持久化聊天会话窗口，支持刷新恢复与后台追踪。',
-                'This page focuses on the agent roster, contribution profiles, and governance actions instead of global runtime monitoring. When you need to add or remove an extra expert, submit the request to the Expert Curator here. Preset experts are automatically protected and cannot be removed from this entry. The entry is now upgraded to a persistent chat session that supports refresh recovery and background tracking.',
+                '这个页面聚焦于协作成员、贡献情况与成员调整，不承担全局动态监看职责。需要新增成员、移除后加成员或调整分工时，都可以从这里发起；默认成员会被自动保护，不能在这里误删。现在该入口已升级为可持续记录的聊天窗口，支持刷新后继续查看。',
+                'This page focuses on team members, contribution details, and member updates instead of global monitoring. When you need to add a member, remove a later-added member, or adjust responsibilities, you can start here. Default members are automatically protected from accidental removal. The entry now uses a persistent chat window that can be restored after refresh.',
               )}
             </div>
           </div>
@@ -193,8 +193,8 @@ export default function AgentOverviewPanel() {
             }}
           >
             {rosterOpen
-              ? pickLocaleText(locale, '收起专家编组官会话窗口', 'Hide Expert Curator Session Window')
-              : pickLocaleText(locale, '打开专家编组官会话窗口', 'Open Expert Curator Session Window')}
+              ? pickLocaleText(locale, '收起成员调整窗口', 'Hide Team Update Window')
+              : pickLocaleText(locale, '打开成员调整窗口', 'Open Team Update Window')}
           </button>
         </div>
       </div>
@@ -206,14 +206,14 @@ export default function AgentOverviewPanel() {
             const meta = officialMeta(o.id, locale, o.role, o.label, o.rank);
             return <span key={o.id} style={{ fontSize: 12 }}>{o.emoji} {meta.title}</span>;
           })}
-          <span style={{ color: 'var(--muted)', fontSize: 11, marginLeft: 'auto' }}>{pickLocaleText(locale, '其余 Agent 待命', 'Other agents are on standby')}</span>
+          <span style={{ color: 'var(--muted)', fontSize: 11, marginLeft: 'auto' }}>{pickLocaleText(locale, '其余成员待命', 'Other members are on standby')}</span>
         </div>
       )}
 
       <div className="off-kpi">
         <div className="kpi">
           <div className="kpi-v" style={{ color: 'var(--acc)' }}>{agents.length}</div>
-          <div className="kpi-l">{pickLocaleText(locale, '纳入名册 Agent', 'Rostered Agents')}</div>
+          <div className="kpi-l">{pickLocaleText(locale, '协作成员总数', 'Team Members')}</div>
         </div>
         <div className="kpi">
           <div className="kpi-v" style={{ color: '#f5c842' }}>{totals.tasks_done || 0}</div>
@@ -223,7 +223,7 @@ export default function AgentOverviewPanel() {
           <div className="kpi-v" style={{ color: (totals.cost_cny || 0) > 20 ? 'var(--warn)' : 'var(--ok)' }}>
             ¥{totals.cost_cny || 0}
           </div>
-          <div className="kpi-l">{pickLocaleText(locale, '累计费用（含缓存）', 'Total Cost (incl. cache)')}</div>
+          <div className="kpi-l">{pickLocaleText(locale, '累计费用', 'Total Cost')}</div>
         </div>
         <div className="kpi">
           <div className="kpi-v" style={{ fontSize: 16, paddingTop: 4 }}>{agentsOverviewData.top_agent || '—'}</div>
@@ -262,7 +262,7 @@ export default function AgentOverviewPanel() {
           {sel ? (
             <AgentDetail agent={sel} maxTk={maxTk} onOpenTask={setModalTaskId} locale={locale} />
           ) : (
-            <div className="empty">{pickLocaleText(locale, '选择左侧 Agent 查看详情', 'Select an agent on the left to view details')}</div>
+            <div className="empty">{pickLocaleText(locale, '选择左侧成员查看详情', 'Select a member on the left to view details')}</div>
           )}
         </div>
       </div>
@@ -276,18 +276,18 @@ export default function AgentOverviewPanel() {
             agentEmoji={curatorEmoji}
             accentColor="#53b7ff"
             accentSoft="rgba(83, 183, 255, 0.12)"
-            headerKickerZh="专家编组官会话窗口"
-            headerKickerEn="Expert Curator Session Window"
-            headerTitleZh="按既定规则提交专家治理任务"
-            headerTitleEn="Submit Expert Governance Tasks by Established Rules"
-            headerDescZh="这里替代原来的一次性治理弹窗。你可以先在草稿会话中补充背景、对象、理由与约束；系统会先追问并生成确认摘要，确认后再创建后台治理任务。任务创建后，活动流将绑定 taskId 持久化保存，因此可以挂到后台执行，并在刷新网页后继续恢复查看。"
-            headerDescEn="This replaces the original one-shot governance dialog. You can first add background, targets, rationale, and constraints in a draft session; the system will ask follow-up questions and generate a confirmation summary before creating the backend governance task. Once created, the activity stream is persisted with the task ID, so the work can continue in the background and be restored after a page refresh."
-            handlerNoteZh="此入口只会把治理任务交给专家编组官，并自动保护预置专家不被误删。"
-            handlerNoteEn="This entry always routes governance tasks to the Expert Curator and automatically protects preset experts from accidental deletion."
-            introZh="这里采用“聊天草稿 + 后台任务活动流”双层结构。草稿阶段的最近会话会保存在本地，已创建任务的执行记录则持续写入活动流，因此即便刷新页面，也能从左侧会话列表恢复历史记录。"
-            introEn="This view uses a dual-layer model of draft chat plus backend task activity stream. Recent draft sessions are kept locally, while created tasks continue writing to the activity stream, so history can be restored from the session list even after a page refresh."
-            draftLabelZh="专家编组官草稿会话"
-            draftLabelEn="Expert Curator Draft Session"
+            headerKickerZh="成员调整窗口"
+            headerKickerEn="Team Update Window"
+            headerTitleZh="按既定规则提交成员调整"
+            headerTitleEn="Submit Team Updates by Established Rules"
+            headerDescZh="这里替代原来的一次性弹窗。你可以先在草稿会话中补充背景、对象、原因与限制；系统会先追问并生成确认摘要，确认后再正式创建处理单。创建后，进展记录会持续保留，因此即使刷新网页，也能继续查看。"
+            headerDescEn="This replaces the original one-shot dialog. You can first add background, targets, reasons, and constraints in a draft session; the system will ask follow-up questions and generate a confirmation summary before creating the request. Once created, progress records are preserved so the work can still be reviewed after a page refresh."
+            handlerNoteZh="此入口只用于成员调整，并会自动保护默认成员不被误删。"
+            handlerNoteEn="This entry is only for team updates and automatically protects default members from accidental removal."
+            introZh="这里采用“聊天草稿 + 处理进展记录”的双层结构。草稿阶段的最近会话会保存在本地，已创建事项的进展则持续写入记录，因此即便刷新页面，也能从左侧会话列表恢复历史。"
+            introEn="This view uses a dual-layer model of draft chat plus progress history. Recent draft sessions are kept locally, while created requests continue writing progress records so history can be restored even after a page refresh."
+            draftLabelZh="成员调整草稿会话"
+            draftLabelEn="Team Update Draft Session"
             taskFilter={(task: Task) => {
               const anyTask = task as Task & { templateId?: string; templateParams?: Record<string, string> };
               return anyTask.templateId === 'expert_roster_dialog'
@@ -298,8 +298,8 @@ export default function AgentOverviewPanel() {
             buildDraftReview={buildRosterDraftReview}
             createTask={async (draftText, review) => api.createTask({
               title: review.title,
-              org: pickLocaleText(locale, '总控中心', 'Control Center'),
-              owner: pickLocaleText(locale, 'Agent 页面', 'Agent Workspace'),
+              org: pickLocaleText(locale, '整体协调', 'Overview Coordination'),
+              owner: pickLocaleText(locale, '协作成员页', 'Team Page'),
               targetDept: curatorLabel,
               priority: 'normal',
               templateId: 'expert_roster_dialog',
@@ -307,7 +307,7 @@ export default function AgentOverviewPanel() {
                 entry: 'agent-overview',
                 message: draftText.trim(),
                 confirmationSummary: review.summary,
-                immutableRule: pickLocaleText(locale, '预置专家不得删除', 'Preset experts cannot be deleted'),
+                immutableRule: pickLocaleText(locale, '默认成员不可删除', 'Default members cannot be removed'),
                 targetAgentId: 'expert_curator',
                 targetAgentLabel: curatorLabel,
               },
@@ -316,9 +316,9 @@ export default function AgentOverviewPanel() {
             renderSidebar={({ locale: currentLocale, review: currentReview }) => (
               <>
                 <div style={{ background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 12, padding: 14, marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8 }}>{pickLocaleText(currentLocale, '可删除专家范围', 'Removable Expert Scope')}</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8 }}>{pickLocaleText(currentLocale, '可移除成员范围', 'Removable Member Scope')}</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, marginBottom: removableExperts.length ? 10 : 0 }}>
-                    {pickLocaleText(currentLocale, '删除动作只允许作用于后续增设专家。下方列表仅用于帮助你描述对象，真正提交前仍会进入确认摘要。', 'Removal is allowed only for later-added experts. The list below helps you describe the target, but the request will still go through a confirmation summary before submission.')}
+                    {pickLocaleText(currentLocale, '移除操作只适用于后续加入的成员。下方列表仅用于帮助你描述对象，正式提交前仍会进入确认摘要。', 'Removal is allowed only for later-added members. The list below helps you describe the target, and the request will still go through a confirmation summary before submission.')}
                   </div>
                   {removableExperts.length ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -333,7 +333,7 @@ export default function AgentOverviewPanel() {
                     </div>
                   ) : (
                     <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
-                      {pickLocaleText(currentLocale, '当前没有可删除的增设专家。', 'There are no removable added experts at the moment.')}
+                      {pickLocaleText(currentLocale, '当前没有可移除的后加成员。', 'There are no removable added members at the moment.')}
                     </div>
                   )}
                 </div>
@@ -341,8 +341,8 @@ export default function AgentOverviewPanel() {
                   <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8 }}>{pickLocaleText(currentLocale, '提交提示', 'Submission Notes')}</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
                     {currentReview.ready
-                      ? pickLocaleText(currentLocale, '信息已经达到提交标准。确认创建任务后，左侧会话列表会开始按 taskId 沉淀治理历史。', 'The information meets the submission standard. After confirmation, the left-side session list will retain governance history by task ID.')
-                      : pickLocaleText(currentLocale, '建议补充动作类型、治理对象、理由与约束，避免误删预置专家或形成模糊治理单。', 'Please add the action type, governance target, rationale, and constraints to avoid removing preset experts by mistake or creating an ambiguous governance ticket.')}
+                      ? pickLocaleText(currentLocale, '信息已经达到提交标准。确认创建事项后，左侧会话列表会开始保留本次调整记录。', 'The information meets the submission standard. After confirmation, the session list on the left will start retaining this update history.')
+                      : pickLocaleText(currentLocale, '建议补充调整类型、对象、原因与限制，避免误删默认成员或形成模糊请求。', 'Please add the update type, target, reason, and constraints to avoid removing default members by mistake or creating an unclear request.')}
                   </div>
                 </div>
               </>
@@ -371,10 +371,10 @@ function AgentDetail({
 
   const meta = officialMeta(o.id, locale, o.role, o.label, o.rank);
   const tkBars = [
-    { l: pickLocaleText(locale, '输入', 'Input'), v: o.tokens_in, color: '#6a9eff' },
-    { l: pickLocaleText(locale, '输出', 'Output'), v: o.tokens_out, color: '#a07aff' },
-    { l: pickLocaleText(locale, '缓存读', 'Cache Read'), v: o.cache_read, color: '#2ecc8a' },
-    { l: pickLocaleText(locale, '缓存写', 'Cache Write'), v: o.cache_write, color: '#f5c842' },
+    { l: pickLocaleText(locale, '内容输入', 'Input Content'), v: o.tokens_in, color: '#6a9eff' },
+    { l: pickLocaleText(locale, '内容输出', 'Output Content'), v: o.tokens_out, color: '#a07aff' },
+    { l: pickLocaleText(locale, '历史复用', 'History Reuse'), v: o.cache_read, color: '#2ecc8a' },
+    { l: pickLocaleText(locale, '记录写入', 'Record Saving'), v: o.cache_write, color: '#f5c842' },
   ];
 
   return (
@@ -384,17 +384,17 @@ function AgentDetail({
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 800 }}>{meta.title}</div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-            {meta.subtitle} · <span style={{ color: 'var(--acc)' }}>{o.model_short || o.model}</span>
+            {meta.subtitle}
           </div>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-            🏅 {meta.rank} · {locale === 'en' ? `Contribution ${o.merit_score}` : `贡献分 ${o.merit_score}`}
+            🏅 {meta.rank} · {locale === 'en' ? `Score ${o.merit_score}` : `评分 ${o.merit_score}`}
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div className={`hb ${hb.status}`} style={{ marginBottom: 4 }}>{heartbeatLabel(hb.status, hb.label, locale)}</div>
           {o.last_active && <div style={{ fontSize: 10, color: 'var(--muted)' }}>{locale === 'en' ? `Active ${o.last_active}` : `活跃 ${o.last_active}`}</div>}
           <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
-            {locale === 'en' ? `${o.sessions} sessions · ${o.messages} messages` : `${o.sessions} 个会话 · ${o.messages} 条消息`}
+            {locale === 'en' ? `${o.sessions} conversations · ${o.messages} messages` : `${o.sessions} 段对话 · ${o.messages} 条消息`}
           </div>
         </div>
       </div>
@@ -412,13 +412,13 @@ function AgentDetail({
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--acc)' }}>{o.flow_participations}</div>
-            <div style={{ fontSize: 10, color: 'var(--muted)' }}>{pickLocaleText(locale, '流转参与', 'Workflow Participations')}</div>
+            <div style={{ fontSize: 10, color: 'var(--muted)' }}>{pickLocaleText(locale, '协作参与', 'Collaboration Participations')}</div>
           </div>
         </div>
       </div>
 
       <div style={{ marginBottom: 18 }}>
-        <div className="sec-title">{pickLocaleText(locale, 'Token 消耗', 'Token Usage')}</div>
+        <div className="sec-title">{pickLocaleText(locale, '内容活跃度', 'Content Activity')}</div>
         {tkBars.map((b) => (
           <div key={b.l} style={{ marginBottom: 6 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 2 }}>
@@ -439,7 +439,7 @@ function AgentDetail({
             <b>¥{o.cost_cny}</b> {pickLocaleText(locale, '人民币', 'CNY')}
           </span>
           <span style={{ fontSize: 12 }}><b>${o.cost_usd}</b> {pickLocaleText(locale, '美元', 'USD')}</span>
-          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{locale === 'en' ? `Total ${totTk.toLocaleString()} tokens` : `总计 ${totTk.toLocaleString()} tokens`}</span>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{locale === 'en' ? `Total activity ${totTk.toLocaleString()}` : `总活跃量 ${totTk.toLocaleString()}`}</span>
         </div>
       </div>
 

@@ -1,0 +1,23 @@
+flowchart LR
+    U[用户提交任务]
+    CC[总控中心接单]
+    PC[规划中心整理目标与拆解]
+    RC[评审中心校验方案与风险]
+    DC[调度中心派发执行]
+    EX[专业角色执行任务]
+    FB[进度回写与任务详情回显]
+    CF{是否需要确认或返修}
+    OUT[结果汇总与交付]
+    AR[归档沉淀与后续回查]
+
+    U --> CC --> PC --> RC
+    RC -->|通过| DC --> EX --> FB --> CF
+    RC -->|退回修订| PC
+    CF -->|需要返修| PC
+    CF -->|需要用户确认| U
+    CF -->|无需返修| OUT --> AR
+
+    classDef core fill:#132238,stroke:#5b8cff,color:#ffffff;
+    classDef gate fill:#1f2937,stroke:#f59e0b,color:#ffffff;
+    class U,CC,PC,RC,DC,EX,FB,OUT,AR core;
+    class CF gate;

@@ -1,5 +1,5 @@
 /**
- * 协同讨论会议室 — 自动识别正式会议或闲聊
+ * 协作讨论空间 — 自动识别正式讨论或轻松聊天
  */
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -13,12 +13,12 @@ const EMOTION_EMOJI: Record<string, string> = {
 };
 
 const STAGE_LABEL: Record<string, { zh: string; en: string }> = {
-  meeting_init: { zh: '会议建立', en: 'Meeting Setup' },
-  moderator_open: { zh: '主持人开场', en: 'Moderator Opening' },
-  expert_statement: { zh: '专家陈述', en: 'Expert Statements' },
-  cross_discussion: { zh: '交叉讨论', en: 'Cross Discussion' },
-  decision_sync: { zh: '结论收敛', en: 'Decision Sync' },
-  meeting_closed: { zh: '会议结束', en: 'Meeting Closed' },
+  meeting_init: { zh: '协作准备', en: 'Collaboration Setup' },
+  moderator_open: { zh: '开场说明', en: 'Opening Remarks' },
+  expert_statement: { zh: '成员发言', en: 'Member Statements' },
+  cross_discussion: { zh: '共同讨论', en: 'Group Discussion' },
+  decision_sync: { zh: '结论整理', en: 'Decision Summary' },
+  meeting_closed: { zh: '协作结束', en: 'Collaboration Closed' },
   chatting: { zh: '自由闲聊', en: 'Chatting' },
 };
 
@@ -364,7 +364,7 @@ export default function CollaborationDiscussion() {
         moderatorId,
         selectedIds.size === allAgentIds.length,
       );
-      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '启动失败', 'Failed to start meeting'));
+      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '启动失败', 'Failed to start discussion'));
       const normalized = normalizeSession(res);
       setSession(normalized);
       setPhase('session');
@@ -372,7 +372,7 @@ export default function CollaborationDiscussion() {
       setSpeakerSelection(new Set(normalized.speaker_queue || []));
       animateMessages(normalized.messages.slice(-3));
     } catch (e: unknown) {
-      toast((e as Error).message || pickLocaleText(locale, '启动失败', 'Failed to start meeting'), 'err');
+      toast((e as Error).message || pickLocaleText(locale, '启动失败', 'Failed to start discussion'), 'err');
     } finally {
       setLoading(false);
     }
@@ -452,12 +452,12 @@ export default function CollaborationDiscussion() {
     let count = 0;
     const timer = setInterval(async () => {
       count += 1;
-      setDiceResult(pickLocaleText(locale, '🎲 会议现场出现变量...', '🎲 The room is shifting...'));
+      setDiceResult(pickLocaleText(locale, '🎲 当前协作出现新变化...', '🎲 A new twist is coming...'));
       if (count >= 6) {
         clearInterval(timer);
         try {
           const res = await api.collabDiscussFate();
-          const event = res.event || pickLocaleText(locale, '边疆急报传来', 'Urgent frontier news arrives');
+          const event = res.event || pickLocaleText(locale, '出现了新的临时情况', 'A new situation just came up');
           setDiceResult(event);
           setDiceRolling(false);
           handleAdvance({
@@ -466,7 +466,7 @@ export default function CollaborationDiscussion() {
             speakerIds: Array.from(speakerSelection),
           });
         } catch {
-          setDiceResult(pickLocaleText(locale, '命运之力暂时无法触及', 'The force of fate cannot be reached right now'));
+          setDiceResult(pickLocaleText(locale, '暂时无法生成新的随机情况', 'Unable to generate a new random event right now'));
           setDiceRolling(false);
         }
       }
@@ -498,7 +498,7 @@ export default function CollaborationDiscussion() {
     setLoading(true);
     try {
       const res = await api.collabDiscussConclude(session.session_id);
-      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '结束失败', 'Failed to conclude meeting'));
+      if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '结束失败', 'Failed to finish discussion'));
       setSession((prev) =>
         prev
           ? {
@@ -517,9 +517,9 @@ export default function CollaborationDiscussion() {
                 ...prev.messages,
                 {
                   type: 'system',
-                  content: res.summary
-                    ? (locale === 'en' ? `📋 Session concluded — ${res.summary}` : `📋 会议结束 —— ${res.summary}`)
-                    : pickLocaleText(locale, '📋 会议已结束', '📋 Session concluded'),
+                      content: res.summary
+                        ? (locale === 'en' ? `📋 Discussion finished — ${res.summary}` : `📋 讨论结束 —— ${res.summary}`)
+                        : pickLocaleText(locale, '📋 讨论已结束', '📋 Discussion finished'),
                   timestamp: Date.now() / 1000,
                 },
               ],
@@ -556,13 +556,13 @@ export default function CollaborationDiscussion() {
 
   const presetTopics = [
     ...activeEdicts.slice(0, 3).map((t) => ({
-      text: locale === 'en' ? `Hold a meeting on task ${t.id}: ${t.title}` : `围绕任务 ${t.id} 开会：${t.title}`,
+      text: locale === 'en' ? `Start a discussion on ${t.id}: ${t.title}` : `围绕任务 ${t.id} 发起讨论：${t.title}`,
       icon: '📜',
     })),
-    { text: pickLocaleText(locale, '评审当前系统改造方案与风险', 'Review the current system redesign and risks'), icon: '🏗️' },
-    { text: pickLocaleText(locale, '讨论下周工作安排和责任分工', 'Discuss next week planning and responsibilities'), icon: '📋' },
+    { text: pickLocaleText(locale, '一起看看当前方案和可能风险', 'Review the current plan and possible risks together'), icon: '🏗️' },
+    { text: pickLocaleText(locale, '讨论下周安排和分工', 'Discuss next week’s plan and responsibilities'), icon: '📋' },
     { text: pickLocaleText(locale, '你们先陪我聊聊最近项目推进感受', 'Let us just chat about the recent project mood'), icon: '💬' },
-    { text: pickLocaleText(locale, '讨论线上故障处置方案与回滚策略', 'Discuss the incident response and rollback strategy'), icon: '🚨' },
+    { text: pickLocaleText(locale, '讨论突发问题的处理方案与备用安排', 'Discuss the response plan and fallback option for an incident'), icon: '🚨' },
   ];
 
   const stageText = STAGE_LABEL[currentStage] || { zh: currentStage, en: currentStage };
@@ -583,13 +583,13 @@ export default function CollaborationDiscussion() {
       <div className="space-y-6">
         <div className="text-center py-4">
           <h2 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-purple-400 bg-clip-text text-transparent">
-            {pickLocaleText(locale, '🏛 专家会议室', '🏛 Expert Meeting Room')}
+            {pickLocaleText(locale, '👥 协作交流区', '👥 Collaboration Space')}
           </h2>
           <p className="text-xs text-[var(--muted)] mt-1">
             {pickLocaleText(
               locale,
-              '系统将自动识别你要正式开会还是轻松闲聊；正式会议会启用主持人控场、点名发言、阶段推进与会议纪要。',
-              'The system auto-detects whether you want a formal meeting or a casual chat. Formal meetings enable moderator control, named speakers, staged progression and meeting minutes.',
+              '系统会自动识别你是想进行正式协作还是轻松聊天；正式协作会启用引导说明、轮流表达、分步推进与结果记录。',
+              'The system can tell whether you want a structured collaboration or a casual chat. Structured collaboration includes guided opening, turn-taking, step-by-step progress, and result notes.',
             )}
           </p>
         </div>
@@ -599,7 +599,7 @@ export default function CollaborationDiscussion() {
             <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
               <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                 <div>
-                  <div className="text-sm font-semibold">{pickLocaleText(locale, '👥 参会专家选择', '👥 Participants')}</div>
+                  <div className="text-sm font-semibold">{pickLocaleText(locale, '👥 参与成员选择', '👥 Participants')}</div>
                   <div className="text-xs text-[var(--muted)] mt-1">
                     {locale === 'en' ? `${selectedIds.size}/${allAgentIds.length} selected, at least 2` : `已选 ${selectedIds.size}/${allAgentIds.length} 位，至少 2 位`}
                   </div>
@@ -609,13 +609,13 @@ export default function CollaborationDiscussion() {
                     onClick={selectAllAgents}
                     className="text-xs px-3 py-1.5 rounded-lg border border-[var(--acc)]40 text-[var(--acc)] hover:bg-[var(--acc)]10 transition"
                   >
-                    {pickLocaleText(locale, '全选所有人', 'Select All')}
+                    {pickLocaleText(locale, '选择所有成员', 'Select Everyone')}
                   </button>
                   <button
                     onClick={clearAgentSelection}
                     className="text-xs px-3 py-1.5 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--text)] transition"
                   >
-                    {pickLocaleText(locale, '清空到主持人', 'Clear to Moderator')}
+                    {pickLocaleText(locale, '仅保留当前发起人', 'Keep Only the Current Lead')}
                   </button>
                 </div>
               </div>
@@ -653,7 +653,7 @@ export default function CollaborationDiscussion() {
                         </div>
                         {isModerator && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                            {pickLocaleText(locale, '主持', 'Host')}
+                            {pickLocaleText(locale, '发起人', 'Lead')}
                           </span>
                         )}
                       </div>
@@ -664,7 +664,7 @@ export default function CollaborationDiscussion() {
             </div>
 
             <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
-              <div className="text-sm font-semibold mb-2">{pickLocaleText(locale, '🎙️ 指定主持人', '🎙️ Moderator')}</div>
+              <div className="text-sm font-semibold mb-2">{pickLocaleText(locale, '👥 当前带领人', '👥 Current Lead')}</div>
               <select
                 value={moderatorId}
                 onChange={(e) => setModeratorId(e.target.value)}
@@ -680,14 +680,14 @@ export default function CollaborationDiscussion() {
                 })}
               </select>
               <div className="text-[11px] text-[var(--muted)] mt-2">
-                {pickLocaleText(locale, '正式会议中只有主持人点名的专家会在当前轮发言。', 'Only experts named by the moderator will speak during the current round in formal meetings.')}
+                {pickLocaleText(locale, '在当前协作中，只有这里选中的成员会在这一轮参与表达。', 'In the current collaboration, only the selected members will take part in this round.')}
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
-              <div className="text-sm font-semibold mb-2">{pickLocaleText(locale, '📌 会议议题 / 闲聊主题', '📌 Topic')}</div>
+              <div className="text-sm font-semibold mb-2">{pickLocaleText(locale, '📌 当前话题', '📌 Topic')}</div>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {presetTopics.map((p, i) => (
                   <button
@@ -707,19 +707,19 @@ export default function CollaborationDiscussion() {
               <textarea
                 className="w-full bg-[var(--panel2)] rounded-lg p-3 text-sm border border-[var(--line)] focus:border-[var(--acc)] outline-none resize-none"
                 rows={5}
-                placeholder={pickLocaleText(locale, '例如：请各位专家围绕发布计划、风险和资源安排正式开会；或者直接说“陪我聊聊最近的推进感受”。', 'Example: ask the experts to hold a formal meeting around release planning, risks, and staffing; or simply say “let us chat about recent progress.”')}
+                placeholder={pickLocaleText(locale, '例如：请大家围绕发布时间、风险和资源安排正式讨论；或者直接说“陪我聊聊最近的推进感受”。', 'Example: ask everyone to discuss launch timing, risks, and staffing in a formal discussion; or simply say “let us chat about recent progress.”')}
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
               />
             </div>
 
             <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)] space-y-2">
-              <div className="text-sm font-semibold">{pickLocaleText(locale, '🧠 自动交互机制', '🧠 Auto Interaction')}</div>
+              <div className="text-sm font-semibold">{pickLocaleText(locale, '🧠 讨论方式说明', '🧠 How Discussion Works')}</div>
               <div className="text-xs text-[var(--muted)] leading-relaxed">
                 {pickLocaleText(
                   locale,
-                  '系统会自动识别这是正式会议还是闲聊。若识别为会议，将依次进入：会议建立、主持人开场、专家陈述、交叉讨论、结论收敛与会议结束；若识别为闲聊，则弱化流程，保留多人陪聊体验。',
-                  'The system automatically detects whether this is a formal meeting or a casual chat. Meetings move through setup, moderator opening, expert statements, cross discussion, decision sync and close; casual chat keeps a lighter multi-expert conversation experience.',
+                  '系统会自动识别这是结构化讨论还是轻松聊天。若识别为结构化讨论，将依次进入：准备、开场说明、成员表达、共同交流、结论整理与结束；若识别为轻松聊天，则过程会更自然随意。',
+                  'The system automatically detects whether this is a structured discussion or a casual chat. Structured discussions move through setup, opening remarks, member statements, shared exchange, summary, and close; casual chat keeps a lighter and more natural flow.',
                 )}
               </div>
             </div>
@@ -741,8 +741,8 @@ export default function CollaborationDiscussion() {
           }}
         >
           {loading
-            ? pickLocaleText(locale, '会议室准备中...', 'Preparing the meeting room...')
-            : pickLocaleText(locale, '🏛️ 进入专家会议室', '🏛️ Enter the Expert Meeting Room')}
+            ? pickLocaleText(locale, '讨论准备中...', 'Preparing discussion...')
+            : pickLocaleText(locale, '👥 开始协作', '👥 Start Collaboration')}
         </button>
       </div>
     );
@@ -754,11 +754,11 @@ export default function CollaborationDiscussion() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-bold">{pickLocaleText(locale, '🏛 专家会议室', '🏛 Expert Meeting Room')}</span>
+              <span className="text-sm font-bold">{pickLocaleText(locale, '👥 讨论空间', '👥 Discussion Space')}</span>
               <span className={`text-[10px] px-2 py-0.5 rounded-full border ${currentMode === 'meeting' ? 'bg-amber-900/30 text-amber-300 border-amber-700/40' : 'bg-sky-900/30 text-sky-300 border-sky-700/40'}`}>
                 {currentMode === 'meeting'
-                  ? pickLocaleText(locale, '正式会议', 'Formal Meeting')
-                  : pickLocaleText(locale, '闲聊模式', 'Casual Chat')}
+                  ? pickLocaleText(locale, '结构化讨论', 'Structured Discussion')
+                  : pickLocaleText(locale, '轻松聊天', 'Casual Chat')}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--acc)]20 text-[var(--acc)] border border-[var(--acc)]30">
                 {locale === 'en' ? `Round ${session?.round || 0}` : `第${session?.round || 0}轮`}
@@ -783,7 +783,7 @@ export default function CollaborationDiscussion() {
               onClick={() => setShowConstraint(!showConstraint)}
               className="text-xs px-2.5 py-1 rounded-lg border border-amber-600/40 text-amber-400 hover:bg-amber-900/20 transition"
             >
-              {pickLocaleText(locale, '⚡ 注入新约束', '⚡ Inject Constraint')}
+              {pickLocaleText(locale, '⚡ 补充条件', '⚡ Add Condition')}
             </button>
             <button
               onClick={handleDice}
@@ -797,7 +797,7 @@ export default function CollaborationDiscussion() {
               disabled={session?.run_state === 'paused'}
               className={`text-xs px-2.5 py-1 rounded-lg border transition ${autoPlay ? 'border-green-600/40 text-green-400 bg-green-900/20' : 'border-[var(--line)] text-[var(--muted)] hover:text-[var(--text)]'} disabled:opacity-40`}
             >
-              {autoPlay ? pickLocaleText(locale, '⏸ 暂停自动推进', '⏸ Pause Auto') : pickLocaleText(locale, '▶ 自动推进', '▶ Auto Run')}
+              {autoPlay ? pickLocaleText(locale, '⏸ 暂停自动继续', '⏸ Pause Auto Continue') : pickLocaleText(locale, '▶ 自动继续', '▶ Auto Continue')}
             </button>
             {session?.phase !== 'concluded' && (
               <button
@@ -806,8 +806,8 @@ export default function CollaborationDiscussion() {
                 className={`text-xs px-2.5 py-1 rounded-lg border transition ${session?.run_state === 'paused' ? 'border-emerald-600/40 text-emerald-300 hover:bg-emerald-900/20' : 'border-amber-600/40 text-amber-300 hover:bg-amber-900/20'} disabled:opacity-40`}
               >
                 {session?.run_state === 'paused'
-                  ? pickLocaleText(locale, '⏯ 恢复会话', '⏯ Resume Session')
-                  : pickLocaleText(locale, '⏸ 暂停会话', '⏸ Pause Session')}
+                  ? pickLocaleText(locale, '⏯ 继续讨论', '⏯ Resume Discussion')
+                  : pickLocaleText(locale, '⏸ 暂停讨论', '⏸ Pause Discussion')}
               </button>
             )}
             {session?.phase !== 'concluded' && (
@@ -815,7 +815,7 @@ export default function CollaborationDiscussion() {
                 onClick={handleConclude}
                 className="text-xs px-2.5 py-1 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--warn)] hover:border-[var(--warn)]40 transition"
               >
-                {pickLocaleText(locale, '📋 结束会议', '📋 Conclude')}
+                {pickLocaleText(locale, '📋 结束讨论', '📋 End Discussion')}
               </button>
             )}
             <button
@@ -831,18 +831,18 @@ export default function CollaborationDiscussion() {
       {showConstraint && (
         <div className="bg-gradient-to-br from-amber-950/40 to-purple-950/30 rounded-xl p-4 border border-amber-700/30" style={{ animation: 'fadeIn .3s' }}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold text-amber-400">{pickLocaleText(locale, '⚡ 约束注入', '⚡ Constraint Injection')}</span>
+            <span className="text-sm font-bold text-amber-400">{pickLocaleText(locale, '⚡ 补充条件', '⚡ Add Condition')}</span>
             <button onClick={() => setShowConstraint(false)} className="text-xs text-[var(--muted)]">✕</button>
           </div>
           <p className="text-[10px] text-amber-300/60 mb-2">
-            {pickLocaleText(locale, '你可以补充新的限制、背景变化或管理要求，系统会据此调整会议走向。', 'Add new constraints, context shifts or management requirements, and the system will adjust the meeting flow accordingly.')}
+            {pickLocaleText(locale, '你可以补充新的限制、背景变化或额外要求，系统会据此调整讨论方向。', 'Add new constraints, context changes, or extra requirements, and the system will adjust the discussion accordingly.')}
           </p>
           <div className="flex gap-2">
             <input
               value={constraintInput}
               onChange={(e) => setConstraintInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleConstraint()}
-              placeholder={pickLocaleText(locale, '例如：预算减半，但发布日期不能延后...', 'Example: cut the budget in half, but do not delay the launch date...')}
+              placeholder={pickLocaleText(locale, '例如：预算减半，但上线时间不能延后...', 'Example: cut the budget in half, but do not delay the launch date...')}
               className="flex-1 bg-black/30 rounded-lg px-3 py-1.5 text-sm border border-amber-800/40 outline-none focus:border-amber-600"
             />
             <button
@@ -850,7 +850,7 @@ export default function CollaborationDiscussion() {
               disabled={!constraintInput.trim()}
               className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-purple-600 text-white text-xs font-semibold disabled:opacity-40"
             >
-              {pickLocaleText(locale, '注入', 'Inject')}
+              {pickLocaleText(locale, '加入', 'Add')}
             </button>
           </div>
         </div>
@@ -881,11 +881,11 @@ export default function CollaborationDiscussion() {
 
               <MetricCard
                 title={pickLocaleText(locale, '当前模式', 'Current Mode')}
-                value={currentMode === 'meeting' ? pickLocaleText(locale, '正式会议', 'Formal Meeting') : pickLocaleText(locale, '闲聊', 'Chat')}
+                value={currentMode === 'meeting' ? pickLocaleText(locale, '正式讨论', 'Formal Discussion') : pickLocaleText(locale, '轻松聊天', 'Chat')}
                 accent={currentMode === 'meeting' ? '#e8a040' : '#6a9eff'}
               />
               <MetricCard
-                title={pickLocaleText(locale, '主持人', 'Moderator')}
+                title={pickLocaleText(locale, '当前发起人', 'Current Lead')}
                 value={session?.moderator_name || deptMeta(currentModeratorId, locale).label}
                 accent={'#a07aff'}
               />
@@ -903,7 +903,7 @@ export default function CollaborationDiscussion() {
             <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_.85fr] gap-3">
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3">
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="text-xs font-semibold">{pickLocaleText(locale, '全局专家忙碌总览', 'Global Expert Busy Overview')}</div>
+                  <div className="text-xs font-semibold">{pickLocaleText(locale, '成员忙碌概览', 'Member Busy Overview')}</div>
                   <span className="text-[10px] text-[var(--muted)]">{busyEntries.filter((item) => item.state !== 'idle').length}/{busyEntries.length}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -917,7 +917,7 @@ export default function CollaborationDiscussion() {
               </div>
               <div className="rounded-lg border border-[var(--line)] bg-[var(--panel2)] p-3">
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="text-xs font-semibold">{pickLocaleText(locale, '占用中的协同会话', 'Active Collaboration Sessions')}</div>
+                  <div className="text-xs font-semibold">{pickLocaleText(locale, '进行中的其他讨论', 'Other Active Discussions')}</div>
                   <span className="text-[10px] text-[var(--muted)]">{activeBusySessions.length}</span>
                 </div>
                 {activeBusySessions.length > 0 ? (
@@ -932,7 +932,7 @@ export default function CollaborationDiscussion() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-[11px] text-[var(--muted)]">{pickLocaleText(locale, '当前没有其他会话占用专家。', 'No other sessions are currently occupying experts.')}</div>
+                  <div className="text-[11px] text-[var(--muted)]">{pickLocaleText(locale, '当前没有其他讨论占用这些成员。', 'No other discussions are currently occupying these members.')}</div>
                 )}
               </div>
             </div>
@@ -942,16 +942,16 @@ export default function CollaborationDiscussion() {
             <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] p-4 space-y-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div>
-                  <div className="text-sm font-semibold">{pickLocaleText(locale, '🎯 主持人点名发言', '🎯 Moderator Speaker Control')}</div>
+                  <div className="text-sm font-semibold">{pickLocaleText(locale, '🎯 本轮参与成员', '🎯 Participants for This Round')}</div>
                   <div className="text-xs text-[var(--muted)] mt-1">
-                    {pickLocaleText(locale, '只有被主持人点名的专家会在下一轮发言。你也可以直接推进到下一阶段。', 'Only experts named by the moderator will speak in the next round. You can also advance directly to the next stage.')}
+                    {pickLocaleText(locale, '只有当前选中的成员会在下一轮参与表达，你也可以直接进入下一步。', 'Only the selected members will participate in the next round, and you can also move directly to the next step.')}
                   </div>
                 </div>
                 <button
                   onClick={() => setSpeakerSelection(new Set(speakerPool.map((agent) => agent.id)))}
                   className="text-xs px-3 py-1.5 rounded-lg border border-[var(--acc)]40 text-[var(--acc)] hover:bg-[var(--acc)]10 transition"
                 >
-                  {pickLocaleText(locale, '本轮全选发言', 'Select All Speakers')}
+                  {pickLocaleText(locale, '本轮全选', 'Select All for This Round')}
                 </button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -999,7 +999,7 @@ export default function CollaborationDiscussion() {
                   disabled={loading || speakerSelection.size === 0}
                   className="px-4 py-2 rounded-lg text-xs font-semibold border border-[var(--acc)]40 text-[var(--acc)] hover:bg-[var(--acc)]10 disabled:opacity-40"
                 >
-                  {pickLocaleText(locale, '请被点名专家发言', 'Run Named Speakers')}
+                  {pickLocaleText(locale, '让已选成员继续', 'Continue with Selected Members')}
                 </button>
                 <button
                   onClick={() => handleAdvance({
@@ -1010,7 +1010,7 @@ export default function CollaborationDiscussion() {
                   disabled={loading}
                   className="px-4 py-2 rounded-lg text-xs font-semibold border border-green-600/40 text-green-400 hover:bg-green-900/20 disabled:opacity-40"
                 >
-                  {pickLocaleText(locale, '进入下一阶段', 'Advance Stage')}
+                  {pickLocaleText(locale, '进入下一步', 'Go to Next Step')}
                 </button>
               </div>
             </div>
@@ -1020,16 +1020,16 @@ export default function CollaborationDiscussion() {
             <div className="bg-[var(--panel)] rounded-xl p-3 border border-[var(--line)] relative overflow-hidden min-h-[340px]">
               <div className="text-center mb-2">
                 <div className="inline-block px-3 py-1 rounded-lg bg-gradient-to-b from-amber-800/40 to-amber-950/40 border border-amber-700/30">
-                  <span className="text-lg">🎙️</span>
+                  <span className="text-lg">👥</span>
                   <div className="text-[10px] text-amber-400/80">
-                    {session?.moderator_name || pickLocaleText(locale, '主持人', 'Moderator')}
+                    {session?.moderator_name || pickLocaleText(locale, '当前带领人', 'Current Lead')}
                   </div>
                 </div>
               </div>
 
               <div className="relative" style={{ minHeight: 270 }}>
-                <div className="absolute left-0 top-0 text-[9px] text-[var(--muted)] opacity-50">{pickLocaleText(locale, '协调层', 'Coordination Layer')}</div>
-                <div className="absolute right-0 top-0 text-[9px] text-[var(--muted)] opacity-50">{pickLocaleText(locale, '执行角色', 'Execution Roles')}</div>
+                <div className="absolute left-0 top-0 text-[9px] text-[var(--muted)] opacity-50">{pickLocaleText(locale, '讨论引导', 'Discussion Lead')}</div>
+                <div className="absolute right-0 top-0 text-[9px] text-[var(--muted)] opacity-50">{pickLocaleText(locale, '参与成员', 'Participants')}</div>
 
                 {sessionAgents.map((agent) => {
                   const pos = COLLAB_POSITIONS[agent.id] || { x: 50, y: 50 };
@@ -1078,13 +1078,13 @@ export default function CollaborationDiscussion() {
                       </div>
                         {isQueued && currentMode === 'meeting' && (
                           <div className="text-[8px] text-center text-emerald-400 mt-0.5">
-                            {pickLocaleText(locale, '本轮发言', 'Speaking Now')}
+                            {pickLocaleText(locale, '本轮参与', 'Active This Round')}
                           </div>
                         )}
                         {busy && (
                           <div className={`text-[8px] text-center mt-0.5 px-1 py-0.5 rounded border ${busyAccent(busy.state)}`}>
                             {isConflicted
-                              ? pickLocaleText(locale, '被其他会话占用', 'Occupied Elsewhere')
+                              ? pickLocaleText(locale, '正在参与其他讨论', 'Busy in Another Discussion')
                               : busy.label}
                           </div>
                         )}
@@ -1103,8 +1103,8 @@ export default function CollaborationDiscussion() {
                 {loading && (
                   <div className="text-xs text-[var(--muted)] text-center py-2" style={{ animation: 'pulse 1.5s infinite' }}>
                     {currentMode === 'meeting'
-                      ? pickLocaleText(locale, '🎙️ 主持人与专家正在整理会议发言...', '🎙️ The moderator and experts are preparing their remarks...')
-                      : pickLocaleText(locale, '💬 大家正在继续聊天...', '💬 The room is continuing the conversation...')}
+                      ? pickLocaleText(locale, '👥 大家正在整理这一轮内容...', '👥 Everyone is preparing the next part...')
+                      : pickLocaleText(locale, '👥 讨论仍在继续...', '👥 The discussion is continuing...')}
                   </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -1114,9 +1114,9 @@ export default function CollaborationDiscussion() {
                 <div className="border-t border-[var(--line)] p-3 space-y-2">
                   <div className="text-[11px] text-[var(--muted)]">
                     {session?.run_state === 'paused'
-                      ? pickLocaleText(locale, '会话已暂停。你可以恢复会话后继续推进，或直接结束会议。', 'The session is paused. Resume it before advancing, or conclude it directly.')
+                      ? pickLocaleText(locale, '讨论已暂停。你可以恢复后继续，或直接结束本次讨论。', 'The discussion is paused. Resume it to continue, or end it directly.')
                       : currentMode === 'meeting'
-                        ? pickLocaleText(locale, '你可以插话、补充要求，或让主持人按当前点名名单继续推进。', 'You can interrupt, add requirements, or let the moderator continue with the current speaker list.')
+                        ? pickLocaleText(locale, '你可以随时补充要求，或按当前已选成员继续推进。', 'You can add requirements at any time, or continue with the currently selected members.')
                         : pickLocaleText(locale, '你可以像在群聊里一样直接和大家说话。', 'You can talk to everyone as if you were in a group chat.')}
                   </div>
                   <div className="flex gap-2">
@@ -1159,7 +1159,7 @@ export default function CollaborationDiscussion() {
 
         <div className="space-y-4 min-w-0">
           <div className="bg-[var(--panel)] rounded-xl border border-[var(--line)] p-4 space-y-3">
-            <div className="text-sm font-semibold">{pickLocaleText(locale, '📒 会议纪要 / 对话摘要', '📒 Minutes / Summary')}</div>
+            <div className="text-sm font-semibold">{pickLocaleText(locale, '📒 讨论摘要 / 对话记录', '📒 Discussion Summary / Notes')}</div>
             {minutes.length > 0 ? (
               <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                 {minutes.slice().reverse().map((minute, idx) => (
@@ -1174,8 +1174,8 @@ export default function CollaborationDiscussion() {
             ) : (
               <div className="text-xs text-[var(--muted)]">
                 {currentMode === 'meeting'
-                  ? pickLocaleText(locale, '会议纪要将在主持推进后持续生成。', 'Minutes will accumulate as the moderator advances the meeting.')
-                  : pickLocaleText(locale, '闲聊模式下不会强制生成正式会议纪要。', 'Casual chat does not enforce formal minutes.')}
+                  ? pickLocaleText(locale, '讨论摘要会随着交流推进持续生成。', 'The discussion summary will continue to build as the conversation progresses.')
+                  : pickLocaleText(locale, '轻松聊天模式下不会强制生成正式摘要。', 'Casual chat does not enforce a formal summary.')}
               </div>
             )}
             {session?.summary && (
@@ -1271,10 +1271,10 @@ function renderTrace(item: TraceEntry, locale: Locale) {
   }
   if (item.kind === 'advance') {
     const speakers = (item.speaker_ids || []).join(', ') || pickLocaleText(locale, '未指定', 'not specified');
-    return pickLocaleText(locale, `会议推进，意图：${item.intent || 'auto'}；发言名单：${speakers}。`, `Advanced the session. Intent: ${item.intent || 'auto'}; speakers: ${speakers}.`);
+    return pickLocaleText(locale, `讨论已推进，当前意图：${item.intent || 'auto'}；参与名单：${speakers}。`, `Discussion advanced. Intent: ${item.intent || 'auto'}; participants: ${speakers}.`);
   }
   if (item.kind === 'concluded' && item.summary) {
-    return pickLocaleText(locale, `会议结束：${item.summary}`, `Session concluded: ${item.summary}`);
+    return pickLocaleText(locale, `讨论结束：${item.summary}`, `Discussion concluded: ${item.summary}`);
   }
   return item.kind || '-';
 }
@@ -1291,7 +1291,7 @@ function MessageBubble({
   moderatorId: string;
 }) {
   const speakerId = msg.agent_id || '';
-  const speakerName = msg.agent_name || 'Agent';
+  const speakerName = msg.agent_name || pickLocaleText(locale, '成员', 'Member');
   const meta = deptMeta(speakerId, locale);
   const color = meta.color;
   const agent = agents.find((o) => o.id === speakerId);
@@ -1352,7 +1352,7 @@ function MessageBubble({
         className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 border"
         style={{ borderColor: color + '60', background: color + '15' }}
       >
-        {isModerator ? '🎙️' : agent?.emoji || '💬'}
+        {isModerator ? '👥' : agent?.emoji || '👥'}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
@@ -1361,7 +1361,7 @@ function MessageBubble({
           </span>
           {isModerator && (
             <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-amber-700/30 text-amber-400 bg-amber-900/20">
-              {pickLocaleText(locale, '主持人', 'Moderator')}
+              {pickLocaleText(locale, '带领人', 'Lead')}
             </span>
           )}
           {msg.action && (

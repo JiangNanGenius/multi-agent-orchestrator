@@ -106,7 +106,7 @@ function readDraftState(storageKey: string, locale: Locale, agentEmoji: string, 
       messages: [{
         id: messageId('welcome'),
         role: 'assistant',
-        content: pickLocaleText(locale, `${agentEmoji} 这里是${agentLabel}会话窗口。请先描述目标、现状和期望结果，我会先追问补足信息，再生成确认摘要。`, `${agentEmoji} This is the ${agentLabel} conversation window. Please describe your goal, current situation, and expected result first. I will ask follow-up questions before generating a confirmation summary.`),
+        content: pickLocaleText(locale, `${agentEmoji} 这里由${agentLabel}为你提供协助。请先描述目标、现状和期望结果，我会先追问补足信息，再生成确认摘要。`, `${agentEmoji} ${agentLabel} is here to help. Please describe your goal, current situation, and expected result first. I will ask follow-up questions before generating a confirmation summary.`),
         at: nowIso(),
         kind: 'info',
       }],
@@ -326,7 +326,7 @@ export default function PersistentAgentChat(props: Props) {
     const welcome: DraftMessage = {
       id: messageId('welcome'),
       role: 'assistant',
-      content: pickLocaleText(locale, `${agentEmoji} 已为你打开新的${agentLabel}草稿会话。你可以直接描述需求，也可以先点右侧快捷意图。`, `${agentEmoji} A new ${agentLabel} draft session is ready. You can describe the request directly or start from a quick intent on the right.`),
+      content: pickLocaleText(locale, `${agentEmoji} 已为你打开新的${agentLabel}沟通窗口。你可以直接描述需求，也可以先点右侧快捷意图。`, `${agentEmoji} A new ${agentLabel} conversation is ready. You can describe the request directly or start from a quick intent on the right.`),
       at: nowIso(),
       kind: 'info',
     };
@@ -342,7 +342,7 @@ export default function PersistentAgentChat(props: Props) {
     try {
       const result = await createTask(draftUserText, review);
       if (result.ok && result.taskId) {
-        toast(result.message || pickLocaleText(locale, `后台任务已创建：${result.taskId}`, `Background task created: ${result.taskId}`), 'ok');
+        toast(result.message || pickLocaleText(locale, `处理单已创建：${result.taskId}`, `Request created: ${result.taskId}`), 'ok');
         updateDraft({ selectedSessionId: result.taskId, input: '' });
         setTaskInput('');
         loadLive();
@@ -353,7 +353,7 @@ export default function PersistentAgentChat(props: Props) {
         toast(result.error || pickLocaleText(locale, '创建任务失败', 'Failed to create the task'), 'err');
       }
     } catch {
-      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+      toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
     }
     setCreating(false);
   };
@@ -374,7 +374,7 @@ export default function PersistentAgentChat(props: Props) {
         toast(result.error || pickLocaleText(locale, '补充说明提交失败', 'Failed to append the follow-up note'), 'err');
       }
     } catch {
-      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+      toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
     }
     setTaskSending(false);
   };
@@ -428,7 +428,7 @@ export default function PersistentAgentChat(props: Props) {
             </div>
           </div>
           <div style={{ minWidth: 240, padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
-            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>{pickLocaleText(locale, '当前处理方', 'Current Handler')}</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>{pickLocaleText(locale, '当前协助方', 'Currently Helping')}</div>
             <div style={{ fontSize: 15, fontWeight: 800 }}>{agentEmoji} {agentLabel}</div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>{pickLocaleText(locale, handlerNoteZh, handlerNoteEn)}</div>
           </div>
@@ -476,7 +476,7 @@ export default function PersistentAgentChat(props: Props) {
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontSize: 12, color: accentColor, fontWeight: 700, marginBottom: 4 }}>
-                  {selectedTask ? pickLocaleText(locale, '任务会话', 'Task Session') : pickLocaleText(locale, '草稿会话', 'Draft Session')}
+                  {selectedTask ? pickLocaleText(locale, '处理记录', 'Request Record') : pickLocaleText(locale, '草稿会话', 'Draft Session')}
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 800 }}>
                   {selectedTask ? selectedTask.title : pickLocaleText(locale, draftLabelZh, draftLabelEn)}
@@ -489,7 +489,7 @@ export default function PersistentAgentChat(props: Props) {
                     onClick={() => loadTaskActivity(selectedTask.id)}
                     style={{ padding: '8px 14px', background: 'transparent', color: accentColor, border: `1px solid ${accentColor}`, borderRadius: 8, cursor: 'pointer', fontSize: 12 }}
                   >
-                    {pickLocaleText(locale, '刷新动态', 'Refresh Updates')}
+                    {pickLocaleText(locale, '刷新记录', 'Refresh Records')}
                   </button>
                 ) : (
                   <button
@@ -518,7 +518,7 @@ export default function PersistentAgentChat(props: Props) {
                     <div key={item.id} style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
                       <div style={{ maxWidth: '86%', background: bubbleBg, border: `1px solid ${bubbleBorder}`, borderRadius: 14, padding: '12px 14px' }}>
                         <div style={{ fontSize: 11, color: isUser ? accentColor : 'var(--muted)', fontWeight: 700, marginBottom: 6 }}>
-                          {isUser ? pickLocaleText(locale, '你', 'You') : item.role === 'system' ? pickLocaleText(locale, '系统', 'System') : agentLabel}
+                          {isUser ? pickLocaleText(locale, '你', 'You') : item.role === 'system' ? pickLocaleText(locale, '平台提示', 'Platform') : agentLabel}
                         </div>
                         <div style={{ fontSize: 13, lineHeight: 1.8, whiteSpace: 'pre-wrap', color: 'var(--text)' }}>{item.content}</div>
                         <div style={{ marginTop: 8, fontSize: 10, color: 'var(--muted)' }}>{formatTime(item.at, locale)}</div>
@@ -528,10 +528,10 @@ export default function PersistentAgentChat(props: Props) {
                 })}
               </>
             ) : activityLoading ? (
-              <div style={{ textAlign: 'center', padding: '26px 0', color: 'var(--muted)', fontSize: 12 }}>{pickLocaleText(locale, '⟳ 正在读取任务动态…', '⟳ Loading task activity...')}</div>
+              <div style={{ textAlign: 'center', padding: '26px 0', color: 'var(--muted)', fontSize: 12 }}>{pickLocaleText(locale, '⟳ 正在读取处理记录…', '⟳ Loading request records...')}</div>
             ) : activity.length === 0 ? (
               <div style={{ background: 'var(--panel2)', border: '1px dashed var(--line)', borderRadius: 12, padding: 16, color: 'var(--muted)', fontSize: 12, lineHeight: 1.8 }}>
-                {pickLocaleText(locale, '当前还没有读取到任务动态。你可以先刷新，或稍等几秒让后台执行链路落库。', 'No task activity was retrieved yet. You can refresh now or wait a few seconds for the backend workflow to persist updates.')}
+                {pickLocaleText(locale, '当前还没有读取到处理记录。你可以先刷新，或稍等几秒让最新进展显示出来。', 'No request records were retrieved yet. You can refresh now or wait a few seconds for the latest progress to appear.')}
               </div>
             ) : (
               activity.map((item, index) => {
@@ -540,7 +540,7 @@ export default function PersistentAgentChat(props: Props) {
                   <div key={`${String(item.at || index)}-${item.kind}-${index}`} style={{ border: `1px solid ${tone.border}`, background: tone.bg, borderRadius: 12, padding: '12px 14px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                       <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text)' }}>
-                        {item.kind === 'progress' && item.agent ? `${item.agent} · ${pickLocaleText(locale, '进度', 'Progress')}` : item.kind || pickLocaleText(locale, '动态更新', 'Update')}
+                        {item.kind === 'progress' && item.agent ? `${item.agent} · ${pickLocaleText(locale, '最新进展', 'Latest Update')}` : item.kind || pickLocaleText(locale, '最新动态', 'Update')}
                       </div>
                       <div style={{ fontSize: 10, color: 'var(--muted)' }}>{formatTime(String(item.at || ''), locale)}</div>
                     </div>
@@ -614,7 +614,7 @@ export default function PersistentAgentChat(props: Props) {
               </div>
             ) : (
               <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
-                {pickLocaleText(locale, '当前会话已进入后台执行。刷新后仍可从左侧会话列表恢复，并继续查看活动流。', 'This session has entered backend execution. It can still be restored from the session list after a refresh, and the activity stream remains traceable.')}
+                {pickLocaleText(locale, '当前会话已转为持续处理中。刷新后仍可从左侧会话列表恢复，并继续查看最新动态。', 'This session is now continuing in the background. You can restore it from the session list after a refresh and keep following the latest updates.')}
               </div>
             )}
           </div>

@@ -28,16 +28,17 @@
 ### 允许转交目标
 - review_center、dispatch_center
 
-## 看板操作
-> 所有看板更新必须通过 CLI 命令完成，不要直接改写 JSON 文件。
+## 任务工作区与账本优先
+> 规划中心在起草方案、提交评审、转调度与整理结果时，必须优先把关键信息写回统一任务工作区与文件化账本；看板只负责状态展示，不替代工作区中的续接、摘要与规则留痕。
 
 ```bash
-python3 scripts/kanban_update.py create <id> "<标题>" <state> <org> <owner>
-python3 scripts/kanban_update.py state <id> <state> "<说明>"
-python3 scripts/kanban_update.py flow <id> "<from>" "<to>" "<remark>"
-python3 scripts/kanban_update.py done <id> "<output>" "<summary>"
-python3 scripts/kanban_update.py progress <id> "<当前在做什么>" "<计划1✅|计划2🔄|计划3>"
-python3 scripts/kanban_update.py todo <id> <todo_id> "<title>" <status> --detail "<产出详情>"
+python3 scripts/task_db.py get <task_id>
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<规划摘要>","plan_summary":"<方案摘要>"}' --agent plan_center --summary "规划中心更新方案摘要"
+python3 scripts/kanban_update.py state <taskCode> <state> "<说明>"
+python3 scripts/kanban_update.py flow <taskCode> "<from>" "<to>" "<remark>"
+python3 scripts/kanban_update.py done <taskCode> "<output>" "<summary>"
+python3 scripts/kanban_update.py progress <taskCode> "<当前在做什么>" "<计划1✅|计划2🔄|计划3>"
+python3 scripts/kanban_update.py todo <taskCode> <todo_id> "<title>" <status> --detail "<产出详情>"
 ```
 
 ## 实时进展上报
@@ -97,29 +98,28 @@ python3 scripts/kanban_update.py todo <id> <todo_id> "<title>" <status> --detail
 
 ### 步骤 1：接收任务并起草方案
 - 收到任务后，先简要回复“已接收任务”。
-- **检查总控中心是否已经创建 JJC 任务**。
-  - 如果总控中心消息中已经包含任务 ID，例如 `JJC-20260227-003`，则**直接使用该 ID**，只更新状态：
-
+- **检查总控中心是否已经创建正式任务并提供 `task_id` / `taskCode`**。
+  - 如果总控中心消息中已经包含任务标识与工作区信息，则**直接沿用该任务**，并优先读取任务工作区中的 `README.md`、`HANDOFF.md`、`TODO.md`、`TASK_RECORD.json` 与 `context/latest_context.json`，确认 `/new` 建议、当前续接点与约束。
+  - **只有在总控中心没有提供任务标识时**，你才可以自行创建：
   ```bash
-  python3 scripts/kanban_update.py state JJC-xxx plan_center "规划中心已接收任务，开始起草方案"
+  python3 scripts/task_db.py create "任务标题" \
+    --description "规划中心整理后的需求概括" \
+    --creator plan_center \
+    --initial-state PlanCenter
   ```
-
-  - **只有在总控中心没有提供任务 ID 时**，你才可以自行创建：
-
+  - 创建或接手后，如需补充规划摘要，应通过工作区元数据回写：
   ```bash
-  python3 scripts/kanban_update.py create JJC-YYYYMMDD-NNN "任务标题" plan_center 规划中心 规划负责人
+  python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"规划中心已接收任务，开始起草方案"}' --agent plan_center --summary "规划中心更新续接摘要"
   ```
-
 - 用简明方式起草执行方案，正文尽量控制在 500 字以内。
-
-> **绝不重复创建任务。** 如果总控中心已经建好任务，你只能用 `state` 更新，不能再次 `create`。
+> **绝不重复创建任务。** 如果总控中心已经建好任务，你只能沿用现有 `task_id` / `taskCode`，不能再次创建第二个任务。
 
 ### 步骤 2：调用评审中心审议（subagent）
 先更新看板：
 
 ```bash
-python3 scripts/kanban_update.py state JJC-xxx review_center "方案提交评审中心审议"
-python3 scripts/kanban_update.py flow JJC-xxx "规划中心" "评审中心" "方案提交审议"
+python3 scripts/kanban_update.py state <taskCode> review_center "方案提交评审中心审议"
+python3 scripts/kanban_update.py flow <taskCode> "规划中心" "评审中心" "方案提交审议"
 ```
 
 然后**立即调用评审中心 subagent**，把方案发过去并等待审议结果。
@@ -131,8 +131,8 @@ python3 scripts/kanban_update.py flow JJC-xxx "规划中心" "评审中心" "方
 > 这是最容易被遗漏的一步。评审中心通过后，必须立刻调用调度中心，不能先回复用户。
 
 ```bash
-python3 scripts/kanban_update.py state JJC-xxx dispatch_center "评审中心通过，转调度中心执行"
-python3 scripts/kanban_update.py flow JJC-xxx "规划中心" "调度中心" "评审通过，转调度中心派发"
+python3 scripts/kanban_update.py state <taskCode> dispatch_center "评审中心通过，转调度中心执行"
+python3 scripts/kanban_update.py flow <taskCode> "规划中心" "调度中心" "评审通过，转调度中心派发"
 ```
 
 然后**立即调用调度中心 subagent**，发送最终执行方案，由其继续派发给合适的 specialist 执行。
@@ -141,36 +141,37 @@ python3 scripts/kanban_update.py flow JJC-xxx "规划中心" "调度中心" "评
 **只有在步骤 3 中调度中心返回结果后**，你才能回传：
 
 ```bash
-python3 scripts/kanban_update.py done JJC-xxx "<产出>" "<摘要>"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"调度执行完成，规划中心正在整理回传结果","plan_result_summary":"<摘要>"}' --agent plan_center --summary "规划中心整理执行结果"
 ```
+然后回复飞书消息，简要汇报结果，并确保最终摘要已同步到任务工作区，便于后续归档、回迁与再次续接。
 
-然后回复飞书消息，简要汇报结果。
 
 ---
 
-## 看板操作
-
-> 所有看板操作必须通过 CLI 命令完成，不要手工直接读写 JSON 文件。
-
+## 任务工作区与账本操作
+> 规划中心的任务创建、续接摘要、上下文恢复与规则标记必须优先走任务工作区与文件化账本链路，不要手工改写 JSON，也不要脱离工作区单独维护任务状态。
 ```bash
-python3 scripts/kanban_update.py create <id> "<标题>" <state> <org> <owner>
-python3 scripts/kanban_update.py state <id> <state> "<说明>"
-python3 scripts/kanban_update.py flow <id> "<from>" "<to>" "<remark>"
-python3 scripts/kanban_update.py done <id> "<output>" "<summary>"
-python3 scripts/kanban_update.py progress <id> "<当前在做什么>" "<计划1✅|计划2🔄|计划3>"
-python3 scripts/kanban_update.py todo <id> <todo_id> "<title>" <status> --detail "<产出详情>"
+python3 scripts/task_db.py create "<标题>" --description "<需求概括>" --creator plan_center --initial-state PlanCenter
+python3 scripts/task_db.py get <task_id>
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<规划摘要>","plan_summary":"<方案摘要>"}' --agent plan_center --summary "规划中心更新方案摘要"
+python3 scripts/task_db.py list --limit 20
+python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
 ```
+
+> 若任务工作区已给出 `refresh_recommended` 或 `/new` 建议，规划中心必须先判断是否需要刷新上下文，再继续起草方案。
 
 ### 子任务详情上报
 
 > 每完成一个子任务，都建议用 `todo` 命令补充产出详情，让看板清晰展示你具体做了什么。
 
 ```bash
-python3 scripts/kanban_update.py todo JJC-xxx 1 "需求整理" completed --detail "1. 核心目标：xxx
+python3 scripts/kanban_update.py todo <taskCode> 1 "需求整理" completed --detail "1. 核心目标：xxx
 2. 约束条件：xxx
 3. 预期产出：xxx"
 
-python3 scripts/kanban_update.py todo JJC-xxx 2 "方案起草" completed --detail "方案要点：
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"规划中心已完成需求整理","plan_summary":"核心目标、约束条件与预期产出已确认"}' --agent plan_center --summary "规划中心补充需求整理结果"
+
+python3 scripts/kanban_update.py todo <taskCode> 2 "方案起草" completed --detail "方案要点：
 - 第一步：xxx
 - 第二步：xxx
 - 预计耗时：xxx"
@@ -199,17 +200,20 @@ python3 scripts/kanban_update.py todo JJC-xxx 2 "方案起草" completed --detai
 
 ### 示例（完整流程）
 ```bash
-python3 scripts/kanban_update.py progress JJC-xxx "正在分析任务内容，拆解核心需求和可行性" "分析需求🔄|起草方案|评审审议|调度执行|结果回传"
+python3 scripts/kanban_update.py progress <taskCode> "正在分析任务内容，拆解核心需求和可行性" "分析需求🔄|起草方案|评审审议|调度执行|结果回传"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"规划中心正在分析任务内容并拆解核心需求","plan_summary":"需求分析进行中"}' --agent plan_center --summary "规划中心更新需求分析进展"
 
-python3 scripts/kanban_update.py progress JJC-xxx "方案起草中：1.调研现有方案 2.制定技术路线 3.预估资源" "分析需求✅|起草方案🔄|评审审议|调度执行|结果回传"
+python3 scripts/kanban_update.py progress <taskCode> "方案起草中：1.调研现有方案 2.制定技术路线 3.预估资源" "分析需求✅|起草方案🔄|评审审议|调度执行|结果回传"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"规划中心正在起草方案并预估资源","plan_summary":"方案起草进行中"}' --agent plan_center --summary "规划中心更新方案起草进展"
 
-python3 scripts/kanban_update.py progress JJC-xxx "方案已提交评审中心审议，等待审批结果" "分析需求✅|起草方案✅|评审审议🔄|调度执行|结果回传"
+python3 scripts/kanban_update.py progress <taskCode> "方案已提交评审中心审议，等待审批结果" "分析需求✅|起草方案✅|评审审议🔄|调度执行|结果回传"
 
-python3 scripts/kanban_update.py progress JJC-xxx "评审中心已通过，正在调用调度中心派发执行" "分析需求✅|起草方案✅|评审审议✅|调度执行🔄|结果回传"
+python3 scripts/kanban_update.py progress <taskCode> "评审中心已通过，正在调用调度中心派发执行" "分析需求✅|起草方案✅|评审审议✅|调度执行🔄|结果回传"
 
-python3 scripts/kanban_update.py progress JJC-xxx "调度中心已接单，相关 specialist 正在执行中，等待汇总" "分析需求✅|起草方案✅|评审审议✅|调度执行🔄|结果回传"
+python3 scripts/kanban_update.py progress <taskCode> "调度中心已接单，相关 specialist 正在执行中，等待汇总" "分析需求✅|起草方案✅|评审审议✅|调度执行🔄|结果回传"
 
-python3 scripts/kanban_update.py progress JJC-xxx "收到执行结果，正在整理回传报告" "分析需求✅|起草方案✅|评审审议✅|调度执行✅|结果回传🔄"
+python3 scripts/kanban_update.py progress <taskCode> "收到执行结果，正在整理回传报告" "分析需求✅|起草方案✅|评审审议✅|调度执行✅|结果回传🔄"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"调度执行结果已返回，规划中心正在整理回传报告","plan_result_summary":"结果整理进行中"}' --agent plan_center --summary "规划中心更新结果整理进展"
 ```
 
 > `progress` 不会改变任务状态，只更新看板中的“当前动态”和“计划清单”。状态流转仍使用 `state` 与 `flow`。

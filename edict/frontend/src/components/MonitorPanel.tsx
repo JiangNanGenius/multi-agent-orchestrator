@@ -15,13 +15,13 @@ function renderBusySummary(entry: CollabAgentBusyEntry | undefined, locale: stri
     if (kind === 'chat') return 'In discussion';
     return entry.label || 'Busy';
   }
-  if (kind === 'task_active') return '任务执行中';
-  if (kind === 'task_reserved') return '任务预占中';
-  if (kind === 'task_paused') return '任务暂停中';
-  if (kind === 'task_blocked') return '任务阻塞中';
-  if (kind === 'meeting') return '会议占用中';
-  if (kind === 'chat') return '讨论占用中';
-  return entry.label || '忙碌中';
+  if (kind === 'task_active') return '正在处理';
+  if (kind === 'task_reserved') return '即将开始';
+  if (kind === 'task_paused') return '暂时停下';
+  if (kind === 'task_blocked') return '暂时卡住';
+  if (kind === 'meeting') return '正在沟通';
+  if (kind === 'chat') return '正在讨论';
+  return entry.label || '暂时忙碌';
 }
 
 export default function MonitorPanel() {
@@ -82,10 +82,10 @@ export default function MonitorPanel() {
   const handleWakeAll = async () => {
     const toWake = filtered.filter((a) => a.status !== 'running' && a.status !== 'unconfigured');
     if (!toWake.length) {
-      toast(pickLocaleText(locale, '本项目相关 Agent 均已在线', 'All project agents are already online'));
+      toast(pickLocaleText(locale, '相关助手当前都在线', 'All related assistants are already online'));
       return;
     }
-    toast(locale === 'en' ? `Waking ${toWake.length} project agent(s)...` : `正在唤醒 ${toWake.length} 个本项目 Agent...`);
+    toast(locale === 'en' ? `Waking ${toWake.length} assistant(s)...` : `正在唤醒 ${toWake.length} 个相关助手...`);
     for (const a of toWake) {
       try {
         await api.agentWake(a.id);
@@ -112,22 +112,22 @@ export default function MonitorPanel() {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: 12, color: '#7be0ff', fontWeight: 700, letterSpacing: '.06em', marginBottom: 6 }}>
-              {pickLocaleText(locale, '运行监控', 'Runtime Monitoring')}
+              {pickLocaleText(locale, '最新动态', 'Updates')}
             </div>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>
-              {pickLocaleText(locale, '项目内 Agent 在线态势与任务占用', 'Project-Agent Runtime Status & Task Occupancy')}
+              {pickLocaleText(locale, '当前处理情况', 'Current Progress')}
             </div>
             <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, maxWidth: 880 }}>
-              {pickLocaleText(locale, '这个页面只监控当前项目相关的中心与专家，不纳入 openclaw 下其他 Agent。这里关注的是在线状态、占用状态、阻塞与唤醒动作；Agent 页则专注于贡献排行、名册治理与专家增删，两者不再重复。', 'This page monitors only the centers and specialists related to the current project and excludes other agents under openclaw. It focuses on runtime status, occupancy, blockages, and wake actions, while the Agent page now concentrates on contribution ranking, roster governance, and expert add/remove workflows.')}
+              {pickLocaleText(locale, '这里会显示当前事项相关的处理情况。你可以看到谁正在处理、谁暂时空闲、哪里卡住了，也可以在需要时提醒继续处理。', 'This page shows the current progress of your work. You can see what is in progress, what is idle, what is stuck, and send a reminder when needed.')}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button className="btn-refresh" onClick={() => { loadAgentsStatus(); loadCollabBusy(); }}>
-              {pickLocaleText(locale, '🔄 刷新监控', '🔄 Refresh Monitoring')}
+              {pickLocaleText(locale, '🔄 刷新', '🔄 Refresh')}
             </button>
             {(offline + unconf > 0) && (
               <button className="btn-refresh" onClick={handleWakeAll} style={{ borderColor: 'var(--warn)', color: 'var(--warn)' }}>
-                {pickLocaleText(locale, '⚡ 唤醒本项目 Agent', '⚡ Wake Project Agents')}
+                {pickLocaleText(locale, '⚡ 提醒相关助手', '⚡ Remind Assistants')}
               </button>
             )}
           </div>
@@ -137,8 +137,8 @@ export default function MonitorPanel() {
       {agentsStatusData && agentsStatusData.ok && (
         <div className="as-panel">
           <div className="as-header">
-            <span className="as-title">{pickLocaleText(locale, '🔌 在线状态总览', '🔌 Status Overview')}</span>
-            <span className={`as-gw ${gwCls}`}>Gateway: {gw?.status || pickLocaleText(locale, '未知', 'Unknown')}</span>
+            <span className="as-title">{pickLocaleText(locale, '处理概览', 'Progress Overview')}</span>
+            <span className={`as-gw ${gwCls}`}>{pickLocaleText(locale, '连接状态：', 'Connection: ')}{gw?.status || pickLocaleText(locale, '未知', 'Unknown')}</span>
           </div>
           <div className="as-grid">
             {filtered.map((a) => {
@@ -176,7 +176,7 @@ export default function MonitorPanel() {
                     )}
                     {canWake && (
                       <button className="as-wake-btn" onClick={(e) => { e.stopPropagation(); handleWake(a.id); }}>
-                        {pickLocaleText(locale, '⚡ 唤醒', '⚡ Wake')}
+                        {pickLocaleText(locale, '⚡ 提醒处理', '⚡ Remind')}
                       </button>
                     )}
                   </div>
@@ -185,12 +185,12 @@ export default function MonitorPanel() {
             })}
           </div>
           <div className="as-summary">
-            <span><span className="as-dot running" style={{ position: 'static', width: 8, height: 8 }} /> {locale === 'en' ? `${running} running` : `${running} 运行中`}</span>
-            <span><span className="as-dot idle" style={{ position: 'static', width: 8, height: 8 }} /> {locale === 'en' ? `${idle} idle` : `${idle} 待命`}</span>
+            <span><span className="as-dot running" style={{ position: 'static', width: 8, height: 8 }} /> {locale === 'en' ? `${running} active` : `${running} 处理中`}</span>
+            <span><span className="as-dot idle" style={{ position: 'static', width: 8, height: 8 }} /> {locale === 'en' ? `${idle} idle` : `${idle} 空闲`}</span>
             {offline > 0 && <span><span className="as-dot offline" style={{ position: 'static', width: 8, height: 8 }} /> {locale === 'en' ? `${offline} offline` : `${offline} 离线`}</span>}
             {unconf > 0 && <span><span className="as-dot unconfigured" style={{ position: 'static', width: 8, height: 8 }} /> {locale === 'en' ? `${unconf} unconfigured` : `${unconf} 未配置`}</span>}
             <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--muted)' }}>
-              {locale === 'en' ? `Checked at ${(agentsStatusData.checkedAt || '').substring(11, 19)}` : `检测于 ${(agentsStatusData.checkedAt || '').substring(11, 19)}`}
+              {locale === 'en' ? `Updated at ${(agentsStatusData.checkedAt || '').substring(11, 19)}` : `更新于 ${(agentsStatusData.checkedAt || '').substring(11, 19)}`}
             </span>
           </div>
         </div>
@@ -209,12 +209,12 @@ export default function MonitorPanel() {
           const hb = off?.heartbeat || { status: 'idle', label: '⚪' };
           const dotCls = isBlocked ? 'blocked' : isActive ? 'busy' : hb.status === 'active' ? 'active' : 'idle';
           const statusText = isBlocked
-            ? pickLocaleText(locale, '⚠️ 阻塞', '⚠️ Blocked')
+            ? pickLocaleText(locale, '⚠️ 卡住', '⚠️ Stuck')
             : isActive
-              ? pickLocaleText(locale, '⚙️ 执行中', '⚙️ Running')
+              ? pickLocaleText(locale, '🟢 处理中', '🟢 Working')
               : hb.status === 'active'
                 ? pickLocaleText(locale, '🟢 活跃', '🟢 Active')
-                : pickLocaleText(locale, '⚪ 候命', '⚪ Idle');
+                : pickLocaleText(locale, '⚪ 空闲', '⚪ Idle');
           const cardCls = isBlocked ? 'blocked-card' : isActive ? 'active-card' : '';
           const panelMeta = deptMeta(normalizedDeptId, locale);
 
@@ -251,7 +251,7 @@ export default function MonitorPanel() {
                         </div>
                         {taskBusyLead && (
                           <div className="ec-scheduler-chip" style={{ marginTop: 2, borderColor: taskBusyLead.state === 'paused' ? '#f6c17755' : '#4cc38a44', background: taskBusyLead.state === 'paused' ? '#2a2112' : '#0f2219' }}>
-                            <div className="ec-scheduler-label">{taskBusyLead.state === 'paused' ? '⏸' : '⚙️'} {pickLocaleText(locale, '全局占用', 'Global Occupancy')}</div>
+                            <div className="ec-scheduler-label">{taskBusyLead.state === 'paused' ? '⏸' : '📝'} {pickLocaleText(locale, '当前情况', 'Current Status')}</div>
                             <div className="ec-scheduler-detail">{renderBusySummary(taskBusyLead, locale)}</div>
                             {taskBusyLead.reason && <div className="ec-scheduler-detail">{taskBusyLead.reason}</div>}
                           </div>
@@ -271,8 +271,8 @@ export default function MonitorPanel() {
                 ) : nonTaskBusyEntries.length > 0 ? (
                   nonTaskBusyEntries.map((entry) => (
                     <div key={`${entry.agent_id}-${entry.source_id || entry.updated_at}`} className="dc-task">
-                      <div className="dc-task-id">{pickLocaleText(locale, '全局占用', 'Global Busy')}</div>
-                      <div className="dc-task-title">{entry.topic || entry.task_title || pickLocaleText(locale, '跨任务协作', 'Cross-task collaboration')}</div>
+                      <div className="dc-task-id">{pickLocaleText(locale, '其他安排', 'Other Activity')}</div>
+                      <div className="dc-task-title">{entry.topic || entry.task_title || pickLocaleText(locale, '协同处理', 'Shared Work')}</div>
                       <div className="dc-task-now">{renderBusySummary(entry, locale)}</div>
                       {entry.reason && (
                         <div className="dc-task-meta">
@@ -284,12 +284,12 @@ export default function MonitorPanel() {
                 ) : (
                   <div className="dc-idle">
                     <span style={{ fontSize: 20 }}>🪭</span>
-                    <span>{pickLocaleText(locale, '候命中', 'Standing by')}</span>
+                    <span>{pickLocaleText(locale, '当前空闲', 'Available now')}</span>
                   </div>
                 )}
               </div>
               <div className="dc-footer">
-                <span className="dc-model">🤖 {off?.model_short || pickLocaleText(locale, '待配置', 'Not configured')}</span>
+                <span className="dc-model">{pickLocaleText(locale, '当前能力：', 'Current capability: ')}{off?.model_short || pickLocaleText(locale, '尚未准备好', 'Not ready')}</span>
                 {off?.last_active && <span className="dc-la">⏰ {off.last_active}</span>}
               </div>
             </div>

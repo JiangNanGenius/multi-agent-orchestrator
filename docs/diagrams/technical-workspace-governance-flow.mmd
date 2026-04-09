@@ -1,0 +1,21 @@
+flowchart LR
+    CREATE[create_task]
+    INIT[初始化工作区与基础文件]
+    LEDGER[追加 ledger 记录]
+    INDEX[更新 task_index / archive_index]
+    FRONT[前端详情与卡片回显]
+    WATCH[看门狗巡检]
+    FIX[补写 / 修复 / 标记刷新]
+    COLD[执行冷归档]
+    HOT[回迁到热区]
+    RESUME[继续恢复与执行]
+
+    CREATE --> INIT --> LEDGER --> INDEX --> FRONT
+    FRONT --> WATCH --> FIX --> INDEX
+    FRONT --> COLD --> INDEX
+    COLD --> HOT --> INIT
+    HOT --> RESUME --> LEDGER
+
+    classDef core fill:#132238,stroke:#5b8cff,color:#ffffff;
+    classDef action fill:#2a1a0a,stroke:#f59e0b,color:#ffffff;
+    class CREATE,INIT,LEDGER,INDEX,FRONT,WATCH,FIX,COLD,HOT,RESUME core;

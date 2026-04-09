@@ -1,0 +1,27 @@
+flowchart LR
+    CTX[上下文压力升高]
+    WD[看门狗提示 attention]
+    JUDGE[NEW 规则判断]
+    FLAG[生成 should_refresh 建议]
+    HO[补写交接摘要]
+    ORDER[按标准顺序恢复]
+    RESUME[恢复任务上下文并继续执行]
+
+    CTX --> JUDGE
+    WD --> JUDGE
+    JUDGE --> FLAG --> HO --> ORDER --> RESUME
+
+    subgraph ORDERCHAIN[标准恢复顺序]
+        R1[README.md]
+        R2[HANDOFF.md]
+        R3[TODO.md]
+        R4[TASK_RECORD.json]
+        R5[context/latest_context.json]
+    end
+
+    ORDER --> R1 --> R2 --> R3 --> R4 --> R5
+
+    classDef core fill:#132238,stroke:#5b8cff,color:#ffffff;
+    classDef warn fill:#2a1a0a,stroke:#f59e0b,color:#ffffff;
+    class CTX,WD,JUDGE,FLAG,HO,ORDER,RESUME,R1,R2,R3,R4,R5 core;
+    class ORDERCHAIN warn;

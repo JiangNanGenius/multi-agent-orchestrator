@@ -157,6 +157,7 @@ class Task(Base):
         meta = self.meta or {}
         scheduler = self.scheduler or {}
         context_window = meta.get("context_window") or {}
+        workspace = meta.get("workspace") or {}
         task_id = str(self.task_id) if self.task_id else ""
         updated_at = self.updated_at.isoformat() if self.updated_at else ""
         final_output = self.output or meta.get("output") or ""
@@ -199,4 +200,32 @@ class Task(Base):
             "contextWindowCompressed": context_window.get("compressed", False),
             "contextWindowArchivePath": context_window.get("archive_path", ""),
             "contextWindowContinuationHint": context_window.get("continuation_hint", False),
+            "taskCode": workspace.get("task_code", ""),
+            "workspace": workspace,
+            "workspacePath": workspace.get("path", ""),
+            "workspaceReadmePath": workspace.get("readme_path", ""),
+            "workspaceTodoPath": workspace.get("todo_path", ""),
+            "workspaceTaskRecordPath": workspace.get("taskrecord_path", ""),
+            "workspaceHandoffPath": workspace.get("handoff_path", ""),
+            "workspaceLinksPath": workspace.get("links_path", ""),
+            "workspaceStatusPath": workspace.get("status_path", ""),
+            "workspaceResumeExportPath": workspace.get("resume_export_path", ""),
+            "workspaceLatestContextPath": workspace.get("context_latest_path", ""),
+            "workspaceActualPath": workspace.get("actual_workspace_path", workspace.get("path", "")),
+            "workspaceMetadataMirrorPath": workspace.get("metadata_mirror_path", ""),
+            "workspaceStorageTier": workspace.get("storage_tier", "hot"),
+            "workspaceProcessingLocation": workspace.get("processing_location", "hot"),
+            "workspaceTaskKind": workspace.get("task_kind", "standard"),
+            "workspaceTaskPolicy": workspace.get("task_policy", {}),
+            "workspaceProjectSizeEstimateGb": workspace.get("project_size_gb_estimate", 0),
+            "workspaceArchiveStatus": workspace.get("archive_status", "hot"),
+            "workspaceColdArchivePath": workspace.get("cold_archive_path", ""),
+            "workspaceReactivationTargetPath": workspace.get("reactivation_target_path", ""),
+            "workspaceRefreshRecommended": workspace.get("refresh_recommended", False),
+            "workspaceNewRefresh": workspace.get("new_refresh", {}),
+            "workspaceLatestSummary": workspace.get("latest_summary", ""),
+            "workspaceLatestHandoff": workspace.get("latest_handoff", ""),
+            "workspaceLinkedTasks": workspace.get("linked_tasks", []),
+            "workspaceWatchdog": workspace.get("watchdog", {}),
+            "workspaceFeishuReporting": workspace.get("feishu_reporting", {}),
         }

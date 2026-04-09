@@ -1,0 +1,31 @@
+flowchart TD
+    U[用户 / 运营者]
+    FE[Dashboard / Frontend]
+    API[FastAPI API]
+    TS[TaskService]
+    DB[任务模型与数据库]
+    OB[Outbox 事件]
+    WK[Orchestrator Worker]
+    WS[任务工作区]
+    LD[文件化账本]
+    WD[Watchdog 巡检]
+    AR[冷归档 / 回迁]
+    UI[前端详情与状态回显]
+
+    U --> FE --> API --> TS
+    TS --> DB
+    TS --> OB --> WK
+    TS --> WS --> LD
+    WK --> TS
+    WK --> WS
+    WD --> WS
+    WD --> TS
+    WS --> AR
+    DB --> UI
+    LD --> UI
+    AR --> UI
+    FE --> UI
+
+    classDef core fill:#132238,stroke:#5b8cff,color:#ffffff;
+    classDef support fill:#0f172a,stroke:#64748b,color:#ffffff;
+    class U,FE,API,TS,DB,OB,WK,WS,LD,WD,AR,UI core;

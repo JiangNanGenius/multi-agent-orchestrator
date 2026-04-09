@@ -1,0 +1,19 @@
+flowchart LR
+    H[热工作区任务]
+    D[任务完成或阶段封存]
+    A[执行冷归档]
+    C[冷归档目录]
+    V[前端可见归档状态与路径]
+    RQ[再次需要处理]
+    RH[回迁到热区]
+    P[继续推进与回写]
+
+    H --> D --> A --> C --> V
+    V --> RQ --> RH --> P --> H
+
+    classDef hot fill:#132238,stroke:#5b8cff,color:#ffffff;
+    classDef cold fill:#0b1f17,stroke:#10b981,color:#ffffff;
+    classDef action fill:#2a1a0a,stroke:#f59e0b,color:#ffffff;
+    class H,P,RH hot;
+    class C,V cold;
+    class D,A,RQ action;

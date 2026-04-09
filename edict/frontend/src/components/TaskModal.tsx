@@ -13,26 +13,26 @@ import type {
 } from '../api';
 
 const AGENT_LABELS: Record<string, string> = {
-  main: '总控中心',
-  control_center: '总控中心',
-  plan_center: '规划中心',
-  review_center: '评审中心',
-  dispatch_center: '调度中心',
-  code_specialist: '代码专家',
-  deploy_specialist: '部署专家',
-  data_specialist: '数据专家',
-  docs_specialist: '文案专家',
-  audit_specialist: '合规专家',
-  admin_specialist: '技能管理员',
-  search_specialist: '搜索专家',
+  main: '总览协调',
+  control_center: '总览协调',
+  plan_center: '方案整理',
+  review_center: '结果检查',
+  dispatch_center: '安排处理',
+  code_specialist: '功能助手',
+  deploy_specialist: '上线助手',
+  data_specialist: '数据助手',
+  docs_specialist: '内容助手',
+  audit_specialist: '核对助手',
+  admin_specialist: '功能整理助手',
+  search_specialist: '搜索助手',
 };
 
 const NEXT_LABELS: Record<string, string> = {
-  ControlCenter: '转入规划中心拆解',
-  PlanCenter: '转入评审中心核验',
-  ReviewCenter: '转入调度中心派发',
-  Assigned: '开始执行',
-  Doing: '进入汇总复核',
+  ControlCenter: '转入方案整理',
+  PlanCenter: '转入结果检查',
+  ReviewCenter: '转入安排处理',
+  Assigned: '开始处理',
+  Doing: '进入结果整理',
   Review: '完成交付',
 };
 
@@ -55,6 +55,26 @@ function fmtActivityTime(ts: number | string | undefined): string {
   return String(ts).substring(0, 8);
 }
 
+function fmtDateTime(ts?: string): string {
+  if (!ts) return '—';
+  return ts.replace('T', ' ').substring(0, 19);
+}
+
+function shortText(text?: string, max = 140): string {
+  if (!text) return '—';
+  const clean = String(text).trim();
+  if (!clean) return '—';
+  return clean.length > max ? `${clean.slice(0, max)}…` : clean;
+}
+
+function toneColor(status?: string): string {
+  const value = (status || '').toLowerCase();
+  if (['ok', 'healthy', 'active', 'hot', 'reported', 'success'].includes(value)) return '#22c55e';
+  if (['warn', 'warning', 'stale', 'recommended', 'cold', 'archived', 'pending'].includes(value)) return '#f59e0b';
+  if (['error', 'failed', 'disabled', 'blocked'].includes(value)) return '#ef4444';
+  return '#94a3b8';
+}
+
 function buildSchedulerForm(scheduler?: SchedulerInfo | null): Required<Pick<SchedulerInfo, 'enabled' | 'stallThresholdSec' | 'maxRetry' | 'autoRollback' | 'maxRollback'>> {
   return {
     enabled: scheduler?.enabled !== false,
@@ -66,7 +86,7 @@ function buildSchedulerForm(scheduler?: SchedulerInfo | null): Required<Pick<Sch
 }
 
 function isAutomationFlowRemark(remark: string): boolean {
-  return remark.includes('自动') || remark.includes('重试') || remark.includes('升级') || remark.includes('回滚') || remark.includes('调度');
+  return remark.includes('自动') || remark.includes('重试') || remark.includes('升级') || remark.includes('恢复') || remark.includes('安排');
 }
 
 function renderBusyOrigin(entry: CollabAgentBusyEntry): string {
@@ -75,7 +95,7 @@ function renderBusyOrigin(entry: CollabAgentBusyEntry): string {
   if (kind === 'task_reserved') return '任务预占中';
   if (kind === 'task_paused') return '任务暂停中';
   if (kind === 'task_blocked') return '任务阻塞中';
-  if (kind === 'meeting') return '会议占用中';
+  if (kind === 'meeting') return '协作处理中';
   if (kind === 'chat') return '讨论占用中';
   return entry.label || '忙碌中';
 }
@@ -170,6 +190,83 @@ export default function TaskModal() {
   const canResume = ['Blocked', 'Cancelled'].includes(task.state);
   const taskBusyEntries = (collabAgentBusyData?.busy || []).filter((entry) => entry.task_id === task.id);
   const crossBusyEntries = (collabAgentBusyData?.busy || []).filter((entry) => entry.agent_id && entry.task_id !== task.id && entry.source_type !== 'task');
+  const workspace = task.workspace || {};
+  const taskPolicy = task.workspaceTaskPolicy || workspace.task_policy || {};
+  const refreshState = task.workspaceNewRefresh || workspace.new_refresh || {};
+  const watchdog = task.workspaceWatchdog || workspace.watchdog || {};
+  const feishuReporting = task.workspaceFeishuReporting || workspace.feishu_reporting || {};
+  const linkedTasks = task.workspaceLinkedTasks || workspace.linked_tasks || [];
+  const workspacePath = task.workspaceActualPath || workspace.actual_workspace_path || task.workspacePath || workspace.path || '';
+  const archiveStatus = task.workspaceArchiveStatus || workspace.archive_status || 'hot';
+  const coldArchivePath = task.workspaceColdArchivePath || workspace.cold_archive_path || '';
+  const reactivationTargetPath = task.workspaceReactivationTargetPath || workspace.reactivation_target_path || '';
+  const archiveTone = String(archiveStatus || '').toLowerCase();
+  const isColdArchived = archiveTone.includes('cold') || archiveTone.includes('archive') || !!coldArchivePath;
+  const refreshRecommended = !!(task.workspaceRefreshRecommended || workspace.refresh_recommended || refreshState.recommended);
+  const summaryText = task.workspaceLatestSummary || workspace.latest_summary || refreshState.latest_summary_excerpt || '';
+  const handoffText = task.workspaceLatestHandoff || workspace.latest_handoff || refreshState.latest_handoff_excerpt || '';
+  const workspaceFiles = [
+    { label: 'README', path: task.workspaceReadmePath || workspace.readme_path || '' },
+    { label: 'TODO', path: task.workspaceTodoPath || workspace.todo_path || '' },
+    { label: 'TASK_RECORD', path: task.workspaceTaskRecordPath || workspace.taskrecord_path || '' },
+    { label: 'HANDOFF', path: task.workspaceHandoffPath || workspace.handoff_path || '' },
+    { label: 'LINKS', path: task.workspaceLinksPath || workspace.links_path || '' },
+    { label: 'STATUS', path: task.workspaceStatusPath || workspace.status_path || '' },
+    { label: 'latest_context', path: workspace.context_latest_path || '' },
+    { label: 'resume_export', path: workspace.resume_export_path || '' },
+  ].filter((item) => item.path);
+  const workspaceDirectories = [
+    { label: 'ledger', path: workspace.ledger_dir || '' },
+    { label: 'context', path: workspace.context_dir || '' },
+    { label: 'snapshots', path: workspace.snapshots_dir || '' },
+    { label: 'exports', path: workspace.exports_dir || '' },
+    { label: 'artifacts', path: workspace.artifacts_dir || '' },
+    { label: 'agent_notes', path: workspace.agent_notes_dir || '' },
+  ].filter((item) => item.path);
+
+  const copyWorkspaceValue = async (value: string, label: string) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast(`已复制${label}路径`, 'ok');
+    } catch {
+      toast(`复制${label}路径失败`, 'err');
+    }
+  };
+
+  const handleWorkspaceArchive = async () => {
+    if (!confirm(`确定将 ${task.id} 的工作区迁入冷归档吗？`)) return;
+    try {
+      const r = await api.archiveWorkspace(task.id);
+      if (r.ok) {
+        toast(r.message || '任务工作区已迁入冷归档', 'ok');
+        await fetchActivity();
+        await fetchSched();
+        loadAll();
+      } else {
+        toast(r.error || '冷归档失败', 'err');
+      }
+    } catch {
+      toast('当前连接失败，请稍后再试', 'err');
+    }
+  };
+
+  const handleWorkspaceReactivate = async () => {
+    if (!confirm(`确定重新激活 ${task.id} 的工作区并回迁到热盘吗？`)) return;
+    try {
+      const r = await api.reactivateWorkspace(task.id, true);
+      if (r.ok) {
+        toast(r.message || '任务工作区已重新激活', 'ok');
+        await fetchActivity();
+        await fetchSched();
+        loadAll();
+      } else {
+        toast(r.error || '重新激活失败', 'err');
+      }
+    } catch {
+      toast('当前连接失败，请稍后再试', 'err');
+    }
+  };
 
   const doTaskAction = async (action: string, reason: string) => {
     try {
@@ -182,7 +279,7 @@ export default function TaskModal() {
         toast(r.error || '操作失败', 'err');
       }
     } catch {
-      toast('服务器连接失败', 'err');
+      toast('当前连接失败，请稍后再试', 'err');
     }
   };
 
@@ -200,7 +297,7 @@ export default function TaskModal() {
         toast(r.error || '操作失败', 'err');
       }
     } catch {
-      toast('服务器连接失败', 'err');
+      toast('当前连接失败，请稍后再试', 'err');
     }
   };
 
@@ -218,7 +315,7 @@ export default function TaskModal() {
         toast(r.error || '推进失败', 'err');
       }
     } catch {
-      toast('服务器连接失败', 'err');
+      toast('当前连接失败，请稍后再试', 'err');
     }
   };
 
@@ -230,11 +327,11 @@ export default function TaskModal() {
         else toast(r.error || '扫描失败', 'err');
         fetchSched();
       } catch {
-        toast('服务器连接失败', 'err');
+        toast('当前连接失败，请稍后再试', 'err');
       }
       return;
     }
-    const labels: Record<string, string> = { retry: '重试', escalate: '升级', rollback: '回滚' };
+    const labels: Record<string, string> = { retry: '重试', escalate: '加强协助', rollback: '恢复' };
     const reason = prompt(`请输入${labels[action]}原因（可留空）：`);
     if (reason === null) return;
     const handlers: Record<string, (id: string, r: string) => Promise<{ ok: boolean; message?: string; error?: string }>> = {
@@ -249,7 +346,7 @@ export default function TaskModal() {
       fetchSched();
       loadAll();
     } catch {
-      toast('服务器连接失败', 'err');
+      toast('当前连接失败，请稍后再试', 'err');
     }
   };
 
@@ -270,7 +367,7 @@ export default function TaskModal() {
       };
       const r = await api.schedulerConfig(task.id, payload);
       if (r.ok) {
-        toast(r.message || '自动化配置已保存', 'ok');
+        toast(r.message || '自动处理设置已保存', 'ok');
         setSchedDirty(false);
         await fetchSched();
         loadAll();
@@ -278,7 +375,7 @@ export default function TaskModal() {
         toast(r.error || '保存失败', 'err');
       }
     } catch {
-      toast('服务器连接失败', 'err');
+      toast('当前连接失败，请稍后再试', 'err');
     } finally {
       setSchedSaving(false);
     }
@@ -374,7 +471,7 @@ export default function TaskModal() {
             <div style={{ marginTop: 14, marginBottom: 10, display: 'grid', gap: 8 }}>
               {taskBusyEntries.length > 0 && (
                 <div style={{ border: '1px solid #4cc38a44', background: '#0f2219', borderRadius: 14, padding: '12px 14px' }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8, color: '#67e8a5' }}>全局占用 · 当前任务</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8, color: '#67e8a5' }}>当前任务占用情况</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {taskBusyEntries.map((entry) => (
                       <div key={`${entry.agent_id}-${entry.updated_at}`} style={{ minWidth: 160, border: '1px solid #4cc38a33', borderRadius: 12, padding: '8px 10px', background: '#10271d' }}>
@@ -388,10 +485,179 @@ export default function TaskModal() {
               )}
               {crossBusyEntries.length > 0 && (
                 <div style={{ border: '1px solid #6b728044', background: '#141821', borderRadius: 14, padding: '12px 14px' }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8 }}>全局繁忙提醒</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8 }}>成员忙碌提醒</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
-                    当前系统中仍有 {crossBusyEntries.length} 个专家被会议或跨任务协作占用；如需临时拉会或改派，可优先避开这些专家。
+                    当前仍有 {crossBusyEntries.length} 位成员正忙于讨论或其他事项；如需临时发起沟通或重新安排，可优先避开这些成员。
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {(task.taskCode || workspacePath || refreshRecommended || task.workspaceTaskKind || linkedTasks.length > 0 || summaryText || handoffText || watchdog.status || feishuReporting.enabled) && (
+            <div className="m-section" style={{ marginTop: 14 }}>
+              <div className="m-sec-label">任务工作区与续接信息</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
+                <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>任务代号</div>
+                  <div style={{ marginTop: 4, fontWeight: 700 }}>{task.taskCode || workspace.task_code || '—'}</div>
+                </div>
+                <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>任务策略</div>
+                  <div style={{ marginTop: 4, fontWeight: 700 }}>{task.workspaceTaskKind || workspace.task_kind || (taskPolicy.lightweight ? 'lightweight' : 'standard')}</div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: 'var(--muted)' }}>{taskPolicy.archive_strategy || taskPolicy.mode || taskPolicy.reactivation_mode || '按标准工作区策略处理'}</div>
+                </div>
+                <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>存储位置</div>
+                  <div style={{ marginTop: 4, fontWeight: 700 }}>{task.workspaceStorageTier || workspace.storage_tier || 'hot'} / {task.workspaceProcessingLocation || workspace.processing_location || 'hot'}</div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: 'var(--muted)' }}>归档：{archiveStatus}</div>
+                </div>
+                <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>/new 建议</div>
+                  <div style={{ marginTop: 4, fontWeight: 700, color: refreshRecommended ? '#f59e0b' : '#22c55e' }}>{refreshRecommended ? '建议新开续接' : '当前可直接续接'}</div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: 'var(--muted)' }}>{refreshState.reason || refreshState.trigger || '根据上下文窗口、待办和日志规模综合判断'}</div>
+                </div>
+              </div>
+
+              {workspacePath && (
+                <div className="m-row" style={{ gridTemplateColumns: '84px 1fr auto', marginBottom: 10, alignItems: 'start' }}>
+                  <div className="mr-label">工作区路径</div>
+                  <div className="mr-val"><code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{workspacePath}</code></div>
+                  <button className="sched-btn" style={{ padding: '6px 10px' }} onClick={() => copyWorkspaceValue(workspacePath, '工作区')}>复制</button>
+                </div>
+              )}
+
+              {(workspacePath || coldArchivePath || reactivationTargetPath) && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                  {!isColdArchived && workspacePath && (
+                    <button className="sched-btn" style={{ padding: '8px 12px' }} onClick={handleWorkspaceArchive}>📦 冷归档工作区</button>
+                  )}
+                  {(isColdArchived || reactivationTargetPath) && (
+                    <button className="sched-btn" style={{ padding: '8px 12px' }} onClick={handleWorkspaceReactivate}>♻️ 重新激活到热盘</button>
+                  )}
+                  <div style={{ fontSize: 11, color: 'var(--muted)', alignSelf: 'center' }}>
+                    {isColdArchived ? '当前任务已具备冷归档/回迁条件，可直接发起重新激活。' : '可将当前工作区迁入冷归档；后续需要时再回迁到热盘继续处理。'}
+                  </div>
+                </div>
+              )}
+
+              {(workspaceFiles.length > 0 || workspaceDirectories.length > 0 || coldArchivePath || reactivationTargetPath) && (
+                <div style={{ display: 'grid', gap: 10, marginBottom: 10 }}>
+                  {workspaceFiles.length > 0 && (
+                    <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>工作区文件入口</div>
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        {workspaceFiles.map((item) => (
+                          <div key={item.label} style={{ display: 'grid', gridTemplateColumns: '110px 1fr auto', gap: 8, alignItems: 'center' }}>
+                            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{item.label}</div>
+                            <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 11 }}>{item.path}</code>
+                            <button className="sched-btn" style={{ padding: '6px 10px' }} onClick={() => copyWorkspaceValue(item.path, item.label)}>复制</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(workspaceDirectories.length > 0 || coldArchivePath || reactivationTargetPath) && (
+                    <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>账本与归档入口</div>
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        {workspaceDirectories.map((item) => (
+                          <div key={item.label} style={{ display: 'grid', gridTemplateColumns: '110px 1fr auto', gap: 8, alignItems: 'center' }}>
+                            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{item.label}</div>
+                            <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 11 }}>{item.path}</code>
+                            <button className="sched-btn" style={{ padding: '6px 10px' }} onClick={() => copyWorkspaceValue(item.path, item.label)}>复制</button>
+                          </div>
+                        ))}
+                        {coldArchivePath && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr auto', gap: 8, alignItems: 'center' }}>
+                            <div style={{ fontSize: 12, color: 'var(--muted)' }}>cold_archive</div>
+                            <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 11 }}>{coldArchivePath}</code>
+                            <button className="sched-btn" style={{ padding: '6px 10px' }} onClick={() => copyWorkspaceValue(coldArchivePath, '冷归档')}>复制</button>
+                          </div>
+                        )}
+                        {reactivationTargetPath && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr auto', gap: 8, alignItems: 'center' }}>
+                            <div style={{ fontSize: 12, color: 'var(--muted)' }}>reactivation</div>
+                            <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 11 }}>{reactivationTargetPath}</code>
+                            <button className="sched-btn" style={{ padding: '6px 10px' }} onClick={() => copyWorkspaceValue(reactivationTargetPath, '回迁目标')}>复制</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 10 }}>
+                <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>看门狗状态</div>
+                    <span style={{ fontSize: 11, color: toneColor(watchdog.status), fontWeight: 700 }}>{watchdog.status || 'unknown'}</span>
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
+                    上次巡检：{fmtDateTime(watchdog.last_scan_at)}
+                    <br />
+                    建议动作：{watchdog.recommended_action || '—'}
+                    <br />
+                    原因：{watchdog.reason || watchdog.note || '—'}
+                  </div>
+                </div>
+                <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>飞书汇报</div>
+                    <span style={{ fontSize: 11, color: toneColor(feishuReporting.last_report_status || (feishuReporting.enabled ? 'enabled' : 'disabled')), fontWeight: 700 }}>{feishuReporting.last_report_status || (feishuReporting.enabled ? 'enabled' : 'disabled')}</span>
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
+                    节点：{feishuReporting.last_report_stage || '—'}
+                    <br />
+                    最近汇报：{fmtDateTime(feishuReporting.last_report_at)}
+                    <br />
+                    结果：{shortText(feishuReporting.last_report_message || (feishuReporting.webhook_configured ? '已配置 webhook' : '未配置 webhook'), 80)}
+                  </div>
+                </div>
+              </div>
+
+              {(summaryText || handoffText) && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 10 }}>
+                  <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>最新摘要</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>{shortText(summaryText, 220)}</div>
+                  </div>
+                  <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>续接提示</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>{shortText(handoffText, 220)}</div>
+                  </div>
+                </div>
+              )}
+
+              {(refreshState.updated_at || typeof refreshState.pending_todo_count === 'number' || typeof refreshState.progress_log_entries === 'number' || linkedTasks.length > 0) && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+                  <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>续接判断信号</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
+                      更新时间：{fmtDateTime(refreshState.updated_at)}
+                      <br />
+                      待开始 / 进行中 / 已完成：{refreshState.pending_todo_count ?? '—'} / {refreshState.in_progress_todo_count ?? '—'} / {refreshState.completed_todo_count ?? '—'}
+                      <br />
+                      进展日志 / 流转日志：{refreshState.progress_log_entries ?? '—'} / {refreshState.flow_log_entries ?? '—'}
+                    </div>
+                  </div>
+                  {linkedTasks.length > 0 && (
+                    <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>关联任务</div>
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        {linkedTasks.slice(0, 4).map((item, index) => (
+                          <div key={`${item.task_id || item.task_code || item.title || 'linked'}-${index}`} style={{ fontSize: 12, color: 'var(--muted)' }}>
+                            <strong style={{ color: 'var(--text)' }}>{item.task_code || item.task_id || '未命名任务'}</strong>
+                            <span style={{ margin: '0 6px', color: 'var(--muted)' }}>·</span>
+                            <span>{item.relation || '关联'}</span>
+                            {item.title && <span style={{ marginLeft: 6 }}>— {item.title}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -400,41 +666,41 @@ export default function TaskModal() {
           {/* Scheduler state */}
           <div className="sched-section">
             <div className="sched-head">
-              <span className="sched-title">🧭 协调中心调度</span>
+              <span className="sched-title">🧭 自动处理设置</span>
               <span className="sched-status">
-                {sched ? `${sched.enabled === false ? '已禁用' : '运行中'} · 阈值 ${sched.stallThresholdSec || 180}s` : '加载中...'}
+                {sched ? `${sched.enabled === false ? '未开启' : '已开启'} · 阈值 ${sched.stallThresholdSec || 180} 秒` : '加载中...'}
               </span>
             </div>
             <div className="sched-grid">
               <div className="sched-kpi"><div className="k">停滞时长</div><div className="v">{fmtStalled(stalledSec)}</div></div>
               <div className="sched-kpi"><div className="k">重试次数</div><div className="v">{sched?.retryCount || 0}/{sched?.maxRetry ?? '—'}</div></div>
-              <div className="sched-kpi"><div className="k">升级级别</div><div className="v">{!sched?.escalationLevel ? '无' : sched.escalationLevel === 1 ? '评审中心' : '调度中心'}</div></div>
-              <div className="sched-kpi"><div className="k">派发状态</div><div className="v">{sched?.lastDispatchStatus || 'idle'}</div></div>
+                  <div className="sched-kpi"><div className="k">协助等级</div><div className="v">{!sched?.escalationLevel ? '常规' : sched.escalationLevel === 1 ? '加强核对' : '进一步协助'}</div></div>
+                  <div className="sched-kpi"><div className="k">当前处理状态</div><div className="v">{sched?.lastDispatchStatus || '待处理'}</div></div>
             </div>
             {sched && (
               <div className="sched-line">
                 {sched.lastProgressAt && <span>最近进展 {(sched.lastProgressAt || '').replace('T', ' ').substring(0, 19)}</span>}
-                {sched.lastDispatchAt && <span>最近派发 {(sched.lastDispatchAt || '').replace('T', ' ').substring(0, 19)}</span>}
-                <span>自动回滚 {sched.autoRollback === false ? '关闭' : '开启'}</span>
-                <span>最大回滚 {sched.maxRollback ?? 3} 次</span>
-                {sched.lastDispatchAgent && <span>目标 {normalizeDeptLabel(AGENT_LABELS[sched.lastDispatchAgent] || sched.lastDispatchAgent)}</span>}
+                {sched.lastDispatchAt && <span>最近安排 {(sched.lastDispatchAt || '').replace('T', ' ').substring(0, 19)}</span>}
+                <span>自动恢复 {sched.autoRollback === false ? '关闭' : '开启'}</span>
+                <span>最多恢复 {sched.maxRollback ?? 3} 次</span>
+                {sched.lastDispatchAgent && <span>当前由 {normalizeDeptLabel(AGENT_LABELS[sched.lastDispatchAgent] || sched.lastDispatchAgent)} 处理</span>}
               </div>
             )}
             <div className="sched-form">
               <div className="sched-form-grid">
                 <label className="sched-field sched-switch">
                   <span className="sched-field-top">
-                    <span className="sched-label">启用自动托管</span>
+                    <span className="sched-label">启用自动处理</span>
                     <input type="checkbox" checked={!!schedForm.enabled} onChange={(e) => handleSchedField('enabled', e.target.checked)} />
                   </span>
-                  <span className="sched-help">关闭后，当前任务将跳过自动扫描、自动重试与自动升级。</span>
+                  <span className="sched-help">关闭后，当前任务将跳过自动检查、自动重试与自动提升关注。</span>
                 </label>
                 <label className="sched-field sched-switch">
                   <span className="sched-field-top">
-                    <span className="sched-label">自动回滚</span>
+                    <span className="sched-label">自动恢复</span>
                     <input type="checkbox" checked={!!schedForm.autoRollback} onChange={(e) => handleSchedField('autoRollback', e.target.checked)} />
                   </span>
-                  <span className="sched-help">当任务多次停滞后，允许系统恢复到最近稳定快照。</span>
+                  <span className="sched-help">当事项多次停滞后，允许系统恢复到最近稳定状态。</span>
                 </label>
                 <label className="sched-field">
                   <span className="sched-label">停滞阈值（秒）</span>
@@ -444,15 +710,15 @@ export default function TaskModal() {
                 <label className="sched-field">
                   <span className="sched-label">最大重试次数</span>
                   <input className="sched-input" type="number" min={0} step={1} value={schedForm.maxRetry} onChange={(e) => handleSchedField('maxRetry', Number(e.target.value || 0))} />
-                  <span className="sched-help">达到上限后，系统会转入升级协调或回滚流程。</span>
+                  <span className="sched-help">达到上限后，系统会转入加强协助或自动恢复流程。</span>
                 </label>
                 <label className="sched-field">
-                  <span className="sched-label">最大回滚次数</span>
+                  <span className="sched-label">最大恢复次数</span>
                   <input className="sched-input" type="number" min={0} step={1} value={schedForm.maxRollback} onChange={(e) => handleSchedField('maxRollback', Number(e.target.value || 0))} />
-                  <span className="sched-help">仅在开启自动回滚后生效，超出上限将自动挂起等待人工处理。</span>
+                  <span className="sched-help">仅在开启自动恢复后生效，超出上限后将暂停等待人工处理。</span>
                 </label>
                 <div className="sched-field sched-snapshot">
-                  <span className="sched-label">稳定快照</span>
+                  <span className="sched-label">稳定记录点</span>
                   <div className="sched-snapshot-box">
                     <div>状态：{sched?.snapshot?.state || '—'}</div>
                     <div>节点：{normalizeDeptLabel(sched?.snapshot?.org || '') || '—'}</div>
@@ -462,19 +728,19 @@ export default function TaskModal() {
                 </div>
               </div>
               <div className="sched-actions sched-actions-config">
-                <button className="sched-btn primary" disabled={!schedDirty || schedSaving} onClick={saveSchedConfig}>{schedSaving ? '保存中...' : '💾 保存自动化配置'}</button>
+                  <button className="sched-btn primary" disabled={!schedDirty || schedSaving} onClick={saveSchedConfig}>{schedSaving ? '保存中...' : '💾 保存设置'}</button>
                 <button className="sched-btn" disabled={!schedDirty || schedSaving} onClick={resetSchedForm}>还原改动</button>
               </div>
             </div>
             <div className="sched-actions">
-              <button className="sched-btn" onClick={() => doSchedAction('retry')}>🔁 重试派发</button>
-              <button className="sched-btn warn" onClick={() => doSchedAction('escalate')}>📣 升级协调</button>
-              <button className="sched-btn danger" onClick={() => doSchedAction('rollback')}>↩️ 回滚稳定点</button>
-              <button className="sched-btn" onClick={() => doSchedAction('scan')}>🔍 立即扫描</button>
+              <button className="sched-btn" onClick={() => doSchedAction('retry')}>🔁 重新安排</button>
+              <button className="sched-btn warn" onClick={() => doSchedAction('escalate')}>📣 提升关注</button>
+              <button className="sched-btn danger" onClick={() => doSchedAction('rollback')}>↩️ 恢复到稳定状态</button>
+              <button className="sched-btn" onClick={() => doSchedAction('scan')}>🔍 立即检查</button>
             </div>
             {automationFlow.length > 0 && (
               <div className="auto-inline-log">
-                <div className="m-sec-label" style={{ marginBottom: 8 }}>自动动作日志（{automationFlow.length} 条）</div>
+                <div className="m-sec-label" style={{ marginBottom: 8 }}>自动处理记录（{automationFlow.length} 条）</div>
                 <div className="auto-inline-list">
                   {automationFlow.slice(0, 8).map((fl, i) => (
                     <div className="auto-inline-item" key={`${fl.at || 't'}-${i}`}>
@@ -510,7 +776,7 @@ export default function TaskModal() {
                 </div>
               </div>
               <div className="m-row">
-                <div className="mr-label">当前执行节点</div>
+                <div className="mr-label">当前处理成员</div>
                 <div className="mr-val"><span className={`tag dt-${(normalizeDeptLabel(task.org || '') || '').replace(/\s/g, '')}`}>{normalizeDeptLabel(task.org || '') || '—'}</span></div>
               </div>
               {task.eta && task.eta !== '-' && (
@@ -537,7 +803,7 @@ export default function TaskModal() {
           {/* Flow Log */}
           {flowLog.length > 0 && (
             <div className="m-section">
-              <div className="m-sec-label">流转日志（{flowLog.length} 条）</div>
+              <div className="m-sec-label">处理记录（{flowLog.length} 条）</div>
               <div className="fl-timeline">
                 {flowLog.map((fl, i) => {
                   const col = deptColor(fl.from || '');
@@ -635,16 +901,16 @@ function LiveActivitySection({
 
   const agentParts: string[] = [];
   if (data.agentLabel) agentParts.push(normalizeDeptLabel(data.agentLabel));
-  if (data.relatedAgents && data.relatedAgents.length > 1) agentParts.push(`${data.relatedAgents.length}个执行节点`);
+   if (data.relatedAgents && data.relatedAgents.length > 1) agentParts.push(`${data.relatedAgents.length}位参与成员`);
   if (data.lastActive) agentParts.push(`最后活跃: ${data.lastActive}`);
 
   // Phase durations
   const phaseDurations = data.phaseDurations || [];
   const maxDur = Math.max(...phaseDurations.map((p) => p.durationSec || 1), 1);
   const phaseColors: Record<string, string> = {
-    '任务入口': '#eab308', '总控中心': '#f97316', '规划中心': '#3b82f6', '评审中心': '#8b5cf6',
-    '调度中心': '#10b981', '执行团队': '#06b6d4', '文案专家': '#ec4899', '数据专家': '#f59e0b',
-    '代码专家': '#ef4444', '合规专家': '#6366f1', '部署专家': '#14b8a6', '技能管理员': '#d946ef',
+    '任务入口': '#eab308', '总览协调': '#f97316', '方案整理': '#3b82f6', '结果检查': '#8b5cf6',
+    '安排处理': '#10b981', '处理中': '#06b6d4', '内容助手': '#ec4899', '数据助手': '#f59e0b',
+    '功能助手': '#ef4444', '核对助手': '#6366f1', '上线助手': '#14b8a6', '能力整理助手': '#d946ef',
   };
 
   // Todos summary
@@ -717,8 +983,8 @@ function LiveActivitySection({
       {/* Resource Summary */}
       {rs && (rs.totalTokens || rs.totalCost) && (
         <div style={{ padding: '4px 0 8px', borderBottom: '1px solid var(--line)', display: 'flex', gap: 12, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 600 }}>📈 资源消耗</span>
-          {rs.totalTokens != null && <span style={{ fontSize: 11, color: 'var(--muted)' }}>🔢 {rs.totalTokens.toLocaleString()} tokens</span>}
+          <span style={{ fontSize: 11, fontWeight: 600 }}>📈 处理量</span>
+          {rs.totalTokens != null && <span style={{ fontSize: 11, color: 'var(--muted)' }}>🔢 {rs.totalTokens.toLocaleString()} 处理单位</span>}
           {rs.totalCost != null && <span style={{ fontSize: 11, color: 'var(--muted)' }}>💰 ${rs.totalCost.toFixed(4)}</span>}
           {rs.totalElapsedSec != null && (
             <span style={{ fontSize: 11, color: 'var(--muted)' }}>

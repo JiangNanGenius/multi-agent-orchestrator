@@ -16,6 +16,7 @@ import TaskModal from './components/TaskModal';
 import Toaster from './components/Toaster';
 import StartupTransition from './components/CourtCeremony'; // 待同步文件名为 StartupTransition
 import CollaborationDiscussion from './components/CourtDiscussion'; // 待同步文件名为 CollaborationDiscussion
+import SystemSettingsPanel from './components/SystemSettingsPanel';
 
 type AuthBootState = 'loading' | 'ready';
 
@@ -24,7 +25,6 @@ type AuthView = {
   mustChangePassword: boolean;
   currentUser: string;
   configuredUsername: string;
-  authFile?: string;
 };
 
 const DEFAULT_AUTH: AuthView = {
@@ -32,7 +32,6 @@ const DEFAULT_AUTH: AuthView = {
   mustChangePassword: false,
   currentUser: '',
   configuredUsername: 'admin',
-  authFile: '',
 };
 
 function LoginScreen({
@@ -57,10 +56,10 @@ function LoginScreen({
   return (
     <div className="auth-shell">
       <div className="auth-card">
-        <div className="auth-badge">{pickLocaleText(locale, '看板登录', 'Dashboard Login')}</div>
-        <h1 className="auth-title">{pickLocaleText(locale, '多Agent协作平台', 'Multi-Agent Collaboration Platform')}</h1>
+        <div className="auth-badge">{pickLocaleText(locale, '欢迎回来', 'Welcome Back')}</div>
+        <h1 className="auth-title">{pickLocaleText(locale, '智能协作工作台', 'Smart Workspace')}</h1>
         <p className="auth-desc">
-          {pickLocaleText(locale, '看板已启用账号密码认证。默认账号为 ', 'This dashboard uses username-password authentication. The default account is ')}<strong>admin</strong>{pickLocaleText(locale, '，首次登录必须修改密码；用户名可在首次登录时一并修改，也可稍后再改。', '. You must change the password on first login. The username can be changed during first login or later in account settings.')}
+          {pickLocaleText(locale, '请输入你的账号信息后继续。首次进入时需要先设置一个新密码；如需调整用户名，也可以现在或稍后修改。', 'Sign in with your account to continue. The first time you sign in, you will be asked to set a new password. You can also update your username now or later.')}
         </p>
         <div className="auth-form">
           <label className="auth-label">
@@ -77,11 +76,11 @@ function LoginScreen({
             disabled={loading}
             onClick={() => onSubmit(username.trim(), password)}
           >
-            {loading ? pickLocaleText(locale, '登录中…', 'Signing in...') : pickLocaleText(locale, '登录进入看板', 'Sign In')}
+            {loading ? pickLocaleText(locale, '登录中…', 'Signing in...') : pickLocaleText(locale, '进入工作台', 'Continue')}
           </button>
         </div>
         <div className="auth-footnote">
-          {pickLocaleText(locale, '若删除认证文件，系统将恢复默认账号密码 ', 'If the auth file is removed, the system resets to the default credentials ')}<code>admin / admin</code>。
+          {pickLocaleText(locale, '如果忘记了登录信息，可以联系负责同事帮你协助处理。', 'If you forget your sign-in details, contact the person in charge for help.')}
         </div>
       </div>
     </div>
@@ -115,10 +114,10 @@ function FirstChangeScreen({
   return (
     <div className="auth-shell">
       <div className="auth-card auth-card-wide">
-        <div className="auth-badge warn">{pickLocaleText(locale, '首次登录强制改密', 'Password Change Required')}</div>
-        <h1 className="auth-title">{pickLocaleText(locale, '请先更新登录信息', 'Update Your Credentials')}</h1>
+        <div className="auth-badge warn">{pickLocaleText(locale, '请先完善登录信息', 'One More Step')}</div>
+        <h1 className="auth-title">{pickLocaleText(locale, '先完成安全设置', 'Complete Security Setup')}</h1>
         <p className="auth-desc">
-          {pickLocaleText(locale, '当前账号 ', 'The current account ')}<strong>{currentUser || 'admin'}</strong>{pickLocaleText(locale, ' 已通过认证，但系统要求你在首次登录后立即修改密码。用户名为', ' is authenticated, but the system requires an immediate password change on first login. Username change is ')}<strong>{pickLocaleText(locale, '可选修改', 'optional')}</strong>{pickLocaleText(locale, '，密码为', ', while password change is ')}<strong>{pickLocaleText(locale, '必须修改', 'required')}</strong>。
+          {pickLocaleText(locale, '你已成功进入账号 ', 'You have signed in to ')}<strong>{currentUser || 'admin'}</strong>{pickLocaleText(locale, '。为了保护账号安全，请先设置一个新密码。用户名', '. For your account safety, please set a new password before continuing. Changing the username is ')}<strong>{pickLocaleText(locale, '可选的', 'optional')}</strong>{pickLocaleText(locale, '，密码更新', ', while the password update is ')}<strong>{pickLocaleText(locale, '必须完成', 'required')}</strong>。
         </p>
         <div className="auth-form two-col">
           <label className="auth-label">
@@ -150,7 +149,7 @@ function FirstChangeScreen({
               onSubmit(currentPassword, newPassword, confirmPassword, newUsername.trim());
             }}
           >
-            {loading ? pickLocaleText(locale, '保存中…', 'Saving...') : pickLocaleText(locale, '保存并进入看板', 'Save and Continue')}
+            {loading ? pickLocaleText(locale, '保存中…', 'Saving...') : pickLocaleText(locale, '保存并继续', 'Save and Continue')}
           </button>
         </div>
       </div>
@@ -160,14 +159,12 @@ function FirstChangeScreen({
 
 function AccountModal({
   currentUser,
-  authFile,
   onClose,
   onChangePassword,
   onChangeUsername,
   onLogout,
 }: {
   currentUser: string;
-  authFile?: string;
   onClose: () => void;
   onChangePassword: (currentPassword: string, newPassword: string) => Promise<string | null>;
   onChangeUsername: (currentPassword: string, newUsername: string) => Promise<string | null>;
@@ -190,16 +187,15 @@ function AccountModal({
     <div className="modal-bg">
       <div className="modal auth-settings-modal">
         <button className="modal-close" onClick={onClose}>×</button>
-        <div className="modal-id">{pickLocaleText(locale, '账号设置', 'Account Settings')}</div>
-        <div className="modal-title">{pickLocaleText(locale, '登录凭据与认证文件管理', 'Credentials and Auth File Management')}</div>
+        <div className="modal-id">{pickLocaleText(locale, '我的设置', 'My Settings')}</div>
+        <div className="modal-title">{pickLocaleText(locale, '账号与登录', 'Account & Sign-in')}</div>
         <div className="auth-settings-meta">
           <span className="chip ok">{pickLocaleText(locale, '当前用户：', 'Current user: ')}{currentUser}</span>
-          {authFile ? <span className="chip">{pickLocaleText(locale, '认证文件：', 'Auth file: ')}{authFile}</span> : null}
         </div>
 
         <div className="auth-settings-grid">
           <div className="auth-settings-panel">
-            <div className="m-sec-label">{pickLocaleText(locale, '修改用户名', 'Change Username')}</div>
+            <div className="m-sec-label">{pickLocaleText(locale, '更改用户名', 'Change Username')}</div>
             <label className="auth-label">
               <span>当前密码</span>
               <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="请输入当前密码" />
@@ -224,7 +220,7 @@ function AccountModal({
           </div>
 
           <div className="auth-settings-panel">
-            <div className="m-sec-label">{pickLocaleText(locale, '修改密码', 'Change Password')}</div>
+            <div className="m-sec-label">{pickLocaleText(locale, '更改密码', 'Change Password')}</div>
             <label className="auth-label">
               <span>新密码</span>
               <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="请输入新密码" />
@@ -298,7 +294,6 @@ export default function App() {
       mustChangePassword: !!res.mustChangePassword,
       currentUser: String(res.currentUser || ''),
       configuredUsername: String(res.username || 'admin'),
-      authFile: res.authFile || '',
     });
     setBootState('ready');
     return res;
@@ -337,14 +332,14 @@ export default function App() {
     }
     if (key === 'automation') {
       const enabled = tasks.filter((t) => isEdict(t) && !isArchived(t) && (t as { _scheduler?: { enabled?: boolean } })._scheduler?.enabled !== false).length;
-      return locale === 'en' ? `${enabled} automated` : enabled + '托管';
+      return locale === 'en' ? `${enabled} auto` : enabled + '自动';
     }
     return '';
   };
 
   const authSubtitle = useMemo(() => {
-    if (auth.currentUser) return locale === 'en' ? `Current user: ${auth.currentUser}` : `当前用户：${auth.currentUser}`;
-    return locale === 'en' ? `Configured user: ${auth.configuredUsername || 'admin'}` : `已配置用户：${auth.configuredUsername || 'admin'}`;
+    if (auth.currentUser) return locale === 'en' ? `${auth.currentUser} is signed in` : `${auth.currentUser} 已进入工作台`;
+    return locale === 'en' ? `Welcome` : `欢迎使用`;
   }, [auth.currentUser, auth.configuredUsername, locale]);
 
   if (bootState === 'loading') {
@@ -352,7 +347,7 @@ export default function App() {
       <div className="auth-shell">
         <div className="auth-card">
           <div className="auth-title">{pickLocaleText(locale, '正在检查登录状态…', 'Checking sign-in status...')}</div>
-          <p className="auth-desc">{pickLocaleText(locale, '系统正在确认当前会话与首登改密要求。', 'The system is validating the current session and first-login password policy.')}</p>
+          <p className="auth-desc">{pickLocaleText(locale, '正在确认当前登录状态与账号安全设置。', 'Checking your current sign-in status and account security settings.')}</p>
         </div>
       </div>
     );
@@ -414,6 +409,35 @@ export default function App() {
     if (activeTab === 'archives') return <ArchivePanel />;
     if (activeTab === 'templates') return <TemplatePanel />;
     if (activeTab === 'web_search') return <WebSearchPanel />;
+    if (activeTab === 'system_settings') {
+      return (
+        <SystemSettingsPanel
+          currentUser={auth.currentUser || auth.configuredUsername || 'admin'}
+          onChangePassword={async (currentPassword, newPassword) => {
+            const res = await api.changePassword(currentPassword, newPassword);
+            if (!res.ok) return res.error || pickLocaleText(locale, '密码修改失败', 'Password update failed');
+            return res.message || pickLocaleText(locale, '密码已更新', 'Password updated');
+          }}
+          onChangeUsername={async (currentPassword, newUsername) => {
+            const res = await api.changeUsername(currentPassword, newUsername);
+            if (!res.ok) return res.error || pickLocaleText(locale, '用户名修改失败', 'Username update failed');
+            await refreshAuth();
+            return res.message || pickLocaleText(locale, '用户名已更新', 'Username updated');
+          }}
+          onLogout={async () => {
+            stopPolling();
+            await api.logout();
+            setAuth({
+              authenticated: false,
+              mustChangePassword: false,
+              currentUser: '',
+              configuredUsername: auth.configuredUsername,
+            });
+            await refreshAuth();
+          }}
+        />
+      );
+    }
     return null;
   };
 
@@ -429,12 +453,12 @@ export default function App() {
       <div className="wrap">
       <div className="hdr">
         <div>
-          <div className="logo">{pickLocaleText(locale, '多Agent协作平台', 'Multi-Agent Collaboration Platform')}</div>
-          <div className="sub-text">{pickLocaleText(locale, 'Multi-Agent Collaboration Platform · 中文默认部署与多阶段任务治理', 'Multi-Agent Collaboration Platform · AI-assisted deployment and multi-stage task governance')}</div>
+          <div className="logo">{pickLocaleText(locale, '智能协作工作台', 'Smart Workspace')}</div>
+          <div className="sub-text">{pickLocaleText(locale, '把搜索、讨论、处理和结果整理放到同一个工作台里', 'Search, discuss, handle work, and organize results in one place')}</div>
         </div>
         <div className="hdr-r">
           <span className={`chip ${syncOk ? 'ok' : syncOk === false ? 'err' : ''}`}>
-            {syncOk ? pickLocaleText(locale, '✅ 同步正常', '✅ Sync OK') : syncOk === false ? pickLocaleText(locale, '❌ 服务器未启动', '❌ Server offline') : pickLocaleText(locale, '⏳ 连接中…', '⏳ Connecting...')}
+            {syncOk ? pickLocaleText(locale, '✅ 连接正常', '✅ Connected') : syncOk === false ? pickLocaleText(locale, '❌ 当前暂不可用', '❌ Currently unavailable') : pickLocaleText(locale, '⏳ 连接中…', '⏳ Connecting...')}
           </span>
           <span className="chip">{locale === 'en' ? `${activeTaskBoardItems.length} tasks` : `${activeTaskBoardItems.length} 个任务`}</span>
           <span className="chip">{authSubtitle}</span>
@@ -444,8 +468,8 @@ export default function App() {
           <button className="btn-refresh" onClick={() => loadAll()}>
             {pickLocaleText(locale, '⟳ 刷新', '⟳ Refresh')}
           </button>
-          <button className="btn-refresh" onClick={() => setShowAccountModal(true)}>
-            {pickLocaleText(locale, '账号设置', 'Account')}
+          <button className="btn-refresh" onClick={() => setActiveTab('system_settings')}>
+            {pickLocaleText(locale, '我的设置', 'My Settings')}
           </button>
           <span style={{ fontSize: 11, color: 'var(--muted)' }}>⟳ {countdown}s</span>
         </div>
@@ -475,7 +499,6 @@ export default function App() {
       {showAccountModal ? (
         <AccountModal
           currentUser={auth.currentUser || auth.configuredUsername || 'admin'}
-          authFile={auth.authFile}
           onClose={() => setShowAccountModal(false)}
           onChangePassword={async (currentPassword, newPassword) => {
             const res = await api.changePassword(currentPassword, newPassword);
@@ -497,7 +520,6 @@ export default function App() {
               mustChangePassword: false,
               currentUser: '',
               configuredUsername: auth.configuredUsername,
-              authFile: auth.authFile,
             });
             await refreshAuth();
           }}

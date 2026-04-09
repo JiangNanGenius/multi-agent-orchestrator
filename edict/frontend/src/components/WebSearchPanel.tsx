@@ -1,34 +1,53 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { api, type CollabAgentBusyEntry, type SearchResultItem, type SubConfig } from '../api';
 import { pickLocaleText, formatCount, type Locale } from '../i18n';
-import { DEPTS, deptMeta, normalizeAgentId, useStore } from '../store';
+import { deptMeta, normalizeAgentId, useStore } from '../store';
 
 type ResultWithMeta = SearchResultItem & {
   category: string;
   score: number;
   kwHits: number;
+  publishedAtMs: number | null;
 };
+
+type SearchAdvancedConfig = SubConfig & {
+  custom_topics?: string[];
+  freshness_days?: number;
+  ranking_mode?: 'balanced' | 'relevance' | 'freshness';
+  search_depth?: 'focused' | 'standard' | 'broad';
+  result_limit?: number;
+};
+
+const PRESET_TOPICS = [
+  { name: '政治', enabled: true },
+  { name: '军事', enabled: true },
+  { name: '经济', enabled: true },
+  { name: 'AI大模型', enabled: true },
+  { name: '科技', enabled: false },
+  { name: '能源', enabled: false },
+  { name: '金融', enabled: false },
+  { name: '公司', enabled: false },
+  { name: '监管', enabled: false },
+  { name: '出海', enabled: false },
+];
 
 const CAT_META: Record<string, { icon: string; color: string; descZh: string; descEn: string }> = {
   政治: { icon: '🏛️', color: '#6a9eff', descZh: '追踪全球政策、地缘关系与公共议题变化', descEn: 'Track policy, geopolitics, and public affairs updates' },
   军事: { icon: '🛰️', color: '#ff6b81', descZh: '关注军事动态、冲突态势与安全风险', descEn: 'Monitor military updates, conflicts, and security risks' },
   经济: { icon: '📈', color: '#2ecc8a', descZh: '覆盖市场、企业、资本与宏观经济信号', descEn: 'Cover markets, companies, capital, and macro signals' },
   AI大模型: { icon: '🧠', color: '#a07aff', descZh: '聚焦模型发布、应用落地与 AI 产业趋势', descEn: 'Focus on model launches, adoption, and AI industry trends' },
+  科技: { icon: '🧪', color: '#33c3ff', descZh: '关注科技产品、技术平台与产业创新动态', descEn: 'Track technology products, platforms, and innovation signals' },
+  能源: { icon: '⚡', color: '#f5c842', descZh: '覆盖油气、电力、新能源与基础资源供需变化', descEn: 'Cover oil, power, renewables, and resource supply signals' },
+  金融: { icon: '💹', color: '#00c2a8', descZh: '关注利率、汇率、资本市场与金融机构动向', descEn: 'Monitor rates, FX, capital markets, and financial institutions' },
+  公司: { icon: '🏢', color: '#7fd1ff', descZh: '聚焦企业经营、产品发布、融资并购与组织变化', descEn: 'Focus on company operations, launches, funding, and M&A' },
+  监管: { icon: '🧾', color: '#ff9f43', descZh: '追踪政策落地、监管通告、处罚与合规变化', descEn: 'Track regulations, notices, penalties, and compliance shifts' },
+  出海: { icon: '🌍', color: '#5dd39e', descZh: '关注跨境市场、海外扩张、本地化与国际竞争', descEn: 'Track overseas expansion, localization, and global competition' },
 };
 
-const DEFAULT_CATS = ['政治', '军事', '经济', 'AI大模型'];
+const DEFAULT_CATS = PRESET_TOPICS.filter((item) => item.enabled).map((item) => item.name);
 const SEARCH_OWNER_ZH = 'AI 搜索引擎';
 const SEARCH_OWNER_EN = 'AI Search Engine';
-const EXECUTION_TARGET_IDS = new Set([
-  'docs_specialist',
-  'data_specialist',
-  'code_specialist',
-  'audit_specialist',
-  'deploy_specialist',
-  'admin_specialist',
-  'expert_curator',
-  'search_specialist',
-]);
+const FRESHNESS_OPTIONS = [0, 1, 3, 7, 30, 90];
 
 function getCategoryLabel(locale: Locale, cat: string) {
   const labels: Record<string, string> = {
@@ -36,6 +55,12 @@ function getCategoryLabel(locale: Locale, cat: string) {
     军事: 'Security',
     经济: 'Economy',
     AI大模型: 'AI Models',
+    科技: 'Technology',
+    能源: 'Energy',
+    金融: 'Finance',
+    公司: 'Companies',
+    监管: 'Regulation',
+    出海: 'Global Expansion',
   };
   return locale === 'en' ? labels[cat] || cat : cat;
 }
@@ -60,7 +85,7 @@ function hostnameOf(link?: string) {
 }
 
 function uniqueStrings(values: string[]) {
-  return Array.from(new Set(values.filter(Boolean)));
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 }
 
 function renderBusyStateLabel(entry: CollabAgentBusyEntry, locale: Locale): string {
@@ -70,7 +95,7 @@ function renderBusyStateLabel(entry: CollabAgentBusyEntry, locale: Locale): stri
     if (source === 'task_reserved') return 'Reserved for a task';
     if (source === 'task_paused') return 'Task paused';
     if (source === 'task_blocked') return 'Task blocked';
-    if (source === 'meeting') return 'In meeting';
+    if (source === 'meeting') return 'In collaboration';
     if (source === 'chat') return 'In discussion';
     return entry.label || 'Busy';
   }
@@ -78,13 +103,77 @@ function renderBusyStateLabel(entry: CollabAgentBusyEntry, locale: Locale): stri
   if (source === 'task_reserved') return '任务预占中';
   if (source === 'task_paused') return '任务暂停中';
   if (source === 'task_blocked') return '任务阻塞中';
-  if (source === 'meeting') return '会议占用中';
+  if (source === 'meeting') return '协作处理中';
   if (source === 'chat') return '讨论占用中';
   return entry.label || '忙碌中';
 }
 
 function buildSearchTaskTitle(locale: Locale, query: string) {
   return locale === 'en' ? `AI Search: ${query}` : `AI 搜索：${query}`;
+}
+
+function normalizeSearchConfig(config?: SubConfig | null): SearchAdvancedConfig {
+  const baseCategories = PRESET_TOPICS.map((item) => ({ ...item }));
+  if (Array.isArray(config?.categories)) {
+    config.categories.forEach((item) => {
+      const existing = baseCategories.find((entry) => entry.name === item.name);
+      if (existing) {
+        existing.enabled = item.enabled !== false;
+      } else if (item?.name) {
+        baseCategories.push({ name: item.name, enabled: item.enabled !== false });
+      }
+    });
+  }
+  return {
+    categories: baseCategories,
+    keywords: Array.isArray(config?.keywords) ? config.keywords : [],
+    custom_feeds: Array.isArray(config?.custom_feeds) ? config.custom_feeds : [],
+    feishu_webhook: String(config?.feishu_webhook || ''),
+    custom_topics: Array.isArray((config as SearchAdvancedConfig | null)?.custom_topics)
+      ? (config as SearchAdvancedConfig).custom_topics
+      : [],
+    freshness_days: Number((config as SearchAdvancedConfig | null)?.freshness_days ?? 7),
+    ranking_mode: ((config as SearchAdvancedConfig | null)?.ranking_mode as SearchAdvancedConfig['ranking_mode']) || 'balanced',
+    search_depth: ((config as SearchAdvancedConfig | null)?.search_depth as SearchAdvancedConfig['search_depth']) || 'standard',
+    result_limit: Number((config as SearchAdvancedConfig | null)?.result_limit ?? 60),
+  };
+}
+
+function parsePublishedAtMs(raw?: string) {
+  if (!raw) return null;
+  const direct = Date.parse(raw);
+  if (!Number.isNaN(direct)) return direct;
+  const normalized = raw
+    .replace(/年|\//g, '-')
+    .replace(/月/g, '-')
+    .replace(/日/g, '')
+    .replace(/\./g, '-')
+    .trim();
+  const fallback = Date.parse(normalized);
+  return Number.isNaN(fallback) ? null : fallback;
+}
+
+function getFreshnessLabel(locale: Locale, days: number) {
+  if (locale === 'en') {
+    if (!days) return 'All time';
+    if (days === 1) return 'Past 24 hours';
+    return `Past ${days} days`;
+  }
+  if (!days) return '不限时间';
+  if (days === 1) return '近 24 小时';
+  return `近 ${days} 天`;
+}
+
+function getRankingLabel(locale: Locale, mode: SearchAdvancedConfig['ranking_mode']) {
+  if (mode === 'relevance') return pickLocaleText(locale, '相关度优先', 'Relevance First');
+  if (mode === 'freshness') return pickLocaleText(locale, '鲜度优先', 'Freshness First');
+  return pickLocaleText(locale, '平衡排序', 'Balanced');
+}
+
+function getDepthLabel(locale: Locale, depth: SearchAdvancedConfig['search_depth']) {
+  if (depth === 'focused') return pickLocaleText(locale, '聚焦模式', 'Focused');
+  if (depth === 'broad') return pickLocaleText(locale, '扩展模式', 'Broad');
+  return pickLocaleText(locale, '标准模式', 'Standard');
 }
 
 export default function WebSearchPanel() {
@@ -98,15 +187,10 @@ export default function WebSearchPanel() {
   const toast = useStore((s) => s.toast);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [localConfig, setLocalConfig] = useState<SubConfig | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [refreshLabel, setRefreshLabel] = useState(pickLocaleText(locale, '更新索引', 'Refresh Index'));
+  const [localConfig, setLocalConfig] = useState<SearchAdvancedConfig>(normalizeSearchConfig(null));
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [manualTargets, setManualTargets] = useState(false);
-  const [selectedTargets, setSelectedTargets] = useState<string[]>([]);
   const [submittingTask, setSubmittingTask] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     loadWebSearch();
@@ -114,169 +198,99 @@ export default function WebSearchPanel() {
   }, [loadWebSearch, loadCollabBusy]);
 
   useEffect(() => {
-    if (subConfig) setLocalConfig(JSON.parse(JSON.stringify(subConfig)));
+    setLocalConfig(normalizeSearchConfig(subConfig));
   }, [subConfig]);
 
-  useEffect(() => {
-    setRefreshLabel(
-      refreshing
-        ? pickLocaleText(locale, '更新中…', 'Refreshing...')
-        : pickLocaleText(locale, '更新索引', 'Refresh Index')
-    );
-  }, [locale, refreshing]);
-
-  useEffect(() => () => {
-    if (pollRef.current) clearInterval(pollRef.current);
-  }, []);
-
-  const refreshSearchResults = async () => {
-    setRefreshing(true);
-    setRefreshLabel(pickLocaleText(locale, '更新中…', 'Refreshing...'));
-    const lastDate = searchBrief?.generated_at || null;
-    try {
-      await api.refreshSearch();
-      toast(
-        pickLocaleText(locale, '已触发搜索索引更新，系统正在等待新结果…', 'Search index refresh started. Waiting for new results...'),
-        'ok'
-      );
-      let count = 0;
-      if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = setInterval(async () => {
-        count += 1;
-        if (count > 24) {
-          clearInterval(pollRef.current!);
-          pollRef.current = null;
-          setRefreshing(false);
-          setRefreshLabel(pickLocaleText(locale, '更新索引', 'Refresh Index'));
-          toast(pickLocaleText(locale, '更新超时，请稍后重试', 'Refresh timed out. Please try again later'), 'err');
-          return;
-        }
-        try {
-          const fresh = await api.searchBrief();
-          if (fresh.generated_at && fresh.generated_at !== lastDate) {
-            clearInterval(pollRef.current!);
-            pollRef.current = null;
-            setRefreshing(false);
-            setRefreshLabel(pickLocaleText(locale, '更新索引', 'Refresh Index'));
-            loadWebSearch();
-            loadCollabBusy();
-            toast(pickLocaleText(locale, 'AI 搜索结果已更新', 'AI search results are updated'), 'ok');
-          } else {
-            setRefreshLabel(locale === 'en' ? `Refreshing... (${count * 5}s)` : `更新中… (${count * 5}s)`);
-          }
-        } catch {
-          /* ignore */
-        }
-      }, 5000);
-    } catch {
-      toast(pickLocaleText(locale, '触发搜索更新失败', 'Failed to refresh search results'), 'err');
-      setRefreshing(false);
-      setRefreshLabel(pickLocaleText(locale, '更新索引', 'Refresh Index'));
-    }
+  const patchConfig = (patch: Partial<SearchAdvancedConfig>) => {
+    setLocalConfig((prev) => ({ ...prev, ...patch }));
   };
 
   const toggleCat = (name: string) => {
-    if (!localConfig) return;
-    const cats = [...(localConfig.categories || [])];
-    const existing = cats.find((c) => c.name === name);
-    if (existing) existing.enabled = !existing.enabled;
-    else cats.push({ name, enabled: true });
-    setLocalConfig({ ...localConfig, categories: cats });
+    setLocalConfig((prev) => {
+      const categories = [...(prev.categories || [])];
+      const existing = categories.find((item) => item.name === name);
+      if (existing) {
+        existing.enabled = !existing.enabled;
+      } else {
+        categories.push({ name, enabled: true });
+      }
+      return { ...prev, categories };
+    });
   };
 
   const addKeyword = (kw: string) => {
-    if (!localConfig || !kw) return;
-    const kws = [...(localConfig.keywords || [])];
-    if (!kws.includes(kw)) kws.push(kw);
-    setLocalConfig({ ...localConfig, keywords: kws });
+    const next = kw.trim();
+    if (!next) return;
+    setLocalConfig((prev) => ({
+      ...prev,
+      keywords: uniqueStrings([...(prev.keywords || []), next]),
+    }));
   };
 
-  const removeKeyword = (i: number) => {
-    if (!localConfig) return;
-    const kws = [...(localConfig.keywords || [])];
-    kws.splice(i, 1);
-    setLocalConfig({ ...localConfig, keywords: kws });
+  const removeKeyword = (index: number) => {
+    setLocalConfig((prev) => {
+      const keywords = [...(prev.keywords || [])];
+      keywords.splice(index, 1);
+      return { ...prev, keywords };
+    });
+  };
+
+  const addTopic = (topic: string) => {
+    const next = topic.trim();
+    if (!next) return;
+    setLocalConfig((prev) => {
+      const categories = [...(prev.categories || [])];
+      if (!categories.find((item) => item.name === next)) {
+        categories.push({ name: next, enabled: true });
+      }
+      return {
+        ...prev,
+        categories,
+        custom_topics: uniqueStrings([...(prev.custom_topics || []), next]),
+      };
+    });
+  };
+
+  const removeTopic = (topic: string) => {
+    setLocalConfig((prev) => ({
+      ...prev,
+      categories: (prev.categories || []).filter((item) => item.name !== topic),
+      custom_topics: (prev.custom_topics || []).filter((item) => item !== topic),
+    }));
+    if (activeCategory === topic) setActiveCategory('all');
   };
 
   const saveConfig = async () => {
-    if (!localConfig) return;
     try {
-      const r = await api.saveSearchConfig(localConfig);
+      const payload = {
+        ...localConfig,
+      };
+      const r = await api.saveSearchConfig(payload);
       if (r.ok) {
-        toast(pickLocaleText(locale, '搜索设置已保存', 'Search settings saved'), 'ok');
+        toast(pickLocaleText(locale, '高级搜索设置已保存', 'Advanced search settings saved'), 'ok');
         loadSubConfig();
         loadWebSearch();
       } else {
         toast(r.error || pickLocaleText(locale, '保存失败', 'Failed to save settings'), 'err');
       }
     } catch {
-      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+      toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
     }
   };
 
-  const toggleTarget = (targetId: string) => {
-    setSelectedTargets((prev) => (
-      prev.includes(targetId) ? prev.filter((item) => item !== targetId) : [...prev, targetId]
-    ));
-    setManualTargets(true);
-  };
+  const enabledSet = useMemo(
+    () => new Set((localConfig.categories || []).filter((item) => item.enabled).map((item) => item.name)),
+    [localConfig.categories],
+  );
 
-  const submitSearchTask = async () => {
-    const trimmedQuery = query.trim();
-    if (!trimmedQuery) {
-      toast(pickLocaleText(locale, '请先输入要搜索的问题或线索', 'Please enter a search question or lead first'), 'err');
-      return;
-    }
-    if (manualTargets && !selectedTargets.length) {
-      toast(pickLocaleText(locale, '请至少选择一位目标专家，或切回自动分配', 'Select at least one target specialist, or switch back to auto assign'), 'err');
-      return;
-    }
-
-    setSubmittingTask(true);
-    try {
-      const payload = {
-        title: buildSearchTaskTitle(locale, trimmedQuery),
-        org: pickLocaleText(locale, '调度中心', 'Dispatch Center'),
-        owner: pickLocaleText(locale, SEARCH_OWNER_ZH, SEARCH_OWNER_EN),
-        priority: 'low',
-        templateId: 'web_search',
-        params: {
-          query: trimmedQuery,
-          category: activeCategory === 'all' ? '' : activeCategory,
-          keywords: (localConfig?.keywords || []).join('、'),
-        },
-        ...(manualTargets && selectedTargets.length
-          ? {
-              targetDept: selectedTargets[0],
-              targetDepts: selectedTargets,
-            }
-          : {}),
-      };
-      const result = await api.createTask(payload);
-      if (!result.ok) {
-        toast(result.error || pickLocaleText(locale, '搜索任务创建失败', 'Failed to create search task'), 'err');
-        return;
-      }
-      toast(
-        result.message || pickLocaleText(locale, `已创建低优先级搜索任务 ${result.taskId || ''}`.trim(), `Low-priority search task created ${result.taskId || ''}`.trim()),
-        'ok'
-      );
-      loadCollabBusy();
-    } catch {
-      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
-    } finally {
-      setSubmittingTask(false);
-    }
-  };
-
-  const enabledSet = localConfig
-    ? new Set((localConfig.categories || []).filter((c) => c.enabled).map((c) => c.name))
-    : new Set(DEFAULT_CATS);
-
-  const userKeywords = localConfig?.keywords || [];
-  const loweredKeywords = userKeywords.map((k) => k.toLowerCase());
+  const userKeywords = localConfig.keywords || [];
+  const loweredKeywords = userKeywords.map((item) => normalizeText(item));
+  const freshnessDays = Number(localConfig.freshness_days || 0);
+  const rankingMode = localConfig.ranking_mode || 'balanced';
+  const resultLimit = Math.max(10, Math.min(200, Number(localConfig.result_limit || 60)));
   const dateStr = formatBriefDate(locale, searchBrief?.date);
   const categories = searchBrief?.categories || {};
+  const nowMs = Date.now();
 
   const flatResults = useMemo<ResultWithMeta[]>(() => {
     return Object.entries(categories).flatMap(([category, items]) => {
@@ -285,28 +299,44 @@ export default function WebSearchPanel() {
         const text = normalizeText(`${item.title || ''} ${item.summary || ''} ${item.desc || ''} ${item.source || ''}`);
         const kwHits = loweredKeywords.filter((kw) => text.includes(kw)).length;
         const queryHit = query ? (text.includes(normalizeText(query)) ? 1 : 0) : 0;
+        const publishedAtMs = parsePublishedAtMs(item.pub_date);
+        const ageDays = publishedAtMs ? Math.max(0, (nowMs - publishedAtMs) / 86400000) : 365;
+        const freshnessBoost = Math.max(0, 12 - Math.min(12, ageDays));
         return {
           ...item,
           category,
           kwHits,
-          score: kwHits * 10 + queryHit * 8 + Math.max(0, 5 - idx),
+          publishedAtMs,
+          score: kwHits * 12 + queryHit * 9 + freshnessBoost + Math.max(0, 4 - idx),
         };
       });
     });
-  }, [categories, enabledSet, loweredKeywords, query]);
+  }, [categories, enabledSet, loweredKeywords, nowMs, query]);
 
   const filteredResults = useMemo(() => {
     const q = normalizeText(query);
-    return flatResults
-      .filter((item) => {
-        const matchesCategory = activeCategory === 'all' || item.category === activeCategory;
-        if (!matchesCategory) return false;
-        if (!q) return true;
-        const haystack = normalizeText(`${item.title} ${item.summary || ''} ${item.desc || ''} ${item.source || ''}`);
-        return haystack.includes(q);
-      })
-      .sort((a, b) => b.score - a.score);
-  }, [activeCategory, flatResults, query]);
+    const freshnessMs = freshnessDays > 0 ? freshnessDays * 86400000 : 0;
+    const rows = flatResults.filter((item) => {
+      if (activeCategory !== 'all' && item.category !== activeCategory) return false;
+      if (q) {
+        const haystack = normalizeText(`${item.title || ''} ${item.summary || ''} ${item.desc || ''} ${item.source || ''}`);
+        if (!haystack.includes(q)) return false;
+      }
+      if (freshnessMs > 0 && item.publishedAtMs && nowMs - item.publishedAtMs > freshnessMs) return false;
+      return true;
+    });
+    rows.sort((a, b) => {
+      if (rankingMode === 'freshness') {
+        return (b.publishedAtMs || 0) - (a.publishedAtMs || 0) || b.score - a.score;
+      }
+      if (rankingMode === 'relevance') {
+        return b.score - a.score || (b.publishedAtMs || 0) - (a.publishedAtMs || 0);
+      }
+      const freshnessDelta = ((b.publishedAtMs || 0) - (a.publishedAtMs || 0)) / 86400000;
+      return (b.score - a.score) + freshnessDelta * 0.35;
+    });
+    return rows.slice(0, resultLimit);
+  }, [activeCategory, flatResults, freshnessDays, nowMs, query, rankingMode, resultLimit]);
 
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>();
@@ -322,18 +352,16 @@ export default function WebSearchPanel() {
       const key = item.source || hostnameOf(item.link) || 'Unknown';
       counts.set(key, (counts.get(key) || 0) + 1);
     });
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4);
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4);
   }, [filteredResults]);
 
   const suggestionChips = useMemo(() => {
     return uniqueStrings([
       ...userKeywords,
       ...Object.keys(categories),
-      ...flatResults.slice(0, 6).map((item) => item.title).filter(Boolean),
+      ...filteredResults.slice(0, 6).map((item) => item.title).filter(Boolean),
     ]).slice(0, 8);
-  }, [userKeywords, categories, flatResults]);
+  }, [categories, filteredResults, userKeywords]);
 
   const featured = filteredResults.slice(0, 3);
   const totalResults = filteredResults.length;
@@ -346,10 +374,54 @@ export default function WebSearchPanel() {
   );
   const searchSpecialistBusy = searchSpecialistEntries[0] || null;
   const searchSpecialistMeta = deptMeta('search_specialist', locale);
-  const targetOptions = useMemo(
-    () => DEPTS.filter((dept) => EXECUTION_TARGET_IDS.has(dept.id)),
-    [],
-  );
+  const allTopicScopes = uniqueStrings([
+    ...DEFAULT_CATS,
+    ...(localConfig.categories || []).map((item) => item.name),
+    ...(localConfig.custom_topics || []),
+  ]);
+
+  const submitSearchTask = async () => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
+      toast(pickLocaleText(locale, '请先输入要搜索的问题或线索', 'Please enter a search question or lead first'), 'err');
+      return;
+    }
+    setSubmittingTask(true);
+    try {
+      const payload = {
+        title: buildSearchTaskTitle(locale, trimmedQuery),
+        org: searchSpecialistMeta.label,
+        owner: pickLocaleText(locale, SEARCH_OWNER_ZH, SEARCH_OWNER_EN),
+        priority: 'low',
+        templateId: 'web_search',
+        params: {
+          query: trimmedQuery,
+          topic_scope: activeCategory === 'all' ? Array.from(enabledSet).join('、') : activeCategory,
+          keywords: userKeywords.join('、'),
+          freshness_days: String(freshnessDays),
+          ranking_mode: String(rankingMode),
+          search_depth: String(localConfig.search_depth || 'standard'),
+          result_limit: String(resultLimit),
+        },
+        targetDept: 'search_specialist',
+        targetDepts: ['search_specialist'],
+      };
+      const result = await api.createTask(payload);
+      if (!result.ok) {
+        toast(result.error || pickLocaleText(locale, '搜索任务创建失败', 'Failed to create search task'), 'err');
+        return;
+      }
+      toast(
+        result.message || pickLocaleText(locale, `已提交新的搜索请求 ${result.taskId || ''}`.trim(), `New search request submitted ${result.taskId || ''}`.trim()),
+        'ok',
+      );
+      loadCollabBusy();
+    } catch {
+      toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
+    } finally {
+      setSubmittingTask(false);
+    }
+  };
 
   return (
     <div style={{ display: 'grid', gap: 18 }}>
@@ -371,23 +443,18 @@ export default function WebSearchPanel() {
               {pickLocaleText(locale, '从全网信号里直接定位你要的答案与线索', 'Find answers and signals across the web with AI-ranked results')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 760, lineHeight: 1.7 }}>
-              {pickLocaleText(
-                locale,
-                '这里是一个由 Agent 驱动的搜索工作台：你可以直接输入问题、按主题筛选、标记重点关键词，并把搜索请求作为低优先级任务交给系统持续处理。',
-                'This is an agent-driven search workspace. Enter a question, filter by topic, mark focus keywords, and dispatch follow-up search requests as low-priority tasks.'
-              )}
+                  {pickLocaleText(
+                    locale,
+                    '你可以像搜索引擎一样直接提问，再通过高级搜索补充主题范围、时效、相关度、搜索深度、结果数量与重点关键词；系统会自动处理你的搜索请求。',
+                    'Ask directly like a search engine, then refine the scope, freshness, ranking, depth, result size, and focus keywords with Advanced Search. The system will handle your search request automatically.',
+                  )}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn btn-g" onClick={() => setShowAdvanced((v) => !v)} style={{ fontSize: 12, padding: '8px 14px' }}>
-              {showAdvanced
-                ? pickLocaleText(locale, '收起高级搜索', 'Hide Advanced Search')
-                : pickLocaleText(locale, '高级搜索', 'Advanced Search')}
-            </button>
-            <button className="tpl-go" disabled={refreshing} onClick={refreshSearchResults} style={{ fontSize: 12, padding: '8px 14px' }}>
-              {refreshLabel}
-            </button>
-          </div>
+          <button className="btn btn-g" onClick={() => setShowAdvanced((value) => !value)} style={{ fontSize: 12, padding: '8px 14px' }}>
+            {showAdvanced
+              ? pickLocaleText(locale, '关闭高级搜索', 'Hide Advanced Search')
+              : pickLocaleText(locale, '高级搜索', 'Advanced Search')}
+          </button>
         </div>
 
         <div
@@ -405,7 +472,13 @@ export default function WebSearchPanel() {
             <input
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  submitSearchTask();
+                }
+              }}
               placeholder={pickLocaleText(locale, '搜索问题、主题、公司、事件或关键词', 'Search topics, companies, events, or keywords')}
               style={{
                 flex: 1,
@@ -422,10 +495,8 @@ export default function WebSearchPanel() {
             <button className="btn-refresh" onClick={() => setQuery('')} style={{ padding: '10px 14px', fontSize: 12 }}>
               {pickLocaleText(locale, '清空查询', 'Clear Query')}
             </button>
-            <button className="auth-primary" disabled={submittingTask} onClick={submitSearchTask} style={{ width: 'auto', minWidth: 168, height: 44 }}>
-              {submittingTask
-                ? pickLocaleText(locale, '提交中…', 'Submitting...')
-                : pickLocaleText(locale, '发起低优先级搜索任务', 'Create Low-Priority Search Task')}
+            <button className="auth-primary" disabled={submittingTask} onClick={submitSearchTask} style={{ width: 'auto', minWidth: 120, height: 44 }}>
+              {submittingTask ? pickLocaleText(locale, '搜索中…', 'Searching...') : pickLocaleText(locale, '搜索', 'Search')}
             </button>
           </div>
 
@@ -442,79 +513,36 @@ export default function WebSearchPanel() {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1.35fr) minmax(280px, 1fr)', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1.2fr) minmax(280px, 1fr)', gap: 12 }}>
             <div style={{ padding: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', display: 'grid', gap: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '搜索任务路由', 'Search Task Routing')}</div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-                    {pickLocaleText(locale, '搜索任务默认以低优先级进入调度中心，不挤占普通执行任务。', 'Search tasks enter the dispatch workflow with low priority by default so they do not crowd regular execution tasks.')}
-                  </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '当前搜索设置', 'Current Search Settings')}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                  {pickLocaleText(locale, '这里会概览当前搜索会带上的主要限制条件。', 'This card summarizes the active search constraints.')}
                 </div>
-                <span className="chip">{pickLocaleText(locale, '默认优先级：低', 'Default Priority: Low')}</span>
               </div>
-
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className={`chip ${!manualTargets ? 'ok' : ''}`}
-                  onClick={() => {
-                    setManualTargets(false);
-                    setSelectedTargets([]);
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {pickLocaleText(locale, '自动分配', 'Auto Assign')}
-                </button>
-                <button
-                  type="button"
-                  className={`chip ${manualTargets ? 'ok' : ''}`}
-                  onClick={() => setManualTargets(true)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {pickLocaleText(locale, '指定专家（多选）', 'Specify Specialists (Multi-select)')}
-                </button>
+                <span className="chip ok">{pickLocaleText(locale, '系统自动处理', 'Handled Automatically')}</span>
+                <span className="chip">{getFreshnessLabel(locale, freshnessDays)}</span>
+                <span className="chip">{getRankingLabel(locale, rankingMode)}</span>
+                <span className="chip">{getDepthLabel(locale, localConfig.search_depth || 'standard')}</span>
+                <span className="chip">{formatCount(locale, resultLimit, '条', 'results')}</span>
               </div>
-
-              {manualTargets ? (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {targetOptions.map((dept) => {
-                    const active = selectedTargets.includes(dept.id);
-                    return (
-                      <button
-                        key={dept.id}
-                        type="button"
-                        className="chip"
-                        onClick={() => toggleTarget(dept.id)}
-                        style={{
-                          cursor: 'pointer',
-                          borderColor: active ? 'var(--acc)' : 'var(--line)',
-                          color: active ? 'var(--acc)' : 'var(--text)',
-                          background: active ? 'rgba(122,162,255,0.14)' : 'transparent',
-                        }}
-                      >
-                        {dept.emoji} {dept.label} {active ? '✓' : ''}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : null}
-
-              <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
-                {!manualTargets
-                  ? pickLocaleText(locale, '当前为自动分配模式，系统会优先按搜索问题内容自动路由到最合适的专家。', 'Auto-assign mode is active. The system will route the search request to the most suitable specialist based on the query.')
-                  : selectedTargets.length
-                    ? pickLocaleText(locale, `已指定 ${selectedTargets.length} 位目标专家：${selectedTargets.map((id) => deptMeta(id, locale).label).join('、')}`, `Selected ${selectedTargets.length} specialist(s): ${selectedTargets.map((id) => deptMeta(id, locale).label).join(', ')}`)
-                    : pickLocaleText(locale, '请至少勾选一位具体专家，或切回自动分配。', 'Select at least one specialist, or switch back to auto assign.')}
+              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
+                {pickLocaleText(
+                  locale,
+                  `已启用 ${enabledSet.size} 个主题范围，设置了 ${(localConfig.keywords || []).length} 个重点关键词，单次结果最多展示 ${resultLimit} 条。`,
+                  `${enabledSet.size} topic scopes are enabled, ${(localConfig.keywords || []).length} focus keyword(s) are active, and up to ${resultLimit} results are shown per run.`,
+                )}
               </div>
             </div>
 
             <div style={{ padding: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', display: 'grid', gap: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '搜索专家状态', 'Search Specialist Status')}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '搜索处理状态', 'Search Handling Status')}</div>
                   <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-                    {pickLocaleText(locale, '这里会显示搜索专家当前是否正被任务、讨论或会议占用。', 'This shows whether the search specialist is currently occupied by a task, discussion, or meeting.')}
+                    {pickLocaleText(locale, '这里会显示当前搜索处理是否正忙于其他任务或讨论。', 'This shows whether search handling is currently busy with another task or discussion.')}
                   </div>
                 </div>
                 <button className="chip" onClick={loadCollabBusy} style={{ cursor: 'pointer' }}>
@@ -538,9 +566,7 @@ export default function WebSearchPanel() {
                     background: searchSpecialistBusy ? 'rgba(255,120,120,0.12)' : 'rgba(76,195,138,0.12)',
                   }}
                 >
-                  {searchSpecialistBusy
-                    ? pickLocaleText(locale, '忙碌中', 'Busy')
-                    : pickLocaleText(locale, '空闲', 'Idle')}
+                  {searchSpecialistBusy ? pickLocaleText(locale, '忙碌中', 'Busy') : pickLocaleText(locale, '空闲', 'Idle')}
                 </span>
               </div>
 
@@ -552,17 +578,13 @@ export default function WebSearchPanel() {
                       ? pickLocaleText(locale, ` · 当前任务：${searchSpecialistBusy.task_title}`, ` · Current task: ${searchSpecialistBusy.task_title}`)
                       : ''}
                   </>
-                ) : pickLocaleText(locale, '当前没有检测到搜索专家被占用，可以直接发起新的搜索请求。', 'No active occupancy is detected for the search specialist. You can dispatch a new search request now.')}
+                ) : pickLocaleText(locale, '当前搜索处理空闲，可以直接发起新的搜索请求。', 'Search handling is currently available, and you can start a new search request now.')}
               </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              className={`chip ${activeCategory === 'all' ? 'ok' : ''}`}
-              onClick={() => setActiveCategory('all')}
-              style={{ cursor: 'pointer' }}
-            >
+            <button className={`chip ${activeCategory === 'all' ? 'ok' : ''}`} onClick={() => setActiveCategory('all')} style={{ cursor: 'pointer' }}>
               {pickLocaleText(locale, '全部主题', 'All Topics')}
             </button>
             {Array.from(enabledSet).map((cat) => {
@@ -589,14 +611,18 @@ export default function WebSearchPanel() {
         </div>
       </div>
 
-      {showAdvanced && localConfig ? (
+      {showAdvanced ? (
         <SearchSettingsPanel
           locale={locale}
           config={localConfig}
           enabledSet={enabledSet}
+          allTopicScopes={allTopicScopes}
           onToggleCat={toggleCat}
           onAddKeyword={addKeyword}
           onRemoveKeyword={removeKeyword}
+          onAddTopic={addTopic}
+          onRemoveTopic={removeTopic}
+          onPatch={patchConfig}
           onSave={saveConfig}
         />
       ) : null}
@@ -629,11 +655,11 @@ export default function WebSearchPanel() {
           {pickLocaleText(
             locale,
             query
-              ? '当前查询没有命中结果。你可以换一个问题、切换主题，或者更新搜索索引。'
-              : '当前还没有可展示的搜索结果。请先更新索引，或在高级搜索里调整主题范围与重点关键词。',
+              ? '当前查询没有命中结果。你可以换一个问题，或在高级搜索里调整主题范围、鲜度与相关度。'
+              : '当前还没有可展示的搜索结果。你可以直接发起搜索，或先在高级搜索里设置主题范围、鲜度和重点关键词。',
             query
-              ? 'No result matches your current query. Try another question, switch topics, or refresh the index.'
-              : 'There are no search results yet. Refresh the index first, or refine the topic coverage and focus keywords in Advanced Search.'
+              ? 'No result matches your current query. Try another question, or refine the scope, freshness, and ranking in Advanced Search.'
+              : 'There are no search results yet. Start a search, or set topic scope, freshness, and focus keywords in Advanced Search first.',
           )}
         </div>
       ) : (
@@ -677,8 +703,8 @@ export default function WebSearchPanel() {
                           src={item.image}
                           alt=""
                           loading="lazy"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
+                          onError={(event) => {
+                            (event.target as HTMLImageElement).style.display = 'none';
                           }}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -691,9 +717,7 @@ export default function WebSearchPanel() {
                         <span className="chip" style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}16` }}>
                           {meta.icon} {getCategoryLabel(locale, item.category)}
                         </span>
-                        {item.kwHits > 0 ? (
-                          <span className="chip ok">{pickLocaleText(locale, `命中 ${item.kwHits} 个重点词`, `${item.kwHits} focus match(es)`)}</span>
-                        ) : null}
+                        {item.kwHits > 0 ? <span className="chip ok">{pickLocaleText(locale, `命中 ${item.kwHits} 个重点词`, `${item.kwHits} focus match(es)`)}</span> : null}
                         {idx < 3 ? <span className="chip">Top {idx + 1}</span> : null}
                       </div>
                       <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.45, marginBottom: 8 }}>{item.title}</div>
@@ -713,37 +737,27 @@ export default function WebSearchPanel() {
           </div>
 
           <div style={{ display: 'grid', gap: 12, position: 'sticky', top: 14 }}>
-            <InsightPanel
-              title={pickLocaleText(locale, 'AI 检索摘要', 'AI Search Snapshot')}
-            >
+            <InsightPanel title={pickLocaleText(locale, 'AI 检索摘要', 'AI Search Snapshot')}>
               <div style={{ display: 'grid', gap: 10, fontSize: 13, color: 'var(--muted)', lineHeight: 1.7 }}>
                 <div>
                   {pickLocaleText(
                     locale,
                     `当前结果覆盖 ${totalResults} 条记录，聚焦 ${categoryCounts.size || 0} 个主题；其中 ${focusMatches} 条与重点关键词直接相关。`,
-                    `Current results cover ${totalResults} records across ${categoryCounts.size || 0} topics, with ${focusMatches} directly matching your focus keywords.`
+                    `Current results cover ${totalResults} records across ${categoryCounts.size || 0} topics, with ${focusMatches} directly matching your focus keywords.`,
                   )}
                 </div>
                 <div>
                   {pickLocaleText(
                     locale,
-                    topSources.length
-                      ? `高频信源主要包括 ${topSources.map(([name]) => name).join('、')}。`
-                      : '当前结果中还没有稳定的高频信源。',
-                    topSources.length
-                      ? `High-frequency sources currently include ${topSources.map(([name]) => name).join(', ')}.`
-                      : 'No dominant sources are detected in the current result set.'
+                    topSources.length ? `高频信源主要包括 ${topSources.map(([name]) => name).join('、')}。` : '当前结果中还没有稳定的高频信源。',
+                    topSources.length ? `High-frequency sources currently include ${topSources.map(([name]) => name).join(', ')}.` : 'No dominant sources are detected in the current result set.',
                   )}
                 </div>
                 <div>
                   {pickLocaleText(
                     locale,
-                    query
-                      ? `当前查询为“${query}”，结果已按相关性重新排序。`
-                      : '你可以直接输入问题、公司名、事件或主题词，让结果按相关性重排。',
-                    query
-                      ? `The current query is “${query}”, and results are re-ranked by relevance.`
-                      : 'Enter a question, company, event, or topic to re-rank the result set by relevance.'
+                    query ? `当前查询为“${query}”，结果已按 ${getRankingLabel(locale, rankingMode)} 重新排序。` : '你可以直接输入问题、公司名、事件或主题词，让结果按当前排序策略重排。',
+                    query ? `The current query is “${query}”, and results are re-ranked by ${getRankingLabel(locale, rankingMode).toLowerCase()}.` : 'Enter a question, company, event, or topic to re-rank the result set with the current strategy.',
                   )}
                 </div>
               </div>
@@ -811,67 +825,97 @@ function SearchSettingsPanel({
   locale,
   config,
   enabledSet,
+  allTopicScopes,
   onToggleCat,
   onAddKeyword,
   onRemoveKeyword,
+  onAddTopic,
+  onRemoveTopic,
+  onPatch,
   onSave,
 }: {
   locale: Locale;
-  config: SubConfig;
+  config: SearchAdvancedConfig;
   enabledSet: Set<string>;
+  allTopicScopes: string[];
   onToggleCat: (name: string) => void;
   onAddKeyword: (kw: string) => void;
   onRemoveKeyword: (i: number) => void;
+  onAddTopic: (topic: string) => void;
+  onRemoveTopic: (topic: string) => void;
+  onPatch: (patch: Partial<SearchAdvancedConfig>) => void;
   onSave: () => void;
 }) {
   const [newKw, setNewKw] = useState('');
-
-  const allCats = [...DEFAULT_CATS];
-  (config.categories || []).forEach((c) => {
-    if (!allCats.includes(c.name)) allCats.push(c.name);
-  });
+  const [newTopic, setNewTopic] = useState('');
+  const customTopicSet = new Set(config.custom_topics || []);
 
   return (
     <div style={{ padding: 18, background: 'var(--panel2)', borderRadius: 18, border: '1px solid var(--line)', display: 'grid', gap: 18 }}>
       <div>
-        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{pickLocaleText(locale, '高级搜索设置', 'Advanced Search Settings')}</div>
+        <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{pickLocaleText(locale, '高级搜索', 'Advanced Search')}</div>
         <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-          {pickLocaleText(locale, '这里只保留搜索本身需要的设置：主题范围与重点关键词。旧的 RSS 订阅、自定义源与外部推送入口已从搜索引擎界面移除。', 'Only search-specific settings remain here: topic coverage and focus keywords. Legacy RSS subscriptions, custom source management, and external push entries have been removed from the search engine interface.')}
+          {pickLocaleText(locale, '这里可以像搜索引擎一样补充主题范围、鲜度、相关度、搜索深度、结果规模等设置。搜索任务会固定交给搜索助手处理；系统级设置请前往“系统设置”。', 'Use this area like a search engine to refine scope, freshness, ranking, search depth, and result size. Search requests are always handled by the search assistant, while system-level options live in System Settings.')}
         </div>
       </div>
 
       <div style={{ display: 'grid', gap: 10 }}>
-        <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '主题范围', 'Topic Coverage')}</div>
+        <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '主题范围', 'Topic Scope')}</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {allCats.map((cat) => {
+          {allTopicScopes.map((cat) => {
             const meta = CAT_META[cat] || { icon: '📰', color: 'var(--acc)', descZh: cat, descEn: cat };
             const on = enabledSet.has(cat);
+            const isCustom = customTopicSet.has(cat);
             return (
-              <button
-                key={cat}
-                onClick={() => onToggleCat(cat)}
-                className="chip"
-                style={{
-                  cursor: 'pointer',
-                  borderColor: on ? meta.color : 'var(--line)',
-                  color: on ? meta.color : 'var(--text)',
-                  background: on ? `${meta.color}18` : 'transparent',
-                }}
-              >
-                {meta.icon} {getCategoryLabel(locale, cat)} {on ? '✓' : ''}
-              </button>
+              <span key={cat} style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                <button
+                  onClick={() => onToggleCat(cat)}
+                  className="chip"
+                  style={{
+                    cursor: 'pointer',
+                    borderColor: on ? meta.color : 'var(--line)',
+                    color: on ? meta.color : 'var(--text)',
+                    background: on ? `${meta.color}18` : 'transparent',
+                  }}
+                >
+                  {meta.icon} {getCategoryLabel(locale, cat)} {on ? '✓' : ''}
+                </button>
+                {isCustom ? (
+                  <button className="chip" onClick={() => onRemoveTopic(cat)} style={{ cursor: 'pointer', color: 'var(--danger)' }}>
+                    {pickLocaleText(locale, '移除', 'Remove')}
+                  </button>
+                ) : null}
+              </span>
             );
           })}
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            value={newTopic}
+            onChange={(event) => setNewTopic(event.target.value)}
+            placeholder={pickLocaleText(locale, '添加自定义主题范围，例如：半导体、能源、出海', 'Add custom topics such as semiconductor, energy, or expansion')}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                onAddTopic(newTopic.trim());
+                setNewTopic('');
+              }
+            }}
+            style={{ flex: 1, minWidth: 260, padding: '8px 10px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12, outline: 'none' }}
+          />
+          <button className="btn btn-g" onClick={() => { onAddTopic(newTopic.trim()); setNewTopic(''); }} style={{ fontSize: 12, padding: '8px 14px' }}>
+            {pickLocaleText(locale, '添加主题', 'Add Topic')}
+          </button>
         </div>
       </div>
 
       <div style={{ display: 'grid', gap: 10 }}>
         <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '重点关键词', 'Focus Keywords')}</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {(config.keywords || []).map((kw, i) => (
-            <span key={`${kw}-${i}`} className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {(config.keywords || []).map((kw, index) => (
+            <span key={`${kw}-${index}`} className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               {kw}
-              <span style={{ cursor: 'pointer', color: 'var(--danger)' }} onClick={() => onRemoveKeyword(i)}>✕</span>
+              <span style={{ cursor: 'pointer', color: 'var(--danger)' }} onClick={() => onRemoveKeyword(index)}>✕</span>
             </span>
           ))}
           {!(config.keywords || []).length ? <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '暂未设置重点关键词', 'No focus keywords yet')}</span> : null}
@@ -880,10 +924,10 @@ function SearchSettingsPanel({
           <input
             type="text"
             value={newKw}
-            onChange={(e) => setNewKw(e.target.value)}
+            onChange={(event) => setNewKw(event.target.value)}
             placeholder={pickLocaleText(locale, '输入要重点关注的主题词', 'Enter a keyword to prioritize')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
                 onAddKeyword(newKw.trim());
                 setNewKw('');
               }
@@ -896,9 +940,65 @@ function SearchSettingsPanel({
         </div>
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '鲜度范围', 'Freshness')}</div>
+          <select
+            value={String(config.freshness_days || 0)}
+            onChange={(event) => onPatch({ freshness_days: Number(event.target.value) })}
+            style={{ padding: '10px 12px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12 }}
+          >
+            {FRESHNESS_OPTIONS.map((days) => (
+              <option key={days} value={days}>{getFreshnessLabel(locale, days)}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '排序方式', 'Ranking')}</div>
+          <select
+            value={config.ranking_mode || 'balanced'}
+            onChange={(event) => onPatch({ ranking_mode: event.target.value as SearchAdvancedConfig['ranking_mode'] })}
+            style={{ padding: '10px 12px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12 }}
+          >
+            <option value="balanced">{pickLocaleText(locale, '平衡排序', 'Balanced')}</option>
+            <option value="relevance">{pickLocaleText(locale, '相关度优先', 'Relevance First')}</option>
+            <option value="freshness">{pickLocaleText(locale, '鲜度优先', 'Freshness First')}</option>
+          </select>
+        </div>
+
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '搜索深度', 'Search Depth')}</div>
+          <select
+            value={config.search_depth || 'standard'}
+            onChange={(event) => onPatch({ search_depth: event.target.value as SearchAdvancedConfig['search_depth'] })}
+            style={{ padding: '10px 12px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12 }}
+          >
+            <option value="focused">{pickLocaleText(locale, '聚焦模式', 'Focused')}</option>
+            <option value="standard">{pickLocaleText(locale, '标准模式', 'Standard')}</option>
+            <option value="broad">{pickLocaleText(locale, '扩展模式', 'Broad')}</option>
+          </select>
+        </div>
+
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '结果规模', 'Result Size')}</div>
+          <input
+            type="number"
+            min={10}
+            max={200}
+            step={10}
+            value={String(config.result_limit || 60)}
+            onChange={(event) => onPatch({ result_limit: Number(event.target.value || 60) })}
+            style={{ padding: '10px 12px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12 }}
+          />
+        </div>
+
+
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <button className="tpl-go" onClick={onSave} style={{ fontSize: 12, padding: '8px 16px' }}>
-          {pickLocaleText(locale, '保存搜索设置', 'Save Search Settings')}
+          {pickLocaleText(locale, '保存高级搜索设置', 'Save Advanced Search Settings')}
         </button>
       </div>
     </div>

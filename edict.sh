@@ -1,6 +1,6 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════
-# EDICT · 统一服务管理脚本
+# Multi-Agent Orchestrator · 统一服务管理脚本
 # 用法: ./edict.sh {start|stop|status|restart|logs}
 # ══════════════════════════════════════════════════════════════
 
@@ -68,7 +68,7 @@ do_start() {
   fi
 
   echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
-  echo -e "${BLUE}║  🏛️  EDICT · 服务启动中                  ║${NC}"
+  echo -e "${BLUE}║  🏛️  Multi-Agent Orchestrator 启动中    ║${NC}"
   echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"
   echo ""
 
@@ -159,7 +159,7 @@ do_stop() {
 # ── 状态 ──
 
 do_status() {
-  echo -e "${BLUE}🏛️  EDICT · 服务状态${NC}"
+  echo -e "${BLUE}🏛️  Multi-Agent Orchestrator · 服务状态${NC}"
   echo ""
 
   for label_pid in "看板服务器:$SERVER_PIDFILE" "数据刷新循环:$LOOP_PIDFILE"; do
@@ -228,8 +228,8 @@ case "${1:-}" in
     echo "  logs     查看日志 (logs [server|loop|all])"
     echo ""
     echo "环境变量:"
-    echo "  EDICT_DASHBOARD_HOST  监听地址 (默认: 127.0.0.1)"
-    echo "  EDICT_DASHBOARD_PORT  监听端口 (默认: 7891)"
+    echo "  EDICT_DASHBOARD_HOST  监听地址 (兼容键，默认: 127.0.0.1)"
+    echo "  EDICT_DASHBOARD_PORT  监听端口 (兼容键，默认: 7891)"
     exit 1
     ;;
 esac

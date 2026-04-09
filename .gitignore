@@ -45,9 +45,18 @@ edict/frontend/dist/
 *.bak*
 data
 
+# Runtime workspaces and local archives
+/task_workspaces/
+/cold_task_archives/
+/logs/
+
 # Internal audit and temporary work records
+/.tmp_*.md
 /audit_outputs/dashboard_preview_findings_*.md
 /audit_outputs/dashboard_runtime_preview_*.md
 /audit_outputs/internal_preview_notes_*.md
 /edict/TODO_*.md
 /edict/WORKLOG_*.md
+/edict/DELIVERY_*.md
+/edict/E2E_*_result_*.json
+/edict/notes_*.md

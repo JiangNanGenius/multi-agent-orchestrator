@@ -22,14 +22,14 @@ import {
 // ── Pipeline Definition (PIPE) ──
 
 export const PIPE = [
-  { key: 'Inbox',         dept: '任务入口',   deptEn: 'Inbox',              icon: '🗂️', action: '提交', actionEn: 'Submit' },
-  { key: 'ControlCenter', dept: '总控中心',   deptEn: 'Control Center',     icon: '🎛️', action: '协调', actionEn: 'Coordinate' },
-  { key: 'PlanCenter',    dept: '规划中心',   deptEn: 'Plan Center',        icon: '🧭', action: '规划', actionEn: 'Plan' },
-  { key: 'ReviewCenter',  dept: '评审中心',   deptEn: 'Review Center',      icon: '🔍', action: '核验', actionEn: 'Review' },
-  { key: 'Assigned',      dept: '调度中心',   deptEn: 'Dispatch Center',    icon: '📮', action: '分派', actionEn: 'Dispatch' },
-  { key: 'Doing',         dept: '执行团队',   deptEn: 'Execution Team',     icon: '⚙️', action: '执行', actionEn: 'Execute' },
-  { key: 'Review',        dept: '调度中心',   deptEn: 'Dispatch Center',    icon: '🧾', action: '汇总', actionEn: 'Summarize' },
-  { key: 'Done',          dept: '结果归档',   deptEn: 'Result Archive',     icon: '✅', action: '归档', actionEn: 'Archive' },
+  { key: 'Inbox',         dept: '已接收',     deptEn: 'Received',           icon: '🗂️', action: '收到', actionEn: 'Received' },
+  { key: 'ControlCenter', dept: '需求确认',   deptEn: 'Needs Review',       icon: '🎛️', action: '确认', actionEn: 'Review' },
+  { key: 'PlanCenter',    dept: '方案整理',   deptEn: 'Planning',           icon: '🧭', action: '整理', actionEn: 'Plan' },
+  { key: 'ReviewCenter',  dept: '结果核对',   deptEn: 'Quality Check',      icon: '🔍', action: '核对', actionEn: 'Check' },
+  { key: 'Assigned',      dept: '安排处理',   deptEn: 'Assigned',           icon: '📮', action: '安排', actionEn: 'Assign' },
+  { key: 'Doing',         dept: '处理中',     deptEn: 'In Progress',        icon: '⚙️', action: '处理', actionEn: 'Handle' },
+  { key: 'Review',        dept: '结果整理',   deptEn: 'Wrapping Up',        icon: '🧾', action: '整理', actionEn: 'Wrap Up' },
+  { key: 'Done',          dept: '已完成',     deptEn: 'Completed',          icon: '✅', action: '完成', actionEn: 'Complete' },
 ] as const;
 
 export const PIPE_STATE_IDX: Record<string, number> = {
@@ -39,122 +39,122 @@ export const PIPE_STATE_IDX: Record<string, number> = {
 
 export const AGENT_ARCHITECTURE = {
   control_center: {
-    label: '总控中心',
-    labelEn: 'Control Center',
-    role: '全局协调与编排',
-    roleEn: 'Global Coordination & Orchestration',
-    rank: '核心协调层',
-    rankEn: 'Core Coordination Layer',
+    label: '总览协调',
+    labelEn: 'Overview Coordination',
+    role: '帮助统筹整体进度',
+    roleEn: 'Helps coordinate overall progress',
+    rank: '核心服务',
+    rankEn: 'Core Service',
     emoji: '🎛️',
     color: '#e8a040',
   },
   plan_center: {
-    label: '规划中心',
-    labelEn: 'Plan Center',
-    role: '任务规划与拆解',
-    roleEn: 'Task Planning & Breakdown',
-    rank: '协调节点',
-    rankEn: 'Coordination Node',
+    label: '方案整理',
+    labelEn: 'Planning',
+    role: '帮助整理方案与步骤',
+    roleEn: 'Helps organize plans and steps',
+    rank: '协作服务',
+    rankEn: 'Support Service',
     emoji: '🧭',
     color: '#a07aff',
   },
   review_center: {
-    label: '评审中心',
-    labelEn: 'Review Center',
-    role: '质量评审与把关',
-    roleEn: 'Quality Review & Assurance',
-    rank: '协调节点',
-    rankEn: 'Coordination Node',
+    label: '结果检查',
+    labelEn: 'Review',
+    role: '帮助检查结果是否完整',
+    roleEn: 'Helps review whether results are complete',
+    rank: '协作服务',
+    rankEn: 'Support Service',
     emoji: '🔍',
     color: '#6a9eff',
   },
   dispatch_center: {
-    label: '调度中心',
-    labelEn: 'Dispatch Center',
-    role: '任务分派与协同',
-    roleEn: 'Dispatch & Coordination',
-    rank: '协调节点',
-    rankEn: 'Coordination Node',
+    label: '安排处理',
+    labelEn: 'Assignment',
+    role: '帮助安排合适的人继续处理',
+    roleEn: 'Helps assign the right people to continue',
+    rank: '协作服务',
+    rankEn: 'Support Service',
     emoji: '📮',
     color: '#6aef9a',
   },
   docs_specialist: {
-    label: '文案专家',
-    labelEn: 'Docs Specialist',
-    role: '内容文档执行',
-    roleEn: 'Content Documentation Execution',
-    rank: '执行角色',
-    rankEn: 'Execution Role',
+    label: '内容助手',
+    labelEn: 'Content Assistant',
+    role: '帮助整理说明、总结与成稿',
+    roleEn: 'Helps draft summaries, explanations, and final copy',
+    rank: '服务角色',
+    rankEn: 'Service Role',
     emoji: '📝',
     color: '#f5c842',
   },
   data_specialist: {
-    label: '数据专家',
-    labelEn: 'Data Specialist',
-    role: '数据分析执行',
-    roleEn: 'Data Analysis Execution',
-    rank: '执行角色',
-    rankEn: 'Execution Role',
+    label: '数据助手',
+    labelEn: 'Data Assistant',
+    role: '帮助整理数据、图表与结论',
+    roleEn: 'Helps organize data, charts, and findings',
+    rank: '服务角色',
+    rankEn: 'Service Role',
     emoji: '💰',
     color: '#ff9a6a',
   },
   code_specialist: {
-    label: '代码专家',
-    labelEn: 'Code Specialist',
-    role: '工程实现执行',
-    roleEn: 'Engineering Implementation Execution',
-    rank: '执行角色',
-    rankEn: 'Execution Role',
+    label: '功能助手',
+    labelEn: 'Feature Assistant',
+    role: '帮助制作和调整所需功能',
+    roleEn: 'Helps create and adjust the needed features',
+    rank: '处理助手',
+    rankEn: 'Assistant',
     emoji: '⚔️',
     color: '#44aaff',
   },
   audit_specialist: {
-    label: '合规专家',
-    labelEn: 'Compliance Specialist',
-    role: '合规审查执行',
-    roleEn: 'Compliance Review Execution',
-    rank: '执行角色',
-    rankEn: 'Execution Role',
+    label: '核对助手',
+    labelEn: 'Check Assistant',
+    role: '帮助核对风险、规则与重要细节',
+    roleEn: 'Helps check risks, rules, and important details',
+    rank: '服务角色',
+    rankEn: 'Service Role',
     emoji: '⚖️',
     color: '#cc4444',
   },
   deploy_specialist: {
-    label: '部署专家',
-    labelEn: 'Deploy Specialist',
-    role: '部署运维执行',
-    roleEn: 'Deployment Operations Execution',
-    rank: '执行角色',
-    rankEn: 'Execution Role',
+    label: '上线助手',
+    labelEn: 'Launch Assistant',
+    role: '帮助处理上线前准备与发布事项',
+    roleEn: 'Helps prepare launch-related work and release steps',
+    rank: '处理助手',
+    rankEn: 'Assistant',
     emoji: '🔧',
     color: '#ff5270',
   },
   admin_specialist: {
-    label: '技能管理员',
-    labelEn: 'Skill Manager',
-    role: '技能管理执行',
-    roleEn: 'Skill Management Execution',
-    rank: '执行角色',
-    rankEn: 'Execution Role',
+    label: '能力整理助手',
+    labelEn: 'Capability Assistant',
+    role: '帮助整理常用能力与相关设置',
+    roleEn: 'Helps organize common capabilities and related settings',
+    rank: '处理助手',
+    rankEn: 'Assistant',
     emoji: '🗂️',
     color: '#9b59b6',
   },
   expert_curator: {
-    label: '专家编组官',
-    labelEn: 'Expert Curator',
-    role: '专家编组与名册治理',
-    roleEn: 'Expert Roster Governance',
-    rank: '执行角色',
-    rankEn: 'Execution Role',
+    label: '协作安排助手',
+    labelEn: 'Collaboration Assistant',
+    role: '帮助整理协作成员与分工',
+    roleEn: 'Helps organize collaborators and assignments',
+    rank: '处理助手',
+    rankEn: 'Assistant',
     emoji: '🧩',
     color: '#7be0ff',
   },
   search_specialist: {
-    label: '搜索专家',
-    labelEn: 'Search Specialist',
-    role: '全网搜索专家',
-    roleEn: 'Web Search Specialist',
-    rank: '支撑能力',
-    rankEn: 'Support Function',
+    label: '搜索助手',
+    labelEn: 'Search Assistant',
+    role: '帮助查找全网信息与线索',
+    roleEn: 'Helps search web information and leads',
+    rank: '辅助能力',
+    rankEn: 'Support',
     emoji: '🌐',
     color: '#36cfc9',
   },
@@ -163,9 +163,9 @@ export const AGENT_ARCHITECTURE = {
 export type AgentArchitectureId = keyof typeof AGENT_ARCHITECTURE;
 
 export const DEPT_COLOR: Record<string, string> = {
-  '任务入口': '#ffd700',
-  '执行团队': '#44aaff',
-  '结果归档': '#2ecc8a',
+  '待处理': '#ffd700',
+  '处理中': '#44aaff',
+  '已完成': '#2ecc8a',
   ...Object.fromEntries(
     Object.values(AGENT_ARCHITECTURE).map((meta) => [meta.label, meta.color])
   ),
@@ -242,12 +242,12 @@ export function deptColor(d: string): string {
 export function normalizeFlowRemark(text: string): string {
   if (!text) return text;
   return text
-    .replace(/结果报告/g, '结果归档')
-    .replace(/Result report/g, 'Result archive')
-    .replace(/专业执行组/g, '执行团队')
-    .replace(/Execution Team/g, 'Execution Team')
-    .replace(/Agent管理专家/g, '技能管理员')
-    .replace(/管理专家/g, '技能管理员')
+    .replace(/结果报告/g, '已完成')
+    .replace(/Result report/g, 'Completed')
+    .replace(/专业执行组/g, '处理中')
+    .replace(/Execution Team/g, 'In Progress')
+    .replace(/Agent管理专家/g, '能力整理助手')
+    .replace(/管理专家/g, '能力整理助手')
     .replace(/全网搜索简报/g, '全网搜索简报');
 }
 
@@ -273,18 +273,18 @@ export function normalizeDeptLabelLegacySafe(label: string): string {
 
 
 export const STATE_LABEL: Record<string, string> = {
-  Inbox: '待受理',
-  Pending: '待处理',
-  ControlCenter: '总控处理中',
-  PlanCenter: '规划处理中',
-  ReviewCenter: '评审处理中',
-  Assigned: '已派发',
-  Doing: '执行中',
-  Review: '汇总复核中',
-  Done: '已交付',
-  Blocked: '阻塞',
-  Cancelled: '已取消',
-  Next: '待执行',
+  Inbox: '已接收',
+  Pending: '等待处理',
+  ControlCenter: '需求确认中',
+  PlanCenter: '方案整理中',
+  ReviewCenter: '结果核对中',
+  Assigned: '已安排',
+  Doing: '处理中',
+  Review: '结果整理中',
+  Done: '已完成',
+  Blocked: '暂时卡住',
+  Cancelled: '已结束',
+  Next: '即将开始',
 };
 
 
@@ -301,17 +301,17 @@ export function stateLabel(t: Task, locale: Locale = 'zh'): string {
 }
 
 export const STATE_LABEL_EN: Record<string, string> = {
-  Inbox: 'Queued',
-  Pending: 'Pending',
-  ControlCenter: 'Under Control Review',
+  Inbox: 'Received',
+  Pending: 'Waiting',
+  ControlCenter: 'Reviewing Needs',
   PlanCenter: 'Planning',
-  ReviewCenter: 'Reviewing',
+  ReviewCenter: 'Checking Results',
   Assigned: 'Assigned',
   Doing: 'In Progress',
-  Review: 'Final Review',
-  Done: 'Delivered',
-  Blocked: 'Blocked',
-  Cancelled: 'Cancelled',
+  Review: 'Wrapping Up',
+  Done: 'Completed',
+  Blocked: 'Stuck',
+  Cancelled: 'Ended',
   Next: 'Up Next',
 };
 
@@ -330,18 +330,18 @@ export function isArchived(t: Task): boolean {
 export type PipeStatus = { key: string; dept: string; icon: string; action: string; status: 'done' | 'active' | 'pending' };
 
 const STATE_TO_FLOW_NODE: Record<string, string> = {
-  Inbox: '任务入口',
-  Pending: '任务入口',
-  ControlCenter: '总控中心',
-  PlanCenter: '规划中心',
-  ReviewCenter: '评审中心',
-  Assigned: '调度中心',
-  Doing: '执行团队',
-  Review: '调度中心',
+  Inbox: '需求提交',
+  Pending: '需求提交',
+  ControlCenter: '整体协调',
+  PlanCenter: '方案整理',
+  ReviewCenter: '结果检查',
+  Assigned: '安排处理',
+  Doing: '正在处理',
+  Review: '安排处理',
   Done: '结果归档',
-  Blocked: '执行团队',
-  Cancelled: '执行团队',
-  Next: '调度中心',
+  Blocked: '正在处理',
+  Cancelled: '正在处理',
+  Next: '安排处理',
 };
 
 function resolveFlowNode(input: string): string {
@@ -362,35 +362,35 @@ function resolveFlowNode(input: string): string {
 function flowActionLabel(node: string, locale: Locale = 'zh'): string {
   const key = resolveFlowNode(node);
   const zh = {
-    '任务入口': '提交',
-    '总控中心': '协调',
-    '规划中心': '规划',
-    '评审中心': '核验',
-    '调度中心': '分派',
-    '执行团队': '执行',
+    '需求提交': '提交',
+    '整体协调': '协调',
+    '方案整理': '整理',
+    '结果检查': '检查',
+    '安排处理': '安排',
+    '正在处理': '处理',
     '结果归档': '归档',
-    docs_specialist: '编写',
+    docs_specialist: '撰写',
     data_specialist: '分析',
-    code_specialist: '实现',
-    audit_specialist: '审查',
-    deploy_specialist: '部署',
-    admin_specialist: '管理',
-    search_specialist: '检索',
+    code_specialist: '处理',
+    audit_specialist: '核对',
+    deploy_specialist: '发布',
+    admin_specialist: '设置',
+    search_specialist: '搜索',
   } as const;
   const en = {
-    '任务入口': 'Submit',
-    '总控中心': 'Coordinate',
-    '规划中心': 'Plan',
-    '评审中心': 'Review',
-    '调度中心': 'Dispatch',
-    '执行团队': 'Execute',
+    '需求提交': 'Submit',
+    '整体协调': 'Coordinate',
+    '方案整理': 'Organize',
+    '结果检查': 'Review',
+    '安排处理': 'Arrange',
+    '正在处理': 'Handle',
     '结果归档': 'Archive',
     docs_specialist: 'Write',
     data_specialist: 'Analyze',
-    code_specialist: 'Build',
-    audit_specialist: 'Audit',
-    deploy_specialist: 'Deploy',
-    admin_specialist: 'Manage',
+    code_specialist: 'Handle',
+    audit_specialist: 'Check',
+    deploy_specialist: 'Release',
+    admin_specialist: 'Set Up',
     search_specialist: 'Search',
   } as const;
   const dict = locale === 'en' ? en : zh;
@@ -475,13 +475,13 @@ export function getSchedulerSummary(t: Task, locale: Locale = 'zh'): { tone: 'ok
   const sched = getTaskScheduler(t);
   if (!sched) {
     return locale === 'en'
-      ? { tone: 'muted', icon: '🧭', label: 'Not Configured', detail: 'Task-level automation is not configured yet' }
-      : { tone: 'muted', icon: '🧭', label: '未配置', detail: '尚未生成任务级自动化配置' };
+      ? { tone: 'muted', icon: '🧭', label: 'Not Ready', detail: 'Automatic handling has not been set for this task yet' }
+      : { tone: 'muted', icon: '🧭', label: '尚未设置', detail: '当前任务还没有开启自动处理设置' };
   }
   if (sched.enabled === false) {
     return locale === 'en'
-      ? { tone: 'muted', icon: '⏸', label: 'Manual Control', detail: 'Automation is disabled for this task' }
-      : { tone: 'muted', icon: '⏸', label: '人工托管', detail: '已关闭自动托管' };
+      ? { tone: 'muted', icon: '⏸', label: 'Manual Handling', detail: 'Automatic handling is turned off for this task' }
+      : { tone: 'muted', icon: '⏸', label: '手动处理', detail: '当前任务已关闭自动处理' };
   }
   const escalationLevel = Number(sched.escalationLevel || 0);
   const retryCount = Number(sched.retryCount || 0);
@@ -510,14 +510,14 @@ export function getSchedulerSummary(t: Task, locale: Locale = 'zh'): { tone: 'ok
       ? {
           tone: 'danger',
           icon: '📣',
-          label: escalationLevel === 1 ? 'Escalated to Review' : 'Escalated to Dispatch',
-          detail: escalationLevel === 1 ? 'Escalated to review center for coordination' : 'Escalated to dispatch center for coordination',
+          label: escalationLevel === 1 ? 'Needs Attention' : 'Reassigned',
+          detail: escalationLevel === 1 ? 'The task has been raised for additional review' : 'The task has been reassigned for continued handling',
         }
       : {
           tone: 'danger',
           icon: '📣',
-          label: escalationLevel === 1 ? '升级评审' : '升级调度',
-          detail: escalationLevel === 1 ? '已升级到评审中心协调' : '已升级到调度中心协调',
+          label: escalationLevel === 1 ? '需要关注' : '已重新安排',
+          detail: escalationLevel === 1 ? '当前任务已提升关注并进入补充检查' : '当前任务已重新安排给合适成员继续处理',
         };
   }
   if (retryCount > 0) {
@@ -525,14 +525,14 @@ export function getSchedulerSummary(t: Task, locale: Locale = 'zh'): { tone: 'ok
       ? {
           tone: 'warn',
           icon: '🔁',
-          label: 'Retrying',
-          detail: `Auto retried ${retryCount}/${maxRetry} time(s)`,
+          label: 'Retrying Automatically',
+          detail: `Retried automatically ${retryCount}/${maxRetry} time(s)`,
         }
       : {
           tone: 'warn',
           icon: '🔁',
-          label: '自动重试中',
-          detail: `已自动重试 ${retryCount}/${maxRetry} 次`,
+          label: '正在自动重试',
+          detail: `当前已自动重试 ${retryCount}/${maxRetry} 次`,
         };
   }
   if (status && status !== 'idle') {
@@ -540,28 +540,28 @@ export function getSchedulerSummary(t: Task, locale: Locale = 'zh'): { tone: 'ok
       ? {
           tone: 'ok',
           icon: '⚙️',
-          label: 'Automation Active',
-          detail: `Last dispatch status: ${status}`,
+          label: 'Automatic Handling On',
+          detail: `Latest handling status: ${status}`,
         }
       : {
           tone: 'ok',
           icon: '⚙️',
-          label: '自动托管中',
-          detail: `最近派发状态：${status}`,
+          label: '自动处理中',
+          detail: `最近处理状态：${status}`,
         };
   }
   return locale === 'en'
     ? {
         tone: 'ok',
         icon: '🟢',
-        label: 'Automation Healthy',
-        detail: `Stall threshold ${Number(sched.stallThresholdSec || 600)} sec`,
+        label: 'Automatic Handling Healthy',
+        detail: `Pause threshold ${Number(sched.stallThresholdSec || 600)} sec`,
       }
     : {
         tone: 'ok',
         icon: '🟢',
-        label: '自动托管正常',
-        detail: `停滞阈值 ${Number(sched.stallThresholdSec || 600)} 秒`,
+        label: '自动处理正常',
+        detail: `暂停阈值 ${Number(sched.stallThresholdSec || 600)} 秒`,
       };
 }
 
@@ -569,20 +569,21 @@ export function getSchedulerSummary(t: Task, locale: Locale = 'zh'): { tone: 'ok
 
 export type TabKey =
   | 'tasks' | 'monitor' | 'agents' | 'models'
-  | 'skills' | 'sessions' | 'archives' | 'templates' | 'web_search' | 'collaboration' | 'automation';
+  | 'skills' | 'sessions' | 'archives' | 'templates' | 'web_search' | 'collaboration' | 'automation' | 'system_settings';
 
 export const TAB_DEFS: { key: TabKey; label: string; labelEn: string; icon: string }[] = [
-  { key: 'tasks',       label: '任务看板', icon: '📋', labelEn: 'Task Board' },
-  { key: 'collaboration', label: '协同讨论', icon: '🏛️', labelEn: 'Collaboration' },
-  { key: 'monitor',     label: '运行监控', icon: '🔌', labelEn: 'Runtime Monitor' },
-  { key: 'automation',  label: '自动化中心', icon: '🧭', labelEn: 'Automation Center' },
-  { key: 'agents',      label: 'Agent 总览', icon: '👔', labelEn: 'Agent Overview' },
-  { key: 'models',      label: '模型配置', icon: '🤖', labelEn: 'Model Config' },
-  { key: 'skills',      label: '技能配置', icon: '🎯', labelEn: 'Skills Config' },
-  { key: 'sessions',    label: '快速任务', icon: '💬', labelEn: 'Quick Tasks' },
-  { key: 'archives',    label: '结果归档', icon: '🗄️', labelEn: 'Archives' },
-  { key: 'templates',   label: '模板中心', icon: '📋', labelEn: 'Templates' },
+  { key: 'tasks',       label: '我的事项', icon: '📋', labelEn: 'Tasks' },
+  { key: 'collaboration', label: '一起讨论', icon: '👥', labelEn: 'Discussion' },
+  { key: 'monitor',     label: '最新动态', icon: '📡', labelEn: 'Updates' },
+  { key: 'automation',  label: '自动跟进', icon: '🧭', labelEn: 'Auto Follow-up' },
+  { key: 'agents',      label: '协作成员', icon: '👔', labelEn: 'Team' },
+  { key: 'models',      label: '回复风格', icon: '🤖', labelEn: 'Response Style' },
+  { key: 'skills',      label: '更多能力', icon: '🎯', labelEn: 'More Capabilities' },
+  { key: 'sessions',    label: '快捷入口', icon: '💬', labelEn: 'Shortcuts' },
+  { key: 'archives',    label: '历史记录', icon: '🗄️', labelEn: 'History' },
+  { key: 'templates',   label: '常用模板', icon: '📋', labelEn: 'Templates' },
   { key: 'web_search',  label: '全网搜索', icon: '🌐', labelEn: 'Web Search' },
+  { key: 'system_settings', label: '系统设置', icon: '⚙️', labelEn: 'System Settings' },
 ];
 
 export function tabLabel(tab: { label: string; labelEn: string }, locale: Locale): string {
@@ -619,8 +620,8 @@ export interface Template {
 export const TEMPLATES: Template[] = [
   {
     id: 'tpl-weekly-report', cat: '日常办公', icon: '📝', name: '周报生成',
-    desc: '基于本周看板数据和各专家产出，自动生成结构化周报',
-    depts: ['数据专家', '文案专家'], est: '~10分钟', cost: '¥0.5',
+    desc: '基于本周看板数据和各成员进展，自动生成结构化周报',
+    depts: ['数据助手', '文稿助手'], est: '~10分钟', cost: '¥0.5',
     params: [
       { key: 'date_range', label: '报告周期', type: 'text', default: '本周', required: true },
       { key: 'focus', label: '重点关注（逗号分隔）', type: 'text', default: '项目进展,下周计划' },
@@ -629,31 +630,31 @@ export const TEMPLATES: Template[] = [
     command: '生成{date_range}的周报，重点覆盖{focus}，输出为{format}格式',
   },
   {
-    id: 'tpl-code-review', cat: '工程开发', icon: '🔍', name: '代码审查',
-    desc: '对指定代码仓库/文件进行质量审查，输出问题清单和改进建议',
-    depts: ['代码专家', '合规专家'], est: '~20分钟', cost: '¥2',
+    id: 'tpl-code-review', cat: '方案与搭建', icon: '🔍', name: '文件质量检查',
+    desc: '对指定仓库或文件进行质量检查，输出问题清单和改进建议',
+    depts: ['处理助手', '核对助手'], est: '~20分钟', cost: '¥2',
     params: [
       { key: 'repo', label: '仓库/文件路径', type: 'text', required: true },
       { key: 'scope', label: '审查范围', type: 'select', options: ['全量', '增量(最近commit)', '指定文件'], default: '增量(最近commit)' },
       { key: 'focus', label: '重点关注（可选）', type: 'text', default: '安全漏洞,错误处理,性能' },
     ],
-    command: '对 {repo} 进行代码审查，范围：{scope}，重点关注：{focus}',
+    command: '对 {repo} 进行文件质量检查，范围：{scope}，重点关注：{focus}',
   },
   {
-    id: 'tpl-api-design', cat: '工程开发', icon: '⚡', name: 'API 设计与实现',
-    desc: '从需求描述到 RESTful API 设计、实现、测试一条龙',
-    depts: ['规划中心', '代码专家'], est: '~45分钟', cost: '¥3',
+    id: 'tpl-api-design', cat: '方案与搭建', icon: '⚡', name: '对接方案整理',
+    desc: '从需求描述到接口方案、处理方式和验证步骤，一次性整理清楚',
+    depts: ['规划助手', '处理助手'], est: '~45分钟', cost: '¥3',
     params: [
       { key: 'requirement', label: '需求描述', type: 'textarea', required: true },
       { key: 'tech', label: '技术栈', type: 'select', options: ['Python/FastAPI', 'Node/Express', 'Go/Gin'], default: 'Python/FastAPI' },
       { key: 'auth', label: '鉴权方式', type: 'select', options: ['JWT', 'API Key', '无'], default: 'JWT' },
     ],
-    command: '设计并实现一个 {tech} 的 RESTful API：{requirement}。鉴权方式：{auth}',
+    command: '基于 {requirement} 整理一个 {tech} 的接口方案与处理方式，访问方式：{auth}',
   },
   {
     id: 'tpl-competitor', cat: '数据分析', icon: '📊', name: '竞品分析',
-    desc: '爬取竞品网站数据，分析对比，生成结构化报告',
-    depts: ['代码专家', '数据专家', '文案专家'], est: '~60分钟', cost: '¥5',
+    desc: '收集竞品网站信息，分析对比并生成结构化报告',
+    depts: ['处理助手', '数据助手', '文稿助手'], est: '~60分钟', cost: '¥5',
     params: [
       { key: 'targets', label: '竞品名称/URL（每行一个）', type: 'textarea', required: true },
       { key: 'dimensions', label: '分析维度', type: 'text', default: '产品功能,定价策略,用户评价' },
@@ -663,8 +664,8 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'tpl-data-report', cat: '数据分析', icon: '📈', name: '数据报告',
-    desc: '对给定数据集进行清洗、分析、可视化，输出分析报告',
-    depts: ['数据专家', '文案专家'], est: '~30分钟', cost: '¥2',
+    desc: '对给定数据进行整理、分析和图表展示，输出分析报告',
+    depts: ['数据助手', '文稿助手'], est: '~30分钟', cost: '¥2',
     params: [
       { key: 'data_source', label: '数据源描述/路径', type: 'text', required: true },
       { key: 'questions', label: '分析问题（每行一个）', type: 'textarea' },
@@ -674,31 +675,31 @@ export const TEMPLATES: Template[] = [
   },
   {
     id: 'tpl-blog', cat: '内容创作', icon: '✍️', name: '博客文章',
-    desc: '给定主题和要求，生成高质量博客文章',
-    depts: ['文案专家'], est: '~15分钟', cost: '¥1',
+    desc: '给定主题和要求，生成结构完整的长文内容',
+    depts: ['文稿助手'], est: '~15分钟', cost: '¥1',
     params: [
       { key: 'topic', label: '文章主题', type: 'text', required: true },
-      { key: 'audience', label: '目标读者', type: 'text', default: '技术人员' },
+      { key: 'audience', label: '目标读者', type: 'text', default: '普通读者' },
       { key: 'length', label: '期望字数', type: 'select', options: ['~1000字', '~2000字', '~3000字'], default: '~2000字' },
-      { key: 'style', label: '风格', type: 'select', options: ['技术教程', '观点评论', '案例分析'], default: '技术教程' },
+      { key: 'style', label: '风格', type: 'select', options: ['步骤说明', '观点评论', '案例分析'], default: '步骤说明' },
     ],
     command: '写一篇关于「{topic}」的博客文章，面向{audience}，{length}，风格：{style}',
   },
   {
-    id: 'tpl-deploy', cat: '工程开发', icon: '🚀', name: '部署方案',
-    desc: '生成完整的部署检查单、AI 部署建议与 CI/CD 流程',
-    depts: ['代码专家', '部署专家'], est: '~25分钟', cost: '¥2',
+    id: 'tpl-deploy', cat: '方案与搭建', icon: '🚀', name: '上线准备方案',
+    desc: '生成完整的上线检查清单、发布建议与持续更新安排',
+    depts: ['处理助手', '上线助手'], est: '~25分钟', cost: '¥2',
     params: [
       { key: 'project', label: '项目名称/描述', type: 'text', required: true },
-      { key: 'env', label: '部署环境', type: 'select', options: ['AI 部署', 'K8s', 'VPS', 'Serverless'], default: 'AI 部署' },
-      { key: 'ci', label: 'CI/CD 工具', type: 'select', options: ['GitHub Actions', 'GitLab CI', '无'], default: 'GitHub Actions' },
+      { key: 'env', label: '上线环境', type: 'select', options: ['标准环境', '容器环境', '独立主机', '轻量托管'], default: '标准环境' },
+      { key: 'ci', label: '自动发布方式', type: 'select', options: ['GitHub Actions', 'GitLab CI', '无'], default: 'GitHub Actions' },
     ],
-    command: '为项目「{project}」生成{env}部署方案，CI/CD使用{ci}',
+    command: '为项目「{project}」生成{env}上线准备方案，自动发布方式使用{ci}',
   },
   {
     id: 'tpl-email', cat: '内容创作', icon: '📧', name: '邮件/通知文案',
-    desc: '根据场景和目的，生成专业邮件或通知文案',
-    depts: ['文案专家'], est: '~5分钟', cost: '¥0.3',
+    desc: '根据场景和目的，生成邮件或通知内容',
+    depts: ['文稿助手'], est: '~5分钟', cost: '¥0.3',
     params: [
       { key: 'scenario', label: '使用场景', type: 'select', options: ['商务邮件', '产品发布', '客户通知', '内部公告'], default: '商务邮件' },
       { key: 'purpose', label: '目的/内容', type: 'textarea', required: true },
@@ -707,13 +708,13 @@ export const TEMPLATES: Template[] = [
     command: '撰写一封{scenario}，{tone}语调。内容：{purpose}',
   },
   {
-    id: 'tpl-standup', cat: '日常办公', icon: '🗓️', name: '每日站会摘要',
-    desc: '汇总各中心与专家今日进展和明日计划，生成站会摘要',
-    depts: ['调度中心'], est: '~5分钟', cost: '¥0.3',
+    id: 'tpl-standup', cat: '日常办公', icon: '🗓️', name: '每日进展摘要',
+    desc: '汇总今日进展和明日计划，生成简明摘要',
+    depts: ['协调助手'], est: '~5分钟', cost: '¥0.3',
     params: [
       { key: 'range', label: '汇总范围', type: 'select', options: ['今天', '最近24小时', '昨天+今天'], default: '今天' },
     ],
-    command: '汇总{range}各中心与专家的工作进展和待办，生成站会摘要',
+    command: '汇总{range}的工作进展和待办，生成每日进展摘要',
   },
 ];
 
@@ -721,7 +722,7 @@ export const TPL_CATS = [
   { name: '全部', icon: '📋' },
   { name: '日常办公', icon: '💼' },
   { name: '数据分析', icon: '📊' },
-  { name: '工程开发', icon: '⚙️' },
+  { name: '方案与搭建', icon: '⚙️' },
   { name: '内容创作', icon: '✍️' },
 ];
 

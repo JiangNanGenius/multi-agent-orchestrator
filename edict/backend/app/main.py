@@ -27,14 +27,14 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
 )
-log = logging.getLogger("edict")
+log = logging.getLogger("multi_agent_orchestrator")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理。"""
     settings = get_settings()
-    log.info(f"🏛️ Edict Backend starting on port {settings.port}...")
+    log.info(f"🏛️ Multi-Agent Orchestrator Backend starting on port {settings.port}...")
 
     # 连接 Event Bus
     bus = await get_event_bus()
@@ -44,11 +44,11 @@ async def lifespan(app: FastAPI):
 
     # 清理
     await bus.close()
-    log.info("Edict Backend shutdown complete")
+    log.info("Multi-Agent Orchestrator Backend shutdown complete")
 
 
 app = FastAPI(
-    title="Edict 多Agent智作中枢",
+    title="Multi-Agent Orchestrator",
     description="事件驱动的 AI Agent 协作平台",
     version="2.0.0",
     lifespan=lifespan,
@@ -74,13 +74,13 @@ app.include_router(legacy.router, prefix="/api/tasks", tags=["legacy"])
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "2.0.0", "engine": "edict"}
+    return {"status": "ok", "version": "2.0.0", "engine": "multi-agent-orchestrator"}
 
 
 @app.get("/api")
 async def api_root():
     return {
-        "name": "Edict 多Agent智作中枢 API",
+        "name": "Multi-Agent Orchestrator API",
         "version": "2.0.0",
         "endpoints": {
             "tasks": "/api/tasks",

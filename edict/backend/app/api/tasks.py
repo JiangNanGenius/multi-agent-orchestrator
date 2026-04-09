@@ -49,6 +49,25 @@ class TaskSchedulerUpdate(BaseModel):
     scheduler: dict
 
 
+class TaskWorkspacePatch(BaseModel):
+    patch: dict = Field(default_factory=dict)
+    agent: str = "system"
+    summary: str = "任务工作区元数据已更新。"
+
+
+class TaskWorkspaceArchiveRequest(BaseModel):
+    agent: str = "system"
+
+
+class TaskWorkspaceReactivateRequest(BaseModel):
+    agent: str = "system"
+    move_to_hot: bool | None = None
+
+
+class TaskWatchdogRequest(BaseModel):
+    agent: str = "watchdog"
+
+
 class TaskOut(BaseModel):
     task_id: str
     trace_id: str
@@ -226,5 +245,61 @@ async def update_scheduler(
     try:
         await svc.update_scheduler(task_id, body.scheduler)
         return {"message": "ok"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.patch("/{task_id}/workspace")
+async def patch_workspace(
+    task_id: uuid.UUID,
+    body: TaskWorkspacePatch,
+    svc: TaskService = Depends(get_task_service),
+):
+    """更新任务工作区元数据。"""
+    try:
+        task = await svc.update_workspace_meta(task_id, body.patch, agent=body.agent, summary=body.summary)
+        return {"message": "ok", "workspace": (task.meta or {}).get("workspace", {})}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{task_id}/workspace/archive")
+async def archive_workspace(
+    task_id: uuid.UUID,
+    body: TaskWorkspaceArchiveRequest,
+    svc: TaskService = Depends(get_task_service),
+):
+    """将任务工作区迁入冷存储。"""
+    try:
+        task = await svc.archive_workspace(task_id, agent=body.agent)
+        return {"message": "ok", "workspace": (task.meta or {}).get("workspace", {}), "archived": task.archived}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{task_id}/workspace/reactivate")
+async def reactivate_workspace(
+    task_id: uuid.UUID,
+    body: TaskWorkspaceReactivateRequest,
+    svc: TaskService = Depends(get_task_service),
+):
+    """重新激活已冷归档的任务工作区。"""
+    try:
+        task = await svc.reactivate_workspace(task_id, agent=body.agent, move_to_hot=body.move_to_hot)
+        return {"message": "ok", "workspace": (task.meta or {}).get("workspace", {}), "archived": task.archived}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{task_id}/watchdog")
+async def run_task_watchdog(
+    task_id: uuid.UUID,
+    body: TaskWatchdogRequest,
+    svc: TaskService = Depends(get_task_service),
+):
+    """执行单任务看门狗巡检。"""
+    try:
+        task = await svc.run_watchdog(task_id, agent=body.agent)
+        return {"message": "ok", "watchdog": ((task.meta or {}).get("workspace") or {}).get("watchdog", {})}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

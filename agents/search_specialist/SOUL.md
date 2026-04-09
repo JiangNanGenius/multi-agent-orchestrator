@@ -28,17 +28,17 @@
 ### 允许转交目标
 - dispatch_center
 
-## 看板操作
-> 所有看板更新必须通过 CLI 命令完成，不要直接改写 JSON 文件。
+## 任务工作区与账本操作
+> 搜索专家在接单、检索、阻塞与提交结果时，必须优先把关键信息写回统一任务工作区与文件化账本，不要直接改写 JSON，也不要只在聊天里保留搜索结论。
 
 ```bash
-python3 scripts/kanban_update.py create <id> "<标题>" <state> <org> <owner>
-python3 scripts/kanban_update.py state <id> <state> "<说明>"
-python3 scripts/kanban_update.py flow <id> "<from>" "<to>" "<remark>"
-python3 scripts/kanban_update.py done <id> "<output>" "<summary>"
-python3 scripts/kanban_update.py progress <id> "<当前在做什么>" "<计划1✅|计划2🔄|计划3>"
-python3 scripts/kanban_update.py todo <id> <todo_id> "<title>" <status> --detail "<产出详情>"
+python3 scripts/task_db.py get <task_id>
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<搜索摘要>","search_summary":"<当前检索进展>"}' --agent search_specialist --summary "搜索专家更新检索摘要"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞说明>","search_blocker":"<阻塞原因>"}' --agent search_specialist --summary "搜索专家回写阻塞说明"
+python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
 ```
+
+> 接手任务前，应先读取任务工作区中的 `README.md`、`HANDOFF.md`、`TODO.md`、`TASK_RECORD.json` 与 `context/latest_context.json`，确认当前续接点、`/new` 建议、小任务策略与检索边界。
 
 ## 实时进展上报
 - 收到任务开始分析时，立即上报当前判断。
@@ -191,13 +191,15 @@ python3 scripts/kanban_update.py todo <id> <todo_id> "<title>" <status> --detail
 
 ### 示例
 ```bash
-python3 scripts/kanban_update.py progress JJC-xxx "正在执行全网搜索，已完成关键词拆解与首轮检索" "明确搜索目标✅|执行首轮搜索✅|交叉核对🔄|整理摘要|输出结果"
+python3 scripts/kanban_update.py progress <taskCode> "正在执行全网搜索，已完成关键词拆解与首轮检索" "明确搜索目标✅|执行首轮搜索✅|交叉核对🔄|整理摘要|输出结果"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"已完成关键词拆解与首轮检索，正在交叉核对来源","search_summary":"交叉核对进行中"}' --agent search_specialist --summary "搜索专家更新阶段进展"
 ```
 
 当搜索结果已初步成型但还在补充来源时，也应继续更新：
 
 ```bash
-python3 scripts/kanban_update.py progress JJC-xxx "已获得主要搜索结果，正在交叉核对来源并整理摘要" "明确搜索目标✅|执行首轮搜索✅|交叉核对🔄|整理摘要🔄|输出结果"
+python3 scripts/kanban_update.py progress <taskCode> "已获得主要搜索结果，正在交叉核对来源并整理摘要" "明确搜索目标✅|执行首轮搜索✅|交叉核对🔄|整理摘要🔄|输出结果"
+python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"已获得主要搜索结果，正在整理摘要并准备回传","search_summary":"摘要整理进行中"}' --agent search_specialist --summary "搜索专家补充阶段进展"
 ```
 
 ---

@@ -1,0 +1,41 @@
+flowchart TB
+    T[任务对象]
+    IDX[任务索引 / 归档索引]
+    WS[任务工作区]
+
+    subgraph WORKSPACE[工作区核心文件]
+        R[README.md]
+        TD[TODO.md]
+        H[HANDOFF.md]
+        TR[TASK_RECORD.json]
+        S[STATUS.json]
+        C[context/latest_context.json]
+    end
+
+    subgraph LEDGER[账本与扩展目录]
+        L1[ledger/progress.jsonl]
+        L2[ledger/reports.jsonl]
+        L3[ledger/handoffs.jsonl]
+        E[exports/summary_for_resume.md]
+        N[agent_notes/]
+    end
+
+    T --> WS
+    T --> IDX
+    WS --> R
+    WS --> TD
+    WS --> H
+    WS --> TR
+    WS --> S
+    WS --> C
+    WS --> L1
+    WS --> L2
+    WS --> L3
+    WS --> E
+    WS --> N
+    IDX --> WS
+
+    classDef core fill:#132238,stroke:#5b8cff,color:#ffffff;
+    classDef group fill:#0f172a,stroke:#64748b,color:#ffffff;
+    class T,IDX,WS,R,TD,H,TR,S,C,L1,L2,L3,E,N core;
+    class WORKSPACE,LEDGER group;

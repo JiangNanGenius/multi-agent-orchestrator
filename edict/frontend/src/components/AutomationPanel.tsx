@@ -16,7 +16,7 @@ function collectAutomationLogs(tasks: Task[], locale: 'zh' | 'en' = 'zh') {
           taskId: task.id,
           title: task.title || (locale === 'en' ? '(Untitled)' : '(无标题)'),
           at: item.at || '',
-          from: item.from || (locale === 'en' ? 'Coordination Center Dispatch' : '协调中心调度'),
+          from: item.from || (locale === 'en' ? 'System Arrangement' : '系统安排'),
           to: item.to || task.org || '—',
           remark: item.remark || '',
           state: task.state || '',
@@ -83,7 +83,7 @@ export default function AutomationPanel() {
         toast(r.error || pickLocaleText(locale, '巡检失败', 'Scan failed'), 'err');
       }
     } catch {
-      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+      toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
     }
   };
 
@@ -91,8 +91,8 @@ export default function AutomationPanel() {
     <div className="auto-page">
       <div className="auto-hero">
         <div>
-          <div className="auto-title">{pickLocaleText(locale, '自动化中心', 'Automation Center')}</div>
-          <div className="auto-subtitle">{pickLocaleText(locale, '集中查看任务级自动托管覆盖率、风险任务分布与最近自动动作记录。', 'View task-level automation coverage, risk distribution, and recent automated actions in one place.')}</div>
+          <div className="auto-title">{pickLocaleText(locale, '自动处理概览', 'Auto Handling Overview')}</div>
+          <div className="auto-subtitle">{pickLocaleText(locale, '集中查看任务自动处理覆盖情况、风险分布与最近系统处理记录。', 'View task auto-handling coverage, risk distribution, and recent system actions in one place.')}</div>
         </div>
         <button className="btn-refresh" onClick={handleScan}>{pickLocaleText(locale, '🧭 立即巡检', '🧭 Run Scan')}</button>
       </div>
@@ -101,17 +101,17 @@ export default function AutomationPanel() {
         <div className="auto-kpi-card">
           <div className="auto-kpi-label">{pickLocaleText(locale, '活跃任务', 'Active Tasks')}</div>
           <div className="auto-kpi-value">{summary.total}</div>
-          <div className="auto-kpi-desc">{pickLocaleText(locale, '当前参与流转的任务单总数', 'Total number of tasks currently in workflow')}</div>
+          <div className="auto-kpi-desc">{pickLocaleText(locale, '当前仍在处理流程中的任务总数', 'Total number of tasks currently in progress')}</div>
         </div>
         <div className="auto-kpi-card ok">
-          <div className="auto-kpi-label">{pickLocaleText(locale, '自动托管启用', 'Automation Enabled')}</div>
+          <div className="auto-kpi-label">{pickLocaleText(locale, '自动处理已开启', 'Auto Handling Enabled')}</div>
           <div className="auto-kpi-value">{summary.enabled}</div>
-          <div className="auto-kpi-desc">{pickLocaleText(locale, '已纳入自动扫描与自动动作策略', 'Included in automated scans and action policies')}</div>
+          <div className="auto-kpi-desc">{pickLocaleText(locale, '已纳入自动检查与自动处理规则', 'Included in automated checks and handling rules')}</div>
         </div>
         <div className="auto-kpi-card muted">
-          <div className="auto-kpi-label">{pickLocaleText(locale, '人工托管', 'Manual Control')}</div>
+          <div className="auto-kpi-label">{pickLocaleText(locale, '手动处理', 'Manual Handling')}</div>
           <div className="auto-kpi-value">{summary.disabled}</div>
-          <div className="auto-kpi-desc">{pickLocaleText(locale, '当前跳过自动扫描，仅人工处理', 'Currently excluded from scans and handled manually')}</div>
+          <div className="auto-kpi-desc">{pickLocaleText(locale, '当前不参与自动检查，仅保留手动处理', 'Currently excluded from auto checks and handled manually')}</div>
         </div>
         <div className="auto-kpi-card warn">
           <div className="auto-kpi-label">{pickLocaleText(locale, '自动重试中', 'Auto Retrying')}</div>
@@ -119,39 +119,39 @@ export default function AutomationPanel() {
           <div className="auto-kpi-desc">{pickLocaleText(locale, '已触发至少一次自动重试', 'Tasks that have triggered at least one auto retry')}</div>
         </div>
         <div className="auto-kpi-card danger">
-          <div className="auto-kpi-label">{pickLocaleText(locale, '升级协调', 'Escalated')}</div>
+          <div className="auto-kpi-label">{pickLocaleText(locale, '已提升关注', 'Escalated')}</div>
           <div className="auto-kpi-value">{summary.escalated}</div>
-          <div className="auto-kpi-desc">{pickLocaleText(locale, '已升级至评审或调度中心', 'Escalated to review or dispatch center')}</div>
+          <div className="auto-kpi-desc">{pickLocaleText(locale, '已进入更高优先级的协调处理', 'Moved into higher-priority coordinated handling')}</div>
         </div>
         <div className="auto-kpi-card danger">
-          <div className="auto-kpi-label">{pickLocaleText(locale, '回滚记录', 'Rollbacks')}</div>
+          <div className="auto-kpi-label">{pickLocaleText(locale, '恢复记录', 'Recoveries')}</div>
           <div className="auto-kpi-value">{summary.rolledBack}</div>
-          <div className="auto-kpi-desc">{pickLocaleText(locale, '已发生自动回滚的任务数量', 'Tasks that have triggered automated rollback')}</div>
+          <div className="auto-kpi-desc">{pickLocaleText(locale, '已触发自动恢复的事项数量', 'Items that have triggered automatic recovery')}</div>
         </div>
       </div>
 
       <div className="auto-rule-panel">
-        <div className="auto-section-title">{pickLocaleText(locale, '规则中心（初版）', 'Rule Center (Initial)')}</div>
+        <div className="auto-section-title">{pickLocaleText(locale, '处理规则说明', 'Handling Rules')}</div>
         <div className="auto-rule-grid">
           <div className="auto-rule-card">
-            <div className="auto-rule-name">{pickLocaleText(locale, '规则 01 · 任务级自动托管', 'Rule 01 · Task-Level Automation')}</div>
-            <div className="auto-rule-desc">{pickLocaleText(locale, '每个任务可单独决定是否启用自动扫描、自动重试、升级协调与自动回滚。这一层已经在任务详情中可编辑。', 'Each task can independently enable scans, retries, escalations, and rollbacks. This layer is editable in task details.')}</div>
-            <div className="auto-rule-meta">{locale === 'en' ? `Covered tasks: ${summary.enabled}/${summary.total}` : `覆盖任务：${summary.enabled}/${summary.total}`}</div>
+            <div className="auto-rule-name">{pickLocaleText(locale, '自动处理 · 基础设置', 'Automatic Handling · Basic Setup')}</div>
+            <div className="auto-rule-desc">{pickLocaleText(locale, '每个事项都可以单独决定是否启用自动检查、自动重试、重点协助与自动恢复，这些设置都可在详情中调整。', 'Each item can decide whether to enable automatic checks, retries, extra assistance, and automatic recovery, and these settings can be adjusted in the details view.')}</div>
+            <div className="auto-rule-meta">{locale === 'en' ? `Enabled items: ${summary.enabled}/${summary.total}` : `已开启事项：${summary.enabled}/${summary.total}`}</div>
           </div>
           <div className="auto-rule-card">
-            <div className="auto-rule-name">{pickLocaleText(locale, '规则 02 · 停滞自动重试', 'Rule 02 · Stall Auto Retry')}</div>
-            <div className="auto-rule-desc">{pickLocaleText(locale, '任务超过各自停滞阈值后，会先进入自动重试；超过最大重试次数后再升级协调或回滚。', 'Once a task exceeds its stall threshold, it enters auto retry first; after max retries it escalates or rolls back.')}</div>
-            <div className="auto-rule-meta">{locale === 'en' ? `Matched now: ${summary.retrying} task(s)` : `当前命中：${summary.retrying} 个任务`}</div>
+            <div className="auto-rule-name">{pickLocaleText(locale, '自动跟进 · 停滞后重试', 'Automatic Follow-up · Retry After Stalling')}</div>
+            <div className="auto-rule-desc">{pickLocaleText(locale, '当事项停滞超过阈值时，系统会先自动重试；如果多次尝试仍无进展，再进入更强的协助或恢复步骤。', 'When an item stays stalled beyond its threshold, the system retries automatically first. If repeated attempts still bring no progress, it moves to stronger assistance or recovery steps.')}</div>
+            <div className="auto-rule-meta">{locale === 'en' ? `Now following up on: ${summary.retrying} item(s)` : `当前自动跟进：${summary.retrying} 个事项`}</div>
           </div>
           <div className="auto-rule-card">
-            <div className="auto-rule-name">{pickLocaleText(locale, '规则 03 · 分级升级协调', 'Rule 03 · Tiered Escalation')}</div>
-            <div className="auto-rule-desc">{pickLocaleText(locale, '当重试无效时，系统会先升级评审中心，再升级调度中心，降低长时间卡死风险。', 'When retries fail, the system escalates to the review center first and then the dispatch center to reduce long stalls.')}</div>
-            <div className="auto-rule-meta">{locale === 'en' ? `Matched now: ${summary.escalated} task(s)` : `当前命中：${summary.escalated} 个任务`}</div>
+            <div className="auto-rule-name">{pickLocaleText(locale, '重点协助 · 逐级加强处理', 'Extra Assistance · Step-by-Step Support')}</div>
+            <div className="auto-rule-desc">{pickLocaleText(locale, '当多次重试仍无进展时，系统会逐步加强协助力度并安排进一步处理，以减少长时间卡住的风险。', 'When repeated retries still bring no progress, the system increases the level of assistance step by step and arranges further handling to reduce the risk of long stalls.')}</div>
+            <div className="auto-rule-meta">{locale === 'en' ? `Receiving extra support: ${summary.escalated} item(s)` : `当前加强协助：${summary.escalated} 个事项`}</div>
           </div>
           <div className="auto-rule-card">
-            <div className="auto-rule-name">{pickLocaleText(locale, '规则 04 · 稳定快照回滚', 'Rule 04 · Snapshot Rollback')}</div>
-            <div className="auto-rule-desc">{pickLocaleText(locale, '开启自动回滚后，任务在多轮升级后仍无法恢复时，可退回到最近稳定节点，等待重新派发。', 'With rollback enabled, tasks that still cannot recover after multiple escalations can return to the latest stable snapshot and wait for redispatch.')}</div>
-            <div className="auto-rule-meta">{locale === 'en' ? `Matched now: ${summary.rolledBack} task(s)` : `当前命中：${summary.rolledBack} 个任务`}</div>
+            <div className="auto-rule-name">{pickLocaleText(locale, '自动恢复 · 返回最近稳定状态', 'Automatic Recovery · Return to the Latest Stable State')}</div>
+            <div className="auto-rule-desc">{pickLocaleText(locale, '开启自动恢复后，事项在多轮处理后仍无法恢复时，可返回最近稳定状态，等待新的处理安排。', 'With automatic recovery enabled, items that still cannot recover after multiple handling rounds can return to the latest stable state and wait for a new arrangement.')}</div>
+            <div className="auto-rule-meta">{locale === 'en' ? `Recovered automatically: ${summary.rolledBack} item(s)` : `已自动恢复：${summary.rolledBack} 个事项`}</div>
           </div>
         </div>
       </div>
@@ -161,7 +161,7 @@ export default function AutomationPanel() {
           <div className="auto-section-title">{pickLocaleText(locale, '重点观察任务', 'Priority Watch Tasks')}</div>
           <div className="auto-task-list">
             {hotTasks.length === 0 ? (
-              <div className="empty">{pickLocaleText(locale, '暂无需要重点观察的自动化任务', 'No automation tasks currently need priority attention')}</div>
+              <div className="empty">{pickLocaleText(locale, '暂无需要重点关注的任务', 'No tasks currently need priority attention')}</div>
             ) : (
               hotTasks.map((task) => {
                 const sched = getTaskScheduler(task);
@@ -182,8 +182,8 @@ export default function AutomationPanel() {
                     <div className="auto-task-meta">
                       <span>{locale === 'en' ? `Threshold ${sched?.stallThresholdSec || 600}s` : `阈值 ${sched?.stallThresholdSec || 600}s`}</span>
                       <span>{locale === 'en' ? `Retry ${sched?.retryCount || 0}/${sched?.maxRetry ?? 2}` : `重试 ${sched?.retryCount || 0}/${sched?.maxRetry ?? 2}`}</span>
-                      <span>{locale === 'en' ? `Escalation ${sched?.escalationLevel || 0}` : `升级 ${sched?.escalationLevel || 0}`}</span>
-                      <span>{locale === 'en' ? `Rollback ${sched?.rollbackCount || 0}/${sched?.maxRollback ?? 3}` : `回滚 ${sched?.rollbackCount || 0}/${sched?.maxRollback ?? 3}`}</span>
+                      <span>{locale === 'en' ? `Extra support ${sched?.escalationLevel || 0}` : `额外协助 ${sched?.escalationLevel || 0}`}</span>
+                      <span>{locale === 'en' ? `Recovery ${sched?.rollbackCount || 0}/${sched?.maxRollback ?? 3}` : `恢复 ${sched?.rollbackCount || 0}/${sched?.maxRollback ?? 3}`}</span>
                     </div>
                   </div>
                 );
@@ -193,10 +193,10 @@ export default function AutomationPanel() {
         </div>
 
         <div className="auto-panel">
-          <div className="auto-section-title">{pickLocaleText(locale, '近期自动动作日志', 'Recent Automation Logs')}</div>
+          <div className="auto-section-title">{pickLocaleText(locale, '近期系统处理记录', 'Recent System Action Logs')}</div>
           <div className="auto-log-list">
             {recentLogs.length === 0 ? (
-              <div className="empty">{pickLocaleText(locale, '当前还没有自动动作记录', 'No automation actions have been recorded yet')}</div>
+              <div className="empty">{pickLocaleText(locale, '当前还没有系统处理记录', 'No system action logs have been recorded yet')}</div>
             ) : (
               recentLogs.map((log, idx) => (
                 <div key={`${log.taskId}-${idx}`} className="auto-log-item" onClick={() => setModalTaskId(log.taskId)}>

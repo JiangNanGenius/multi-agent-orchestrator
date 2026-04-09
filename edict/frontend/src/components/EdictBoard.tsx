@@ -1,6 +1,6 @@
 import { type FormEvent, useMemo, useState } from 'react';
 import { useStore, getPipeStatus, stateLabel, deptColor, isArchived, isEdict, getSchedulerSummary, DEPTS } from '../store';
-import { api, type Task, type CollabAgentBusyEntry, type CreateTaskPayload } from '../api';
+import { api, type Task, type CollabAgentBusyEntry, type CreateTaskPayload, type ScanAction } from '../api';
 import { pickLocaleText, type Locale } from '../i18n';
 
 // 排序权重
@@ -36,11 +36,80 @@ const DEFAULT_FORM: QuickCreateForm = {
   priority: 'normal',
 };
 
+type ProgressCheckRecord = {
+  id: string;
+  ok: boolean;
+  checkedAt: string;
+  count: number;
+  actions: ScanAction[];
+  error?: string;
+};
+
+const PROGRESS_CHECK_HISTORY_KEY = 'edict-progress-check-history';
+
+function loadProgressCheckHistory(): ProgressCheckRecord[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(PROGRESS_CHECK_HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveProgressCheckHistory(records: ProgressCheckRecord[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(PROGRESS_CHECK_HISTORY_KEY, JSON.stringify(records.slice(0, 8)));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function normalizeCheckAction(locale: Locale, action?: string) {
+  const key = String(action || '').trim().toLowerCase();
+  if (locale === 'en') {
+    if (key.includes('retry')) return 'retry follow-up';
+    if (key.includes('escalate')) return 'raise for extra attention';
+    if (key.includes('rollback')) return 'roll back to a stable step';
+    if (key.includes('dispatch') || key.includes('assign')) return 're-arrange handling';
+    if (key.includes('scan')) return 'run a check';
+    return key ? key.replace(/_/g, ' ') : 'continue follow-up';
+  }
+  if (key.includes('retry')) return '再次跟进';
+  if (key.includes('escalate')) return '提醒优先处理';
+  if (key.includes('rollback')) return '回到稳定步骤';
+  if (key.includes('dispatch') || key.includes('assign')) return '重新安排';
+  if (key.includes('scan')) return '执行检查';
+  return key ? key.replace(/_/g, ' ') : '继续跟进';
+}
+
+function formatCheckTime(locale: Locale, raw?: string) {
+  if (!raw) return locale === 'en' ? 'Just now' : '刚刚';
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  return locale === 'en'
+    ? date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function describeProgressAction(locale: Locale, item: ScanAction) {
+  const taskPart = item.taskId ? (locale === 'en' ? `Item ${item.taskId}` : `事项 ${item.taskId}`) : pickLocaleText(locale, '一条事项', 'One item');
+  const actionPart = normalizeCheckAction(locale, item.action);
+  const nextPart = item.to || item.toState;
+  const waitPart = Number(item.stalledSec || 0) > 0
+    ? pickLocaleText(locale, ` · 已等待 ${Math.round(Number(item.stalledSec || 0))} 秒`, ` · waited ${Math.round(Number(item.stalledSec || 0))}s`)
+    : '';
+  return `${taskPart} · ${actionPart}${nextPart ? pickLocaleText(locale, ` · 下一步 ${nextPart}`, ` · next ${nextPart}`) : ''}${waitPart}`;
+}
+
 function buildTaskPayload(locale: Locale, form: QuickCreateForm): CreateTaskPayload {
   const normalizedTargets = Array.from(new Set(form.targetDepts.map((item) => item.trim()).filter(Boolean)));
   return {
     title: form.title.trim(),
-    org: pickLocaleText(locale, '调度中心', 'Dispatch Center'),
+    org: pickLocaleText(locale, '系统安排', 'System Assignment'),
     owner: form.owner.trim() || (locale === 'en' ? 'Dashboard Operator' : '面板值守'),
     priority: form.priority,
     ...(form.autoAssign || !normalizedTargets.length
@@ -67,7 +136,7 @@ function TargetExpertSelector({
 }) {
   return (
     <div style={{ display: 'grid', gap: 10 }}>
-      <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '目标专家（可选）', 'Target Specialists (Optional)')}</span>
+      <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '协助处理的人（可选）', 'Helpers (Optional)')}</span>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <button
           type="button"
@@ -83,7 +152,7 @@ function TargetExpertSelector({
           onClick={() => onModeChange(false)}
           style={{ cursor: 'pointer' }}
         >
-          {pickLocaleText(locale, '指定专家', 'Specify specialists')}
+          {pickLocaleText(locale, '指定助手', 'Choose assistants')}
         </button>
       </div>
       {!form.autoAssign ? (
@@ -111,10 +180,10 @@ function TargetExpertSelector({
       ) : null}
       <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>
         {form.autoAssign
-          ? pickLocaleText(locale, '当前为自动分配模式，调度中心会根据任务内容自行路由。', 'Auto-assign mode is active. The dispatch center will route the task based on its content.')
+          ? pickLocaleText(locale, '当前为自动安排，我们会根据内容选择合适的处理人。', 'Auto assignment is on. The system will choose suitable assistants based on the task.')
           : form.targetDepts.length
-            ? pickLocaleText(locale, `已指定 ${form.targetDepts.length} 位目标专家：${form.targetDepts.map((id) => targetOptions.find((item) => item.id === id)?.label || id).join('、')}`, `Selected ${form.targetDepts.length} specialist(s): ${form.targetDepts.map((id) => targetOptions.find((item) => item.id === id)?.label || id).join(', ')}`)
-            : pickLocaleText(locale, '请至少勾选一位具体专家，或切回自动分配。', 'Select at least one specialist, or switch back to auto assign.')}
+            ? pickLocaleText(locale, `已指定 ${form.targetDepts.length} 位处理助手：${form.targetDepts.map((id) => targetOptions.find((item) => item.id === id)?.label || id).join('、')}`, `Selected ${form.targetDepts.length} assistant(s): ${form.targetDepts.map((id) => targetOptions.find((item) => item.id === id)?.label || id).join(', ')}`)
+            : pickLocaleText(locale, '请至少选择一位处理人，或切回自动安排。', 'Select at least one assistant, or switch back to auto assignment.')}
       </div>
     </div>
   );
@@ -144,7 +213,7 @@ function renderBusyStateLabel(entry: CollabAgentBusyEntry): string {
   if (source === 'task_reserved') return '任务预占中';
   if (source === 'task_paused') return '任务暂停中';
   if (source === 'task_blocked') return '任务阻塞中';
-  if (source === 'meeting') return '会议占用中';
+  if (source === 'meeting') return '协作处理中';
   if (source === 'chat') return '讨论占用中';
   return entry.label || '忙碌中';
 }
@@ -198,7 +267,7 @@ function QuickCreateTaskModal({
       return;
     }
     if (!form.autoAssign && !form.targetDepts.length) {
-      toast(pickLocaleText(locale, '请至少选择一位目标专家，或切回自动分配', 'Select at least one specialist, or switch back to auto assign'), 'err');
+      toast(pickLocaleText(locale, '请至少选择一位处理助手，或切回自动安排', 'Select at least one assistant, or switch back to auto assignment'), 'err');
       return;
     }
 
@@ -208,18 +277,18 @@ function QuickCreateTaskModal({
     try {
       const result = await api.createTask(payload);
       if (!result.ok) {
-        toast(result.error || pickLocaleText(locale, '任务发布失败', 'Failed to create task'), 'err');
+        toast(result.error || pickLocaleText(locale, '提交失败', 'Failed to submit'), 'err');
         return;
       }
       toast(
         result.message ||
-          pickLocaleText(locale, '任务已发布到执行看板', 'Task has been created on the board'),
+          pickLocaleText(locale, '已收到，稍后会继续为你处理', 'Received. We will continue shortly.'),
       );
       setForm(DEFAULT_FORM);
       onSubmitSuccess();
       onClose();
     } catch {
-      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+      toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
     } finally {
       setSubmitting(false);
     }
@@ -229,38 +298,38 @@ function QuickCreateTaskModal({
     <div className="modal-bg open" onClick={onClose}>
       <div className="modal" style={{ maxWidth: 760 }} onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>✕</button>
-        <div className="modal-id">{pickLocaleText(locale, '发布任务', 'Publish Task')}</div>
-        <div className="modal-title">{pickLocaleText(locale, '将任务提交给调度中心', 'Submit a task to the Dispatch Center')}</div>
+        <div className="modal-id">{pickLocaleText(locale, '添加事项', 'Add Item')}</div>
+        <div className="modal-title">{pickLocaleText(locale, '系统会为你继续安排', 'We will arrange the next steps for you')}</div>
         <div style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>
           {pickLocaleText(
             locale,
-            '这里的任务入口已按治理逻辑固定收口到调度中心。你只需填写任务内容与优先级，调度中心会继续按既定规则分派到后续执行角色。',
-            'This entry point is now fixed to the Dispatch Center by governance rules. Fill in the request and priority, and the Dispatch Center will continue routing it according to the existing workflow.',
+            '你只需要填写内容和紧急程度，我们会为你安排合适的人继续处理。',
+            'Fill in the request and urgency, and we will arrange the right people to continue the work.',
           )}
         </div>
 
         <form className="auth-form two-col" onSubmit={handleSubmit}>
           <label className="auth-label auth-full">
-            <span>{pickLocaleText(locale, '任务标题', 'Task Title')}</span>
+              <span>{pickLocaleText(locale, '事项标题', 'Title')}</span>
             <input
               value={form.title}
               onChange={(e) => updateField('title', e.target.value)}
-              placeholder={pickLocaleText(locale, '例如：整理本周版本发布说明并同步测试结论', 'Example: Prepare this week\'s release notes and sync QA conclusions')}
+              placeholder={pickLocaleText(locale, '例如：整理本周发布说明并同步测试结论', 'Example: Prepare this week\'s release notes and sync test conclusions')}
               autoFocus
             />
           </label>
 
           <label className="auth-label">
-            <span>{pickLocaleText(locale, '目标中心', 'Target Center')}</span>
+              <span>{pickLocaleText(locale, '分配方式', 'Assignment')}</span>
             <input
-              value={pickLocaleText(locale, '调度中心', 'Dispatch Center')}
+              value={pickLocaleText(locale, '系统自动安排', 'Automatic Assignment')}
               readOnly
               style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'rgba(106,239,154,0.08)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}
             />
           </label>
 
           <label className="auth-label">
-            <span>{pickLocaleText(locale, '优先级', 'Priority')}</span>
+              <span>{pickLocaleText(locale, '紧急程度', 'Urgency')}</span>
             <select
               value={form.priority}
               onChange={(e) => updateField('priority', e.target.value as QuickCreateForm['priority'])}
@@ -273,7 +342,7 @@ function QuickCreateTaskModal({
           </label>
 
           <label className="auth-label">
-            <span>{pickLocaleText(locale, '发布人', 'Requester')}</span>
+              <span>{pickLocaleText(locale, '发起人', 'Requester')}</span>
             <input
               value={form.owner}
               onChange={(e) => updateField('owner', e.target.value)}
@@ -296,7 +365,7 @@ function QuickCreateTaskModal({
               {pickLocaleText(locale, '取消', 'Cancel')}
             </button>
             <button type="submit" className="auth-primary" disabled={submitting} style={{ width: 'auto', minWidth: 140 }}>
-              {submitting ? pickLocaleText(locale, '发布中…', 'Creating...') : pickLocaleText(locale, '发布任务', 'Create Task')}
+              {submitting ? pickLocaleText(locale, '提交中…', 'Submitting...') : pickLocaleText(locale, '添加事项', 'Add Item')}
             </button>
           </div>
         </form>
@@ -348,7 +417,7 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
       return;
     }
     if (!form.autoAssign && !form.targetDepts.length) {
-      toast(pickLocaleText(locale, '请至少选择一位目标专家，或切回自动分配', 'Select at least one specialist, or switch back to auto assign'), 'err');
+      toast(pickLocaleText(locale, '请至少选择一位处理助手，或切回自动安排', 'Select at least one assistant, or switch back to auto assignment'), 'err');
       return;
     }
 
@@ -358,14 +427,14 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
     try {
       const result = await api.createTask(payload);
       if (!result.ok) {
-        toast(result.error || pickLocaleText(locale, '任务发布失败', 'Failed to create task'), 'err');
+        toast(result.error || pickLocaleText(locale, '提交失败', 'Failed to submit'), 'err');
         return;
       }
-      toast(result.message || pickLocaleText(locale, '任务已发布到执行看板', 'Task has been created on the board'));
+      toast(result.message || pickLocaleText(locale, '已收到，马上为你继续处理', 'Received. We will continue handling it shortly.'));
       setForm(DEFAULT_FORM);
       onSubmitSuccess();
     } catch {
-      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+      toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
     } finally {
       setSubmitting(false);
     }
@@ -387,17 +456,17 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>
-            {pickLocaleText(locale, '发布任务', 'Publish Task')}
+            {pickLocaleText(locale, '添加事项', 'Add Item')}
           </div>
           <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-            {pickLocaleText(locale, '在任务看板顶部直接录入并提交任务。该入口已固定发往调度中心，由其继续按既定规则分派到后续执行角色。', 'Create and submit tasks directly from the top of the board. This entry is fixed to the Dispatch Center, which will continue routing work according to the established rules.')}
+            {pickLocaleText(locale, '你可以直接在这里写下要处理的事项，系统会继续安排后续步骤。', 'You can describe what you need here, and we will arrange the next steps for you.')}
           </div>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 2fr) repeat(4, minmax(140px, 1fr)) auto', gap: 10, alignItems: 'end' }}>
         <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '任务标题', 'Task Title')}</span>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '事项标题', 'Title')}</span>
           <input
             value={form.title}
             onChange={(e) => updateField('title', e.target.value)}
@@ -406,11 +475,11 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
           />
         </label>
         <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '目标中心', 'Target Center')}</span>
-          <input value={pickLocaleText(locale, '调度中心', 'Dispatch Center')} readOnly style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'rgba(106,239,154,0.08)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }} />
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '处理方式', 'Handling Mode')}</span>
+          <input value={pickLocaleText(locale, '自动安排', 'Automatic Assignment')} readOnly style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'rgba(106,239,154,0.08)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }} />
         </label>
         <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '优先级', 'Priority')}</span>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '紧急程度', 'Urgency')}</span>
           <select value={form.priority} onChange={(e) => updateField('priority', e.target.value as QuickCreateForm['priority'])} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}>
             <option value="low">{pickLocaleText(locale, '低', 'Low')}</option>
             <option value="normal">{pickLocaleText(locale, '中', 'Normal')}</option>
@@ -418,7 +487,7 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
           </select>
         </label>
         <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '发布人', 'Requester')}</span>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '发起人', 'Requester')}</span>
           <input value={form.owner} onChange={(e) => updateField('owner', e.target.value)} placeholder={pickLocaleText(locale, '例如：产品运营值守', 'Example: Product Operations Desk')} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }} />
         </label>
         <div style={{ display: 'grid', gap: 6, minWidth: 280 }}>
@@ -431,7 +500,7 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
           />
         </div>
         <button type="submit" className="auth-primary" disabled={submitting} style={{ width: 'auto', minWidth: 140, height: 44 }}>
-          {submitting ? pickLocaleText(locale, '发布中…', 'Creating...') : pickLocaleText(locale, '发布任务', 'Create Task')}
+          {submitting ? pickLocaleText(locale, '提交中…', 'Submitting...') : pickLocaleText(locale, '添加事项', 'Add Item')}
         </button>
       </div>
     </form>
@@ -462,6 +531,97 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
   const busySummary = busyLead
     ? `${renderBusyStateLabel(busyLead)} · ${busyNames.join('、')}`
     : '';
+  const workspace = task.workspace || {};
+  const taskPolicy = task.workspaceTaskPolicy || workspace.task_policy || {};
+  const refreshState = task.workspaceNewRefresh || workspace.new_refresh || {};
+  const watchdog = task.workspaceWatchdog || workspace.watchdog || {};
+  const feishuReporting = task.workspaceFeishuReporting || workspace.feishu_reporting || {};
+  const refreshRecommended = !!(task.workspaceRefreshRecommended || workspace.refresh_recommended || refreshState.recommended);
+  const projectSizeEstimate = Number(task.workspaceProjectSizeEstimateGb || workspace.project_size_gb_estimate || 0);
+  const archiveStatus = task.workspaceArchiveStatus || workspace.archive_status || '';
+  const storageTier = task.workspaceStorageTier || workspace.storage_tier || '';
+  const reactivationTarget = task.workspaceReactivationTargetPath || workspace.reactivation_target_path || '';
+  const workspaceChips: Array<{ text: string; color: string; bg: string; border: string }> = [];
+
+  if (task.taskCode) {
+    workspaceChips.push({
+      text: `#${task.taskCode}`,
+      color: 'var(--acc)',
+      bg: 'rgba(122,162,255,0.10)',
+      border: 'rgba(122,162,255,0.28)',
+    });
+  }
+
+  if (task.workspaceTaskKind || taskPolicy.lightweight) {
+    const kind = task.workspaceTaskKind || workspace.task_kind || (taskPolicy.lightweight ? 'lightweight' : 'standard');
+    const lightweight = kind === 'lightweight' || !!taskPolicy.lightweight;
+    workspaceChips.push({
+      text: lightweight
+        ? pickLocaleText(locale, '轻量任务', 'Lightweight')
+        : pickLocaleText(locale, '标准任务', 'Standard'),
+      color: lightweight ? '#67e8a5' : '#cbd5e1',
+      bg: lightweight ? '#0f2219' : 'rgba(148,163,184,0.10)',
+      border: lightweight ? '#4cc38a44' : 'rgba(148,163,184,0.25)',
+    });
+  }
+
+  if (projectSizeEstimate >= 50 || storageTier === 'cold') {
+    workspaceChips.push({
+      text: projectSizeEstimate >= 50
+        ? pickLocaleText(locale, `超大任务 · ${projectSizeEstimate.toFixed(projectSizeEstimate >= 100 ? 0 : 1)}GB`, `Large Task · ${projectSizeEstimate.toFixed(projectSizeEstimate >= 100 ? 0 : 1)}GB`)
+        : pickLocaleText(locale, '冷盘任务', 'Cold-tier Task'),
+      color: '#60a5fa',
+      bg: 'rgba(59,130,246,0.12)',
+      border: 'rgba(59,130,246,0.30)',
+    });
+  }
+
+  if (archiveStatus && archiveStatus !== 'hot') {
+    workspaceChips.push({
+      text: `${pickLocaleText(locale, '归档', 'Archive')} · ${archiveStatus}`,
+      color: archiveStatus.includes('cold') || archiveStatus.includes('archive') ? '#f59e0b' : '#cbd5e1',
+      bg: archiveStatus.includes('cold') || archiveStatus.includes('archive') ? 'rgba(245,158,11,0.12)' : 'rgba(148,163,184,0.10)',
+      border: archiveStatus.includes('cold') || archiveStatus.includes('archive') ? 'rgba(245,158,11,0.30)' : 'rgba(148,163,184,0.25)',
+    });
+  }
+
+  if (reactivationTarget) {
+    workspaceChips.push({
+      text: pickLocaleText(locale, '可回迁', 'Reactivatable'),
+      color: '#38bdf8',
+      bg: 'rgba(56,189,248,0.10)',
+      border: 'rgba(56,189,248,0.30)',
+    });
+  }
+
+  if (refreshRecommended) {
+    workspaceChips.push({
+      text: pickLocaleText(locale, '建议 /new', 'Recommend /new'),
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.12)',
+      border: 'rgba(245,158,11,0.30)',
+    });
+  }
+
+  if (watchdog.status) {
+    const isHealthy = ['ok', 'healthy', 'active'].includes(String(watchdog.status).toLowerCase());
+    workspaceChips.push({
+      text: `${pickLocaleText(locale, '看门狗', 'Watchdog')} · ${watchdog.status}`,
+      color: isHealthy ? '#22c55e' : '#f59e0b',
+      bg: isHealthy ? 'rgba(34,197,94,0.10)' : 'rgba(245,158,11,0.12)',
+      border: isHealthy ? 'rgba(34,197,94,0.28)' : 'rgba(245,158,11,0.30)',
+    });
+  }
+
+  if (feishuReporting.enabled || feishuReporting.last_report_status) {
+    const reportOk = ['success', 'reported', 'ok'].includes(String(feishuReporting.last_report_status || '').toLowerCase());
+    workspaceChips.push({
+      text: `${pickLocaleText(locale, '汇报', 'Report')} · ${feishuReporting.last_report_status || pickLocaleText(locale, '已启用', 'Enabled')}`,
+      color: reportOk ? '#22c55e' : '#c084fc',
+      bg: reportOk ? 'rgba(34,197,94,0.10)' : 'rgba(192,132,252,0.12)',
+      border: reportOk ? 'rgba(34,197,94,0.28)' : 'rgba(192,132,252,0.30)',
+    });
+  }
 
   const handleAction = async (action: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -475,7 +635,7 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
         if (r.ok) { toast(r.message || pickLocaleText(locale, '操作成功', 'Action completed')); loadAll(); }
         else toast(r.error || pickLocaleText(locale, '操作失败', 'Action failed'), 'err');
       } catch {
-        toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+        toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
       }
     } else if (action === 'resume') {
       try {
@@ -483,7 +643,7 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
         if (r.ok) { toast(r.message || pickLocaleText(locale, '已恢复', 'Resumed')); loadAll(); }
         else toast(r.error || pickLocaleText(locale, '操作失败', 'Action failed'), 'err');
       } catch {
-        toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+        toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
       }
     }
   };
@@ -495,7 +655,7 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
       if (r.ok) { toast(r.message || pickLocaleText(locale, '操作成功', 'Action completed')); loadAll(); }
       else toast(r.error || pickLocaleText(locale, '操作失败', 'Action failed'), 'err');
     } catch {
-      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+      toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
     }
   };
 
@@ -512,7 +672,7 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
         {task.org && <span className={`tag ${deptCls}`}>{task.org}</span>}
         {curStage && (
           <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-            {pickLocaleText(locale, '当前', 'Current')}: <b style={{ color: deptColor(curStage.dept) }}>{curStage.dept} · {curStage.action}</b>
+            {pickLocaleText(locale, '当前进展', 'Current Progress')}: <b style={{ color: deptColor(curStage.dept) }}>{curStage.dept} · {curStage.action}</b>
           </span>
         )}
       </div>
@@ -537,7 +697,7 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
               {i + 1}
             </span>
           ))}
-          <span style={{ color: 'var(--muted)', fontSize: 10 }}>{locale === 'en' ? `Round ${task.review_round} review` : `第 ${task.review_round} 轮磋商`}</span>
+          <span style={{ color: 'var(--muted)', fontSize: 10 }}>{locale === 'en' ? `Round ${task.review_round} discussion` : `第 ${task.review_round} 轮讨论`}</span>
         </div>
       )}
       {todoTotal > 0 && (
@@ -553,6 +713,27 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
         <div className="ec-scheduler-label">{schedSummary.icon} {schedSummary.label}</div>
         <div className="ec-scheduler-detail">{schedSummary.detail}</div>
       </div>
+      {workspaceChips.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+          {workspaceChips.map((chip, index) => (
+            <span
+              key={`${chip.text}-${index}`}
+              style={{
+                fontSize: 10,
+                lineHeight: 1.2,
+                padding: '5px 8px',
+                borderRadius: 999,
+                border: `1px solid ${chip.border}`,
+                background: chip.bg,
+                color: chip.color,
+                fontWeight: 700,
+              }}
+            >
+              {chip.text}
+            </span>
+          ))}
+        </div>
+      )}
       {busyLead && (
         <div
           className="ec-scheduler-chip"
@@ -563,7 +744,7 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
           }}
         >
           <div className="ec-scheduler-label">
-            {busyLead.state === 'paused' ? '⏸' : '⚙️'} {pickLocaleText(locale, '全局占用', 'Global Occupancy')}
+            {busyLead.state === 'paused' ? '⏸' : '📝'} {pickLocaleText(locale, '当前情况', 'Current Status')}
           </div>
           <div className="ec-scheduler-detail">{busySummary}</div>
           {busyLead.reason && (
@@ -587,8 +768,8 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
       <div className="ec-actions" onClick={(e) => e.stopPropagation()}>
         {canStop && (
           <>
-            <button className="mini-act" onClick={(e) => handleAction('stop', e)}>{pickLocaleText(locale, '⏸ 叫停', '⏸ Pause')}</button>
-            <button className="mini-act danger" onClick={(e) => handleAction('cancel', e)}>{pickLocaleText(locale, '🚫 取消', '🚫 Cancel')}</button>
+            <button className="mini-act" onClick={(e) => handleAction('stop', e)}>{pickLocaleText(locale, '⏸ 暂停处理', '⏸ Pause')}</button>
+            <button className="mini-act danger" onClick={(e) => handleAction('cancel', e)}>{pickLocaleText(locale, '🚫 结束任务', '🚫 Cancel')}</button>
           </>
         )}
         {canResume && (
@@ -614,6 +795,9 @@ export default function EdictBoard() {
   const toast = useStore((s) => s.toast);
   const loadAll = useStore((s) => s.loadAll);
   const [showQuickCreate, setShowQuickCreate] = useState(false);
+  const [checkingProgress, setCheckingProgress] = useState(false);
+  const [lastCheck, setLastCheck] = useState<ProgressCheckRecord | null>(null);
+  const [checkHistory, setCheckHistory] = useState<ProgressCheckRecord[]>(() => loadProgressCheckHistory());
 
   const tasks = liveStatus?.tasks || [];
   const allEdicts = tasks.filter(isEdict);
@@ -644,18 +828,43 @@ export default function EdictBoard() {
       if (r.ok) { toast(locale === 'en' ? `📦 ${r.count || 0} task(s) archived` : `📦 ${r.count || 0} 个任务单已归档`); loadAll(); }
       else toast(r.error || pickLocaleText(locale, '批量归档失败', 'Bulk archive failed'), 'err');
     } catch {
-      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+      toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
     }
   };
 
   const handleScan = async () => {
+    setCheckingProgress(true);
     try {
       const r = await api.schedulerScan();
-      if (r.ok) toast(locale === 'en' ? `🧭 Control scan completed: ${r.count || 0} action(s)` : `🧭 总控巡检完成：${r.count || 0} 个动作`);
-      else toast(r.error || pickLocaleText(locale, '巡检失败', 'Scan failed'), 'err');
+      const record: ProgressCheckRecord = {
+        id: `${Date.now()}`,
+        ok: !!r.ok,
+        checkedAt: r.checkedAt || new Date().toISOString(),
+        count: Number(r.count ?? r.actions?.length ?? 0),
+        actions: Array.isArray(r.actions) ? r.actions : [],
+        error: r.ok ? undefined : (r.error || pickLocaleText(locale, '检查失败', 'Check failed')),
+      };
+      setLastCheck(record);
+      setCheckHistory((prev) => {
+        const next = [record, ...prev].slice(0, 8);
+        saveProgressCheckHistory(next);
+        return next;
+      });
+      if (r.ok) {
+        const nextCount = Number(r.count ?? r.actions?.length ?? 0);
+        toast(
+          nextCount > 0
+            ? pickLocaleText(locale, `已完成检查，发现 ${nextCount} 条需要继续跟进的事项`, `Check completed. ${nextCount} item(s) need follow-up`)
+            : pickLocaleText(locale, '已完成检查，当前没有需要继续处理的事项', 'Check completed. No extra follow-up is needed right now'),
+        );
+      } else {
+        toast(record.error || pickLocaleText(locale, '检查失败', 'Check failed'), 'err');
+      }
       loadAll();
     } catch {
-      toast(pickLocaleText(locale, '服务器连接失败', 'Server connection failed'), 'err');
+      toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
+    } finally {
+      setCheckingProgress(false);
     }
   };
 
@@ -681,10 +890,94 @@ export default function EdictBoard() {
         <span className="ab-count">
           {locale === 'en' ? `Active ${activeEdicts.length} · Archived ${archivedEdicts.length} · Total ${allEdicts.length}` : `活跃 ${activeEdicts.length} · 归档 ${archivedEdicts.length} · 共 ${allEdicts.length}`}
         </span>
-        <button className="ab-scan" onClick={handleScan}>{pickLocaleText(locale, '🧭 总控巡检', '🧭 Control Scan')}</button>
+        <button className="ab-scan" onClick={handleScan} disabled={checkingProgress}>{checkingProgress ? pickLocaleText(locale, '检查中…', 'Checking...') : pickLocaleText(locale, '检查进度', 'Check Progress')}</button>
       </div>
 
       <InlineQuickCreatePanel onSubmitSuccess={() => loadAll()} />
+
+      {(checkingProgress || lastCheck || checkHistory.length > 0) ? (
+        <div style={{ marginBottom: 16, padding: 16, borderRadius: 18, border: '1px solid var(--line)', background: 'var(--panel2)', display: 'grid', gap: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 800 }}>{pickLocaleText(locale, '检查进度', 'Progress Check')}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7, marginTop: 4 }}>
+                {pickLocaleText(locale, '这里会显示最近一次检查结果，以及最近几次自动整理出的跟进记录。', 'This area shows the latest progress check and the recent follow-up records collected from checks.')}
+              </div>
+            </div>
+            {checkHistory.length > 0 ? (
+              <button
+                className="chip"
+                onClick={() => {
+                  setCheckHistory([]);
+                  saveProgressCheckHistory([]);
+                  setLastCheck(null);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                {pickLocaleText(locale, '清空记录', 'Clear History')}
+              </button>
+            ) : null}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(320px, 1.1fr)', gap: 12 }}>
+            <div style={{ padding: 14, borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', display: 'grid', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 14, fontWeight: 800 }}>{pickLocaleText(locale, '本次结果', 'Latest Result')}</div>
+                <span className={`chip ${lastCheck?.ok ? 'ok' : ''}`}>{checkingProgress ? pickLocaleText(locale, '检查中…', 'Checking...') : lastCheck ? formatCheckTime(locale, lastCheck.checkedAt) : pickLocaleText(locale, '等待检查', 'Waiting for a check')}</span>
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1 }}>
+                {checkingProgress ? '...' : String(lastCheck?.count || 0)}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
+                {checkingProgress
+                  ? pickLocaleText(locale, '正在查看当前事项是否有需要继续跟进、重新安排或提醒处理的地方。', 'Checking whether any item needs follow-up, re-arrangement, or extra attention.')
+                  : lastCheck?.ok
+                    ? ((lastCheck.count || 0) > 0
+                      ? pickLocaleText(locale, `最近一次检查发现 ${lastCheck.count} 条需要继续跟进的事项。`, `The latest check found ${lastCheck.count} item(s) that need follow-up.`)
+                      : pickLocaleText(locale, '最近一次检查未发现需要额外处理的事项。', 'The latest check found no item that needs extra handling.'))
+                    : (lastCheck?.error || pickLocaleText(locale, '最近一次检查未成功完成。', 'The latest check did not complete successfully.'))}
+              </div>
+              {lastCheck?.actions?.length ? (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {lastCheck.actions.slice(0, 3).map((item, index) => (
+                    <div key={`${item.taskId}-${index}`} style={{ fontSize: 12, lineHeight: 1.7, padding: '10px 12px', borderRadius: 12, background: 'rgba(122,162,255,0.08)', border: '1px solid rgba(122,162,255,0.14)' }}>
+                      {describeProgressAction(locale, item)}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div style={{ padding: 14, borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', display: 'grid', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 14, fontWeight: 800 }}>{pickLocaleText(locale, '最近记录', 'Recent History')}</div>
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>{pickLocaleText(locale, `保留最近 ${Math.min(checkHistory.length || 8, 8)} 次`, `Keep the latest ${Math.min(checkHistory.length || 8, 8)} checks`)}</span>
+              </div>
+              {checkHistory.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>{pickLocaleText(locale, '还没有历史记录。完成一次检查后，这里会自动保留摘要。', 'No history yet. After a check is completed, a summary will be kept here automatically.')}</div>
+              ) : (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {checkHistory.map((record) => (
+                    <div key={record.id} style={{ padding: '10px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', display: 'grid', gap: 4 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ fontSize: 12, fontWeight: 700 }}>{formatCheckTime(locale, record.checkedAt)}</div>
+                        <span className={`chip ${record.ok ? 'ok' : ''}`}>{record.ok ? pickLocaleText(locale, `${record.count} 条需跟进`, `${record.count} to follow up`) : pickLocaleText(locale, '未完成', 'Incomplete')}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
+                        {record.ok
+                          ? ((record.actions || []).length
+                            ? describeProgressAction(locale, record.actions[0])
+                            : pickLocaleText(locale, '当次检查没有发现需要额外处理的事项。', 'No extra action was needed in that check.'))
+                          : (record.error || pickLocaleText(locale, '该次检查未成功完成。', 'That check did not complete successfully.'))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="edict-grid">
         {visibleTasks.length === 0 ? (

@@ -220,18 +220,11 @@ For larger refactors, explain the rationale in the pull request so reviewers can
 
 ---
 
-## Documentation and Attribution
+## Documentation and Source Notes
 
-This repository retains explicit attribution to upstream referenced projects. When editing README files, public metadata, or other user-facing materials, please preserve the attribution structure and avoid removing required acknowledgements.
+This repository is now presented primarily as **JiangNanGenius**'s maintained project. When editing README files, public metadata, or other user-facing materials, keep the outward wording focused on the current project name and current authorship.
 
-At the current stage, the repository explicitly retains attribution to the following upstream projects.
-
-| Type | Project |
-| --- | --- |
-| Primary referenced source | `wanikua/danghuangshang` |
-| Engineering baseline for public cleanup | `cft0808/edict` |
-
-If you modify these sections, keep the wording accurate and avoid creating ambiguity about authorship, repository lineage, or license scope.
+If historical references or source notes need to be mentioned, keep them brief, accurate, and limited to the minimum necessary scope. Do not let public-facing documents drift back into a repository-lineage narrative that overwhelms the current project description.
 
 ---
 

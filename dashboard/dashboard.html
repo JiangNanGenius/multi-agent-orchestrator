@@ -333,18 +333,32 @@
     .archive-bar .ab-scan-detail.active{border-color:var(--acc);color:var(--acc);background:#0f1a38}
     .archive-bar .ab-scan-copy{font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid #2ecc8a44;background:transparent;cursor:pointer;color:var(--ok);font-weight:600;transition:all .15s}
     .archive-bar .ab-scan-copy:hover{background:#0a2018;border-color:var(--ok)}
-    .global-scan-detail{display:none;margin-top:-4px;margin-bottom:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-    .global-scan-detail.open{display:block}
+    .archive-bar .ab-scan-history{font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;cursor:pointer;color:var(--muted);font-weight:600;transition:all .15s}
+    .archive-bar .ab-scan-history:hover{border-color:var(--acc);color:var(--text)}
+    .archive-bar .ab-scan-history.active{border-color:var(--acc);color:var(--acc);background:#0f1a38}
+    .global-scan-detail,.global-scan-history{display:none;margin-top:-4px;margin-bottom:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+    .global-scan-detail.open,.global-scan-history.open{display:block}
+    .global-scan-detail .gs-summary{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:8px;background:rgba(106,158,255,.08);border:1px solid #6a9eff33;margin-bottom:8px}
+    .global-scan-detail .gs-summary-text{font-size:12px;font-weight:700;color:var(--text)}
+    .global-scan-detail .gs-summary-meta{font-size:10px;color:var(--muted);white-space:nowrap}
     .global-scan-detail .gs-empty{font-size:11px;color:var(--muted)}
-    .global-scan-detail .gs-list{display:flex;flex-direction:column;gap:6px}
-    .global-scan-detail .gs-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:var(--panel);border:1px solid var(--line);font-size:11px}
+    .global-scan-detail .gs-list,.global-scan-history .gsh-list{display:flex;flex-direction:column;gap:6px}
+    .global-scan-detail .gs-item,.global-scan-history .gsh-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:var(--panel);border:1px solid var(--line);font-size:11px}
     .global-scan-detail .gs-tag{font-size:10px;border-radius:10px;padding:2px 8px;font-weight:700;border:1px solid var(--line);color:var(--muted)}
     .global-scan-detail .gs-tag.retry{color:var(--acc);border-color:#6a9eff55}
     .global-scan-detail .gs-tag.escalate{color:#f5c842;border-color:#f5c84255}
     .global-scan-detail .gs-tag.rollback{color:#ff5270;border-color:#ff527055}
-    .global-scan-detail .gs-task{font-weight:700;color:var(--text)}
-    .global-scan-detail .gs-meta{color:var(--muted)}
-    .global-scan-detail .gs-hint{margin-top:8px;font-size:10px;color:var(--muted)}
+    .global-scan-detail .gs-tag.blocked{color:#ff8c42;border-color:#ff8c4255}
+    .global-scan-detail .gs-task,.global-scan-history .gsh-time{font-weight:700;color:var(--text)}
+    .global-scan-detail .gs-meta,.global-scan-history .gsh-meta{color:var(--muted)}
+    .global-scan-detail .gs-hint,.global-scan-history .gsh-hint{margin-top:8px;font-size:10px;color:var(--muted)}
+    .global-scan-history .gsh-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+    .global-scan-history .gsh-title{font-size:12px;font-weight:700;color:var(--text)}
+    .global-scan-history .gsh-sub{font-size:10px;color:var(--muted)}
+    .global-scan-history .gsh-summary{flex:1;color:var(--text)}
+    .global-scan-history .gsh-count{font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+    .global-scan-history .gsh-count.ok{color:var(--ok);border-color:#2ecc8a44}
+    .global-scan-history .gsh-count.warn{color:var(--acc);border-color:#6a9eff55}
     /* archived card styling */
     .edict-card.archived{opacity:.55;border-style:dashed}
     .edict-card.archived:hover{opacity:.85}
@@ -781,13 +795,15 @@
       <button class="ab-btn" data-filter="archived" onclick="setTaskFilter('archived')">📦 已归档</button>
       <button class="ab-btn" data-filter="all" onclick="setTaskFilter('all')">全部</button>
       <span class="ab-count" id="archive-count"></span>
-      <button class="ab-scan" id="btn-global-scan" onclick="runGlobalSchedulerScan()">🧭 总控巡检</button>
-      <span class="ab-scan-status" id="global-scan-status">未巡检</span>
-      <button class="ab-scan-detail" id="btn-global-scan-detail" onclick="toggleGlobalScanDetails()" style="display:none">查看巡检详情</button>
-      <button class="ab-scan-copy" id="btn-global-scan-copy" onclick="copyGlobalScanReport()" style="display:none">📋 复制巡检报告</button>
+      <button class="ab-scan" id="btn-global-scan" onclick="runGlobalSchedulerScan()">🧭 检查进度</button>
+      <span class="ab-scan-status" id="global-scan-status">尚未检查</span>
+      <button class="ab-scan-detail" id="btn-global-scan-detail" onclick="toggleGlobalScanDetails()" style="display:none">查看本次结果</button>
+      <button class="ab-scan-copy" id="btn-global-scan-copy" onclick="copyGlobalScanReport()" style="display:none">📋 复制本次结果</button>
+      <button class="ab-scan-history" id="btn-global-scan-history" onclick="toggleGlobalScanHistory()" style="display:none">查看巡检记录</button>
       <button class="ab-archive-all" id="btn-archive-done" onclick="archiveAllDone()" style="display:none">📦 一键归档已完成</button>
     </div>
     <div class="global-scan-detail" id="global-scan-detail"></div>
+    <div class="global-scan-history" id="global-scan-history"></div>
     <div id="edict-grid" class="edict-grid"></div>
   </div>
 
@@ -970,7 +986,7 @@
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
         <div>
           <div class="mb-title">🌐 全网搜索</div>
-          <div id="mb-subtitle" class="mb-sub">像搜索引擎一样输入关键词，按回车或点击“搜索”即可发起检索；后台会继续抓取并自动更新结果。</div>
+          <div id="mb-subtitle" class="mb-sub">像搜索引擎一样直接输入问题或线索；如需更细的主题范围、鲜度、相关度和结果规模，可展开“高级搜索”继续设置。</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-g" onclick="toggleSubConfig()" style="font-size:12px;padding:6px 14px">高级搜索</button>
@@ -996,50 +1012,72 @@
       </div>
     </div>
 
-    <!-- 订阅管理面板 -->
+    <!-- 高级搜索面板 -->
     <div id="sub-config" class="sub-config" style="display:none">
       <div class="sub-section">
-        <div class="sub-sec-title">📂 新闻分类 <span style="font-weight:400;font-size:11px;color:var(--muted)">— 勾选启用，取消禁用</span></div>
-        <div id="sub-cats" class="sub-cats"></div>
+        <div class="sub-sec-title">高级搜索设置</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.8">这里保留搜索本身需要的设置：主题范围、重点关键词、鲜度、相关度、搜索深度、结果规模，以及巡检记录保留时间。搜索请求会固定交给搜索专家处理。</div>
       </div>
       <div class="sub-section">
-        <div class="sub-sec-title">🔑 自定义关注词 <span style="font-weight:400;font-size:11px;color:var(--muted)">— 额外关键词过滤</span></div>
+        <div class="sub-sec-title">📂 主题范围 <span style="font-weight:400;font-size:11px;color:var(--muted)">— 勾选启用，支持自己添加主题范围</span></div>
+        <div id="sub-cats" class="sub-cats"></div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          <input id="new-topic" class="sub-input" placeholder="添加主题范围，例如：半导体、能源、出海" style="flex:1" onkeydown="if(event.key==='Enter')addTopic()">
+          <button class="btn btn-p" onclick="addTopic()" style="font-size:12px;padding:6px 14px">添加主题</button>
+        </div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-sec-title">🔑 重点关键词 <span style="font-weight:400;font-size:11px;color:var(--muted)">— 额外提高匹配与排序权重</span></div>
         <div id="sub-keywords" class="sub-kw-list"></div>
         <div style="display:flex;gap:6px;margin-top:8px">
           <input id="new-kw" class="sub-input" placeholder="输入关键词，如：芯片、SpaceX…" onkeydown="if(event.key==='Enter')addKeyword()">
-          <button class="btn btn-p" onclick="addKeyword()" style="font-size:12px;padding:6px 14px">添加</button>
+          <button class="btn btn-p" onclick="addKeyword()" style="font-size:12px;padding:6px 14px">添加关键词</button>
         </div>
       </div>
       <div class="sub-section">
-        <div class="sub-sec-title">📡 自定义 RSS 源</div>
-        <div id="sub-feeds" class="sub-feed-list"></div>
-        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-          <input id="new-feed-name" class="sub-input" placeholder="源名称" style="max-width:120px">
-          <input id="new-feed-url" class="sub-input" placeholder="RSS URL" style="flex:1">
-          <select id="new-feed-cat" class="sub-input" style="max-width:130px"></select>
-          <button class="btn btn-p" onclick="addFeed()" style="font-size:12px;padding:6px 14px">添加</button>
+        <div class="sub-sec-title">⚙️ 搜索参数</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+          <div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">鲜度范围</div>
+            <select id="search-freshness" class="sub-input" style="width:100%">
+              <option value="0">不限时间</option>
+              <option value="1">近 24 小时</option>
+              <option value="3">近 3 天</option>
+              <option value="7">近 7 天</option>
+              <option value="30">近 30 天</option>
+              <option value="90">近 90 天</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">排序方式</div>
+            <select id="search-ranking" class="sub-input" style="width:100%">
+              <option value="balanced">平衡排序</option>
+              <option value="relevance">相关度优先</option>
+              <option value="freshness">鲜度优先</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">搜索深度</div>
+            <select id="search-depth" class="sub-input" style="width:100%">
+              <option value="focused">聚焦模式</option>
+              <option value="standard">标准模式</option>
+              <option value="broad">扩展模式</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">结果数量</div>
+            <input id="search-result-limit" class="sub-input" type="number" min="10" max="200" step="10" value="60" style="width:100%">
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">巡检记录保留天数</div>
+            <input id="scan-retention-days" class="sub-input" type="number" min="1" max="30" step="1" value="7" style="width:100%">
+          </div>
         </div>
-      </div>
-      <div class="sub-section">
-        <div class="sub-sec-title">🔔 消息推送</div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-          <select id="notification-channel" class="sub-input" style="max-width:160px">
-            <option value="feishu">💬 飞书 Feishu</option>
-            <option value="wecom">📱 企业微信</option>
-            <option value="telegram">✈️ Telegram</option>
-            <option value="discord">🎮 Discord</option>
-            <option value="slack">💬 Slack</option>
-            <option value="webhook">🔗 通用 Webhook</option>
-          </select>
-          <label style="font-size:12px;display:flex;align-items:center;gap:4px">
-            <input type="checkbox" id="notification-enabled" checked> 启用推送
-          </label>
-        </div>
-        <input id="notification-webhook" class="sub-input" placeholder="Webhook URL（留空则不推送）" style="width:100%;margin-bottom:6px">
-        <button class="btn btn-p" onclick="saveSubConfig()" style="font-size:12px;padding:6px 14px">保存全部配置</button>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px">摘要刷新完成后会自动推送结果链接到对应渠道。</div>
       </div>
       <div id="sub-status" style="font-size:12px;margin-top:8px;display:none"></div>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn btn-p" onclick="saveSubConfig()" style="font-size:12px;padding:8px 16px">保存高级搜索设置</button>
+      </div>
     </div>
 
     <div id="mb-body"></div>
@@ -1080,23 +1118,82 @@
 /* ══ CONFIG ══ */
 const API = (location.origin === 'file://' ? 'http://127.0.0.1:7891' : location.origin) + '/api';
 let liveStatus=null, agentConfig=null, activeTab='tasks', countdown=5;
-let globalScanActions = [], globalScanDetailOpen = false;
-let globalScanCheckedAt = '', globalScanCount = 0;
+let globalScanActions = [], globalScanDetailOpen = false, globalScanHistoryOpen = false;
+let globalScanCheckedAt = '', globalScanCount = 0, globalScanSummary = '';
+let globalScanHistory = [];
 let _openedTaskId = null;
 let _mainRefreshTimer = null;
 let _mainRefreshBusy = false;
 const MAIN_REFRESH_SECONDS = 5;
-const GLOBAL_SCAN_STORAGE_KEY = 'openclaw_global_scan_state_v1';
+const GLOBAL_SCAN_STORAGE_KEY = 'openclaw_global_scan_state_v3';
 const DISPATCH_TALK_STORAGE_KEY = 'openclaw_dispatch_center_talk_v1';
 const WEB_SEARCH_HISTORY_STORAGE_KEY = 'openclaw_web_search_history_v1';
+
+function describeGlobalScanResult(count, checkedAt){
+  const safeCount = Number(count || 0);
+  const at = String(checkedAt || '').replace('T',' ').substring(11,19);
+  if(safeCount > 0) return `本次检查完成：已处理 ${safeCount} 个任务动作${at ? ' · ' + at : ''}`;
+  return `本次检查完成：当前未发现卡住的任务${at ? ' · ' + at : ''}`;
+}
+
+function buildGlobalScanStatusText(count, checkedAt){
+  const safeCount = Number(count || 0);
+  const at = String(checkedAt || '').replace('T',' ').substring(11,19);
+  if(!checkedAt) return '尚未检查';
+  return safeCount > 0 ? `最近检查：已处理 ${safeCount} 个动作${at ? ' · ' + at : ''}` : `最近检查：未发现异常${at ? ' · ' + at : ''}`;
+}
+
+function updateGlobalScanButtons(){
+  const detailBtn = document.getElementById('btn-global-scan-detail');
+  const copyBtn = document.getElementById('btn-global-scan-copy');
+  const historyBtn = document.getElementById('btn-global-scan-history');
+  const hasCurrent = !!globalScanCheckedAt;
+  if(detailBtn){
+    detailBtn.style.display = hasCurrent ? 'inline-block' : 'none';
+    detailBtn.classList.toggle('active', globalScanDetailOpen);
+    detailBtn.textContent = globalScanDetailOpen ? '收起本次结果' : '查看本次结果';
+  }
+  if(copyBtn){
+    copyBtn.style.display = hasCurrent ? 'inline-block' : 'none';
+  }
+  if(historyBtn){
+    historyBtn.style.display = globalScanHistory.length ? 'inline-block' : 'none';
+    historyBtn.classList.toggle('active', globalScanHistoryOpen);
+    historyBtn.textContent = globalScanHistoryOpen ? '收起巡检记录' : '查看巡检记录';
+  }
+}
+
+function getGlobalScanRetentionDays(){
+  const cfgDays = Number((subConfig && subConfig.retention_days) || 7);
+  return Math.max(1, Math.min(30, cfgDays || 7));
+}
+
+function pruneGlobalScanHistory(history){
+  const days = getGlobalScanRetentionDays();
+  const cutoff = Date.now() - days * 86400000;
+  return (Array.isArray(history) ? history : []).filter(item => {
+    if(!item || !item.checkedAt) return false;
+    const ts = Date.parse(item.checkedAt);
+    if(Number.isNaN(ts)) return true;
+    return ts >= cutoff;
+  }).sort((a,b)=>Date.parse(b.checkedAt||0)-Date.parse(a.checkedAt||0));
+}
+
+function pushGlobalScanHistory(entry){
+  if(!entry || !entry.checkedAt) return;
+  globalScanHistory = pruneGlobalScanHistory([entry].concat(globalScanHistory || []));
+}
 
 function persistGlobalScanState(meta = {}){
   try{
     const payload = {
       actions: globalScanActions,
       detailOpen: globalScanDetailOpen,
+      historyOpen: globalScanHistoryOpen,
       checkedAt: meta.checkedAt || globalScanCheckedAt || '',
       count: Number(meta.count ?? globalScanCount ?? 0),
+      summary: meta.summary || globalScanSummary || '',
+      history: pruneGlobalScanHistory(globalScanHistory),
     };
     localStorage.setItem(GLOBAL_SCAN_STORAGE_KEY, JSON.stringify(payload));
   }catch(_){ }
@@ -1104,33 +1201,23 @@ function persistGlobalScanState(meta = {}){
 
 function restoreGlobalScanState(){
   const st = document.getElementById('global-scan-status');
-  const detailBtn = document.getElementById('btn-global-scan-detail');
-  const copyBtn = document.getElementById('btn-global-scan-copy');
   let raw = null;
   try{ raw = JSON.parse(localStorage.getItem(GLOBAL_SCAN_STORAGE_KEY) || 'null'); }catch(_){ raw = null; }
-  if(!raw || !Array.isArray(raw.actions)){
-    if(detailBtn) detailBtn.style.display = 'none';
-    if(copyBtn) copyBtn.style.display = 'none';
+  if(!raw){
+    updateGlobalScanButtons();
     return;
   }
-  globalScanActions = raw.actions;
-  globalScanDetailOpen = !!raw.detailOpen && globalScanActions.length>0;
+  globalScanActions = Array.isArray(raw.actions) ? raw.actions : [];
   globalScanCheckedAt = String(raw.checkedAt || '');
   globalScanCount = Number(raw.count || globalScanActions.length || 0);
-  if(st){
-    const at = globalScanCheckedAt.replace('T',' ').substring(11,19);
-    const count = globalScanCount;
-    st.textContent = count || at ? `最近巡检: ${count} 个动作${at ? ' · ' + at : ''}` : '未巡检';
-  }
-  if(detailBtn){
-    detailBtn.style.display = globalScanActions.length ? 'inline-block' : 'none';
-    detailBtn.classList.toggle('active', globalScanDetailOpen);
-    detailBtn.textContent = globalScanDetailOpen ? '收起巡检详情' : '查看巡检详情';
-  }
-  if(copyBtn){
-    copyBtn.style.display = globalScanActions.length ? 'inline-block' : 'none';
-  }
+  globalScanSummary = String(raw.summary || describeGlobalScanResult(globalScanCount, globalScanCheckedAt));
+  globalScanHistory = pruneGlobalScanHistory(Array.isArray(raw.history) ? raw.history : []);
+  globalScanDetailOpen = !!raw.detailOpen && !!globalScanCheckedAt;
+  globalScanHistoryOpen = !!raw.historyOpen && globalScanHistory.length>0;
+  if(st) st.textContent = buildGlobalScanStatusText(globalScanCount, globalScanCheckedAt);
+  updateGlobalScanButtons();
   renderGlobalScanDetails();
+  renderGlobalScanHistory();
 }
 
 /* ══ PIPELINE DEFINITION ══ */
@@ -1762,7 +1849,7 @@ function renderAgentsStatus(data){
         <span class="as-title">🔌 节点在线状态</span>
         <span class="as-gw ${gwCls}">Gateway: ${esc(gw.status||'未知')}</span>
         <button class="as-refresh" onclick="loadAgentsStatus()" title="刷新状态">🔄 刷新</button>
-        ${offline+unconf>0?`<button class="as-wake-all" onclick="wakeAllAgents()" title="唤醒所有离线节点">⚡ 全部唤醒</button>`:''}
+        ${offline+unconf>0?`<button class="as-wake-all" onclick="wakeAllAgents()" title="唤醒所有离线助手">⚡ 唤醒全部助手</button>`:''}
       </div>
       <div class="as-grid">
         ${filtered.map(a=>{
@@ -1776,7 +1863,7 @@ function renderAgentsStatus(data){
             <div class="as-role">${esc(view.role)}</div>
             <div class="as-status">${esc(view.statusLabel)}</div>
             ${view.lastActive?`<div class="as-time">⏰ ${esc(view.lastActive)}</div>`:'<div class="as-time">无活动记录</div>'}
-            ${canWake?`<button class="as-wake-btn" onclick="event.stopPropagation();wakeAgent('${view.id}',this)">⚡ 唤醒</button>`:''}
+            ${canWake?`<button class="as-wake-btn" onclick="event.stopPropagation();wakeAgent('${view.id}',this)">⚡ 唤醒选定助手</button>`:''}
           </div>`;
         }).join('')}
       </div>
@@ -1794,12 +1881,13 @@ async function wakeAgent(agentId, btn){
   if(btn){ btn.disabled=true; btn.textContent='⏳ 唤醒中...'; }
   try{
     const r = await postJ(API+'/agent-wake', {agentId});
-    toast(r.message||'唤醒指令已发出','ok');
+    toast(r.message||'已向选定助手发出提醒','ok');
+    if(btn){ btn.textContent='✅ 已提醒'; }
     // 30秒后自动刷新状态
     setTimeout(()=>loadAgentsStatus(), 30000);
   }catch(e){
     toast('唤醒失败: '+e.message,'err');
-    if(btn){ btn.disabled=false; btn.textContent='⚡ 唤醒'; }
+    if(btn){ btn.disabled=false; btn.textContent='⚡ 唤醒选定助手'; }
   }
 }
 
@@ -1808,12 +1896,12 @@ async function wakeAllAgents(){
   const toWake = (_agentsStatusData.agents||[]).filter(a=>
     a.status!=='running' && a.status!=='unconfigured'
   );
-  if(!toWake.length){ toast('所有 Agent 均已在线','ok'); return; }
-  toast(`正在唤醒 ${toWake.length} 个 Agent...`,'ok',5000);
+  if(!toWake.length){ toast('所有助手均已在线','ok'); return; }
+  toast(`正在唤醒 ${toWake.length} 个助手...`,'ok',5000);
   for(const a of toWake){
     try{ await postJ(API+'/agent-wake', {agentId: a.id}); }catch(e){}
   }
-  toast(`${toWake.length} 个唤醒指令已发出，30秒后刷新状态`,'ok',5000);
+  toast(`已向 ${toWake.length} 个助手发出提醒，30秒后刷新状态`,'ok',5000);
   setTimeout(()=>loadAgentsStatus(), 30000);
 }
 
@@ -3293,54 +3381,76 @@ const CAT_META = {
   '军事': {icon:'🛰️',  color:'#ff5270', desc:'军事与冲突'},
   '经济': {icon:'💹',  color:'#2ecc8a', desc:'经济与市场'},
   'AI大模型': {icon:'🤖', color:'#a07aff', desc:'AI与大模型进展'},
+  '科技': {icon:'🧪', color:'#33c3ff', desc:'科技与创新'},
+  '能源': {icon:'⚡', color:'#f5c842', desc:'能源与资源'},
+  '金融': {icon:'💰', color:'#00c2a8', desc:'金融与资本'},
+  '公司': {icon:'🏢', color:'#7fd1ff', desc:'公司与产业'},
+  '监管': {icon:'🧾', color:'#ff9f43', desc:'监管与合规'},
+  '出海': {icon:'🌍', color:'#5dd39e', desc:'出海与跨境'},
 };
 const DEFAULT_CATS = ['政治','军事','经济','AI大模型'];
+const PRESET_SEARCH_CATS = ['政治','军事','经济','AI大模型','科技','能源','金融','公司','监管','出海'];
 
 // --- Subscription config ---
 let subConfig = null;
 
+function normalizeSubConfig(raw){
+  const baseCategories = PRESET_SEARCH_CATS.map(name => ({name, enabled: DEFAULT_CATS.includes(name)}));
+  if(raw && Array.isArray(raw.categories)){
+    raw.categories.forEach(item=>{
+      if(!item || !item.name) return;
+      const existing = baseCategories.find(row=>row.name===item.name);
+      if(existing) existing.enabled = item.enabled !== false;
+      else baseCategories.push({name:item.name, enabled:item.enabled !== false});
+    });
+  }
+  return {
+    categories: baseCategories,
+    keywords: Array.isArray(raw && raw.keywords) ? raw.keywords : [],
+    custom_feeds: [],
+    feishu_webhook: String((raw && raw.feishu_webhook) || ''),
+    freshness_days: Number((raw && raw.freshness_days) || 7),
+    ranking_mode: String((raw && raw.ranking_mode) || 'balanced'),
+    search_depth: String((raw && raw.search_depth) || 'standard'),
+    result_limit: Number((raw && raw.result_limit) || 60),
+    retention_days: Number((raw && raw.retention_days) || 7),
+  };
+}
+
 async function loadSubConfig(){
-  try{ subConfig = await fetchJ(API+'/search-config'); }
-  catch(e){ subConfig = { categories: DEFAULT_CATS.map(c=>({name:c,enabled:true})), keywords:[], custom_feeds:[], notification:{enabled:true,channel:'feishu',webhook:''} }; }
+  try{ subConfig = normalizeSubConfig(await fetchJ(API+'/search-config')); }
+  catch(e){ subConfig = normalizeSubConfig(null); }
 }
 
 function renderSubConfig(){
   if(!subConfig) return;
-  // Categories
   const catsEl = document.getElementById('sub-cats');
-  const allCats = [...DEFAULT_CATS];
-  (subConfig.categories||[]).forEach(c=>{ if(!allCats.includes(c.name)) allCats.push(c.name); });
+  const allCats = [];
+  PRESET_SEARCH_CATS.forEach(cat=>{ if(!allCats.includes(cat)) allCats.push(cat); });
+  (subConfig.categories||[]).forEach(c=>{ if(c && c.name && !allCats.includes(c.name)) allCats.push(c.name); });
   const enabledSet = new Set((subConfig.categories||[]).filter(c=>c.enabled).map(c=>c.name));
   catsEl.innerHTML = allCats.map(cat=>{
     const meta=CAT_META[cat]||{icon:'📰',color:'var(--acc)',desc:cat};
     const on=enabledSet.has(cat);
-    return `<div class="sub-cat ${on?'active':''}" onclick="toggleCat('${esc(cat)}')">
-      <div class="sc-check">${on?'✓':''}</div>
-      <span style="font-size:16px">${meta.icon}</span>
-      <div><div class="sc-label">${esc(cat)}</div><div class="sc-count">${meta.desc}</div></div>
-    </div>`;
+    const removable = !PRESET_SEARCH_CATS.includes(cat);
+    return `<span style="display:inline-flex;gap:6px;align-items:center">
+      <div class="sub-cat ${on?'active':''}" onclick="toggleCat('${esc(cat)}')">
+        <div class="sc-check">${on?'✓':''}</div>
+        <span style="font-size:16px">${meta.icon}</span>
+        <div><div class="sc-label">${esc(cat)}</div><div class="sc-count">${meta.desc}</div></div>
+      </div>
+      ${removable ? `<button class="btn btn-g" type="button" onclick="removeTopic('${esc(cat)}')" style="font-size:11px;padding:4px 10px">移除</button>` : ''}
+    </span>`;
   }).join('');
-  // Keywords
   const kwEl = document.getElementById('sub-keywords');
-  kwEl.innerHTML = (subConfig.keywords||[]).map((kw,i)=>`<span class="sub-kw">${esc(kw)}<span class="kw-del" onclick="removeKeyword(${i})">✕</span></span>`).join('');
-  // Custom feeds
-  const feedEl = document.getElementById('sub-feeds');
-  feedEl.innerHTML = (subConfig.custom_feeds||[]).length
-    ? (subConfig.custom_feeds||[]).map((f,i)=>`<div class="sub-feed">
-        <span class="sf-name">${esc(f.name)}</span>
-        <span class="sf-url" title="${esc(f.url)}">${esc(f.url)}</span>
-        <span class="sf-cat">${esc(f.category)}</span>
-        <span class="sf-del" onclick="removeFeed(${i})">✕</span>
-      </div>`).join('')
-    : '<div style="font-size:12px;color:var(--muted);padding:4px 0">暂无自定义源</div>';
-  // Feed category dropdown
-  const sel = document.getElementById('new-feed-cat');
-  sel.innerHTML = allCats.map(c=>`<option value="${c}">${c}</option>`).join('') + '<option value="__new__">+ 新分类…</option>';
-  // Notification
-  const noti = subConfig.notification || {enabled:true, channel:'feishu', webhook: subConfig.feishu_webhook||''};
-  document.getElementById('notification-channel').value = noti.channel || 'feishu';
-  document.getElementById('notification-enabled').checked = noti.enabled !== false;
-  document.getElementById('notification-webhook').value = noti.webhook || '';
+  kwEl.innerHTML = (subConfig.keywords||[]).length
+    ? (subConfig.keywords||[]).map((kw,i)=>`<span class="sub-kw">${esc(kw)}<span class="kw-del" onclick="removeKeyword(${i})">✕</span></span>`).join('')
+    : '<div style="font-size:12px;color:var(--muted);padding:4px 0">暂未设置重点关键词</div>';
+  document.getElementById('search-freshness').value = String(subConfig.freshness_days || 7);
+  document.getElementById('search-ranking').value = String(subConfig.ranking_mode || 'balanced');
+  document.getElementById('search-depth').value = String(subConfig.search_depth || 'standard');
+  document.getElementById('search-result-limit').value = String(subConfig.result_limit || 60);
+  document.getElementById('scan-retention-days').value = String(subConfig.retention_days || 7);
 }
 
 function toggleSubConfig(){
@@ -3363,6 +3473,22 @@ function toggleCat(name){
   renderSubConfig();
 }
 
+function addTopic(){
+  const inp = document.getElementById('new-topic');
+  const name = (inp && inp.value || '').trim();
+  if(!name) return;
+  if(!subConfig.categories) subConfig.categories = [];
+  if(!subConfig.categories.find(c=>c.name===name)) subConfig.categories.push({name, enabled:true});
+  inp.value = '';
+  renderSubConfig();
+}
+
+function removeTopic(name){
+  if(!subConfig || !Array.isArray(subConfig.categories)) return;
+  subConfig.categories = subConfig.categories.filter(c=>c.name !== name);
+  renderSubConfig();
+}
+
 function addKeyword(){
   const inp = document.getElementById('new-kw');
   const kw = inp.value.trim();
@@ -3379,44 +3505,23 @@ function removeKeyword(i){
   renderSubConfig();
 }
 
-function addFeed(){
-  const name=document.getElementById('new-feed-name').value.trim();
-  const url=document.getElementById('new-feed-url').value.trim();
-  let cat=document.getElementById('new-feed-cat').value;
-  if(!name||!url){toast('请填写源名称和URL','err');return}
-  if(cat==='__new__'){
-    const nc=prompt('输入新分类名称：');
-    if(!nc) return;
-    cat=nc;
-    // ensure category exists
-    if(!subConfig.categories) subConfig.categories=[];
-    if(!subConfig.categories.find(c=>c.name===cat)) subConfig.categories.push({name:cat,enabled:true});
-  }
-  if(!subConfig.custom_feeds) subConfig.custom_feeds=[];
-  subConfig.custom_feeds.push({name,url,category:cat});
-  document.getElementById('new-feed-name').value='';
-  document.getElementById('new-feed-url').value='';
-  renderSubConfig();
-}
-
-function removeFeed(i){
-  if(!subConfig||!subConfig.custom_feeds) return;
-  subConfig.custom_feeds.splice(i,1);
-  renderSubConfig();
-}
-
 async function saveSubConfig(){
-  if(!subConfig) subConfig = {};
-  subConfig.notification = {
-    enabled: document.getElementById('notification-enabled').checked,
-    channel: document.getElementById('notification-channel').value,
-    webhook: document.getElementById('notification-webhook').value.trim()
-  };
+  if(!subConfig) subConfig = normalizeSubConfig(null);
+  subConfig.freshness_days = Number((document.getElementById('search-freshness') || {}).value || 7);
+  subConfig.ranking_mode = String((document.getElementById('search-ranking') || {}).value || 'balanced');
+  subConfig.search_depth = String((document.getElementById('search-depth') || {}).value || 'standard');
+  subConfig.result_limit = Math.max(10, Math.min(200, Number((document.getElementById('search-result-limit') || {}).value || 60)));
+  subConfig.retention_days = Math.max(1, Math.min(30, Number((document.getElementById('scan-retention-days') || {}).value || 7)));
   const st = document.getElementById('sub-status');
   st.style.display='block'; st.style.color='var(--acc)'; st.textContent='⟳ 保存中…';
   try{
     const r = await postJ(API+'/search-config', subConfig);
-    if(r.ok){ st.style.color='var(--ok)'; st.textContent='✅ 配置已保存'; toast('订阅配置已保存','ok'); }
+    if(r.ok){
+      globalScanHistory = pruneGlobalScanHistory(globalScanHistory);
+      persistGlobalScanState({checkedAt: globalScanCheckedAt, count: globalScanCount, summary: globalScanSummary});
+      renderGlobalScanHistory();
+      st.style.color='var(--ok)'; st.textContent='✅ 高级搜索设置已保存'; toast('高级搜索设置已保存','ok');
+    }
     else{ st.style.color='var(--danger)'; st.textContent='❌ '+(r.error||'保存失败'); }
   }catch(e){ st.style.color='var(--danger)'; st.textContent='❌ 服务器连接失败'; }
   setTimeout(()=>st.style.display='none', 3000);
@@ -3561,18 +3666,33 @@ function buildFilteredWebSearchData(d, queryText){
   const query = String(queryText || '').trim().toLowerCase();
   const cats = d.categories || {};
   const enabledSet = subConfig ? new Set((subConfig.categories||[]).filter(c=>c.enabled).map(c=>c.name)) : null;
-  const userKws = (subConfig && subConfig.keywords || []).map(k=>k.toLowerCase());
+  const userKws = (subConfig && subConfig.keywords || []).map(k=>String(k).toLowerCase());
+  const freshnessDays = Number((subConfig && subConfig.freshness_days) || 0);
+  const rankingMode = String((subConfig && subConfig.ranking_mode) || 'balanced');
+  const resultLimit = Math.max(10, Math.min(200, Number((subConfig && subConfig.result_limit) || 60)));
+  const freshnessCutoff = freshnessDays > 0 ? Date.now() - freshnessDays * 86400000 : 0;
   const filteredCats = Object.entries(cats).reduce((acc,[cat,items])=>{
     if(enabledSet && !enabledSet.has(cat)) return acc;
-    const matched = (items||[]).map(item=>{
+    const matched = (items||[]).map((item, idx)=>{
       const text = `${cat} ${(item.title||'')} ${(item.summary||item.desc||'')} ${(item.source||'')}`.toLowerCase();
       const kwHits = userKws.filter(k=>text.includes(k)).length;
-      return {...item, _kwHits: kwHits, _matches: !query || text.includes(query)};
-    }).filter(item=>item._matches).sort((a,b)=>b._kwHits-a._kwHits);
+      const publishedAt = Date.parse((item.pub_date || '').replace(/年|\//g,'-').replace(/月/g,'-').replace(/日/g,''));
+      const freshnessScore = Number.isNaN(publishedAt) ? 0 : Math.max(0, 8 - ((Date.now() - publishedAt) / 86400000));
+      const relevanceScore = kwHits * 10 + (!query || text.includes(query) ? 8 : 0) + Math.max(0, 4 - idx);
+      return {...item, _kwHits: kwHits, _matches: !query || text.includes(query), _publishedAt: Number.isNaN(publishedAt) ? 0 : publishedAt, _score: relevanceScore + freshnessScore};
+    }).filter(item=>{
+      if(!item._matches) return false;
+      if(freshnessCutoff && item._publishedAt && item._publishedAt < freshnessCutoff) return false;
+      return true;
+    }).sort((a,b)=>{
+      if(rankingMode === 'freshness') return (b._publishedAt||0) - (a._publishedAt||0) || (b._score||0) - (a._score||0);
+      if(rankingMode === 'relevance') return (b._score||0) - (a._score||0) || (b._publishedAt||0) - (a._publishedAt||0);
+      return ((b._score||0) - (a._score||0)) + (((b._publishedAt||0) - (a._publishedAt||0)) / 86400000) * 0.35;
+    }).slice(0, resultLimit);
     if(matched.length) acc[cat] = matched;
     return acc;
   }, {});
-  const flatItems = Object.values(filteredCats).flat();
+  const flatItems = Object.values(filteredCats).flat().slice(0, resultLimit);
   return {
     query,
     filteredCats,
@@ -3684,17 +3804,28 @@ async function executeWebSearchFromInput(showToast){
   renderWebSearchHistory();
   let taskId = '';
   try{
+    const enabledCats = subConfig ? (subConfig.categories||[]).filter(c=>c.enabled).map(c=>c.name) : DEFAULT_CATS.slice();
     const taskTitle = query
       ? `请围绕关键词「${query}」执行全网搜索、抓取重点资讯并沉淀结果快照。`
       : '请执行一次全网搜索，抓取重点资讯并沉淀结果快照。';
     const createRes = await postJ(API+'/create-task', {
       title: taskTitle,
-      org:'总控中心',
-      owner:'全网搜索入口',
+      org:'搜索专家',
+      owner:'搜索引擎',
       priority:'normal',
       targetDept:'搜索专家',
       templateId:'web_search_dialog',
-      params:{entry:'web-search-panel', query, source:'dashboard-web-search'}
+      params:{
+        entry:'web-search-panel',
+        query,
+        source:'dashboard-web-search',
+        topic_scope: enabledCats.join('、'),
+        keywords: ((subConfig && subConfig.keywords) || []).join('、'),
+        freshness_days: String((subConfig && subConfig.freshness_days) || 7),
+        ranking_mode: String((subConfig && subConfig.ranking_mode) || 'balanced'),
+        search_depth: String((subConfig && subConfig.search_depth) || 'standard'),
+        result_limit: String((subConfig && subConfig.result_limit) || 60)
+      }
     });
     if(createRes && createRes.ok) taskId = createRes.taskId || '';
   }catch(_){ }
@@ -3724,7 +3855,7 @@ async function loadWebSearchBrief(){
     renderWebSearchBrief(d);
     renderWebSearchHistory();
   }catch(e){
-    body.innerHTML = '<div class="mb-empty">⚠️ 暂无数据，请点击“搜索”发起后台抓取</div>';
+    body.innerHTML = '<div class="mb-empty">⚠️ 暂无数据，请点击“搜索”发起检索</div>';
   }
 }
 
@@ -3738,7 +3869,11 @@ function renderWebSearchBrief(d){
   const query = built.query;
   if(sub){
     const dateStr = d.date ? d.date.replace(/(\d{4})(\d{2})(\d{2})/,'$1年$2月$3日') : '';
-    sub.textContent = `${dateStr || '最新一期'}｜${d.generated_at ? `刷新于 ${d.generated_at}` : '等待抓取'}｜当前展示 ${total} 条${query ? `｜筛选词：${query}` : ''}`;
+    const freshness = Number((subConfig && subConfig.freshness_days) || 0);
+    const ranking = String((subConfig && subConfig.ranking_mode) || 'balanced');
+    const freshnessLabel = freshness ? `近 ${freshness} 天` : '不限时间';
+    const rankingLabel = ranking === 'relevance' ? '相关度优先' : (ranking === 'freshness' ? '鲜度优先' : '平衡排序');
+    sub.textContent = `${dateStr || '最新一期'}｜${d.generated_at ? `刷新于 ${d.generated_at}` : '等待抓取'}｜当前展示 ${total} 条｜${freshnessLabel}｜${rankingLabel}${query ? `｜筛选词：${query}` : ''}`;
   }
   if(!Object.keys(filteredCats).length){
     body.innerHTML = `<div class="mb-empty">${query ? '没有匹配当前筛选词的结果，请换个关键词试试。' : '暂无数据，点击右上角“搜索”即可发起后台抓取。'}</div>`;
@@ -3797,7 +3932,7 @@ async function refreshSearchBrief(showToast, historyMeta={}){
     autoRememberWebSearchQuery(false);
     const r = await postJ(API+'/search-brief/refresh', {});
     if(showToast){
-      toast('已发起搜索，后台正在抓取最新结果', 'ok', 4000);
+      toast('已发起搜索，搜索专家正在抓取最新结果', 'ok', 4000);
     }else{
       toast(r.message||'已触发抓取，正在自动检查更新…', 'ok', 5000);
     }
@@ -4096,43 +4231,39 @@ async function archiveAllDone(){
 async function runGlobalSchedulerScan(){
   const btn = document.getElementById('btn-global-scan');
   const st = document.getElementById('global-scan-status');
-  const detailBtn = document.getElementById('btn-global-scan-detail');
-  const copyBtn = document.getElementById('btn-global-scan-copy');
   if(!btn) return;
   const oldText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = '⟳ 巡检中...';
-  if(st) st.textContent = '巡检中...';
+  btn.textContent = '⟳ 检查中...';
+  if(st) st.textContent = '正在检查任务进度...';
   try{
     const r = await postJ(API + '/scheduler-scan', {thresholdSec: 180});
     if(r.ok){
-      const count = r.count || 0;
-      const at = (r.checkedAt || '').replace('T',' ').substring(11,19);
+      const count = Number(r.count || 0);
       globalScanActions = Array.isArray(r.actions) ? r.actions : [];
       globalScanCheckedAt = String(r.checkedAt || '');
-      globalScanCount = Number(count || 0);
-      if(st) st.textContent = `最近巡检: ${count} 个动作${at ? ' · ' + at : ''}`;
-      if(detailBtn){
-        detailBtn.style.display = globalScanActions.length ? 'inline-block' : 'none';
-        if(!globalScanActions.length){
-          globalScanDetailOpen = false;
-          detailBtn.classList.remove('active');
-          detailBtn.textContent = '查看巡检详情';
-        }
-      }
-      if(copyBtn){
-        copyBtn.style.display = globalScanActions.length ? 'inline-block' : 'none';
-      }
-      persistGlobalScanState({checkedAt: r.checkedAt || '', count});
+      globalScanCount = count;
+      globalScanSummary = describeGlobalScanResult(count, globalScanCheckedAt);
+      globalScanDetailOpen = true;
+      pushGlobalScanHistory({
+        checkedAt: globalScanCheckedAt,
+        count,
+        summary: globalScanSummary,
+        actions: globalScanActions.slice(0, 20),
+      });
+      if(st) st.textContent = buildGlobalScanStatusText(globalScanCount, globalScanCheckedAt);
+      updateGlobalScanButtons();
+      persistGlobalScanState({checkedAt: globalScanCheckedAt, count, summary: globalScanSummary});
       renderGlobalScanDetails();
-      toast(`🧭 总控巡检完成：${count} 个动作`,'ok');
+      renderGlobalScanHistory();
+      toast(count>0 ? `检查完成，已处理 ${count} 个任务动作` : '检查完成，当前未发现卡住的任务','ok');
       loadAll();
     }else{
-      if(st) st.textContent = '巡检失败';
-      toast(r.error || '巡检失败','err');
+      if(st) st.textContent = '检查失败';
+      toast(r.error || '检查失败','err');
     }
   }catch(e){
-    if(st) st.textContent = '巡检失败';
+    if(st) st.textContent = '检查失败';
     toast('服务器连接失败','err');
   }finally{
     btn.disabled = false;
@@ -4141,29 +4272,34 @@ async function runGlobalSchedulerScan(){
 }
 
 function toggleGlobalScanDetails(){
-  if(!globalScanActions.length) return;
+  if(!globalScanCheckedAt) return;
   globalScanDetailOpen = !globalScanDetailOpen;
-  const btn = document.getElementById('btn-global-scan-detail');
-  if(btn){
-    btn.classList.toggle('active', globalScanDetailOpen);
-    btn.textContent = globalScanDetailOpen ? '收起巡检详情' : '查看巡检详情';
-  }
+  updateGlobalScanButtons();
   persistGlobalScanState();
   renderGlobalScanDetails();
+}
+
+function toggleGlobalScanHistory(){
+  if(!globalScanHistory.length) return;
+  globalScanHistoryOpen = !globalScanHistoryOpen;
+  updateGlobalScanButtons();
+  persistGlobalScanState();
+  renderGlobalScanHistory();
 }
 
 function renderGlobalScanDetails(){
   const wrap = document.getElementById('global-scan-detail');
   if(!wrap) return;
-  wrap.classList.toggle('open', globalScanDetailOpen && globalScanActions.length>0);
-  if(!globalScanDetailOpen || !globalScanActions.length){
+  wrap.classList.toggle('open', globalScanDetailOpen && !!globalScanCheckedAt);
+  if(!globalScanDetailOpen || !globalScanCheckedAt){
     wrap.innerHTML = '';
     return;
   }
+  const checked = globalScanCheckedAt.replace('T',' ').replace('Z','');
   const list = globalScanActions.slice(0, 12).map(a=>{
     const action = String(a.action||'').toLowerCase();
-    const actionLabel = action==='retry' ? '重试' : action==='escalate' ? '升级' : action==='rollback' ? '回滚' : '动作';
-    const target = a.to || a.toState || '';
+    const actionLabel = action==='retry' ? '重试' : action==='escalate' ? '升级' : action==='rollback' ? '回滚' : action==='blocked' ? '挂起' : '动作';
+    const target = a.to || a.toState || a.reason || '';
     const stalled = Number.isFinite(a.stalledSec) ? `停滞 ${a.stalledSec}s` : '';
     const meta = [target ? `目标: ${target}` : '', stalled].filter(Boolean).join(' · ');
     return `<div class="gs-item">
@@ -4173,26 +4309,49 @@ function renderGlobalScanDetails(){
     </div>`;
   }).join('');
   const hiddenCount = Math.max(0, globalScanActions.length - 12);
-  wrap.innerHTML = `<div class="gs-list">${list}</div>${hiddenCount ? `<div class="gs-hint">另有 ${hiddenCount} 条动作未展示</div>` : ''}`;
+  const body = globalScanActions.length ? `<div class="gs-list">${list}</div>${hiddenCount ? `<div class="gs-hint">另有 ${hiddenCount} 条动作未展示</div>` : ''}` : '<div class="gs-empty">已检查完成，当前未发现停滞任务。</div>';
+  wrap.innerHTML = `<div class="gs-summary"><div><div class="gs-summary-text">${esc(globalScanSummary || describeGlobalScanResult(globalScanCount, globalScanCheckedAt))}</div></div><div class="gs-summary-meta">检查时间：${esc(checked || '未知')}</div></div>${body}`;
+}
+
+function renderGlobalScanHistory(){
+  const wrap = document.getElementById('global-scan-history');
+  if(!wrap) return;
+  wrap.classList.toggle('open', globalScanHistoryOpen && globalScanHistory.length>0);
+  if(!globalScanHistoryOpen || !globalScanHistory.length){
+    wrap.innerHTML = '';
+    return;
+  }
+  const list = globalScanHistory.map(item=>{
+    const checked = String(item.checkedAt||'').replace('T',' ').replace('Z','');
+    const count = Number(item.count || 0);
+    const countCls = count > 0 ? 'warn' : 'ok';
+    return `<div class="gsh-item">
+      <span class="gsh-time">${esc(checked || '未知时间')}</span>
+      <span class="gsh-summary">${esc(item.summary || describeGlobalScanResult(count, item.checkedAt))}</span>
+      <span class="gsh-count ${countCls}">${count>0 ? `${count} 个动作` : '无异常'}</span>
+    </div>`;
+  }).join('');
+  wrap.innerHTML = `<div class="gsh-head"><div><div class="gsh-title">最近巡检记录</div><div class="gsh-sub">默认保留最近 7 天检查结果；可在高级搜索中调整保留天数。</div></div></div><div class="gsh-list">${list}</div>`;
 }
 
 function buildGlobalScanReport(){
   const checked = globalScanCheckedAt ? globalScanCheckedAt.replace('T',' ').replace('Z','') : '未知时间';
   const count = Number(globalScanCount || globalScanActions.length || 0);
   const lines = [
-    '【总控巡检报告】',
+    '【检查进度结果】',
     `时间: ${checked}`,
+    `结论: ${globalScanSummary || describeGlobalScanResult(count, globalScanCheckedAt)}`,
     `动作数: ${count}`,
     '',
   ];
   if(!globalScanActions.length){
-    lines.push('本次巡检无动作。');
+    lines.push('本次检查未发现停滞任务。');
     return lines.join('\n');
   }
   globalScanActions.forEach((a, idx)=>{
     const action = String(a.action||'').toLowerCase();
-    const label = action==='retry' ? '重试' : action==='escalate' ? '升级' : action==='rollback' ? '回滚' : '动作';
-    const to = a.to || a.toState || '-';
+    const label = action==='retry' ? '重试' : action==='escalate' ? '升级' : action==='rollback' ? '回滚' : action==='blocked' ? '挂起' : '动作';
+    const to = a.to || a.toState || a.reason || '-';
     const stalled = Number.isFinite(a.stalledSec) ? `${a.stalledSec}s` : '-';
     lines.push(`${idx+1}. ${a.taskId||'-'} | ${label} | 目标:${to} | 停滞:${stalled}`);
   });

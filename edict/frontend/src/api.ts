@@ -85,6 +85,10 @@ export const api = {
     postJ<ActionResult>(`${API_BASE}/api/archive-task`, { taskId, archived }),
   archiveAllDone: () =>
     postJ<ActionResult & { count?: number }>(`${API_BASE}/api/archive-task`, { archiveAllDone: true }),
+  archiveWorkspace: (taskId: string, agent = 'dashboard') =>
+    postJ<ActionResult & { workspace?: WorkspaceMeta; archived?: boolean }>(`${API_BASE}/api/tasks/${encodeURIComponent(taskId)}/workspace/archive`, { agent }),
+  reactivateWorkspace: (taskId: string, moveToHot = true, agent = 'dashboard') =>
+    postJ<ActionResult & { workspace?: WorkspaceMeta; archived?: boolean }>(`${API_BASE}/api/tasks/${encodeURIComponent(taskId)}/workspace/reactivate`, { agent, move_to_hot: moveToHot }),
   schedulerScan: (thresholdSec = 180) =>
     postJ<ActionResult & { count?: number; actions?: ScanAction[]; checkedAt?: string }>(
       `${API_BASE}/api/scheduler-scan`,
@@ -102,6 +106,10 @@ export const api = {
     postJ<ActionResult>(`${API_BASE}/api/search-brief/refresh`, {}),
   saveSearchConfig: (config: SubConfig) =>
     postJ<ActionResult>(`${API_BASE}/api/search-config`, config),
+  systemSettings: () =>
+    fetchJ<SystemSettings>(`${API_BASE}/api/system-settings`),
+  saveSystemSettings: (settings: SystemSettings) =>
+    postJ<ActionResult & { settings?: SystemSettings }>(`${API_BASE}/api/system-settings`, settings),
   addSkill: (agentId: string, skillName: string, description: string, trigger: string) =>
     postJ<ActionResult>(`${API_BASE}/api/add-skill`, { agentId, skillName, description, trigger }),
 
@@ -190,7 +198,6 @@ export interface AuthStatus {
   mustChangePassword: boolean;
   authenticated: boolean;
   currentUser?: string | null;
-  authFile?: string;
 }
 export interface AuthLoginResult extends ActionResult {
   token?: string;
@@ -256,6 +263,101 @@ export interface SourceMeta {
   [key: string]: unknown;
 }
 
+export interface LinkedTaskRef {
+  relation: string;
+  task_id?: string;
+  task_code?: string;
+  title?: string;
+}
+
+export interface NewRefreshState {
+  recommended?: boolean;
+  reason?: string;
+  trigger?: string;
+  window_status?: string;
+  latest_summary_excerpt?: string;
+  latest_handoff_excerpt?: string;
+  pending_todo_count?: number;
+  in_progress_todo_count?: number;
+  completed_todo_count?: number;
+  progress_log_entries?: number;
+  flow_log_entries?: number;
+  updated_at?: string;
+}
+
+export interface WatchdogState {
+  enabled?: boolean;
+  status?: string;
+  last_scan_at?: string;
+  last_event_at?: string;
+  stale_seconds?: number;
+  threshold_seconds?: number;
+  recommended_action?: string;
+  reason?: string;
+  note?: string;
+}
+
+export interface FeishuReportingState {
+  enabled?: boolean;
+  webhook_configured?: boolean;
+  reportable?: boolean;
+  last_report_at?: string;
+  last_report_status?: string;
+  last_report_stage?: string;
+  last_report_message?: string;
+}
+
+export interface TaskPolicy {
+  mode?: string;
+  archive_strategy?: string;
+  cold_archive_preferred?: boolean;
+  lightweight?: boolean;
+  reactivation_mode?: string;
+  retention_hint?: string;
+}
+
+export interface WorkspaceMeta {
+  task_code?: string;
+  path?: string;
+  readme_path?: string;
+  todo_path?: string;
+  taskrecord_path?: string;
+  handoff_path?: string;
+  links_path?: string;
+  status_path?: string;
+  context_dir?: string;
+  context_latest_path?: string;
+  continuation_hint_path?: string;
+  snapshots_dir?: string;
+  ledger_dir?: string;
+  artifacts_dir?: string;
+  agent_notes_dir?: string;
+  exports_dir?: string;
+  resume_export_path?: string;
+  archive_status?: string;
+  cold_archive_path?: string;
+  actual_workspace_path?: string;
+  metadata_mirror_path?: string;
+  storage_tier?: string;
+  processing_location?: string;
+  task_kind?: string;
+  task_policy?: TaskPolicy;
+  project_size_gb_estimate?: number;
+  reactivation_target_path?: string;
+  refresh_recommended?: boolean;
+  new_refresh?: NewRefreshState;
+  latest_summary?: string;
+  latest_handoff?: string;
+  linked_tasks?: LinkedTaskRef[];
+  context_resume_files?: string[];
+  watchdog?: WatchdogState;
+  feishu_reporting?: FeishuReportingState;
+  created_at?: string;
+  last_event_at?: string;
+  last_progress_at?: string;
+  task_index_version?: number;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -276,6 +378,32 @@ export interface Task {
   archived: boolean;
   archivedAt?: string;
   updatedAt?: string;
+  taskCode?: string;
+  workspace?: WorkspaceMeta;
+  workspacePath?: string;
+  workspaceReadmePath?: string;
+  workspaceTodoPath?: string;
+  workspaceTaskRecordPath?: string;
+  workspaceHandoffPath?: string;
+  workspaceLinksPath?: string;
+  workspaceStatusPath?: string;
+  workspaceArchiveStatus?: string;
+  workspaceColdArchivePath?: string;
+  workspaceActualPath?: string;
+  workspaceMetadataMirrorPath?: string;
+  workspaceStorageTier?: string;
+  workspaceProcessingLocation?: string;
+  workspaceTaskKind?: string;
+  workspaceTaskPolicy?: TaskPolicy;
+  workspaceProjectSizeEstimateGb?: number;
+  workspaceReactivationTargetPath?: string;
+  workspaceRefreshRecommended?: boolean;
+  workspaceNewRefresh?: NewRefreshState;
+  workspaceLatestSummary?: string;
+  workspaceLatestHandoff?: string;
+  workspaceLinkedTasks?: LinkedTaskRef[];
+  workspaceWatchdog?: WatchdogState;
+  workspaceFeishuReporting?: FeishuReportingState;
   sourceMeta?: SourceMeta;
   activity?: ActivityEntry[];
   _prev_state?: string;
@@ -413,6 +541,10 @@ export interface SubConfig {
   keywords: string[];
   custom_feeds: CustomFeed[];
   feishu_webhook: string;
+}
+
+export interface SystemSettings {
+  scan_record_retention_days: number;
 }
 
 export interface ActivityEntry {

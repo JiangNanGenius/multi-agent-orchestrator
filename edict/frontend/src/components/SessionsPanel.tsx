@@ -26,12 +26,12 @@ function extractAgent(t: Task): string {
 
 function humanTitle(t: Task, labelMap: Record<string, string>, locale: Locale): string {
   const title = t.title || '';
-  if (title === 'heartbeat 会话') return pickLocaleText(locale, '💓 心跳检测', '💓 Heartbeat Check');
+  if (title === 'heartbeat 会话') return pickLocaleText(locale, '💓 状态确认', '💓 Status Check');
   const m = title.match(/^agent:(\w+):(\w+)/);
   if (m) {
     const agLabel = labelMap[m[1]] || m[1];
-    if (m[2] === 'subagent') return locale === 'en' ? `${agLabel} · Subtask Execution` : `${agLabel} · 子任务执行`;
-    if (m[2] === 'cron') return locale === 'en' ? `${agLabel} · Scheduled Task` : `${agLabel} · 定时任务`;
+    if (m[2] === 'subagent') return locale === 'en' ? `${agLabel} · Support Work` : `${agLabel} · 协作处理`;
+    if (m[2] === 'cron') return locale === 'en' ? `${agLabel} · Scheduled Item` : `${agLabel} · 定时安排`;
     return `${agLabel} · ${m[2]}`;
   }
   if (locale === 'en') return title.replace(/ 会话$/, '').replace(/会话$/, '') || t.id;
@@ -90,7 +90,7 @@ function channelLabel(t: Task, locale: Locale): { icon: string; text: string } {
   if (channel.includes('webchat')) return { icon: '🌐', text: 'WebChat' };
   if (channel.includes('cron')) return { icon: '⏰', text: pickLocaleText(locale, '定时', 'Scheduled') };
   if (channel.includes('direct')) return { icon: '📨', text: pickLocaleText(locale, '直连', 'Direct') };
-  return { icon: '🔗', text: pickLocaleText(locale, '会话', 'Session') };
+  return { icon: '🔗', text: pickLocaleText(locale, '互动记录', 'Activity') };
 }
 
 function lastMessage(t: Task): string {
@@ -106,22 +106,22 @@ function lastMessage(t: Task): string {
   return '';
 }
 
-function formatReplyTargets(replyMeta?: ReplyMeta): string[] {
+function formatReplyTargets(replyMeta: ReplyMeta | undefined, locale: Locale): string[] {
   if (!replyMeta) return [];
   const rows: string[] = [];
-  if (replyMeta.targetMessageId) rows.push(`message_id: ${replyMeta.targetMessageId}`);
-  if (replyMeta.threadId) rows.push(`thread_id: ${replyMeta.threadId}`);
-  if (replyMeta.rootId) rows.push(`root_id: ${replyMeta.rootId}`);
-  if (replyMeta.chatId) rows.push(`chat_id: ${replyMeta.chatId}`);
+  if (replyMeta.targetMessageId) rows.push(locale === 'en' ? `Current message: ${replyMeta.targetMessageId}` : `当前消息：${replyMeta.targetMessageId}`);
+  if (replyMeta.threadId) rows.push(locale === 'en' ? `Current topic: ${replyMeta.threadId}` : `当前话题：${replyMeta.threadId}`);
+  if (replyMeta.rootId) rows.push(locale === 'en' ? `Original message: ${replyMeta.rootId}` : `原始消息：${replyMeta.rootId}`);
+  if (replyMeta.chatId) rows.push(locale === 'en' ? `Conversation: ${replyMeta.chatId}` : `对话：${replyMeta.chatId}`);
   return rows;
 }
 
 function replySummary(replyMeta: ReplyMeta | undefined, locale: Locale): string {
   if (!replyMeta) return '';
   const policy = replyPolicyLabel(replyMeta.effectivePolicy || replyMeta.policy, locale);
-  const targets = formatReplyTargets(replyMeta);
+  const targets = formatReplyTargets(replyMeta, locale);
   if (targets.length) return `${policy} · ${targets[0]}`;
-  if (replyMeta.hasReplyContext) return `${policy} · ${pickLocaleText(locale, '已捕获回复上下文', 'Reply context captured')}`;
+  if (replyMeta.hasReplyContext) return `${policy} · ${pickLocaleText(locale, '已识别对应互动', 'Linked interaction identified')}`;
   return policy;
 }
 
@@ -141,14 +141,14 @@ function ReplyMetaSection({ sourceMeta, locale }: { sourceMeta?: SourceMeta; loc
 
   const policy = replyMeta.effectivePolicy || replyMeta.policy || 'send';
   const tone = replyTone(policy, locale);
-  const targets = formatReplyTargets(replyMeta);
+  const targets = formatReplyTargets(replyMeta, locale);
   const markers = replyMeta.markers || [];
   const sourcePaths = Object.entries(replyMeta.sourcePaths || {});
 
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>
-        {pickLocaleText(locale, '💬 飞书回复上下文', '💬 Feishu Reply Context')}
+        {pickLocaleText(locale, '💬 互动信息', '💬 Interaction Details')}
       </div>
       <div
         style={{
@@ -176,33 +176,33 @@ function ReplyMetaSection({ sourceMeta, locale }: { sourceMeta?: SourceMeta; loc
             {tone.text}
           </span>
           <span style={{ fontSize: 11, color: 'var(--text)' }}>{replyPolicyLabel(policy, locale)}</span>
-          {replyMeta.channel ? <span style={{ fontSize: 11, color: 'var(--muted)' }}>{pickLocaleText(locale, '渠道：', 'Channel: ')}{replyMeta.channel}</span> : null}
+          {replyMeta.channel ? <span style={{ fontSize: 11, color: 'var(--muted)' }}>{pickLocaleText(locale, '来自：', 'From: ')}{replyMeta.channel}</span> : null}
           {replyMeta.fallbackMode && replyMeta.fallbackMode !== 'none' ? (
-            <span style={{ fontSize: 11, color: 'var(--muted)' }}>{pickLocaleText(locale, '降级：', 'Fallback: ')}{replyMeta.fallbackMode}</span>
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>{pickLocaleText(locale, '备用方式：', 'Backup option: ')}{replyMeta.fallbackMode}</span>
           ) : null}
-          {replyMeta.transport ? <span style={{ fontSize: 11, color: 'var(--muted)' }}>{pickLocaleText(locale, '传输：', 'Transport: ')}{replyMeta.transport}</span> : null}
+          {replyMeta.transport ? <span style={{ fontSize: 11, color: 'var(--muted)' }}>{pickLocaleText(locale, '发送方式：', 'Send via: ')}{replyMeta.transport}</span> : null}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 8 }}>
           <div style={{ background: 'var(--panel)', borderRadius: 8, padding: '10px 12px' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 4 }}>{pickLocaleText(locale, '回复策略', 'Reply Policy')}</div>
+            <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 4 }}>{pickLocaleText(locale, '互动方式', 'Interaction Mode')}</div>
             <div style={{ fontSize: 12, fontWeight: 700 }}>{replyPolicyLabel(replyMeta.policy, locale)}</div>
           </div>
           <div style={{ background: 'var(--panel)', borderRadius: 8, padding: '10px 12px' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 4 }}>{pickLocaleText(locale, '生效策略', 'Effective Policy')}</div>
+            <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 4 }}>{pickLocaleText(locale, '当前状态', 'Current Status')}</div>
             <div style={{ fontSize: 12, fontWeight: 700 }}>{replyPolicyLabel(replyMeta.effectivePolicy || replyMeta.policy, locale)}</div>
           </div>
           <div style={{ background: 'var(--panel)', borderRadius: 8, padding: '10px 12px' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 4 }}>{pickLocaleText(locale, '上下文状态', 'Context Status')}</div>
+            <div style={{ fontSize: 10, color: 'var(--muted)', marginBottom: 4 }}>{pickLocaleText(locale, '关联情况', 'Link Status')}</div>
             <div style={{ fontSize: 12, fontWeight: 700 }}>
-              {replyMeta.hasReplyContext ? pickLocaleText(locale, '已捕获回复目标', 'Reply target captured') : pickLocaleText(locale, '未捕获回复目标', 'Reply target not captured')}
+              {replyMeta.hasReplyContext ? pickLocaleText(locale, '已关联对应消息', 'Linked to the related message') : pickLocaleText(locale, '暂未关联对应消息', 'Not linked to a related message yet')}
             </div>
           </div>
         </div>
 
         {targets.length ? (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>{pickLocaleText(locale, '回复目标', 'Reply Targets')}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>{pickLocaleText(locale, '关联消息', 'Linked Messages')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {targets.map((item) => (
                 <div key={item} style={{ fontSize: 11, color: 'var(--muted)', wordBreak: 'break-all', background: 'var(--panel)', borderRadius: 8, padding: '8px 10px' }}>
@@ -215,7 +215,7 @@ function ReplyMetaSection({ sourceMeta, locale }: { sourceMeta?: SourceMeta; loc
 
         {markers.length ? (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>{pickLocaleText(locale, '意图标记', 'Intent Markers')}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>{pickLocaleText(locale, '识别标记', 'Detected Tags')}</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {markers.map((marker) => (
                 <span key={marker} style={{ fontSize: 10, color: 'var(--acc)', border: '1px solid #6a9eff44', background: '#0a1228', borderRadius: 999, padding: '3px 8px' }}>
@@ -228,7 +228,7 @@ function ReplyMetaSection({ sourceMeta, locale }: { sourceMeta?: SourceMeta; loc
 
         {sourcePaths.length ? (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>{pickLocaleText(locale, '字段来源', 'Field Sources')}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>{pickLocaleText(locale, '信息来源', 'Information Sources')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {sourcePaths.map(([key, value]) => (
                 <div key={key} style={{ fontSize: 11, color: 'var(--muted)', wordBreak: 'break-all', background: 'var(--panel)', borderRadius: 8, padding: '8px 10px' }}>
@@ -281,7 +281,7 @@ export default function SessionsPanel() {
       <div className="sess-grid">
         {!filtered.length ? (
           <div style={{ fontSize: 13, color: 'var(--muted)', padding: 24, textAlign: 'center', gridColumn: '1/-1' }}>
-            {pickLocaleText(locale, '暂无小任务/会话数据', 'No quick-task or session data yet')}
+            {pickLocaleText(locale, '暂无会话记录', 'No session records yet')}
           </div>
         ) : (
           filtered.map((t) => {
@@ -346,7 +346,7 @@ export default function SessionsPanel() {
                   </div>
                 ) : null}
                 <div className="sc-meta">
-                  {totalTk ? <span style={{ fontSize: 10, color: 'var(--muted)' }}>🪙 {totalTk.toLocaleString()} tokens</span> : null}
+                  {totalTk ? <span style={{ fontSize: 10, color: 'var(--muted)' }}>🪙 {pickLocaleText(locale, `处理量 ${totalTk.toLocaleString()}`, `Activity ${totalTk.toLocaleString()}`)}</span> : null}
                   {updatedAt ? <span className="sc-time">{formatTimeAgo(updatedAt, locale)}</span> : null}
                 </div>
               </div>
@@ -407,19 +407,19 @@ function SessionDetailModal({
             {totalTokens != null && (
               <div style={{ background: 'var(--panel2)', padding: '10px 16px', borderRadius: 8, fontSize: 12 }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--acc)' }}>{totalTokens.toLocaleString()}</div>
-                <div style={{ color: 'var(--muted)', fontSize: 10 }}>{pickLocaleText(locale, '总 Tokens', 'Total Tokens')}</div>
+                <div style={{ color: 'var(--muted)', fontSize: 10 }}>{pickLocaleText(locale, '总处理量', 'Total Activity')}</div>
               </div>
             )}
             {inputTokens != null && (
               <div style={{ background: 'var(--panel2)', padding: '10px 16px', borderRadius: 8, fontSize: 12 }}>
                 <div style={{ fontSize: 16, fontWeight: 700 }}>{inputTokens.toLocaleString()}</div>
-                <div style={{ color: 'var(--muted)', fontSize: 10 }}>{pickLocaleText(locale, '输入', 'Input')}</div>
+                <div style={{ color: 'var(--muted)', fontSize: 10 }}>{pickLocaleText(locale, '收到内容', 'Received Content')}</div>
               </div>
             )}
             {outputTokens != null && (
               <div style={{ background: 'var(--panel2)', padding: '10px 16px', borderRadius: 8, fontSize: 12 }}>
                 <div style={{ fontSize: 16, fontWeight: 700 }}>{outputTokens.toLocaleString()}</div>
-                <div style={{ color: 'var(--muted)', fontSize: 10 }}>{pickLocaleText(locale, '输出', 'Output')}</div>
+                <div style={{ color: 'var(--muted)', fontSize: 10 }}>{pickLocaleText(locale, '产出内容', 'Produced Content')}</div>
               </div>
             )}
           </div>
@@ -437,9 +437,9 @@ function SessionDetailModal({
                 const kind = a.kind || '';
                 const kIcon = kind === 'assistant' ? '🤖' : kind === 'tool' ? '🔧' : kind === 'user' ? '👤' : '📝';
                 const kLabel = kind === 'assistant'
-                  ? pickLocaleText(locale, '回复', 'Assistant')
+                  ? pickLocaleText(locale, '平台回复', 'Platform Reply')
                   : kind === 'tool'
-                    ? pickLocaleText(locale, '工具', 'Tool')
+                    ? pickLocaleText(locale, '处理中', 'Processing')
                     : kind === 'user'
                       ? pickLocaleText(locale, '用户', 'User')
                       : pickLocaleText(locale, '事件', 'Event');

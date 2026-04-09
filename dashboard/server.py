@@ -27,6 +27,12 @@ scripts_dir = str(pathlib.Path(__file__).parent.parent / 'scripts')
 sys.path.insert(0, scripts_dir)
 from file_lock import atomic_json_read, atomic_json_write, atomic_json_update
 from utils import validate_url, read_json, now_iso
+from services.task_workspace import (
+    archive_task_workspace,
+    build_workspace_meta,
+    initialize_task_workspace,
+    sync_workspace_for_task,
+)
 from court_discuss import (
     create_session as cd_create, advance_discussion as cd_advance,
     get_session as cd_get, conclude_session as cd_conclude,
@@ -159,6 +165,92 @@ def save_tasks(tasks):
     threading.Thread(target=_refresh, daemon=True).start()
 
 
+def _ensure_task_meta(task):
+    meta = task.get('meta')
+    if not isinstance(meta, dict):
+        meta = {}
+    task['meta'] = meta
+    return meta
+
+
+def _project_workspace_fields(task):
+    workspace = ((_ensure_task_meta(task)).get('workspace') or {})
+    task['taskCode'] = workspace.get('task_code', task.get('taskCode', ''))
+    task['workspacePath'] = workspace.get('path', '')
+    task['workspaceTodoPath'] = workspace.get('todo_path', '')
+    task['workspaceReadmePath'] = workspace.get('readme_path', '')
+    task['workspaceTaskRecordPath'] = workspace.get('taskrecord_path', '')
+    task['workspaceHandoffPath'] = workspace.get('handoff_path', '')
+    task['workspaceLinksPath'] = workspace.get('links_path', '')
+    task['workspaceStatusPath'] = workspace.get('status_path', '')
+    task['workspaceArchiveStatus'] = workspace.get('archive_status', 'hot')
+    task['workspaceColdArchivePath'] = workspace.get('cold_archive_path', '')
+    task['workspaceRefreshRecommended'] = bool(workspace.get('refresh_recommended', False))
+    task['workspaceLatestSummary'] = workspace.get('latest_summary', task.get('now', ''))
+    task['workspaceLatestHandoff'] = workspace.get('latest_handoff', '')
+    task['workspaceLinkedTasks'] = workspace.get('linked_tasks', [])
+    return task
+
+
+def _task_for_workspace(task):
+    payload = dict(task)
+    payload['task_id'] = task.get('id', '')
+    payload['created_at'] = task.get('createdAt') or task.get('updatedAt') or now_iso()
+    payload['updated_at'] = task.get('updatedAt') or task.get('createdAt') or now_iso()
+    payload['description'] = task.get('description') or task.get('now') or ''
+    payload['creator'] = task.get('creator') or task.get('owner') or task.get('org') or 'system'
+    payload['assignee_org'] = task.get('targetDept') or task.get('org') or ''
+    return payload
+
+
+def _ensure_task_workspace(task):
+    meta = _ensure_task_meta(task)
+    workspace = meta.get('workspace') or {}
+    if workspace.get('path'):
+        return _project_workspace_fields(task)
+    created_at = task.get('createdAt') or task.get('updatedAt') or now_iso()
+    task_code = task.get('taskCode') or task.get('id') or 'TASK'
+    task['meta'] = build_workspace_meta(
+        task_id=task.get('id', ''),
+        task_code=task_code,
+        title=task.get('title', '未命名任务'),
+        description=task.get('description') or task.get('now') or '',
+        creator=task.get('creator') or task.get('owner') or task.get('org') or 'system',
+        state=task.get('state', ''),
+        priority=task.get('priority', ''),
+        assignee_org=task.get('targetDept') or task.get('org') or '',
+        trace_id=task.get('trace_id') or task.get('id', ''),
+        created_at=created_at,
+        existing_meta=meta,
+    )
+    return _project_workspace_fields(task)
+
+
+def _initialize_task_workspace(task):
+    _ensure_task_workspace(task)
+    task['meta'] = initialize_task_workspace(_task_for_workspace(task))
+    return _project_workspace_fields(task)
+
+
+def _sync_task_workspace(task, event, summary, agent='system', payload=None, ledger_name='events'):
+    _ensure_task_workspace(task)
+    task['meta'] = sync_workspace_for_task(
+        _task_for_workspace(task),
+        event=event,
+        summary=summary,
+        agent=agent,
+        payload=payload,
+        ledger_name=ledger_name,
+    )
+    return _project_workspace_fields(task)
+
+
+def _archive_task_workspace_for_dashboard(task):
+    _ensure_task_workspace(task)
+    task['meta'] = archive_task_workspace(_task_for_workspace(task))
+    return _project_workspace_fields(task)
+
+
 def handle_task_action(task_id, action, reason):
     """Stop/cancel/resume a task from the dashboard."""
     tasks = load_tasks()
@@ -217,6 +309,7 @@ def handle_archive_task(task_id, archived, archive_all_done=False):
             if t.get('state') in ('Done', 'Cancelled') and not t.get('archived'):
                 t['archived'] = True
                 t['archivedAt'] = now_iso()
+                _archive_task_workspace_for_dashboard(t)
                 count += 1
         save_tasks(tasks)
         return {'ok': True, 'message': f'{count} 个任务已归档', 'count': count}
@@ -226,8 +319,10 @@ def handle_archive_task(task_id, archived, archive_all_done=False):
     task['archived'] = archived
     if archived:
         task['archivedAt'] = now_iso()
+        _archive_task_workspace_for_dashboard(task)
     else:
         task.pop('archivedAt', None)
+        _ensure_task_workspace(task)
     task['updatedAt'] = now_iso()
     save_tasks(tasks)
     label = '已归档' if archived else '已取消归档'
@@ -243,6 +338,7 @@ def update_task_todos(task_id, todos):
 
     task['todos'] = todos
     task['updatedAt'] = now_iso()
+    _sync_task_workspace(task, 'task.todos.updated', f'待办已更新，共 {len(todos)} 项。', payload={'todo_total': len(todos)}, ledger_name='todos')
     save_tasks(tasks)
     return {'ok': True, 'message': f'{task_id} todos 已更新'}
 
@@ -601,6 +697,24 @@ def is_search_config_route(path: str) -> bool:
     return path == '/api/search-config'
 
 
+def is_system_settings_route(path: str) -> bool:
+    return path == '/api/system-settings'
+
+
+def read_system_settings(default=None):
+    if default is None:
+        default = {'scan_record_retention_days': 7}
+    raw = read_json(DATA / 'system_settings.json', default)
+    if not isinstance(raw, dict):
+        raw = {}
+    try:
+        days = int(raw.get('scan_record_retention_days', default.get('scan_record_retention_days', 7)))
+    except Exception:
+        days = default.get('scan_record_retention_days', 7)
+    days = max(1, min(30, days))
+    return {'scan_record_retention_days': days}
+
+
 def is_search_brief_refresh_route(path: str) -> bool:
     return path == '/api/search-brief/refresh'
 
@@ -757,9 +871,15 @@ def handle_create_task(title, org='规划中心', owner='规划负责人', prior
     if normalized_target_depts:
         new_task['targetDepts'] = normalized_target_depts
 
+    new_task['description'] = params.get('description', '') if isinstance(params, dict) else ''
+    new_task['creator'] = owner
+    _ensure_task_workspace(new_task)
+    _initialize_task_workspace(new_task)
+
     _ensure_scheduler(new_task)
     _scheduler_snapshot(new_task, 'create-task-initial')
     _scheduler_mark_progress(new_task, '任务创建')
+    _sync_task_workspace(new_task, 'task.created', '任务已创建并进入任务工作区。', agent=owner or 'system', payload={'task_id': task_id, 'state': 'ControlCenter'})
 
     tasks.insert(0, new_task)
     save_tasks(tasks)
@@ -812,6 +932,7 @@ def handle_task_append_message(task_id, agent_id='', message=''):
     task['updatedAt'] = now
     _ensure_scheduler(task)
     _scheduler_mark_progress(task, f'收到用户追加说明（{agent_label}）')
+    _sync_task_workspace(task, 'task.user.message.appended', f'收到新的补充说明：{message}', agent=agent_label, payload={'message': message}, ledger_name='progress')
     save_tasks(tasks)
 
     woke_agent = False
@@ -2588,6 +2709,8 @@ class Handler(BaseHTTPRequestHandler):
                 'keywords': [], 'custom_feeds': [],
                 'notification': {'enabled': True, 'channel': 'feishu', 'webhook': ''},
             }))
+        elif is_system_settings_route(p):
+            self.send_json(read_system_settings({'scan_record_retention_days': 7}))
         elif p == '/api/notification-channels':
             self.send_json({'ok': True, 'channels': get_channel_info()})
         elif is_search_brief_history_route(p):
@@ -2839,6 +2962,28 @@ class Handler(BaseHTTPRequestHandler):
             cfg_path = DATA / 'search_brief_config.json'
             cfg_path.write_text(json.dumps(body, ensure_ascii=False, indent=2))
             self.send_json({'ok': True, 'message': '搜索简报配置已保存'})
+            return
+
+        if is_system_settings_route(p):
+            if not isinstance(body, dict):
+                self.send_json({'ok': False, 'error': '请求体必须是 JSON 对象'}, 400)
+                return
+            allowed_keys = {'scan_record_retention_days'}
+            unknown = set(body.keys()) - allowed_keys
+            if unknown:
+                self.send_json({'ok': False, 'error': f'未知字段: {", ".join(unknown)}'}, 400)
+                return
+            try:
+                days = int(body.get('scan_record_retention_days', 7))
+            except Exception:
+                self.send_json({'ok': False, 'error': 'scan_record_retention_days 必须是整数'}, 400)
+                return
+            if days < 1 or days > 30:
+                self.send_json({'ok': False, 'error': 'scan_record_retention_days 必须在 1 到 30 天之间'}, 400)
+                return
+            payload = {'scan_record_retention_days': days}
+            (DATA / 'system_settings.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+            self.send_json({'ok': True, 'message': '系统设置已保存', 'settings': payload})
             return
 
         if p == '/api/scheduler-scan':
