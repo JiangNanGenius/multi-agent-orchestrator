@@ -29,6 +29,14 @@
 
 本プロジェクトには、リアルタイム・ダッシュボード、タスク状態の可視化、役割マッピング、テンプレート化されたタスク入口、成果アーカイブ、および関連自動化スクリプトも含まれています。そのため、マルチエージェント・アーキテクチャの参照実装としても、今後のプロダクト化に向けた実用的な土台としても利用できます。[1] [3]
 
+## 説明の深化（2026-04-11）
+
+初見の利用者が迷いにくいよう、以下の 3 点を運用上の優先原則として明記します。
+
+1. **機能一覧より先にタスク主線を理解する**：受理 → 状態遷移 → 実行可視化 → アーカイブ継続、の流れを先に把握する。  
+2. **全機能導入より先に可観測閉環を確認する**：タスク作成・状態更新・進捗記録・結果保管が確認できれば中核は稼働している。  
+3. **拡張前に契約を統一する**：task ID 意味論、API 入口、運用 CLI を揃えてから画面や specialist を増やす。  
+
 > この公開リポジトリは**脱敏済み公開版**です。ローカル実行データ、環境変数ファイル、内部レビュー記録、および一部のマシン側生成物は除外されており、アーキテクチャ、コード構成、UI 能力を公開展示するのに適した形へ整理されています。
 
 > **出典メモ:** 本プロジェクトは現在、**JiangNanGenius** により継続整理・拡張されている **Multi-Agent Orchestrator** として案内されています。公開整理の過程で既存の開源実装や構成上の考え方を参考にした部分はありますが、現時点ではそれらを詳細な系譜説明として前面に出さず、必要最小限の謝辞とライセンス上の説明にとどめます。
@@ -481,8 +489,8 @@ multi-agent-orchestrator/
 
 ## References
 
-[1]: ./docs/task-dispatch-architecture.md "Task Dispatch Architecture"
+[1]: ./docs/current_architecture_overview.md "Current Architecture Overview"
 [2]: ./docs/getting-started.md "Getting Started"
 [3]: ./dashboard/dashboard.html "Dashboard UI"
 [4]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
-[5]: https://github.com/cft0808/agentorchestrator "cft0808/agentorchestrator"
+[5]: https://github.com/cft0808/edict "cft0808/edict"

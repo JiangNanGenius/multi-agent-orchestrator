@@ -251,6 +251,49 @@ async def update_risk_control(args: argparse.Namespace) -> None:
         )
 
 
+async def transition_task(args: argparse.Namespace) -> None:
+    async with async_session() as session:
+        bus = await get_event_bus()
+        svc = TaskService(session, bus)
+        task = await svc.transition_state(
+            uuid.UUID(args.task_id),
+            TaskState(args.new_state),
+            agent=args.agent,
+            reason=args.reason,
+        )
+        jprint({"message": "transitioned", "task_id": str(task.task_id), "state": task.state.value})
+
+
+async def progress_task(args: argparse.Namespace) -> None:
+    async with async_session() as session:
+        bus = await get_event_bus()
+        svc = TaskService(session, bus)
+        await svc.add_progress(uuid.UUID(args.task_id), args.agent, args.content)
+        jprint({"message": "progress_added", "task_id": args.task_id})
+
+
+async def todos_task(args: argparse.Namespace) -> None:
+    async with async_session() as session:
+        bus = await get_event_bus()
+        svc = TaskService(session, bus)
+        await svc.update_todos(uuid.UUID(args.task_id), parse_meta(args.todos))
+        jprint({"message": "todos_updated", "task_id": args.task_id})
+
+
+async def flow_task(args: argparse.Namespace) -> None:
+    async with async_session() as session:
+        bus = await get_event_bus()
+        svc = TaskService(session, bus)
+        await svc.append_flow_log(
+            uuid.UUID(args.task_id),
+            from_state=args.from_dept,
+            to_state=args.to_dept,
+            agent=args.agent,
+            remark=args.remark,
+        )
+        jprint({"message": "flow_appended", "task_id": args.task_id})
+
+
 def show_index(args: argparse.Namespace) -> None:
     filename = "archive_index.json" if args.kind == "archive" else "task_index.json"
     jprint(load_index(filename))
@@ -346,6 +389,32 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--approved-by", default="")
     p.add_argument("--operations", default="[]", help="JSON 数组字符串")
     p.set_defaults(func=update_risk_control)
+
+    p = sub.add_parser("transition", help="执行任务状态流转")
+    p.add_argument("task_id")
+    p.add_argument("new_state", choices=[s.value for s in TaskState])
+    p.add_argument("--agent", default="task_db")
+    p.add_argument("--reason", default="")
+    p.set_defaults(func=transition_task)
+
+    p = sub.add_parser("progress", help="添加任务进度")
+    p.add_argument("task_id")
+    p.add_argument("content")
+    p.add_argument("--agent", default="task_db")
+    p.set_defaults(func=progress_task)
+
+    p = sub.add_parser("todos", help="覆盖更新任务 todo 列表")
+    p.add_argument("task_id")
+    p.add_argument("todos", help='JSON 字符串，例如 \'[{"id":"1","title":"拆解","status":"in-progress"}]\'')
+    p.set_defaults(func=todos_task)
+
+    p = sub.add_parser("flow", help="追加结构化流转日志（不改状态）")
+    p.add_argument("task_id")
+    p.add_argument("from_dept")
+    p.add_argument("to_dept")
+    p.add_argument("--remark", default="")
+    p.add_argument("--agent", default="task_db")
+    p.set_defaults(func=flow_task)
 
     return parser
 

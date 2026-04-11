@@ -44,6 +44,13 @@ class LegacyProgress(BaseModel):
     content: str
 
 
+class LegacyFlowAppend(BaseModel):
+    from_dept: str
+    to_dept: str
+    remark: str = ""
+    agent: str = "system"
+
+
 class LegacyTodoUpdate(BaseModel):
     todos: list[dict]
 
@@ -101,6 +108,28 @@ async def legacy_todos(
     bus = await get_event_bus()
     svc = TaskService(db, bus)
     await svc.update_todos(task.task_id, body.todos)
+    return {"message": "ok"}
+
+
+@router.post("/by-legacy/{legacy_id}/flow")
+async def legacy_flow(
+    legacy_id: str,
+    body: LegacyFlowAppend,
+    db: AsyncSession = Depends(get_db),
+):
+    task = await _find_by_legacy_id(db, legacy_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Legacy task not found: {legacy_id}")
+
+    bus = await get_event_bus()
+    svc = TaskService(db, bus)
+    await svc.append_flow_log(
+        task.task_id,
+        from_state=body.from_dept,
+        to_state=body.to_dept,
+        agent=body.agent,
+        remark=body.remark,
+    )
     return {"message": "ok"}
 
 

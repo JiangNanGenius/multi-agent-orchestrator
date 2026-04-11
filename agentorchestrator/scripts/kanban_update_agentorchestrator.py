@@ -170,6 +170,22 @@ def _api_put(path: str, data: dict) -> dict | None:
         return None
 
 
+def _api_get(path: str) -> dict | None:
+    """向 AgentOrchestrator API 发送 GET 请求。"""
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            f"{AGENTORCHESTRATOR_API_URL}{path}",
+            method='GET',
+            headers={'Accept': 'application/json'},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read())
+    except Exception as e:
+        log.warning(f'API 调用失败 ({path}): {e}')
+        return None
+
+
 # ── 命令 → API 调用 ──
 
 # 缓存 API 可用性
@@ -217,6 +233,7 @@ def cmd_create(task_id, title, state, org, owner, remark=None):
             'assignee_org': org,
             'creator': owner,
             'tags': [task_id],
+            'initial_state': task_state,
             'meta': {'legacy_id': task_id, 'legacy_state': state},
         })
         if result:
@@ -257,9 +274,11 @@ def cmd_flow(task_id, from_dept, to_dept, remark):
     clean_remark = _sanitize_remark(remark)
     if _check_api():
         agent = _infer_agent_id()
-        result = _api_post(f'/api/tasks/by-legacy/{task_id}/progress', {
+        result = _api_post(f'/api/tasks/by-legacy/{task_id}/flow', {
+            'from_dept': from_dept,
+            'to_dept': to_dept,
+            'remark': clean_remark,
             'agent': agent,
-            'content': f'流转: {from_dept} → {to_dept} | {clean_remark}',
         })
         if result:
             log.info(f'✅ {task_id} 流转记录: {from_dept} → {to_dept}')
@@ -353,15 +372,30 @@ def cmd_todo(task_id, todo_id, title, status='not-started', detail=''):
         status = 'not-started'
 
     if _check_api():
-        # 读取现有 todos，更新后写回
-        # 这里简化处理，直接发进度更新
-        agent = _infer_agent_id()
-        _api_post(f'/api/tasks/by-legacy/{task_id}/progress', {
-            'agent': agent,
-            'content': f'Todo #{todo_id}: {title} → {status}',
-        })
-        log.info(f'✅ {task_id} todo: {todo_id} → {status}')
-        return
+        payload = _api_get(f'/api/tasks/by-legacy/{task_id}')
+        if payload is not None:
+            todos = payload.get('todos') or []
+            normalized = []
+            target_id = str(todo_id)
+            updated = False
+            for item in todos:
+                item_id = str(item.get('id', ''))
+                if item_id == target_id:
+                    normalized.append({
+                        'id': target_id,
+                        'title': title,
+                        'status': status,
+                        'detail': detail or item.get('detail', ''),
+                    })
+                    updated = True
+                else:
+                    normalized.append(item)
+            if not updated:
+                normalized.append({'id': target_id, 'title': title, 'status': status, 'detail': detail})
+            result = _api_put(f'/api/tasks/by-legacy/{task_id}/todos', {'todos': normalized})
+            if result is not None:
+                log.info(f'✅ {task_id} todo: {todo_id} → {status}')
+                return
 
     legacy = _fallback_json()
     if legacy:
