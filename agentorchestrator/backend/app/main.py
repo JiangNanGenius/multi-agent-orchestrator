@@ -50,7 +50,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Multi-Agent Orchestrator",
     description="事件驱动的 AI Agent 协作平台",
-    version="2.0.0",
+    version="2.0.1",
     lifespan=lifespan,
 )
 
@@ -75,14 +75,14 @@ app.include_router(compat.router, tags=["compat"])
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "2.0.0", "engine": "multi-agent-orchestrator"}
+    return {"status": "ok", "version": "2.0.1", "engine": "multi-agent-orchestrator"}
 
 
 @app.get("/api")
 async def api_root():
     return {
         "name": "Multi-Agent Orchestrator API",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "endpoints": {
             "tasks": "/api/tasks",
             "agents": "/api/agents",
