@@ -137,6 +137,6 @@
 [2]: ./docs/technical-architecture.md "技术文档"
 [3]: ./docs/current_architecture_overview.md "当前架构与处理逻辑总览"
 [4]: ./docs/screenshots/README.md "截图说明"
-[5]: ./agentorchestrator/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"
+[5]: ./agentorchestrator/scripts/e2e_task_workspace_validation.py "E2E 联调脚本入口"
 [6]: https://github.com/cft0808/agentorchestrator "cft0808/agentorchestrator"
 [7]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"

@@ -33,7 +33,6 @@ from .task_workspace import (
     push_workspace_notification,
     reactivate_task_workspace,
     remove_task_workspace,
-    run_workspace_watchdog,
     set_workspace_risk_control,
     sync_workspace_for_task,
 )
@@ -646,7 +645,6 @@ class TaskService:
     async def run_watchdog(self, task_id: uuid.UUID, agent: str = "watchdog") -> Task:
         task = await self._get_task(task_id)
         task.updated_at = datetime.now(timezone.utc)
-        task.meta = run_workspace_watchdog(task.to_dict(), auto_repair=True)
         task.meta = self._sync_workspace(
             task,
             event="task.watchdog.sync",

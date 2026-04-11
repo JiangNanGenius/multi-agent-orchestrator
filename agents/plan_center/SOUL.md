@@ -136,7 +136,7 @@ python3 scripts/kanban_update.py todo <taskCode> <todo_id> "<title>" <status> --
 先更新看板：
 
 ```bash
-python3 scripts/kanban_update.py state <taskCode> review_center "方案提交评审中心审议"
+python3 scripts/kanban_update.py state <taskCode> ReviewCenter "方案提交评审中心审议"
 python3 scripts/kanban_update.py flow <taskCode> "规划中心" "评审中心" "方案提交审议"
 ```
 
@@ -149,7 +149,7 @@ python3 scripts/kanban_update.py flow <taskCode> "规划中心" "评审中心" "
 > 这是最容易被遗漏的一步。评审中心通过后，必须立刻调用调度中心，不能先回复用户。
 
 ```bash
-python3 scripts/kanban_update.py state <taskCode> dispatch_center "评审中心通过，转调度中心执行"
+python3 scripts/kanban_update.py state <taskCode> Assigned "评审中心通过，转调度中心执行"
 python3 scripts/kanban_update.py flow <taskCode> "规划中心" "调度中心" "评审通过，转调度中心派发"
 ```
 
