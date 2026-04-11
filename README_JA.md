@@ -450,9 +450,9 @@ multi-agent-orchestrator/
 
 ## Attribution
 
-この公開版は **JiangNanGenius** により整理・公開されています。現在の公開案内では、系譜説明を最小限に抑えつつ、必要な範囲でライセンス、謝辞、参考元の説明を維持する方針を採用しています。[4] [5]
+この公開版は **JiangNanGenius** により整理・公開されています。現在の公開案内では、系譜説明を最小限に抑えつつ、必要な範囲でライセンスと謝辞の説明を維持する方針を採用しています。[4]
 
-今後このリポジトリを改変、再配布、または二次開発する場合は、MIT License を保持し、必要に応じて簡潔な謝辞と出典説明を継続してください。[4] [5]
+今後このリポジトリを改変、再配布、または二次開発する場合は、MIT License を保持し、必要に応じて簡潔な謝辞の説明を継続してください。[4]
 
 ---
 
@@ -493,4 +493,3 @@ multi-agent-orchestrator/
 [2]: ./docs/getting-started.md "Getting Started"
 [3]: ./dashboard/dashboard.html "Dashboard UI"
 [4]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
-[5]: https://github.com/cft0808/edict "cft0808/edict"

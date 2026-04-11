@@ -1,1 +1,0 @@
-CONTRIBUTING.md:215:| TypeScript / React | Prefer functional components and predictable state handling |

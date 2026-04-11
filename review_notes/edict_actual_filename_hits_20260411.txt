@@ -1,3 +1,0 @@
-review_notes/edict_residual_filenames_20260411.txt
-review_notes/edict_residual_content_20260411.txt
-review_notes/edict_residual_precision_summary_20260411.md
