@@ -815,7 +815,7 @@ def sync_scripts_to_workspaces(agents=None):
 
 
 def deploy_soul_files(agents=None):
-    """将项目 agents/xxx/SOUL.md 部署到 ~/.openclaw/workspace-xxx/soul.md，并写入 registry sidecar。 
+    """将项目 agents/xxx/SOUL.md 部署到 ~/.openclaw/workspace-xxx/SOUL.md，并写入 registry sidecar。 
 
     当前阶段采用无兼容的一一对应目录与 agent_id；
     用户可见名称与职责定义由现代中文元数据统一输出。若正式 SOUL 文件尚不存在，
@@ -836,7 +836,7 @@ def deploy_soul_files(agents=None):
             src_text = generated_src.read_text(encoding='utf-8', errors='ignore')
         else:
             continue
-        ws_dst = pathlib.Path.home() / f'.openclaw/workspace-{runtime_id}' / 'soul.md'
+        ws_dst = pathlib.Path.home() / f'.openclaw/workspace-{runtime_id}' / 'SOUL.md'
         ws_dst.parent.mkdir(parents=True, exist_ok=True)
         try:
             dst_text = ws_dst.read_text(encoding='utf-8', errors='ignore')

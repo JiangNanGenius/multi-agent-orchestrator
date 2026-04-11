@@ -317,7 +317,7 @@ export const STATE_LABEL_EN: Record<string, string> = {
 };
 
 export function isAgentOrchestrator(t: Task): boolean {
-  return /^JJC-/i.test(t.id || '');
+  return /^JJC-/i.test(t.taskCode || t.task_id || t.id || '');
 }
 
 export function isSession(t: Task): boolean {
