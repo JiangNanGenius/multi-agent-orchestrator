@@ -8,6 +8,8 @@ export default function StartupTransition() {
   const [show, setShow] = useState(false);
   const [out, setOut] = useState(false);
 
+  if (import.meta.env.DEV) return null;
+
   useEffect(() => {
     const lastOpen = localStorage.getItem('openclaw_startup_transition_date');
     const today = new Date().toISOString().substring(0, 10);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ReplyMeta, SourceMeta, Task } from '../api';
 import { useStore, isEdict, stateLabel } from '../store';
 import { formatRelativeTime, pickLocaleText, type Locale } from '../i18n';
@@ -246,8 +246,7 @@ function ReplyMetaSection({ sourceMeta, locale }: { sourceMeta?: SourceMeta; loc
 export default function SessionsPanel() {
   const locale = useStore((s) => s.locale);
   const liveStatus = useStore((s) => s.liveStatus);
-  const sessFilter = useStore((s) => s.sessFilter);
-  const setSessFilter = useStore((s) => s.setSessFilter);
+  const [sessFilter, setSessFilter] = useState<string>('all');
   const { emojiMap, labelMap } = useAgentMaps(locale);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
 

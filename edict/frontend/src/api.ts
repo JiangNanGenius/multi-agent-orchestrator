@@ -7,13 +7,73 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
 
 // ── 通用请求 ──
 
+type ApiErrorLike = {
+  error?: string;
+  message?: string;
+  detail?: string;
+  ok?: boolean;
+};
+
+function extractApiError(payload: unknown): string {
+  if (!payload || typeof payload !== 'object') return '';
+  const data = payload as ApiErrorLike;
+  return String(data.error || data.message || data.detail || '').trim();
+}
+
+function buildNonJsonError(text: string): Error {
+  const content = text.trim();
+  if (content.startsWith('<!DOCTYPE') || content.startsWith('<html')) {
+    return new Error('当前页面没有正确连到后端文件接口，请切换到已连接后端的地址后再试。');
+  }
+  return new Error(content || '接口返回了无法识别的数据格式，请稍后重试。');
+}
+
+async function parseApiResponse<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  const contentType = (res.headers.get('content-type') || '').toLowerCase();
+  const expectsJson = contentType.includes('application/json') || contentType.includes('+json');
+
+  if (!text.trim()) {
+    if (!res.ok) throw new Error(`请求失败（${res.status}）`);
+    return {} as T;
+  }
+
+  if (expectsJson) {
+    try {
+      const payload = JSON.parse(text) as T;
+      if (!res.ok) {
+        throw new Error(extractApiError(payload) || `请求失败（${res.status}）`);
+      }
+      return payload;
+    } catch (error) {
+      if (error instanceof Error && error.message) throw error;
+      throw new Error('接口返回的 JSON 数据损坏，请稍后重试。');
+    }
+  }
+
+  let fallbackPayload: T | null = null;
+  try {
+    fallbackPayload = JSON.parse(text) as T;
+  } catch {
+    fallbackPayload = null;
+  }
+
+  if (fallbackPayload) {
+    if (!res.ok) {
+      throw new Error(extractApiError(fallbackPayload) || `请求失败（${res.status}）`);
+    }
+    return fallbackPayload;
+  }
+
+  throw buildNonJsonError(text);
+}
+
 async function fetchJ<T>(url: string): Promise<T> {
   const res = await fetch(url, {
     cache: 'no-store',
     credentials: 'include',
   });
-  if (!res.ok) throw new Error(String(res.status));
-  return res.json();
+  return parseApiResponse<T>(res);
 }
 
 async function postJ<T>(url: string, data: unknown): Promise<T> {
@@ -23,7 +83,55 @@ async function postJ<T>(url: string, data: unknown): Promise<T> {
     credentials: 'include',
     body: JSON.stringify(data),
   });
-  return res.json();
+  return parseApiResponse<T>(res);
+}
+
+async function putJ<T>(url: string, data: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  return parseApiResponse<T>(res);
+}
+
+function withQuery(url: string, params: Record<string, string | number | boolean | undefined | null>): string {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    query.set(key, String(value));
+  });
+  const qs = query.toString();
+  return qs ? `${url}?${qs}` : url;
+}
+
+function buildApiUrl(path: string): string {
+  return `${API_BASE}${path}`;
+}
+
+function encodeTaskPath(path: string): string {
+  return path.replace(/^\/+/, '');
+}
+
+export function openApiDownload(url: string): void {
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+export function isTextPreviewablePath(path: string): boolean {
+  return /\.(txt|md|markdown|json|ya?ml|toml|ini|cfg|conf|log|csv|ts|tsx|js|jsx|mjs|cjs|py|rb|go|rs|java|kt|swift|php|sh|bash|zsh|css|scss|less|html|xml|sql|env|gitignore|dockerfile)$/i.test(path);
+}
+
+export function isEditableTaskState(state?: string): boolean {
+  const value = String(state || '').trim();
+  return !['Assigned', 'Next', 'Doing', 'Review'].includes(value);
+}
+
+export function formatWorkspaceEntryName(path: string): string {
+  const clean = encodeTaskPath(path);
+  if (!clean) return '/';
+  const parts = clean.split('/');
+  return parts[parts.length - 1] || clean;
 }
 
 // ── API 接口 ──
@@ -116,6 +224,31 @@ export const api = {
       operations?: RiskControlOperation[];
     }
   ) => postJ<ActionResult & { risk_control?: RiskControlState }>(`${API_BASE}/api/tasks/${encodeURIComponent(taskId)}/workspace/risk-control`, payload),
+  listWorkspaceFiles: (taskId: string, path = '') =>
+    fetchJ<WorkspaceFileListResult>(withQuery(buildApiUrl(`/api/tasks/${encodeURIComponent(taskId)}/workspace/files`), { path: encodeTaskPath(path) })),
+  readWorkspaceFile: (taskId: string, path: string) =>
+    fetchJ<WorkspaceFileContentResult>(withQuery(buildApiUrl(`/api/tasks/${encodeURIComponent(taskId)}/workspace/file`), { path: encodeTaskPath(path) })),
+  saveWorkspaceFile: (taskId: string, path: string, content: string) =>
+    putJ<ActionResult & WorkspaceFileContentResult>(buildApiUrl(`/api/tasks/${encodeURIComponent(taskId)}/workspace/file`), { path: encodeTaskPath(path), content }),
+  workspaceFileDownloadUrl: (taskId: string, path: string) =>
+    withQuery(buildApiUrl(`/api/tasks/${encodeURIComponent(taskId)}/workspace/download`), { path: encodeTaskPath(path) }),
+  workspaceArchiveDownloadUrl: (taskId: string, paths: string[] = []) => {
+    const validPaths = paths.map((item) => item.trim()).filter(Boolean);
+    if (!validPaths.length) {
+      return buildApiUrl(`/api/tasks/${encodeURIComponent(taskId)}/workspace/archive/download`);
+    }
+    const params = new URLSearchParams();
+    validPaths.forEach((item) => params.append('paths', item));
+    return `${buildApiUrl(`/api/tasks/${encodeURIComponent(taskId)}/workspace/archive/download`)}?${params.toString()}`;
+  },
+  deleteTask: (taskId: string, payload: DeleteTaskPayload) =>
+    postJ<ActionResult & DeleteTaskResult>(buildApiUrl(`/api/tasks/${encodeURIComponent(taskId)}/delete`), {
+      agent: payload.agent || 'dashboard',
+      reason: payload.reason || '',
+      delete_workspace: payload.delete_workspace,
+      confirm: payload.confirm,
+      confirm_text: payload.confirm_text,
+    }),
   schedulerScan: (thresholdSec = 180) =>
     postJ<ActionResult & { count?: number; actions?: ScanAction[]; checkedAt?: string }>(
       `${API_BASE}/api/scheduler-scan`,
@@ -422,6 +555,51 @@ export interface WorkspaceMeta {
   last_event_at?: string;
   last_progress_at?: string;
   task_index_version?: number;
+}
+
+export interface WorkspaceFileEntry {
+  name: string;
+  path: string;
+  kind: 'file' | 'directory';
+  size?: number;
+  modified_at?: string;
+  mime_type?: string;
+  text_previewable?: boolean;
+  editable?: boolean;
+}
+
+export interface WorkspaceFileListResult {
+  message?: string;
+  root?: string;
+  current_path: string;
+  parent_path?: string;
+  entries: WorkspaceFileEntry[];
+}
+
+export interface WorkspaceFileContentResult {
+  message?: string;
+  path: string;
+  content: string;
+  size?: number;
+  modified_at?: string;
+  editable?: boolean;
+  readonly?: boolean;
+}
+
+export interface DeleteTaskPayload {
+  confirm: boolean;
+  confirm_text: string;
+  delete_workspace: boolean;
+  reason?: string;
+  agent?: string;
+}
+
+export interface DeleteTaskResult {
+  message?: string;
+  deleted_task_id?: string;
+  deleted_workspace?: boolean;
+  workspace_deleted?: boolean;
+  workspace_path?: string;
 }
 
 export interface Task {

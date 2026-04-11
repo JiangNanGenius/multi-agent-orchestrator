@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-08 17:15:17",
+  "generatedAt": "2026-04-09 10:47:07",
   "requiredSections": [
     "角色定义",
     "核心职责",
@@ -20,9 +20,11 @@
     {
       "agentId": "plan_center",
       "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/plan_center/SOUL.md",
-      "hasRequiredSections": true,
-      "missingSections": [],
-      "deployStrategy": "source"
+      "hasRequiredSections": false,
+      "missingSections": [
+        "看板操作"
+      ],
+      "deployStrategy": "generated_scaffold_plus_source"
     },
     {
       "agentId": "review_center",
@@ -83,16 +85,20 @@
     {
       "agentId": "expert_curator",
       "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/expert_curator/SOUL.md",
-      "hasRequiredSections": true,
-      "missingSections": [],
-      "deployStrategy": "source"
+      "hasRequiredSections": false,
+      "missingSections": [
+        "看板操作"
+      ],
+      "deployStrategy": "generated_scaffold_plus_source"
     },
     {
       "agentId": "search_specialist",
       "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/search_specialist/SOUL.md",
-      "hasRequiredSections": true,
-      "missingSections": [],
-      "deployStrategy": "source"
+      "hasRequiredSections": false,
+      "missingSections": [
+        "看板操作"
+      ],
+      "deployStrategy": "generated_scaffold_plus_source"
     }
   ]
 }

@@ -5,7 +5,8 @@ from pathlib import Path
 
 from dashboard import server
 
-OUT = Path('/home/ubuntu/multi-agent-orchestrator_public/review_notes/demo_task_latest.json')
+ROOT = Path(__file__).resolve().parent
+OUT = ROOT / 'review_notes' / 'demo_task_latest.json'
 
 
 def main() -> None:

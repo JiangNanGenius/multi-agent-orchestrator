@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { api, type ActionResult, type ActivityEntry, type Task } from '../api';
 import { useStore, stateLabel } from '../store';
 import { pickLocaleText, type Locale } from '../i18n';
@@ -73,6 +74,8 @@ type Props = {
   renderSidebar?: (args: SidebarRenderArgs) => React.ReactNode;
 };
 
+type MobilePanelKey = 'sessions' | 'conversation' | 'intents';
+
 const TERMINAL_STATES = new Set(['Done', 'Cancelled']);
 
 function nowIso() {
@@ -138,7 +141,7 @@ function readDraftState(storageKey: string, locale: Locale, agentEmoji: string, 
     messages: [{
       id: messageId('welcome'),
       role: 'assistant',
-      content: pickLocaleText(locale, `${agentEmoji} 这里是${agentLabel}会话窗口。请先描述目标、现状和期望结果，我会先追问补足信息，再生成确认摘要。`, `${agentEmoji} This is the ${agentLabel} conversation window. Please describe your goal, current situation, and expected result first. I will ask follow-up questions before generating a confirmation summary.`),
+      content: pickLocaleText(locale, `${agentEmoji} 请直接告诉我你要处理什么，我会先补齐关键信息，再继续执行。`, `${agentEmoji} Tell me what you want to handle and I will fill in the missing details before we continue.`),
       at: nowIso(),
       kind: 'info',
     }],
@@ -215,6 +218,9 @@ export default function PersistentAgentChat(props: Props) {
   const [taskInput, setTaskInput] = useState('');
   const [taskSending, setTaskSending] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<MobilePanelKey>('conversation');
+  const [sessionsCollapsed, setSessionsCollapsed] = useState(false);
+  const [intentsCollapsed, setIntentsCollapsed] = useState(false);
 
   useEffect(() => {
     saveDraftState(storageKey, draftState);
@@ -252,6 +258,25 @@ export default function PersistentAgentChat(props: Props) {
     const last = [...draftState.messages].reverse().find((item) => item.role === 'user' || item.role === 'assistant');
     return last ? compactText(last.content) : pickLocaleText(locale, '还没有开始会话', 'No conversation yet');
   }, [draftState.messages, locale]);
+
+  const sessionCountLabel = `${sessions.length + 1}`;
+  const selectedSessionTitle = selectedTask ? selectedTask.title : pickLocaleText(locale, draftLabelZh, draftLabelEn);
+  const conversationScopeLabel = selectedTask
+    ? pickLocaleText(locale, '任务会话', 'Task Session')
+    : pickLocaleText(locale, '本地草稿', 'Local Draft');
+  const conversationItemsLabel = selectedTask
+    ? pickLocaleText(locale, `${activity.length} 条记录`, `${activity.length} records`)
+    : pickLocaleText(locale, `${draftState.messages.length} 条消息`, `${draftState.messages.length} messages`);
+  const conversationStatusLabel = selectedTask
+    ? stateLabel(selectedTask, locale)
+    : review.ready
+      ? pickLocaleText(locale, '可直接提交', 'Ready to submit')
+      : pickLocaleText(locale, '待补全信息', 'Needs more input');
+  const mobileTabs = [
+    { key: 'sessions' as const, label: pickLocaleText(locale, '会话', 'Sessions') },
+    { key: 'conversation' as const, label: pickLocaleText(locale, '对话', 'Conversation') },
+    { key: 'intents' as const, label: pickLocaleText(locale, '意图', 'Intents') },
+  ];
 
   const loadTaskActivity = async (taskId: string) => {
     if (!taskId) {
@@ -299,6 +324,11 @@ export default function PersistentAgentChat(props: Props) {
     }));
   };
 
+  const activateSession = (sessionId: string) => {
+    updateDraft({ selectedSessionId: sessionId });
+    setMobilePanel('conversation');
+  };
+
   const sendDraftMessage = () => {
     const text = draftState.input.trim();
     if (!text) return;
@@ -320,6 +350,7 @@ export default function PersistentAgentChat(props: Props) {
       kind: nextReview.ready ? 'summary' : 'question',
     };
     pushDraftMessages([userMessage, assistantMessage]);
+    setMobilePanel('conversation');
   };
 
   const resetDraft = () => {
@@ -331,6 +362,7 @@ export default function PersistentAgentChat(props: Props) {
       kind: 'info',
     };
     setDraftState({ messages: [welcome], input: '', selectedSessionId: 'draft', updatedAt: nowIso() });
+    setMobilePanel('conversation');
   };
 
   const confirmCreateTask = async () => {
@@ -349,6 +381,7 @@ export default function PersistentAgentChat(props: Props) {
         setTimeout(() => loadTaskActivity(result.taskId || ''), 900);
         resetDraft();
         setDraftState((prev) => ({ ...prev, selectedSessionId: result.taskId || 'draft' }));
+        setMobilePanel('conversation');
       } else {
         toast(result.error || pickLocaleText(locale, '创建任务失败', 'Failed to create the task'), 'err');
       }
@@ -380,286 +413,362 @@ export default function PersistentAgentChat(props: Props) {
   };
 
   const draftSessionCard = (
-    <div
+    <button
       key="draft"
-      onClick={() => updateDraft({ selectedSessionId: 'draft' })}
+      type="button"
+      className={`agent-chat-session-card ${draftState.selectedSessionId === 'draft' ? 'is-active' : ''}`}
+      onClick={() => activateSession('draft')}
       style={{
-        padding: 12,
-        borderRadius: 12,
-        cursor: 'pointer',
-        border: draftState.selectedSessionId === 'draft' ? `1px solid ${accentColor}` : '1px solid var(--line)',
-        background: draftState.selectedSessionId === 'draft' ? accentSoft : 'var(--panel2)',
-        boxShadow: draftState.selectedSessionId === 'draft' ? `0 12px 24px ${accentColor}22` : 'none',
+        borderColor: draftState.selectedSessionId === 'draft' ? accentColor : undefined,
+        boxShadow: draftState.selectedSessionId === 'draft' ? `0 16px 36px ${accentColor}22` : undefined,
+        background: draftState.selectedSessionId === 'draft' ? accentSoft : undefined,
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 6, alignItems: 'center' }}>
-        <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, draftLabelZh, draftLabelEn)}</div>
-        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 999, background: '#1a2040', color: accentColor }}>
+      <div className="agent-chat-session-card__top">
+        <div className="agent-chat-session-card__title">{pickLocaleText(locale, draftLabelZh, draftLabelEn)}</div>
+        <span className="agent-chat-badge" style={{ color: accentColor, borderColor: `${accentColor}44`, background: `${accentColor}1a` }}>
           {pickLocaleText(locale, '草稿', 'Draft')}
         </span>
       </div>
-      <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>{draftPreview}</div>
-      <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>{formatTime(draftState.updatedAt, locale)}</div>
-    </div>
+      <div className="agent-chat-session-card__preview">{draftPreview}</div>
+      <div className="agent-chat-session-card__time">{formatTime(draftState.updatedAt, locale)}</div>
+    </button>
   );
 
   return (
-    <div>
-      <div
-        style={{
-          marginBottom: 18,
-          background: `linear-gradient(135deg, ${accentColor}22, rgba(15,24,44,.92))`,
-          border: `1px solid ${accentColor}33`,
-          borderRadius: 16,
-          padding: 18,
-          boxShadow: '0 18px 36px rgba(0,0,0,.18)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontSize: 12, color: accentColor, fontWeight: 700, letterSpacing: '.05em', marginBottom: 6 }}>
-              {pickLocaleText(locale, headerKickerZh, headerKickerEn)}
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>
-              {pickLocaleText(locale, headerTitleZh, headerTitleEn)}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, maxWidth: 860 }}>
-              {pickLocaleText(locale, headerDescZh, headerDescEn)}
-            </div>
-          </div>
-          <div style={{ minWidth: 240, padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
-            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>{pickLocaleText(locale, '当前协助方', 'Currently Helping')}</div>
-            <div style={{ fontSize: 15, fontWeight: 800 }}>{agentEmoji} {agentLabel}</div>
-            <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>{pickLocaleText(locale, handlerNoteZh, handlerNoteEn)}</div>
-          </div>
+    <div className="agent-chat-shell" style={{ ['--agent-accent' as string]: accentColor, ['--agent-accent-soft' as string]: accentSoft }}>
+      <section className="agent-chat-hero">
+        <div className="agent-chat-hero__copy">
+          <div className="agent-chat-hero__kicker">{pickLocaleText(locale, headerKickerZh, headerKickerEn)}</div>
+          <h2 className="agent-chat-hero__title">{pickLocaleText(locale, headerTitleZh, headerTitleEn)}</h2>
+          {pickLocaleText(locale, headerDescZh, headerDescEn) ? (
+            <p className="agent-chat-hero__desc">{pickLocaleText(locale, headerDescZh, headerDescEn)}</p>
+          ) : null}
         </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '280px minmax(0, 1fr) 300px', gap: 16, alignItems: 'start' }}>
-        <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 16, padding: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '会话列表', 'Sessions')}</div>
-            <span style={{ fontSize: 10, color: 'var(--muted)' }}>{sessions.length + 1}</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 760, overflowY: 'auto', paddingRight: 4 }}>
-            {draftSessionCard}
-            {sessions.map((task) => {
-              const latest = task.activity?.length ? summarizeActivity(task.activity[task.activity.length - 1], locale) : task.now || task.title;
-              const active = draftState.selectedSessionId === task.id;
-              return (
-                <div
-                  key={task.id}
-                  onClick={() => updateDraft({ selectedSessionId: task.id })}
-                  style={{
-                    padding: 12,
-                    borderRadius: 12,
-                    cursor: 'pointer',
-                    border: active ? `1px solid ${accentColor}` : '1px solid var(--line)',
-                    background: active ? accentSoft : 'var(--panel2)',
-                    boxShadow: active ? `0 12px 24px ${accentColor}22` : 'none',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start', marginBottom: 6 }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, lineHeight: 1.5 }}>{compactText(task.title || task.id, 38)}</div>
-                    <span style={{ fontSize: 10, color: accentColor, whiteSpace: 'nowrap' }}>{stateLabel(task, locale)}</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>{compactText(latest || pickLocaleText(locale, '暂无动态', 'No updates yet'))}</div>
-                  <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>{formatTime(task.updatedAt || '', locale)}</div>
-                </div>
-              );
-            })}
-          </div>
+        <div className="agent-chat-hero__handler">
+          <div className="agent-chat-meta-label">{pickLocaleText(locale, '当前协助方', 'Currently Helping')}</div>
+          <div className="agent-chat-hero__handler-name">{agentEmoji} {agentLabel}</div>
+          {pickLocaleText(locale, handlerNoteZh, handlerNoteEn) ? (
+            <div className="agent-chat-meta-copy">{pickLocaleText(locale, handlerNoteZh, handlerNoteEn)}</div>
+          ) : null}
+          <div className="agent-chat-hero__handler-id">ID · {agentId}</div>
         </div>
+      </section>
 
-        <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 16, overflow: 'hidden' }}>
-          <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--line)', background: 'rgba(255,255,255,.02)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: 12, color: accentColor, fontWeight: 700, marginBottom: 4 }}>
-                  {selectedTask ? pickLocaleText(locale, '处理记录', 'Request Record') : pickLocaleText(locale, '草稿会话', 'Draft Session')}
-                </div>
-                <div style={{ fontSize: 18, fontWeight: 800 }}>
-                  {selectedTask ? selectedTask.title : pickLocaleText(locale, draftLabelZh, draftLabelEn)}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {selectedTask ? (
-                  <button
-                    type="button"
-                    onClick={() => loadTaskActivity(selectedTask.id)}
-                    style={{ padding: '8px 14px', background: 'transparent', color: accentColor, border: `1px solid ${accentColor}`, borderRadius: 8, cursor: 'pointer', fontSize: 12 }}
-                  >
-                    {pickLocaleText(locale, '刷新记录', 'Refresh Records')}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={resetDraft}
-                    style={{ padding: '8px 14px', background: 'transparent', color: accentColor, border: `1px solid ${accentColor}`, borderRadius: 8, cursor: 'pointer', fontSize: 12 }}
-                  >
-                    {pickLocaleText(locale, '新建草稿', 'New Draft')}
-                  </button>
-                )}
-              </div>
+      <section className="agent-chat-mobile-tabs" aria-label={pickLocaleText(locale, '移动端分段导航', 'Mobile segmented navigation')}>
+        {mobileTabs.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={`agent-chat-mobile-tabs__item ${mobilePanel === item.key ? 'is-active' : ''}`}
+            onClick={() => setMobilePanel(item.key)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </section>
+
+      <section className={`agent-chat-grid ${sessionsCollapsed ? 'is-sessions-collapsed' : ''} ${intentsCollapsed ? 'is-intents-collapsed' : ''}`}>
+        <aside className={`agent-chat-panel agent-chat-panel--sessions ${mobilePanel === 'sessions' ? 'is-mobile-active' : ''} ${sessionsCollapsed ? 'is-collapsed' : ''}`}>
+          <div className="agent-chat-panel__head">
+            <div className="agent-chat-panel__head-copy">
+              <div className="agent-chat-panel__kicker">{pickLocaleText(locale, '会话索引', 'Session Index')}</div>
+              <div className="agent-chat-panel__title">{pickLocaleText(locale, '左侧总览所有草稿与任务会话', 'Track every draft and task session from one rail')}</div>
+            </div>
+            <div className="agent-chat-panel__head-actions">
+              {!sessionsCollapsed ? <span className="agent-chat-panel__count">{sessionCountLabel}</span> : null}
+              <button
+                type="button"
+                className="agent-chat-panel__toggle"
+                onClick={() => setSessionsCollapsed((value) => !value)}
+                aria-expanded={!sessionsCollapsed}
+                aria-label={sessionsCollapsed ? pickLocaleText(locale, '展开会话索引', 'Expand session index') : pickLocaleText(locale, '收起会话索引', 'Collapse session index')}
+                title={sessionsCollapsed ? pickLocaleText(locale, '展开会话索引', 'Expand session index') : pickLocaleText(locale, '收起会话索引', 'Collapse session index')}
+              >
+                {sessionsCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+              </button>
             </div>
           </div>
-
-          <div style={{ minHeight: 560, maxHeight: 680, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 12, background: 'linear-gradient(180deg, rgba(255,255,255,.01), rgba(0,0,0,.04))' }}>
-            {!selectedTask ? (
-              <>
-                <div style={{ background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 12, padding: 14, fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
-                  {pickLocaleText(locale, introZh, introEn)}
-                </div>
-                {draftState.messages.map((item) => {
-                  const isUser = item.role === 'user';
-                  const bubbleBg = isUser ? accentSoft : item.role === 'system' ? 'rgba(245,200,66,.10)' : 'var(--panel2)';
-                  const bubbleBorder = isUser ? `${accentColor}44` : item.role === 'system' ? '#f5c84244' : 'var(--line)';
+          {sessionsCollapsed ? (
+            <button
+              type="button"
+              className="agent-chat-panel__collapsed-tab"
+              onClick={() => setSessionsCollapsed(false)}
+              aria-label={pickLocaleText(locale, '展开会话索引', 'Expand session index')}
+            >
+              <span className="agent-chat-panel__collapsed-kicker">{pickLocaleText(locale, '会话', 'Sessions')}</span>
+              <span className="agent-chat-panel__collapsed-count">{sessionCountLabel}</span>
+            </button>
+          ) : (
+            <div className="agent-chat-panel__body agent-chat-panel__body--sessions">
+              <div className="agent-chat-session-list">
+                {draftSessionCard}
+                {sessions.map((task) => {
+                  const latest = task.activity?.length ? summarizeActivity(task.activity[task.activity.length - 1], locale) : task.now || task.title;
+                  const active = draftState.selectedSessionId === task.id;
                   return (
-                    <div key={item.id} style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
-                      <div style={{ maxWidth: '86%', background: bubbleBg, border: `1px solid ${bubbleBorder}`, borderRadius: 14, padding: '12px 14px' }}>
-                        <div style={{ fontSize: 11, color: isUser ? accentColor : 'var(--muted)', fontWeight: 700, marginBottom: 6 }}>
-                          {isUser ? pickLocaleText(locale, '你', 'You') : item.role === 'system' ? pickLocaleText(locale, '平台提示', 'Platform') : agentLabel}
-                        </div>
-                        <div style={{ fontSize: 13, lineHeight: 1.8, whiteSpace: 'pre-wrap', color: 'var(--text)' }}>{item.content}</div>
-                        <div style={{ marginTop: 8, fontSize: 10, color: 'var(--muted)' }}>{formatTime(item.at, locale)}</div>
+                    <button
+                      key={task.id}
+                      type="button"
+                      className={`agent-chat-session-card ${active ? 'is-active' : ''}`}
+                      onClick={() => activateSession(task.id)}
+                      style={{
+                        borderColor: active ? accentColor : undefined,
+                        boxShadow: active ? `0 16px 36px ${accentColor}22` : undefined,
+                        background: active ? accentSoft : undefined,
+                      }}
+                    >
+                      <div className="agent-chat-session-card__top">
+                        <div className="agent-chat-session-card__title">{compactText(task.title || task.id, 38)}</div>
+                        <span className="agent-chat-session-card__state" style={{ color: accentColor }}>{stateLabel(task, locale)}</span>
                       </div>
-                    </div>
+                      <div className="agent-chat-session-card__preview">{compactText(latest || pickLocaleText(locale, '暂无动态', 'No updates yet'))}</div>
+                      <div className="agent-chat-session-card__time">{formatTime(task.updatedAt || '', locale)}</div>
+                    </button>
                   );
                 })}
-              </>
-            ) : activityLoading ? (
-              <div style={{ textAlign: 'center', padding: '26px 0', color: 'var(--muted)', fontSize: 12 }}>{pickLocaleText(locale, '⟳ 正在读取处理记录…', '⟳ Loading request records...')}</div>
-            ) : activity.length === 0 ? (
-              <div style={{ background: 'var(--panel2)', border: '1px dashed var(--line)', borderRadius: 12, padding: 16, color: 'var(--muted)', fontSize: 12, lineHeight: 1.8 }}>
-                {pickLocaleText(locale, '当前还没有读取到处理记录。你可以先刷新，或稍等几秒让最新进展显示出来。', 'No request records were retrieved yet. You can refresh now or wait a few seconds for the latest progress to appear.')}
-              </div>
-            ) : (
-              activity.map((item, index) => {
-                const tone = activityTone(item);
-                return (
-                  <div key={`${String(item.at || index)}-${item.kind}-${index}`} style={{ border: `1px solid ${tone.border}`, background: tone.bg, borderRadius: 12, padding: '12px 14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                      <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text)' }}>
-                        {item.kind === 'progress' && item.agent ? `${item.agent} · ${pickLocaleText(locale, '最新进展', 'Latest Update')}` : item.kind || pickLocaleText(locale, '最新动态', 'Update')}
-                      </div>
-                      <div style={{ fontSize: 10, color: 'var(--muted)' }}>{formatTime(String(item.at || ''), locale)}</div>
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>
-                      {summarizeActivity(item, locale)}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <div style={{ padding: 18, borderTop: '1px solid var(--line)', background: 'rgba(255,255,255,.02)' }}>
-            {!selectedTask ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {review.summary ? (
-                  <div style={{ background: review.ready ? accentSoft : 'var(--panel2)', border: `1px solid ${review.ready ? `${accentColor}55` : 'var(--line)'}`, borderRadius: 12, padding: 14 }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: review.ready ? accentColor : 'var(--text)', marginBottom: 8 }}>
-                      {review.ready ? pickLocaleText(locale, '提交前确认摘要', 'Pre-submission Confirmation Summary') : pickLocaleText(locale, '待补全信息', 'Missing Information')}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>
-                      {review.ready ? review.summary : review.followUp}
-                    </div>
-                  </div>
-                ) : null}
-                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-                  <textarea
-                    rows={4}
-                    value={draftState.input}
-                    onChange={(e) => updateDraft({ input: e.target.value })}
-                    placeholder={pickLocaleText(locale, '请继续描述需求，或补充范围、现状、约束、期望结果。', 'Continue describing the request, or add scope, current state, constraints, and expected result.')}
-                    style={{ flex: 1, padding: '12px 14px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'vertical', lineHeight: 1.7 }}
-                  />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 144 }}>
-                    <button
-                      type="button"
-                      onClick={sendDraftMessage}
-                      disabled={!draftState.input.trim()}
-                      style={{ padding: '11px 14px', fontSize: 13, background: accentColor, color: '#08111d', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 800 }}
-                    >
-                      {pickLocaleText(locale, '发送', 'Send')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={confirmCreateTask}
-                      disabled={creating || !review.ready}
-                      style={{ padding: '11px 14px', fontSize: 13, background: review.ready ? '#2ecc8a' : 'var(--panel2)', color: review.ready ? '#04130c' : 'var(--muted)', border: 'none', borderRadius: 10, cursor: review.ready ? 'pointer' : 'not-allowed', fontWeight: 800 }}
-                    >
-                      {creating ? pickLocaleText(locale, '⟳ 创建中…', '⟳ Creating...') : pickLocaleText(locale, '确认并创建任务', 'Confirm & Create Task')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : appendTaskMessage ? (
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-                <textarea
-                  rows={3}
-                  value={taskInput}
-                  onChange={(e) => setTaskInput(e.target.value)}
-                  placeholder={pickLocaleText(locale, '如需补充说明，请在这里继续留言，系统会把内容写入当前任务活动流。', 'If you need to add more instructions, leave a follow-up note here and the system will append it to the current task activity stream.')}
-                  style={{ flex: 1, padding: '12px 14px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'vertical', lineHeight: 1.7 }}
-                />
-                <button
-                  type="button"
-                  onClick={sendTaskMessage}
-                  disabled={taskSending || !taskInput.trim()}
-                  style={{ padding: '11px 16px', fontSize: 13, background: accentColor, color: '#08111d', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 800, minWidth: 132 }}
-                >
-                  {taskSending ? pickLocaleText(locale, '⟳ 追加中…', '⟳ Appending...') : pickLocaleText(locale, '追加说明', 'Append Note')}
-                </button>
-              </div>
-            ) : (
-              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
-                {pickLocaleText(locale, '当前会话已转为持续处理中。刷新后仍可从左侧会话列表恢复，并继续查看最新动态。', 'This session is now continuing in the background. You can restore it from the session list after a refresh and keep following the latest updates.')}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: 16, padding: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 12 }}>{pickLocaleText(locale, '快捷意图', 'Quick Intents')}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-            {intents.map((intent) => (
-              <button
-                key={intent.key}
-                type="button"
-                onClick={() => {
-                  const prefill = pickLocaleText(locale, intent.prefillZh, intent.prefillEn);
-                  updateDraft({ selectedSessionId: 'draft', intentKey: intent.key, input: prefill });
-                }}
-                style={{ textAlign: 'left', padding: '12px 14px', borderRadius: 12, border: `1px solid ${accentColor}33`, background: 'var(--panel2)', cursor: 'pointer' }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>{pickLocaleText(locale, intent.labelZh, intent.labelEn)}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>{pickLocaleText(locale, intent.helperZh || intent.prefillZh, intent.helperEn || intent.prefillEn)}</div>
-              </button>
-            ))}
-          </div>
-
-          <div style={{ background: review.ready ? accentSoft : 'var(--panel2)', border: `1px solid ${review.ready ? `${accentColor}55` : 'var(--line)'}`, borderRadius: 12, padding: 14, marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8, color: review.ready ? accentColor : 'var(--text)' }}>
-              {pickLocaleText(locale, '确认状态', 'Confirmation Status')}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
-              {review.ready
-                ? pickLocaleText(locale, '信息已达到提交标准。你可以直接确认创建任务，后续活动流将绑定 taskId 持久化保存。', 'The information is ready for submission. You can confirm now, and the subsequent activity stream will be persisted with the bound task ID.')
-                : (review.followUp || pickLocaleText(locale, '请先补全必要信息。', 'Please fill in the required details first.'))}
-            </div>
-          </div>
-
-          {renderSidebar ? renderSidebar({ locale, review, draftText: draftUserText, selectedTask }) : (
-            <div style={{ background: 'var(--panel2)', border: '1px solid var(--line)', borderRadius: 12, padding: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8 }}>{pickLocaleText(locale, '会话说明', 'Session Notes')}</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
-                {pickLocaleText(locale, '草稿阶段的最近会话与未发送输入会保存在浏览器本地；一旦确认创建任务，后续执行历史将以任务活动流为主记录源，并可在刷新后恢复。', 'Recent draft sessions and unsent input are stored locally in the browser. Once the task is confirmed, the execution history will be recorded primarily in the task activity stream and can be restored after refresh.')}
               </div>
             </div>
           )}
-        </div>
-      </div>
+        </aside>
+
+        <section className={`agent-chat-panel agent-chat-panel--conversation ${mobilePanel === 'conversation' ? 'is-mobile-active' : ''}`}>
+          <div className="agent-chat-panel__head agent-chat-panel__head--conversation">
+            <div>
+              <div className="agent-chat-panel__kicker">{selectedTask ? pickLocaleText(locale, '处理记录', 'Request Record') : pickLocaleText(locale, '草稿会话', 'Draft Session')}</div>
+              <div className="agent-chat-panel__title">{selectedSessionTitle}</div>
+            </div>
+            <div className="agent-chat-actions-inline">
+              {selectedTask ? (
+                <button
+                  type="button"
+                  className="agent-chat-outline-btn"
+                  onClick={() => loadTaskActivity(selectedTask.id)}
+                  style={{ color: accentColor, borderColor: `${accentColor}66` }}
+                >
+                  {pickLocaleText(locale, '刷新记录', 'Refresh Records')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="agent-chat-outline-btn"
+                  onClick={resetDraft}
+                  style={{ color: accentColor, borderColor: `${accentColor}66` }}
+                >
+                  {pickLocaleText(locale, '新建草稿', 'New Draft')}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="agent-chat-summary-strip">
+            <span className="agent-chat-badge">{conversationScopeLabel}</span>
+            <span className="agent-chat-badge">{conversationItemsLabel}</span>
+            <span
+              className={`agent-chat-badge ${selectedTask ? 'is-task' : review.ready ? 'is-ready' : 'is-pending'}`}
+              style={{
+                color: selectedTask ? accentColor : review.ready ? '#7ff0a8' : '#ffd479',
+                borderColor: selectedTask ? `${accentColor}44` : review.ready ? 'rgba(76,195,138,0.38)' : 'rgba(245,200,66,0.34)',
+                background: selectedTask ? `${accentColor}14` : review.ready ? 'rgba(76,195,138,0.14)' : 'rgba(245,200,66,0.12)',
+              }}
+            >
+              {conversationStatusLabel}
+            </span>
+          </div>
+
+          <div className="agent-chat-panel__body agent-chat-panel__body--conversation">
+            <div className="agent-chat-stream">
+              {!selectedTask ? (
+                <>
+                  <div className="agent-chat-intro-card">{pickLocaleText(locale, introZh, introEn)}</div>
+                  {draftState.messages.map((item) => {
+                    const isUser = item.role === 'user';
+                    const bubbleBg = isUser ? accentSoft : item.role === 'system' ? 'rgba(245,200,66,.10)' : 'var(--panel2)';
+                    const bubbleBorder = isUser ? `${accentColor}44` : item.role === 'system' ? '#f5c84244' : 'var(--line)';
+                    return (
+                      <div key={item.id} className={`agent-chat-bubble-row ${isUser ? 'is-user' : ''}`}>
+                        <div className="agent-chat-bubble" style={{ background: bubbleBg, borderColor: bubbleBorder }}>
+                          <div className="agent-chat-bubble__author" style={{ color: isUser ? accentColor : undefined }}>
+                            {isUser ? pickLocaleText(locale, '你', 'You') : item.role === 'system' ? pickLocaleText(locale, '平台提示', 'Platform') : agentLabel}
+                          </div>
+                          <div className="agent-chat-bubble__content">{item.content}</div>
+                          <div className="agent-chat-bubble__time">{formatTime(item.at, locale)}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              ) : activityLoading ? (
+                <div className="agent-chat-empty-state">{pickLocaleText(locale, '⟳ 正在读取处理记录…', '⟳ Loading request records...')}</div>
+              ) : activity.length === 0 ? (
+                <div className="agent-chat-empty-state">
+                  {pickLocaleText(locale, '暂无处理记录。', 'No request records.')}
+                </div>
+              ) : (
+                activity.map((item, index) => {
+                  const tone = activityTone(item);
+                  return (
+                    <div key={`${String(item.at || index)}-${item.kind}-${index}`} className="agent-chat-activity-card" style={{ borderColor: tone.border, background: tone.bg }}>
+                      <div className="agent-chat-activity-card__top">
+                        <div className="agent-chat-activity-card__title">
+                          {item.kind === 'progress' && item.agent ? `${item.agent} · ${pickLocaleText(locale, '最新进展', 'Latest Update')}` : item.kind || pickLocaleText(locale, '最新动态', 'Update')}
+                        </div>
+                        <div className="agent-chat-bubble__time">{formatTime(String(item.at || ''), locale)}</div>
+                      </div>
+                      <div className="agent-chat-activity-card__content">{summarizeActivity(item, locale)}</div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="agent-chat-composer">
+              {!selectedTask ? (
+                <div className="agent-chat-composer__stack">
+                  {review.summary ? (
+                    <div className="agent-chat-review-card" style={{ background: review.ready ? accentSoft : 'var(--panel2)', borderColor: review.ready ? `${accentColor}55` : 'var(--line)' }}>
+                      <div className="agent-chat-review-card__title" style={{ color: review.ready ? accentColor : undefined }}>
+                        {review.ready ? pickLocaleText(locale, '提交前确认摘要', 'Pre-submission Confirmation Summary') : pickLocaleText(locale, '待补全信息', 'Missing Information')}
+                      </div>
+                      <div className="agent-chat-review-card__content">{review.ready ? review.summary : review.followUp}</div>
+                    </div>
+                  ) : null}
+                  <div className="agent-chat-composer__grid">
+                    <textarea
+                      rows={4}
+                      value={draftState.input}
+                      onChange={(e) => updateDraft({ input: e.target.value })}
+                      placeholder={pickLocaleText(locale, '请继续描述需求，或补充范围、现状、约束、期望结果。', 'Continue describing the request, or add scope, current state, constraints, and expected result.')}
+                      className="agent-chat-textarea"
+                    />
+                    <div className="agent-chat-composer__actions">
+                      <button
+                        type="button"
+                        onClick={sendDraftMessage}
+                        disabled={!draftState.input.trim()}
+                        className="agent-chat-primary-btn"
+                        style={{ background: accentColor, color: '#08111d' }}
+                      >
+                        {pickLocaleText(locale, '发送', 'Send')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={confirmCreateTask}
+                        disabled={creating || !review.ready}
+                        className="agent-chat-primary-btn"
+                        style={{
+                          background: review.ready ? '#2ecc8a' : 'var(--panel2)',
+                          color: review.ready ? '#04130c' : 'var(--muted)',
+                        }}
+                      >
+                        {creating ? pickLocaleText(locale, '⟳ 创建中…', '⟳ Creating...') : pickLocaleText(locale, '确认并创建任务', 'Confirm & Create Task')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : appendTaskMessage ? (
+                <div className="agent-chat-composer__grid">
+                  <textarea
+                    rows={3}
+                    value={taskInput}
+                    onChange={(e) => setTaskInput(e.target.value)}
+                    placeholder={pickLocaleText(locale, '如需补充说明，请在这里继续留言，系统会把内容写入当前任务活动流。', 'If you need to add more instructions, leave a follow-up note here and the system will append it to the current task activity stream.')}
+                    className="agent-chat-textarea"
+                  />
+                  <div className="agent-chat-composer__actions">
+                    <button
+                      type="button"
+                      onClick={sendTaskMessage}
+                      disabled={taskSending || !taskInput.trim()}
+                      className="agent-chat-primary-btn"
+                      style={{ background: accentColor, color: '#08111d' }}
+                    >
+                      {taskSending ? pickLocaleText(locale, '⟳ 追加中…', '⟳ Appending...') : pickLocaleText(locale, '追加说明', 'Append Note')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="agent-chat-meta-copy">
+                  {pickLocaleText(locale, '当前会话已转为持续处理中。刷新后仍可从左侧会话列表恢复，并继续查看最新动态。', 'This session is now continuing in the background. You can restore it from the session list after a refresh and keep following the latest updates.')}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <aside className={`agent-chat-panel agent-chat-panel--intents ${mobilePanel === 'intents' ? 'is-mobile-active' : ''} ${intentsCollapsed ? 'is-collapsed' : ''}`}>
+          <div className="agent-chat-panel__head">
+            <div className="agent-chat-panel__head-copy">
+              <div className="agent-chat-panel__kicker">{pickLocaleText(locale, '快捷意图', 'Quick Intents')}</div>
+              <div className="agent-chat-panel__title">{pickLocaleText(locale, '把常见需求转为一键预填入口', 'Turn common requests into one-tap starting points')}</div>
+            </div>
+            <div className="agent-chat-panel__head-actions">
+              <button
+                type="button"
+                className="agent-chat-panel__toggle"
+                onClick={() => setIntentsCollapsed((value) => !value)}
+                aria-expanded={!intentsCollapsed}
+                aria-label={intentsCollapsed ? pickLocaleText(locale, '展开快捷意图', 'Expand quick intents') : pickLocaleText(locale, '收起快捷意图', 'Collapse quick intents')}
+                title={intentsCollapsed ? pickLocaleText(locale, '展开快捷意图', 'Expand quick intents') : pickLocaleText(locale, '收起快捷意图', 'Collapse quick intents')}
+              >
+                {intentsCollapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+              </button>
+            </div>
+          </div>
+          {intentsCollapsed ? (
+            <button
+              type="button"
+              className="agent-chat-panel__collapsed-tab"
+              onClick={() => setIntentsCollapsed(false)}
+              aria-label={pickLocaleText(locale, '展开快捷意图', 'Expand quick intents')}
+            >
+              <span className="agent-chat-panel__collapsed-kicker">{pickLocaleText(locale, '快捷', 'Quick')}</span>
+              <span className="agent-chat-panel__collapsed-count">{intents.length}</span>
+            </button>
+          ) : (
+            <div className="agent-chat-panel__body agent-chat-panel__body--intents">
+              <div className="agent-chat-intent-list">
+                {intents.map((intent) => (
+                  <button
+                    key={intent.key}
+                    type="button"
+                    className="agent-chat-intent-card"
+                    onClick={() => {
+                      const prefill = pickLocaleText(locale, intent.prefillZh, intent.prefillEn);
+                      updateDraft({ selectedSessionId: 'draft', intentKey: intent.key, input: prefill });
+                      setMobilePanel('conversation');
+                    }}
+                    style={{ borderColor: `${accentColor}33` }}
+                  >
+                    <div className="agent-chat-intent-card__title">{pickLocaleText(locale, intent.labelZh, intent.labelEn)}</div>
+                    <div className="agent-chat-intent-card__desc">{pickLocaleText(locale, intent.helperZh || intent.prefillZh, intent.helperEn || intent.prefillEn)}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="agent-chat-review-card" style={{ background: review.ready ? accentSoft : 'var(--panel2)', borderColor: review.ready ? `${accentColor}55` : 'var(--line)' }}>
+                <div className="agent-chat-review-card__title" style={{ color: review.ready ? accentColor : undefined }}>
+                  {pickLocaleText(locale, '确认状态', 'Confirmation Status')}
+                </div>
+                <div className="agent-chat-review-card__content">
+                  {review.ready
+                    ? pickLocaleText(locale, '信息已达到提交标准。你可以直接确认创建任务，后续活动流将绑定 taskId 持久化保存。', 'The information is ready for submission. You can confirm now, and the subsequent activity stream will be persisted with the bound task ID.')
+                    : (review.followUp || pickLocaleText(locale, '请先补全必要信息。', 'Please fill in the required details first.'))}
+                </div>
+              </div>
+
+              {renderSidebar ? renderSidebar({ locale, review, draftText: draftUserText, selectedTask }) : (
+                <div className="agent-chat-note-card">
+                  <div className="agent-chat-note-card__title">{pickLocaleText(locale, '会话说明', 'Session Notes')}</div>
+                  <div className="agent-chat-meta-copy">
+                    {pickLocaleText(locale, '这是页面内的专项处理对话窗口，只在 Agent 调整、技能管理等特定场景使用；日常交流仍以总控中心为主。草稿阶段的最近会话与未发送输入会保存在浏览器本地；一旦确认创建任务，后续执行历史将以任务活动流为主记录源，并可在刷新后恢复。', 'This is a dedicated in-page handling window used only for special scenarios such as Agent updates and skill management. Everyday requests still go through the Control Center. Recent draft sessions and unsent input are stored locally in the browser. Once the task is confirmed, the execution history will be recorded primarily in the task activity stream and can be restored after refresh.')}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </aside>
+      </section>
     </div>
   );
 }

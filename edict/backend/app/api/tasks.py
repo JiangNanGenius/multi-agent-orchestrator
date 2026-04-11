@@ -6,16 +6,34 @@ import logging
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import get_db
 from ..models.task import TaskState
+from ..services.task_workspace import (
+    create_task_workspace_archive,
+    list_task_workspace_entries,
+    read_task_workspace_text,
+    resolve_task_workspace_download_path,
+    write_task_workspace_text,
+)
 from ..services.event_bus import EventBus, get_event_bus
 from ..services.task_service import TaskService
 
 log = logging.getLogger("edict.api.tasks")
 router = APIRouter()
+
+WORKSPACE_EDIT_LOCKED_STATES = {
+    TaskState.ControlCenter,
+    TaskState.PlanCenter,
+    TaskState.ReviewCenter,
+    TaskState.Assigned,
+    TaskState.Next,
+    TaskState.Doing,
+    TaskState.Review,
+}
 
 
 # ── Schemas ──
@@ -66,6 +84,20 @@ class TaskWorkspaceReactivateRequest(BaseModel):
 
 class TaskWatchdogRequest(BaseModel):
     agent: str = "watchdog"
+
+
+class TaskWorkspaceTextSaveRequest(BaseModel):
+    path: str
+    content: str = ""
+    agent: str = "system"
+
+
+class TaskDeleteRequest(BaseModel):
+    agent: str = "system"
+    reason: str = ""
+    delete_workspace: bool = True
+    confirm: bool = False
+    confirm_text: str = ""
 
 
 class TaskNotificationCreate(BaseModel):
@@ -363,8 +395,111 @@ async def reactivate_workspace(
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get("/{task_id}/workspace/files")
+async def list_workspace_files(
+    task_id: uuid.UUID,
+    path: str = Query(default=""),
+    svc: TaskService = Depends(get_task_service),
+):
+    """浏览任务工作区目录。"""
+    try:
+        task = await svc.get_task(task_id)
+        payload = list_task_workspace_entries(task.to_dict(), path)
+        return {"message": "ok", **payload}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/{task_id}/workspace/file")
+async def read_workspace_file(
+    task_id: uuid.UUID,
+    path: str = Query(...),
+    svc: TaskService = Depends(get_task_service),
+):
+    """读取任务工作区中的文本文件。"""
+    try:
+        task = await svc.get_task(task_id)
+        payload = read_task_workspace_text(task.to_dict(), path)
+        return {
+            "message": "ok",
+            **payload,
+            "readonly": task.state in WORKSPACE_EDIT_LOCKED_STATES,
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{task_id}/workspace/file")
+async def save_workspace_file(
+    task_id: uuid.UUID,
+    body: TaskWorkspaceTextSaveRequest,
+    svc: TaskService = Depends(get_task_service),
+):
+    """保存任务工作区中的文本文件。"""
+    try:
+        task = await svc.get_task(task_id)
+        if task.state in WORKSPACE_EDIT_LOCKED_STATES:
+            raise HTTPException(status_code=409, detail="任务运行中，当前仅允许查看工作区文件。")
+        payload = write_task_workspace_text(task.to_dict(), body.path, body.content)
+        return {"message": "ok", **payload}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{task_id}/workspace/download")
+async def download_workspace_file(
+    task_id: uuid.UUID,
+    path: str = Query(...),
+    svc: TaskService = Depends(get_task_service),
+):
+    """下载任务工作区中的单个文件。"""
+    try:
+        task = await svc.get_task(task_id)
+        target, filename = resolve_task_workspace_download_path(task.to_dict(), path)
+        return FileResponse(path=str(target), filename=filename, media_type="application/octet-stream")
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/{task_id}/workspace/archive/download")
+async def download_workspace_archive(
+    task_id: uuid.UUID,
+    paths: list[str] = Query(default=[]),
+    svc: TaskService = Depends(get_task_service),
+):
+    """打包下载整个任务工作区，或按所选路径集合导出 zip。"""
+    try:
+        task = await svc.get_task(task_id)
+        archive_path, filename = create_task_workspace_archive(task.to_dict(), paths or None)
+        return FileResponse(path=str(archive_path), filename=filename, media_type="application/zip")
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{task_id}/delete")
+async def delete_task(
+    task_id: uuid.UUID,
+    body: TaskDeleteRequest,
+    svc: TaskService = Depends(get_task_service),
+):
+    """删除任务，并按需同步删除对应工作区。"""
+    try:
+        task = await svc.get_task(task_id)
+        if not body.confirm or body.confirm_text.strip() != str(task_id):
+            raise HTTPException(status_code=400, detail="删除任务需要二次确认，并输入当前任务 ID。")
+        payload = await svc.delete_task(
+            task_id,
+            agent=body.agent,
+            reason=body.reason,
+            delete_workspace=body.delete_workspace,
+        )
+        return {"message": "ok", **payload}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.post("/{task_id}/watchdog")
-async def run_task_watchdog(
+async def run_workspace_watchdog(
     task_id: uuid.UUID,
     body: TaskWatchdogRequest,
     svc: TaskService = Depends(get_task_service),

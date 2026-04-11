@@ -373,25 +373,12 @@ _PUBLIC_PATHS = frozenset({
     '/healthz',
     '/api/auth/login',
     '/api/auth/status',
-    '/api/live-status',
-    '/api/agents-overview',
-    '/api/agents-status',
-    '/api/agent-config',
-    '/api/model-change-log',
-    '/api/system-settings',
-    '/api/remote-skills-list',
-    '/api/collab-discuss/list',
-    '/api/collab-discuss/agents',
-    '/api/collab-discuss/fate',
+    '/api/auth/setup',
 })
 
 _PUBLIC_PREFIXES = (
     '/_assets/',
     '/assets/',
-    '/api/skill-content/',
-    '/api/agent-activity/',
-    '/api/collab-discuss/session/',
-    '/api/collab-discuss/run-status/',
 )
 
 

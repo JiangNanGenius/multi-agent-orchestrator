@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useStore, getPipeStatus, deptColor, stateLabel, STATE_LABEL, normalizeDeptLabel, normalizeFlowRemark } from '../store';
 import { api } from '../api';
+import { WorkspaceFileManager } from './WorkspaceFileManager';
 import type {
   Task,
   TaskActivityData,
@@ -23,7 +24,7 @@ const AGENT_LABELS: Record<string, string> = {
   data_specialist: '数据助手',
   docs_specialist: '内容助手',
   audit_specialist: '核对助手',
-  admin_specialist: '功能整理助手',
+  admin_specialist: '技能管理助手',
   search_specialist: '搜索助手',
 };
 
@@ -113,6 +114,10 @@ export default function TaskModal() {
   const [schedForm, setSchedForm] = useState(buildSchedulerForm());
   const [schedDirty, setSchedDirty] = useState(false);
   const [schedSaving, setSchedSaving] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const laTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -173,6 +178,13 @@ export default function TaskModal() {
   useEffect(() => {
     setSchedDirty(false);
   }, [modalTaskId]);
+
+  useEffect(() => {
+    setShowDeleteDialog(false);
+    setDeleteReason('');
+    setDeleteConfirmText('');
+    setDeleteSubmitting(false);
+  }, [task?.id]);
 
   if (!modalTaskId || !task) return null;
 
@@ -458,6 +470,43 @@ export default function TaskModal() {
     doTaskAction('cancel', reason);
   };
 
+  const openDeleteDialog = () => {
+    setDeleteReason(`由看板手动删除任务 ${task.id}`);
+    setDeleteConfirmText('');
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteTask = async () => {
+    if (deleteConfirmText.trim() !== task.id) {
+      toast('请输入当前任务 ID 作为二次确认', 'err');
+      return;
+    }
+    setDeleteSubmitting(true);
+    try {
+      const r = await api.deleteTask(task.id, {
+        confirm: true,
+        confirm_text: deleteConfirmText.trim(),
+        delete_workspace: true,
+        reason: deleteReason.trim(),
+        agent: 'dashboard',
+      });
+      if (r.ok) {
+        toast(r.message || '任务与工作区已删除', 'ok');
+        setShowDeleteDialog(false);
+        setDeleteReason('');
+        setDeleteConfirmText('');
+        loadAll();
+        close();
+      } else {
+        toast(r.error || '删除失败', 'err');
+      }
+    } catch {
+      toast('当前连接失败，请稍后再试', 'err');
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  };
+
   // Scheduler state
   const sched = schedData?.scheduler;
   const stalledSec = schedData?.stalledSec || 0;
@@ -524,6 +573,7 @@ export default function TaskModal() {
             {['Pending', 'ControlCenter', 'PlanCenter', 'ReviewCenter', 'Assigned', 'Doing', 'Review', 'Next'].includes(task.state) && (
               <button className="btn-action" style={{ background: '#7c5cfc18', color: '#7c5cfc', border: '1px solid #7c5cfc44' }} onClick={doAdvance}>⏩ 推进到下一步</button>
             )}
+            <button className="btn-action" style={{ background: '#ff527014', color: '#ff7d93', border: '1px solid #ff527044', marginLeft: 'auto' }} onClick={openDeleteDialog}>🗑 删除任务与工作区</button>
           </div>
 
           {(taskBusyEntries.length > 0 || crossBusyEntries.length > 0) && (
@@ -647,6 +697,10 @@ export default function TaskModal() {
                   )}
                 </div>
               )}
+
+              <div style={{ marginBottom: 10 }}>
+                <WorkspaceFileManager taskId={task.id} taskState={task.state} workspacePath={workspacePath} quickPaths={workspaceFiles} toast={toast} />
+              </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 10 }}>
                 <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
@@ -951,6 +1005,38 @@ export default function TaskModal() {
           {/* Live Activity */}
           <LiveActivitySection data={activityData} isDone={['Done', 'Cancelled'].includes(task.state)} logRef={logRef} />
         </div>
+
+        {showDeleteDialog && (
+          <div className="modal-bg open" style={{ zIndex: 260 }} onClick={() => !deleteSubmitting && setShowDeleteDialog(false)}>
+            <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-body" style={{ paddingTop: 20 }}>
+                <div className="modal-id" style={{ color: 'var(--danger)' }}>危险操作</div>
+                <div className="modal-title" style={{ fontSize: 24, marginBottom: 12 }}>删除任务并同步删除工作区</div>
+                <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 14 }}>
+                  当前操作会同时移除任务记录以及对应工作区目录、归档路径与相关文件入口。删除后不可恢复，请确认你正在处理的是正确任务。
+                </div>
+                <div style={{ border: '1px solid color-mix(in srgb, var(--danger) 36%, transparent)', borderRadius: 12, padding: '12px 14px', background: 'color-mix(in srgb, var(--danger) 7%, transparent)', marginBottom: 14, display: 'grid', gap: 6 }}>
+                  <div><b>任务 ID：</b><code>{task.id}</code></div>
+                  <div><b>任务标题：</b>{task.title || '—'}</div>
+                  <div><b>工作区路径：</b><code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{workspacePath || coldArchivePath || reactivationTargetPath || '当前未记录明确路径，但仍会按后端规则执行工作区清理。'}</code></div>
+                </div>
+                <div className="m-section" style={{ marginBottom: 12 }}>
+                  <div className="m-sec-label">二次确认</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>请输入当前任务 ID 以确认删除：</div>
+                  <input className="confirm-input" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder={task.id} />
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>删除原因（会记录到审计日志，可留空）：</div>
+                  <textarea className="confirm-reason" value={deleteReason} onChange={(e) => setDeleteReason(e.target.value)} placeholder="请输入删除原因或操作背景" />
+                </div>
+                <div className="confirm-btns">
+                  <button className="sched-btn" disabled={deleteSubmitting} onClick={() => setShowDeleteDialog(false)}>取消</button>
+                  <button className="sched-btn danger" disabled={deleteSubmitting || deleteConfirmText.trim() !== task.id} onClick={() => void handleDeleteTask()}>
+                    {deleteSubmitting ? '删除中…' : '确认删除任务与工作区'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

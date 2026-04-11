@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStore, DEPTS, isEdict, stateLabel, getSchedulerSummary, deptMeta, normalizeAgentId } from '../store';
 import { api, type OfficialInfo, type CollabAgentBusyEntry } from '../api';
 import { pickLocaleText } from '../i18n';
@@ -34,6 +34,9 @@ export default function MonitorPanel() {
   const loadCollabBusy = useStore((s) => s.loadCollabBusy);
   const setModalTaskId = useStore((s) => s.setModalTaskId);
   const toast = useStore((s) => s.toast);
+
+  const [remindPickerOpen, setRemindPickerOpen] = useState(false);
+  const [remindSelection, setRemindSelection] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadAgentsStatus();
@@ -78,61 +81,134 @@ export default function MonitorPanel() {
   const unconf = filtered.filter((a) => a.status === 'unconfigured').length;
   const gw = agentsStatusData?.gateway;
   const gwCls = gw?.probe ? 'ok' : gw?.alive ? 'warn' : 'err';
+  const remindableAgents = filtered.filter((a) => a.status !== 'unconfigured');
 
-  const handleWakeAll = async () => {
-    const toWake = filtered.filter((a) => a.status !== 'running' && a.status !== 'unconfigured');
+  const toggleRemindSelection = (agentId: string) => {
+    setRemindSelection((prev) => {
+      const next = new Set(prev);
+      if (next.has(agentId)) next.delete(agentId);
+      else next.add(agentId);
+      return next;
+    });
+  };
+
+  const openRemindPicker = () => {
+    setRemindPickerOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setRemindSelection(new Set(remindableAgents.filter((agent) => agent.status !== 'running').map((agent) => agent.id)));
+      }
+      return next;
+    });
+  };
+
+  const handleWakeSelected = async () => {
+    const toWake = remindableAgents.filter((agent) => remindSelection.has(agent.id));
     if (!toWake.length) {
-      toast(pickLocaleText(locale, '相关助手当前都在线', 'All related assistants are already online'));
+      toast(pickLocaleText(locale, '请先选择要提醒处理的 Agent', 'Please select the Agent(s) to remind first'), 'err');
       return;
     }
-    toast(locale === 'en' ? `Waking ${toWake.length} assistant(s)...` : `正在唤醒 ${toWake.length} 个相关助手...`);
-    for (const a of toWake) {
+    toast(locale === 'en' ? `Sending reminders to ${toWake.length} Agent(s)...` : `正在提醒 ${toWake.length} 个 Agent 处理...`);
+    for (const agent of toWake) {
       try {
-        await api.agentWake(a.id);
+        await api.agentWake(agent.id);
       } catch {
-        // ignore
+        // ignore per-agent errors to keep batch flow running
       }
     }
-    toast(locale === 'en' ? `${toWake.length} wake command(s) sent; status will refresh in 30s` : `${toWake.length} 个唤醒指令已发出，30 秒后刷新状态`);
-    setTimeout(() => loadAgentsStatus(), 30000);
+    toast(locale === 'en' ? `${toWake.length} reminder(s) sent; status will refresh in 30s` : `${toWake.length} 个提醒已发出，30 秒后刷新状态`);
+    setRemindPickerOpen(false);
+    setTimeout(() => {
+      loadAgentsStatus();
+      loadCollabBusy();
+    }, 30000);
   };
 
   return (
     <div>
       <div
         style={{
-          marginBottom: 18,
+          marginBottom: 16,
           background: 'linear-gradient(135deg, rgba(15,38,78,.88), rgba(12,18,33,.96))',
           border: '1px solid rgba(83, 183, 255, 0.18)',
-          borderRadius: 18,
-          padding: 18,
-          boxShadow: '0 18px 40px rgba(0,0,0,.22)',
+          borderRadius: 16,
+          padding: 16,
+          boxShadow: '0 14px 30px rgba(0,0,0,.18)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontSize: 12, color: '#7be0ff', fontWeight: 700, letterSpacing: '.06em', marginBottom: 6 }}>
+            <div style={{ fontSize: 11, color: '#7be0ff', fontWeight: 700, letterSpacing: '.06em', marginBottom: 4 }}>
               {pickLocaleText(locale, '最新动态', 'Updates')}
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6, lineHeight: 1.15 }}>
               {pickLocaleText(locale, '当前处理情况', 'Current Progress')}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, maxWidth: 880 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.7, maxWidth: 760 }}>
               {pickLocaleText(locale, '这里会显示当前事项相关的处理情况。你可以看到谁正在处理、谁暂时空闲、哪里卡住了，也可以在需要时提醒继续处理。', 'This page shows the current progress of your work. You can see what is in progress, what is idle, what is stuck, and send a reminder when needed.')}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn-refresh" onClick={() => { loadAgentsStatus(); loadCollabBusy(); }}>
               {pickLocaleText(locale, '🔄 刷新', '🔄 Refresh')}
             </button>
-            {(offline + unconf > 0) && (
-              <button className="btn-refresh" onClick={handleWakeAll} style={{ borderColor: 'var(--warn)', color: 'var(--warn)' }}>
-                {pickLocaleText(locale, '⚡ 提醒相关助手', '⚡ Remind Assistants')}
+            {remindableAgents.length > 0 && (
+              <button className="btn-refresh" onClick={openRemindPicker} style={{ borderColor: 'var(--warn)', color: 'var(--warn)' }}>
+                {pickLocaleText(locale, '⚡ 提醒 Agent 处理', '⚡ Remind Agents to Handle')}
               </button>
             )}
           </div>
         </div>
       </div>
+
+      {remindPickerOpen && (
+        <div style={{ marginBottom: 16, padding: 14, borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(10,14,24,0.76)', display: 'grid', gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '选择要提醒处理的 Agent', 'Choose Agent(s) to Remind')}</div>
+            <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.65, marginTop: 4 }}>
+              {pickLocaleText(locale, '点击下方多选框后，再确认发出提醒。默认会预选当前未在运行中的 Agent。', 'Use the multi-select options below and confirm after choosing. Agents that are not currently running are preselected by default.')}
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))', gap: 8 }}>
+            {remindableAgents.map((agent) => {
+              const meta = deptMeta(normalizeAgentId(agent.id), locale);
+              const active = remindSelection.has(agent.id);
+              return (
+                <label
+                  key={`remind-${agent.id}`}
+                  style={{
+                    display: 'flex',
+                    gap: 10,
+                    alignItems: 'center',
+                    padding: '9px 11px',
+                    borderRadius: 10,
+                    border: active ? '1px solid rgba(122,162,255,0.65)' : '1px solid rgba(255,255,255,0.08)',
+                    background: active ? 'rgba(122,162,255,0.12)' : 'rgba(255,255,255,0.03)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input type="checkbox" checked={active} onChange={() => toggleRemindSelection(agent.id)} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 700 }}>{meta.emoji || agent.emoji} {meta.label || agent.label}</div>
+                    <div style={{ fontSize: 10.5, color: 'var(--muted)' }}>{meta.role || agent.role} · {locale === 'en' ? agent.status : agent.statusLabel}</div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn-refresh" onClick={() => setRemindSelection(new Set(remindableAgents.map((agent) => agent.id)))}>
+              {pickLocaleText(locale, '全选', 'Select All')}
+            </button>
+            <button className="btn-refresh" onClick={() => setRemindPickerOpen(false)}>
+              {pickLocaleText(locale, '取消', 'Cancel')}
+            </button>
+            <button className="btn-refresh" onClick={handleWakeSelected} style={{ borderColor: 'var(--warn)', color: 'var(--warn)' }}>
+              {pickLocaleText(locale, '确认提醒', 'Confirm Reminder')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {agentsStatusData && agentsStatusData.ok && (
         <div className="as-panel">
@@ -176,7 +252,7 @@ export default function MonitorPanel() {
                     )}
                     {canWake && (
                       <button className="as-wake-btn" onClick={(e) => { e.stopPropagation(); handleWake(a.id); }}>
-                        {pickLocaleText(locale, '⚡ 提醒处理', '⚡ Remind')}
+                        {pickLocaleText(locale, '⚡ 提醒 Agent', '⚡ Remind Agent')}
                       </button>
                     )}
                   </div>

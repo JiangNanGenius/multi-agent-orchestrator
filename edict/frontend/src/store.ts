@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { applyLocale, detectLocale, formatRelativeTime, persistLocale, type Locale } from './i18n';
+import { applyTheme, detectThemeMode, persistThemeMode, resolveTheme, type ThemeMode, type ResolvedTheme } from './theme';
 import {
   api,
   type Task,
@@ -39,122 +40,122 @@ export const PIPE_STATE_IDX: Record<string, number> = {
 
 export const AGENT_ARCHITECTURE = {
   control_center: {
-    label: '总览协调',
-    labelEn: 'Overview Coordination',
-    role: '帮助统筹整体进度',
-    roleEn: 'Helps coordinate overall progress',
-    rank: '核心服务',
-    rankEn: 'Core Service',
+    label: '总控中心',
+    labelEn: 'Control Center',
+    role: '接收用户消息并接入正式任务链路',
+    roleEn: 'Receives user requests and routes formal work into the task pipeline',
+    rank: '中心层',
+    rankEn: 'Core Center',
     emoji: '🎛️',
     color: '#e8a040',
   },
   plan_center: {
-    label: '方案整理',
-    labelEn: 'Planning',
-    role: '帮助整理方案与步骤',
-    roleEn: 'Helps organize plans and steps',
-    rank: '协作服务',
-    rankEn: 'Support Service',
+    label: '规划中心',
+    labelEn: 'Planning Center',
+    role: '负责起草方案并组织进入评审与调度',
+    roleEn: 'Drafts execution plans and moves work into review and dispatch',
+    rank: '中心层',
+    rankEn: 'Core Center',
     emoji: '🧭',
     color: '#a07aff',
   },
   review_center: {
-    label: '结果检查',
-    labelEn: 'Review',
-    role: '帮助检查结果是否完整',
-    roleEn: 'Helps review whether results are complete',
-    rank: '协作服务',
-    rankEn: 'Support Service',
+    label: '评审中心',
+    labelEn: 'Review Center',
+    role: '独立审议规划方案并把关风险与边界',
+    roleEn: 'Independently reviews plans and checks risks and boundaries',
+    rank: '中心层',
+    rankEn: 'Core Center',
     emoji: '🔍',
     color: '#6a9eff',
   },
   dispatch_center: {
-    label: '安排处理',
-    labelEn: 'Assignment',
-    role: '帮助安排合适的人继续处理',
-    roleEn: 'Helps assign the right people to continue',
-    rank: '协作服务',
-    rankEn: 'Support Service',
+    label: '调度中心',
+    labelEn: 'Dispatch Center',
+    role: '负责派发 specialist 并汇总执行结果',
+    roleEn: 'Dispatches specialists and consolidates execution results',
+    rank: '中心层',
+    rankEn: 'Core Center',
     emoji: '📮',
     color: '#6aef9a',
   },
   docs_specialist: {
-    label: '内容助手',
-    labelEn: 'Content Assistant',
-    role: '帮助整理说明、总结与成稿',
-    roleEn: 'Helps draft summaries, explanations, and final copy',
-    rank: '服务角色',
-    rankEn: 'Service Role',
+    label: '文案专家',
+    labelEn: 'Documentation Specialist',
+    role: '负责文档、规范、界面文案与对外沟通内容',
+    roleEn: 'Handles documents, specifications, interface copy, and external communication content',
+    rank: '专家执行组',
+    rankEn: 'Specialist Group',
     emoji: '📝',
     color: '#f5c842',
   },
   data_specialist: {
-    label: '数据助手',
-    labelEn: 'Data Assistant',
-    role: '帮助整理数据、图表与结论',
-    roleEn: 'Helps organize data, charts, and findings',
-    rank: '服务角色',
-    rankEn: 'Service Role',
+    label: '数据专家',
+    labelEn: 'Data Specialist',
+    role: '负责数据分析、统计整理与资源管理',
+    roleEn: 'Handles data analysis, statistical organization, and resource management',
+    rank: '专家执行组',
+    rankEn: 'Specialist Group',
     emoji: '💰',
     color: '#ff9a6a',
   },
   code_specialist: {
-    label: '功能助手',
-    labelEn: 'Feature Assistant',
-    role: '帮助制作和调整所需功能',
-    roleEn: 'Helps create and adjust the needed features',
-    rank: '处理助手',
-    rankEn: 'Assistant',
+    label: '代码专家',
+    labelEn: 'Code Specialist',
+    role: '负责工程实现、架构设计与功能开发',
+    roleEn: 'Handles engineering implementation, architecture design, and feature development',
+    rank: '专家执行组',
+    rankEn: 'Specialist Group',
     emoji: '⚔️',
     color: '#44aaff',
   },
   audit_specialist: {
-    label: '核对助手',
-    labelEn: 'Check Assistant',
-    role: '帮助核对风险、规则与重要细节',
-    roleEn: 'Helps check risks, rules, and important details',
-    rank: '服务角色',
-    rankEn: 'Service Role',
+    label: '审计专家',
+    labelEn: 'Audit Specialist',
+    role: '负责质量保障、测试验收与合规审计',
+    roleEn: 'Handles quality assurance, test acceptance, and compliance auditing',
+    rank: '专家执行组',
+    rankEn: 'Specialist Group',
     emoji: '⚖️',
     color: '#cc4444',
   },
   deploy_specialist: {
-    label: '上线助手',
-    labelEn: 'Launch Assistant',
-    role: '帮助处理上线前准备与发布事项',
-    roleEn: 'Helps prepare launch-related work and release steps',
-    rank: '处理助手',
-    rankEn: 'Assistant',
+    label: '部署专家',
+    labelEn: 'Deployment Specialist',
+    role: '负责基础设施、部署运维与性能监控',
+    roleEn: 'Handles infrastructure, deployment operations, and performance monitoring',
+    rank: '专家执行组',
+    rankEn: 'Specialist Group',
     emoji: '🔧',
     color: '#ff5270',
   },
   admin_specialist: {
-    label: '能力整理助手',
-    labelEn: 'Capability Assistant',
-    role: '帮助整理常用能力与相关设置',
-    roleEn: 'Helps organize common capabilities and related settings',
-    rank: '处理助手',
-    rankEn: 'Assistant',
+    label: '管理专家',
+    labelEn: 'Admin Specialist',
+    role: '负责 Agent 管理、能力培训与协作规范维护',
+    roleEn: 'Handles agent management, capability training, and collaboration standards',
+    rank: '专家执行组',
+    rankEn: 'Specialist Group',
     emoji: '🗂️',
     color: '#9b59b6',
   },
   expert_curator: {
-    label: '协作安排助手',
-    labelEn: 'Collaboration Assistant',
-    role: '帮助整理协作成员与分工',
-    roleEn: 'Helps organize collaborators and assignments',
-    rank: '处理助手',
-    rankEn: 'Assistant',
+    label: '专家编组官',
+    labelEn: 'Expert Curator',
+    role: '负责专家新增、下线与名册治理一致性维护',
+    roleEn: 'Handles expert onboarding, retirement, and roster consistency governance',
+    rank: '治理角色',
+    rankEn: 'Governance Role',
     emoji: '🧩',
     color: '#7be0ff',
   },
   search_specialist: {
-    label: '搜索助手',
-    labelEn: 'Search Assistant',
-    role: '帮助查找全网信息与线索',
-    roleEn: 'Helps search web information and leads',
-    rank: '辅助能力',
-    rankEn: 'Support',
+    label: '搜索专家',
+    labelEn: 'Search Specialist',
+    role: '负责全网搜索、线索整理与来源归纳',
+    roleEn: 'Handles web search, lead organization, and source summarization',
+    rank: '专家执行组',
+    rankEn: 'Specialist Group',
     emoji: '🌐',
     color: '#36cfc9',
   },
@@ -246,8 +247,8 @@ export function normalizeFlowRemark(text: string): string {
     .replace(/Result report/g, 'Completed')
     .replace(/专业执行组/g, '处理中')
     .replace(/Execution Team/g, 'In Progress')
-    .replace(/Agent管理专家/g, '能力整理助手')
-    .replace(/管理专家/g, '能力整理助手')
+    .replace(/Agent管理专家/g, '管理专家')
+    .replace(/技能管理助手/g, '管理专家')
     .replace(/全网搜索简报/g, '全网搜索简报');
 }
 
@@ -568,29 +569,19 @@ export function getSchedulerSummary(t: Task, locale: Locale = 'zh'): { tone: 'ok
 // ── Tabs ──
 
 export type TabKey =
-  | 'tasks' | 'monitor' | 'agents' | 'models'
-  | 'skills' | 'sessions' | 'archives' | 'templates' | 'web_search' | 'collaboration' | 'automation' | 'system_settings';
+  | 'tasks' | 'monitor' | 'agents'
+  | 'skills' | 'memory' | 'web_search' | 'collaboration' | 'automation';
 
 export const TAB_DEFS: { key: TabKey; label: string; labelEn: string; icon: string }[] = [
-  { key: 'tasks',       label: '任务看板', icon: '📋', labelEn: 'Task Board' },
-  { key: 'collaboration', label: '一起讨论', icon: '👥', labelEn: 'Discussion' },
-  { key: 'monitor',     label: '最新动态', icon: '📡', labelEn: 'Updates' },
-  { key: 'automation',  label: '自动跟进', icon: '🧭', labelEn: 'Auto Follow-up' },
-  { key: 'agents',      label: 'Agent 管理', icon: '👔', labelEn: 'Agent Management' },
-  { key: 'models',      label: '回复风格', icon: '🤖', labelEn: 'Response Style' },
-  { key: 'skills',      label: '技能管理', icon: '🎯', labelEn: 'Skills Management' },
-  { key: 'sessions',    label: '快捷入口', icon: '💬', labelEn: 'Shortcuts' },
-  { key: 'archives',    label: '历史记录', icon: '🗄️', labelEn: 'History' },
-  { key: 'templates',   label: '提示词中心', icon: '🧩', labelEn: 'Prompt Center' },
-  { key: 'web_search',  label: '全网搜索', icon: '🌐', labelEn: 'Web Search' },
-  { key: 'system_settings', label: '系统设置', icon: '⚙️', labelEn: 'System Settings' },
+  { key: 'tasks',         label: '任务中枢', icon: '📋', labelEn: 'Mission Hub' },
+  { key: 'collaboration', label: '协作会议室', icon: '🤝', labelEn: 'Collaboration' },
+  { key: 'monitor',       label: '最新动态', icon: '📡', labelEn: 'Updates' },
+  { key: 'automation',    label: '自动化控制台', icon: '⚙️', labelEn: 'Automation' },
+  { key: 'agents',        label: 'Agent 管理工作台', icon: '👔', labelEn: 'Agent Management Workbench' },
+  { key: 'skills',        label: 'Skill 管理工作台', icon: '🎯', labelEn: 'Skill Management Workbench' },
+  { key: 'memory',        label: '记忆中心', icon: '🧠', labelEn: 'Memory Center' },
+  { key: 'web_search',    label: '全网搜索', icon: '🌐', labelEn: 'Web Search' },
 ];
-
-export function tabLabel(tab: { label: string; labelEn: string }, locale: Locale): string {
-  return locale === 'en' ? tab.labelEn : tab.label;
-}
-
-// ── DEPTS for monitor ──
 
 
 // ── Templates ──
@@ -730,6 +721,8 @@ export const TPL_CATS = [
 
 interface AppStore {
   locale: Locale;
+  themeMode: ThemeMode;
+  resolvedTheme: ResolvedTheme;
   // Data
   liveStatus: LiveStatus | null;
   agentConfig: AgentConfig | null;
@@ -743,13 +736,15 @@ interface AppStore {
   // UI State
   activeTab: TabKey;
   taskFilter: 'active' | 'archived' | 'all';
-  sessFilter: string;
   tplCatFilter: string;
   selectedAgent: string | null;
   modalTaskId: string | null;
   countdown: number;
   setLocale: (locale: Locale) => void;
   toggleLocale: () => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  cycleThemeMode: () => void;
+  refreshThemeFromSystem: () => void;
 
   // Toast
   toasts: { id: number; msg: string; type: 'ok' | 'err' }[];
@@ -757,7 +752,6 @@ interface AppStore {
   // Actions
   setActiveTab: (tab: TabKey) => void;
   setTaskFilter: (f: 'active' | 'archived' | 'all') => void;
-  setSessFilter: (f: string) => void;
   setTplCatFilter: (f: string) => void;
   setSelectedAgent: (id: string | null) => void;
   setModalTaskId: (id: string | null) => void;
@@ -777,7 +771,471 @@ interface AppStore {
 
 let _toastId = 0;
 const initialLocale = detectLocale();
+const initialThemeMode = detectThemeMode();
+const initialResolvedTheme = applyTheme(initialThemeMode);
 applyLocale(initialLocale);
+
+const DEMO_MODELS = [
+  { id: 'gpt-4.1', label: 'GPT‑4.1', provider: 'OpenAI' },
+  { id: 'gpt-4o-mini', label: 'GPT‑4o mini', provider: 'OpenAI' },
+  { id: 'deepseek-chat', label: 'DeepSeek Chat', provider: 'DeepSeek' },
+  { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner', provider: 'DeepSeek' },
+];
+
+function demoIso(minutesAgo = 0) {
+  return new Date(Date.now() - minutesAgo * 60 * 1000).toISOString();
+}
+
+function makeDemoTask({
+  id,
+  title,
+  state,
+  org,
+  currentDept,
+  targetDept,
+  archived = false,
+  archivedAt,
+  heartbeatLabel,
+  output,
+  todoPrefix,
+}: {
+  id: string;
+  title: string;
+  state: string;
+  org: string;
+  currentDept?: string;
+  targetDept?: string;
+  archived?: boolean;
+  archivedAt?: string;
+  heartbeatLabel: string;
+  output: string;
+  todoPrefix: string;
+}): Task {
+  return {
+    id,
+    title,
+    state,
+    org,
+    currentDept,
+    targetDept,
+    targetDepts: targetDept ? [targetDept] : undefined,
+    now: heartbeatLabel,
+    eta: archived ? '已归档' : '预计 15 分钟内更新',
+    block: archived ? '' : '暂无阻塞，等待下一轮确认',
+    ac: '需要在会商后形成结论与执行建议',
+    output,
+    heartbeat: {
+      status: archived ? 'idle' : state === 'Doing' || state === 'ReviewCenter' ? 'active' : 'warn',
+      label: heartbeatLabel,
+    },
+    flow_log: [
+      { at: demoIso(160), from: '需求提交', to: '整体协调', remark: `${todoPrefix} 已进入工作台` },
+      { at: demoIso(90), from: '整体协调', to: currentDept || org, remark: `${todoPrefix} 已完成初步分流` },
+      { at: demoIso(25), from: currentDept || org, to: targetDept || currentDept || org, remark: `${todoPrefix} 正在推进中` },
+    ],
+    todos: [
+      { id: `${id}-todo-1`, title: `${todoPrefix}：补齐背景信息`, status: 'completed' },
+      { id: `${id}-todo-2`, title: `${todoPrefix}：确认关键约束`, status: state === 'Done' ? 'completed' : 'in-progress' },
+      { id: `${id}-todo-3`, title: `${todoPrefix}：输出纪要与建议`, status: archived ? 'completed' : 'not-started' },
+    ],
+    review_round: state === 'ReviewCenter' ? 2 : 1,
+    archived,
+    archivedAt,
+    updatedAt: demoIso(8),
+    workspaceLatestSummary: output,
+  };
+}
+
+function buildDemoLiveStatus(): LiveStatus {
+  return {
+    tasks: [
+      makeDemoTask({
+        id: 'JJC-240410-001',
+        title: '梳理海外 AI 产品监测面板重构方案',
+        state: 'Doing',
+        org: 'control_center',
+        currentDept: 'plan_center',
+        targetDept: 'review_center',
+        heartbeatLabel: '方案拆解完成 70%，等待界面重构意见',
+        output: '已形成信息架构、视觉重构方向与页面拆分建议。',
+        todoPrefix: '重构方案',
+      }),
+      makeDemoTask({
+        id: 'JJC-240410-002',
+        title: '验证全网搜索高级筛选与摘要展示逻辑',
+        state: 'ReviewCenter',
+        org: 'search_specialist',
+        currentDept: 'review_center',
+        targetDept: 'control_center',
+        heartbeatLabel: '高级搜索摘要已可见，等待交互复核',
+        output: '已补齐主题、鲜度、排序与搜索深度的摘要信息。',
+        todoPrefix: '搜索交互',
+      }),
+      makeDemoTask({
+        id: 'JJC-240410-003',
+        title: '恢复 Agent 管理与技能库入口',
+        state: 'Assigned',
+        org: 'admin_specialist',
+        currentDept: 'dispatch_center',
+        targetDept: 'expert_curator',
+        heartbeatLabel: '已分派给技能管理助手与协作安排 Agent',
+        output: '当前等待数据装载与结果验证。',
+        todoPrefix: 'Agent 入口',
+      }),
+      makeDemoTask({
+        id: 'JJC-240410-004',
+        title: '归档：上一版监控首页视觉审视记录',
+        state: 'Done',
+        org: 'review_center',
+        currentDept: 'review_center',
+        targetDept: 'review_center',
+        archived: true,
+        archivedAt: demoIso(240),
+        heartbeatLabel: '记录已归档',
+        output: '已归档旧版问题：层级弱、入口散、状态反馈不清晰。',
+        todoPrefix: '历史审视',
+      }),
+      makeDemoTask({
+        id: 'OC-plan_center-001',
+        title: '快捷入口：方案整理助手近期对话',
+        state: 'Doing',
+        org: 'plan_center',
+        currentDept: 'plan_center',
+        targetDept: 'plan_center',
+        heartbeatLabel: '最近 10 分钟有 4 条协作消息',
+        output: '保留最近上下文与参考草案。',
+        todoPrefix: '近期对话',
+      }),
+      makeDemoTask({
+        id: 'MC-review_center-001',
+        title: '快捷入口：结果检查晨会纪要',
+        state: 'Review',
+        org: 'review_center',
+        currentDept: 'review_center',
+        targetDept: 'control_center',
+        heartbeatLabel: '晨会结论待同步到任务板',
+        output: '纪要已生成，待主持人确认后推送。',
+        todoPrefix: '晨会纪要',
+      }),
+    ],
+    syncStatus: { ok: true, mode: 'demo-fallback' },
+  };
+}
+
+const DEMO_AGENT_CONFIG: AgentConfig = {
+  agents: Object.entries(AGENT_ARCHITECTURE).map(([id, meta], idx) => ({
+    id,
+    label: meta.label,
+    emoji: meta.emoji,
+    role: meta.role,
+    model: idx % 3 === 0 ? 'deepseek-reasoner' : idx % 2 === 0 ? 'gpt-4.1' : 'deepseek-chat',
+    skills: [
+      {
+        name: `${meta.label}-workspace-audit`,
+        description: `检查${meta.label}页面元素与交互完整性。`,
+        path: `/skills/${id}/workspace-audit/SKILL.md`,
+      },
+      {
+        name: `${meta.label}-briefing-pack`,
+        description: `整理${meta.label}相关纪要、摘要与执行建议。`,
+        path: `/skills/${id}/briefing-pack/SKILL.md`,
+      },
+    ],
+  })),
+  knownModels: DEMO_MODELS,
+  dispatchChannel: 'feishu',
+};
+
+const DEMO_CHANGE_LOG: ChangeLogEntry[] = [
+  { at: demoIso(180), agentId: 'control_center', oldModel: 'deepseek-chat', newModel: 'gpt-4.1' },
+  { at: demoIso(120), agentId: 'search_specialist', oldModel: 'gpt-4o-mini', newModel: 'deepseek-reasoner' },
+  { at: demoIso(45), agentId: 'admin_specialist', oldModel: 'deepseek-chat', newModel: 'gpt-4.1', rolledBack: true },
+];
+
+const DEMO_AGENTS_OVERVIEW: AgentsOverviewData = {
+  agents: Object.entries(AGENT_ARCHITECTURE).map(([id, meta], idx) => ({
+    id,
+    label: meta.label,
+    emoji: meta.emoji,
+    role: meta.role,
+    rank: meta.rank,
+    model: idx % 3 === 0 ? 'deepseek-reasoner' : idx % 2 === 0 ? 'gpt-4.1' : 'deepseek-chat',
+    model_short: idx % 3 === 0 ? 'DS-R1' : idx % 2 === 0 ? 'GPT-4.1' : 'DS-Chat',
+    tokens_in: 24000 + idx * 3800,
+    tokens_out: 13000 + idx * 2400,
+    cache_read: 9000 + idx * 1200,
+    cache_write: 4200 + idx * 800,
+    cost_cny: Number((18 + idx * 2.4).toFixed(1)),
+    cost_usd: Number((2.5 + idx * 0.33).toFixed(2)),
+    sessions: 4 + (idx % 4),
+    messages: 18 + idx * 3,
+    tasks_done: 5 + idx,
+    tasks_active: idx < 4 ? 1 : 0,
+    flow_participations: 8 + idx * 2,
+    merit_score: 96 - idx * 3,
+    merit_rank: idx + 1,
+    last_active: demoIso(idx * 9 + 4),
+    heartbeat: { status: idx < 5 ? 'active' : idx % 3 === 0 ? 'warn' : 'idle', label: idx < 5 ? '在线处理中' : '空闲待命' },
+    participated_tasks: [
+      { id: 'JJC-240410-001', title: '梳理海外 AI 产品监测面板重构方案', state: 'Doing' },
+      { id: 'JJC-240410-002', title: '验证全网搜索高级筛选与摘要展示逻辑', state: 'ReviewCenter' },
+    ],
+  })),
+  totals: { tasks_done: 126, cost_cny: 284.5 },
+  top_agent: '总览协调',
+};
+
+const DEMO_AGENTS_STATUS: AgentsStatusData = {
+  ok: true,
+  gateway: { alive: true, probe: true, status: 'fallback ready' },
+  agents: Object.entries(AGENT_ARCHITECTURE).map(([id, meta], idx) => ({
+    id,
+    label: meta.label,
+    emoji: meta.emoji,
+    role: meta.role,
+    status: idx < 4 ? 'running' : idx % 4 === 0 ? 'offline' : 'idle',
+    statusLabel: idx < 4 ? '处理中' : idx % 4 === 0 ? '离线待唤醒' : '待命中',
+    lastActive: demoIso(idx * 11 + 3),
+  })),
+  checkedAt: demoIso(1),
+};
+
+const DEMO_COLLAB_BUSY: CollabAgentBusyResult = {
+  ok: true,
+  busy: [
+    {
+      agent_id: 'plan_center',
+      name: '方案整理',
+      emoji: '🧭',
+      role: '帮助整理方案与步骤',
+      state: 'active',
+      label: '正在主持结构梳理',
+      source_type: 'meeting',
+      source_id: 'collab-demo-001',
+      occupancy_kind: 'meeting',
+      session_id: 'collab-demo-001',
+      topic: '智能会商界面重构',
+      mode: 'meeting',
+      stage: 'roundtable',
+      round: 2,
+      moderator_id: 'control_center',
+      task_id: 'JJC-240410-001',
+      task_title: '梳理海外 AI 产品监测面板重构方案',
+      task_state: 'Doing',
+      task_org: 'control_center',
+      claimed_by: 'control_center',
+      reason: '作为当前主持人参与会商',
+      updated_at: Date.now() - 2 * 60 * 1000,
+    },
+    {
+      agent_id: 'review_center',
+      name: '结果检查',
+      emoji: '🔍',
+      role: '帮助检查结果是否完整',
+      state: 'reserved',
+      label: '等待下一轮复核',
+      source_type: 'task',
+      source_id: 'JJC-240410-002',
+      occupancy_kind: 'task_reserved',
+      session_id: 'task-review-001',
+      topic: '搜索配置复核',
+      mode: 'task',
+      stage: 'verification',
+      round: 1,
+      moderator_id: 'control_center',
+      task_id: 'JJC-240410-002',
+      task_title: '验证全网搜索高级筛选与摘要展示逻辑',
+      task_state: 'ReviewCenter',
+      task_org: 'search_specialist',
+      claimed_by: 'dispatch_center',
+      reason: '为搜索结果复核预留检查资源',
+      updated_at: Date.now() - 6 * 60 * 1000,
+    },
+    {
+      agent_id: 'search_specialist',
+      name: '搜索助手',
+      emoji: '🌐',
+      role: '帮助查找全网信息与线索',
+      state: 'active',
+      label: '正在处理搜索请求',
+      source_type: 'task',
+      source_id: 'JJC-240410-002',
+      occupancy_kind: 'task_active',
+      session_id: 'search-task-001',
+      topic: '高级搜索体验验证',
+      mode: 'task',
+      stage: 'searching',
+      round: 1,
+      moderator_id: 'control_center',
+      task_id: 'JJC-240410-002',
+      task_title: '验证全网搜索高级筛选与摘要展示逻辑',
+      task_state: 'ReviewCenter',
+      task_org: 'search_specialist',
+      claimed_by: 'search_specialist',
+      reason: '全网搜索任务执行中',
+      updated_at: Date.now() - 1 * 60 * 1000,
+    },
+  ],
+  sessions: [
+    {
+      session_id: 'collab-demo-001',
+      topic: '智能会商界面重构',
+      round: 2,
+      phase: 'discussion',
+      mode: 'meeting',
+      stage: 'roundtable',
+      moderator_id: 'control_center',
+      moderator_name: '总览协调',
+      agent_count: 4,
+      message_count: 12,
+      run_state: 'running',
+      auto_run: true,
+      last_advanced_at: Date.now() - 2 * 60 * 1000,
+      next_run_at: Date.now() + 3 * 60 * 1000,
+      updated_at: Date.now() - 1 * 60 * 1000,
+      claimed_agents: ['control_center', 'plan_center', 'review_center', 'expert_curator'],
+      conflicted_agents: [],
+      yielded_agents: [],
+    },
+  ],
+  tasks: [
+    {
+      task_id: 'JJC-240410-001',
+      task_title: '梳理海外 AI 产品监测面板重构方案',
+      task_state: 'Doing',
+      task_org: 'control_center',
+      run_state: 'running',
+      occupancy_kind: 'meeting',
+      claimed_agents: ['control_center', 'plan_center'],
+      updated_at: Date.now() - 2 * 60 * 1000,
+    },
+    {
+      task_id: 'JJC-240410-002',
+      task_title: '验证全网搜索高级筛选与摘要展示逻辑',
+      task_state: 'ReviewCenter',
+      task_org: 'search_specialist',
+      run_state: 'running',
+      occupancy_kind: 'task_active',
+      claimed_agents: ['search_specialist', 'review_center'],
+      updated_at: Date.now() - 1 * 60 * 1000,
+    },
+  ],
+  updated_at: Date.now(),
+};
+
+const DEMO_SEARCH_BRIEF: SearchBrief = {
+  date: '20260410',
+  generated_at: demoIso(5),
+  categories: {
+    政治: [
+      {
+        title: '多国开始评估 AI 基础设施安全与数据治理框架',
+        summary: '政策层面开始同步关注算力、模型透明度与跨境数据流动。',
+        link: 'https://example.com/politics-ai-governance',
+        source: 'Policy Brief',
+        pub_date: demoIso(140),
+      },
+    ],
+    经济: [
+      {
+        title: '企业级 AI 投入从试点转向流程重构，预算集中在可见 ROI 场景',
+        summary: '市场更关注能否真正落地到分析、运营和协同台。',
+        link: 'https://example.com/economy-ai-roi',
+        source: 'Market Watch',
+        pub_date: demoIso(220),
+      },
+    ],
+    AI大模型: [
+      {
+        title: '新一轮多模型协作产品强调编排、会商与可解释的结果流',
+        summary: '产品竞争焦点正从单点问答转向工作流可视化和多角色协作。',
+        link: 'https://example.com/ai-multi-agent-workflow',
+        source: 'AI Daily',
+        image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80',
+        pub_date: demoIso(90),
+      },
+      {
+        title: '搜索型 AI 产品开始把摘要、排序、时效与主题控制前置到主界面',
+        summary: '界面设计趋势是默认简单、细节可展开，同时保留状态反馈。',
+        link: 'https://example.com/ai-search-ux',
+        source: 'Product Signals',
+        pub_date: demoIso(40),
+      },
+    ],
+    公司: [
+      {
+        title: '协同工作台类产品正在重做导航，把高频系统操作移到侧边 Dock',
+        summary: '设置、刷新和身份相关入口更适合放在固定快捷区，而非顶部主导航。',
+        link: 'https://example.com/company-workspace-navigation',
+        source: 'Workspace Notes',
+        pub_date: demoIso(70),
+      },
+    ],
+  },
+};
+
+const DEMO_SEARCH_CATEGORIES = [
+  '政治',
+  '经济',
+  'AI大模型',
+  '公司',
+  '海外动态',
+].map((name) => ({
+  name,
+  enabled: ['政治', '经济', 'AI大模型', '公司'].includes(name),
+}));
+
+const DEMO_SUB_CONFIG: SubConfig = {
+  categories: DEMO_SEARCH_CATEGORIES,
+  keywords: ['多模型协作', '交互逻辑', '信息架构', '界面重构'],
+  custom_feeds: [
+    { name: 'Design Signals', url: 'https://example.com/design-signals.xml', category: 'AI大模型' },
+    { name: 'Policy Radar', url: 'https://example.com/policy-radar.xml', category: '政治' },
+  ],
+  feishu_webhook: '',
+};
+
+const EMPTY_LIVE_STATUS: LiveStatus = {
+  tasks: [],
+  syncStatus: { ok: false, mode: 'auth-required' },
+};
+
+const EMPTY_AGENT_CONFIG: AgentConfig = {
+  agents: [],
+  knownModels: [],
+  dispatchChannel: '',
+};
+
+const EMPTY_AGENTS_OVERVIEW: AgentsOverviewData = {
+  agents: [],
+  totals: { tasks_done: 0, cost_cny: 0 },
+  top_agent: '',
+};
+
+const EMPTY_AGENTS_STATUS: AgentsStatusData = {
+  ok: false,
+  gateway: { alive: false, probe: false, status: 'unavailable' },
+  agents: [],
+  checkedAt: '',
+};
+
+const EMPTY_COLLAB_BUSY: CollabAgentBusyResult = {
+  ok: false,
+  busy: [],
+  sessions: [],
+  tasks: [],
+};
+
+const EMPTY_SEARCH_BRIEF: SearchBrief = {
+  categories: {},
+};
+
+const EMPTY_SUB_CONFIG: SubConfig = {
+  categories: [],
+  keywords: [],
+  custom_feeds: [],
+  feishu_webhook: '',
+};
 
 export const useStore = create<AppStore>((set, get) => ({
   liveStatus: null,
@@ -791,29 +1249,30 @@ export const useStore = create<AppStore>((set, get) => ({
 
   activeTab: 'tasks',
   taskFilter: 'active',
-  sessFilter: 'all',
   tplCatFilter: '全部',
   selectedAgent: null,
   modalTaskId: null,
   countdown: 5,
   locale: initialLocale,
+  themeMode: initialThemeMode,
+  resolvedTheme: initialResolvedTheme,
 
   toasts: [],
 
   setActiveTab: (tab) => {
-    set({ activeTab: tab });
+    const nextTab: TabKey = tab;
+    set({ activeTab: nextTab });
     const s = get();
-    if (['models', 'skills', 'sessions'].includes(tab) && !s.agentConfig) s.loadAgentConfig();
-    if (tab === 'agents' && !s.agentsOverviewData) s.loadAgentsOverview();
-    if (tab === 'monitor') {
+    if (['skills', 'agents'].includes(nextTab) && !s.agentConfig) s.loadAgentConfig();
+    if (nextTab === 'agents' && !s.agentsOverviewData) s.loadAgentsOverview();
+    if (nextTab === 'monitor') {
       s.loadAgentsStatus();
       s.loadCollabBusy();
     }
-    if (tab === 'collaboration' || tab === 'tasks') s.loadCollabBusy();
-    if (tab === 'web_search' && !s.searchBrief) s.loadWebSearch();
+    if (nextTab === 'collaboration' || nextTab === 'tasks') s.loadCollabBusy();
+    if (nextTab === 'web_search' && !s.searchBrief) s.loadWebSearch();
   },
   setTaskFilter: (f) => set({ taskFilter: f }),
-  setSessFilter: (f) => set({ sessFilter: f }),
   setTplCatFilter: (f) => set({ tplCatFilter: f }),
   setSelectedAgent: (id) => set({ selectedAgent: id }),
   setModalTaskId: (id) => set({ modalTaskId: id }),
@@ -829,6 +1288,26 @@ export const useStore = create<AppStore>((set, get) => ({
     applyLocale(next);
     set({ locale: next });
   },
+  setThemeMode: (mode) => {
+    persistThemeMode(mode);
+    const resolvedTheme = applyTheme(mode);
+    set({ themeMode: mode, resolvedTheme });
+  },
+  cycleThemeMode: () => {
+    const current = get().themeMode;
+    const next: ThemeMode = current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system';
+    persistThemeMode(next);
+    const resolvedTheme = applyTheme(next);
+    set({ themeMode: next, resolvedTheme });
+  },
+  refreshThemeFromSystem: () => {
+    const mode = get().themeMode;
+    if (mode !== 'system') {
+      set({ resolvedTheme: resolveTheme(mode) });
+      return;
+    }
+    set({ resolvedTheme: applyTheme(mode) });
+  },
 
   toast: (msg, type = 'ok') => {
     const id = ++_toastId;
@@ -841,69 +1320,89 @@ export const useStore = create<AppStore>((set, get) => ({
   loadLive: async () => {
     try {
       const data = await api.liveStatus();
-      set({ liveStatus: data });
-      // Also preload agents overview for monitor tab
+      set({
+        liveStatus: {
+          tasks: Array.isArray(data?.tasks) ? data.tasks : [],
+          syncStatus: data?.syncStatus && typeof data.syncStatus === 'object'
+            ? data.syncStatus
+            : EMPTY_LIVE_STATUS.syncStatus,
+        },
+      });
       const s = get();
       if (!s.agentsOverviewData) {
-        api.agentsOverview().then((d) => set({ agentsOverviewData: d })).catch(() => {});
+        api.agentsOverview()
+          .then((d) => set({ agentsOverviewData: d?.agents?.length ? d : EMPTY_AGENTS_OVERVIEW }))
+          .catch(() => set({ agentsOverviewData: EMPTY_AGENTS_OVERVIEW }));
       }
     } catch {
-      // silently fail
+      set({ liveStatus: EMPTY_LIVE_STATUS });
+      if (!get().agentsOverviewData) set({ agentsOverviewData: EMPTY_AGENTS_OVERVIEW });
     }
   },
 
   loadAgentConfig: async () => {
     try {
       const cfg = await api.agentConfig();
-      const log = await api.modelChangeLog();
-      set({ agentConfig: cfg, changeLog: log });
+      const log = await api.modelChangeLog().catch(() => []);
+      set({
+        agentConfig: {
+          agents: Array.isArray(cfg?.agents) ? cfg.agents : [],
+          knownModels: Array.isArray(cfg?.knownModels) ? cfg.knownModels : [],
+          dispatchChannel: typeof cfg?.dispatchChannel === 'string' ? cfg.dispatchChannel : '',
+        },
+        changeLog: Array.isArray(log) ? log : [],
+      });
     } catch {
-      // silently fail
+      set({ agentConfig: EMPTY_AGENT_CONFIG, changeLog: [] });
     }
   },
 
   loadAgentsOverview: async () => {
     try {
       const data = await api.agentsOverview();
-      set({ agentsOverviewData: data });
+      set({ agentsOverviewData: data?.agents?.length ? data : EMPTY_AGENTS_OVERVIEW });
     } catch {
-      // silently fail
+      set({ agentsOverviewData: EMPTY_AGENTS_OVERVIEW });
     }
   },
 
   loadAgentsStatus: async () => {
     try {
       const data = await api.agentsStatus();
-      set({ agentsStatusData: data });
+      set({ agentsStatusData: data?.agents?.length ? data : EMPTY_AGENTS_STATUS });
     } catch {
-      set({ agentsStatusData: null });
+      set({ agentsStatusData: EMPTY_AGENTS_STATUS });
     }
   },
 
   loadCollabBusy: async () => {
     try {
       const data = await api.globalAgentBusy();
-      set({ collabAgentBusyData: data });
+      const hasBusyData = !!((data?.busy?.length || 0) + (data?.sessions?.length || 0) + (data?.tasks?.length || 0));
+      set({ collabAgentBusyData: hasBusyData ? data : EMPTY_COLLAB_BUSY });
     } catch {
-      set({ collabAgentBusyData: null });
+      set({ collabAgentBusyData: EMPTY_COLLAB_BUSY });
     }
   },
 
   loadWebSearch: async () => {
     try {
       const [brief, config] = await Promise.all([api.searchBrief(), api.searchConfig()]);
-      set({ searchBrief: brief, subConfig: config });
+      set({
+        searchBrief: brief && Object.keys(brief.categories || {}).length ? brief : EMPTY_SEARCH_BRIEF,
+        subConfig: config?.categories?.length ? config : EMPTY_SUB_CONFIG,
+      });
     } catch {
-      // silently fail
+      set({ searchBrief: EMPTY_SEARCH_BRIEF, subConfig: EMPTY_SUB_CONFIG });
     }
   },
 
   loadSubConfig: async () => {
     try {
       const config = await api.searchConfig();
-      set({ subConfig: config });
+      set({ subConfig: config?.categories?.length ? config : EMPTY_SUB_CONFIG });
     } catch {
-      // silently fail
+      set({ subConfig: EMPTY_SUB_CONFIG });
     }
   },
 
@@ -913,9 +1412,10 @@ export const useStore = create<AppStore>((set, get) => ({
       s.loadLive(),
       s.loadCollabBusy(),
       s.activeTab === 'monitor' ? s.loadAgentsStatus() : Promise.resolve(),
+      ['agents', 'skills'].includes(s.activeTab) ? s.loadAgentConfig() : Promise.resolve(),
+      s.activeTab === 'agents' ? s.loadAgentsOverview() : Promise.resolve(),
+      s.activeTab === 'web_search' ? s.loadWebSearch() : Promise.resolve(),
     ]);
-    const tab = s.activeTab;
-    if (['models', 'skills'].includes(tab)) await s.loadAgentConfig();
   },
 }));
 

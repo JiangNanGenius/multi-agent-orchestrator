@@ -6,7 +6,7 @@ from pathlib import Path
 
 from dashboard import server
 
-ROOT = Path('/home/ubuntu/multi-agent-orchestrator_public')
+ROOT = Path(__file__).resolve().parent
 TASKS_FILE = ROOT / 'data' / 'tasks_source.json'
 
 

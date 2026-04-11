@@ -57,5 +57,5 @@
 
 ## References
 
-[1]: /home/ubuntu/upload/pasted_content_2.txt "用户补充文本附件 2"
-[2]: /home/ubuntu/upload/pasted_content_3.txt "用户补充文本附件 3"
+[1]: upload/pasted_content_2.txt "用户补充文本附件 2"
+[2]: upload/pasted_content_3.txt "用户补充文本附件 3"

@@ -18,6 +18,39 @@ type SearchAdvancedConfig = SubConfig & {
   result_limit?: number;
 };
 
+type SearchHistoryItem = {
+  id: string;
+  query: string;
+  createdAt: string;
+};
+
+const SEARCH_HISTORY_KEY = 'edict_web_search_history';
+const SEARCH_HISTORY_LIMIT = 8;
+
+function readSearchHistory(): SearchHistoryItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(SEARCH_HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is SearchHistoryItem => Boolean(item && typeof item.id === 'string' && typeof item.query === 'string' && typeof item.createdAt === 'string'))
+      .slice(0, SEARCH_HISTORY_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+function saveSearchHistory(items: SearchHistoryItem[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(items.slice(0, SEARCH_HISTORY_LIMIT)));
+  } catch {
+    // ignore local cache write failures
+  }
+}
+
 const PRESET_TOPICS = [
   { name: '政治', enabled: true },
   { name: '军事', enabled: true },
@@ -191,6 +224,8 @@ export default function WebSearchPanel() {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [submittingTask, setSubmittingTask] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [isCompactViewport, setIsCompactViewport] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 900 : false));
 
   useEffect(() => {
     loadWebSearch();
@@ -200,6 +235,18 @@ export default function WebSearchPanel() {
   useEffect(() => {
     setLocalConfig(normalizeSearchConfig(subConfig));
   }, [subConfig]);
+
+  useEffect(() => {
+    setSearchHistory(readSearchHistory());
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const syncViewport = () => setIsCompactViewport(window.innerWidth <= 900);
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    return () => window.removeEventListener('resize', syncViewport);
+  }, []);
 
   const patchConfig = (patch: Partial<SearchAdvancedConfig>) => {
     setLocalConfig((prev) => ({ ...prev, ...patch }));
@@ -380,12 +427,62 @@ export default function WebSearchPanel() {
     ...(localConfig.custom_topics || []),
   ]);
 
+  const advancedSummary = useMemo(() => {
+    const topicCount = enabledSet.size;
+    const keywordCount = (localConfig.keywords || []).length;
+    const customTopicCount = (localConfig.custom_topics || []).length;
+    return [
+      getFreshnessLabel(locale, freshnessDays),
+      getRankingLabel(locale, rankingMode),
+      getDepthLabel(locale, localConfig.search_depth || 'standard'),
+      formatCount(locale, resultLimit, '条结果', 'results'),
+      pickLocaleText(locale, `${topicCount} 个主题范围`, `${topicCount} topic scopes`),
+      keywordCount
+        ? pickLocaleText(locale, `${keywordCount} 个重点关键词`, `${keywordCount} focus keywords`)
+        : pickLocaleText(locale, '未设置重点关键词', 'No focus keywords'),
+      customTopicCount
+        ? pickLocaleText(locale, `${customTopicCount} 个自定义主题`, `${customTopicCount} custom topics`)
+        : pickLocaleText(locale, '使用默认主题集', 'Using default topic set'),
+    ];
+  }, [enabledSet.size, freshnessDays, localConfig.custom_topics, localConfig.keywords, localConfig.search_depth, locale, rankingMode, resultLimit]);
+
+  const rememberSearch = (input: string) => {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    setSearchHistory((prev) => {
+      const next: SearchHistoryItem[] = [
+        {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          query: trimmed,
+          createdAt: new Date().toISOString(),
+        },
+        ...prev.filter((item) => normalizeText(item.query) !== normalizeText(trimmed)),
+      ].slice(0, SEARCH_HISTORY_LIMIT);
+      saveSearchHistory(next);
+      return next;
+    });
+  };
+
+  const removeHistoryItem = (id: string) => {
+    setSearchHistory((prev) => {
+      const next = prev.filter((item) => item.id !== id);
+      saveSearchHistory(next);
+      return next;
+    });
+  };
+
+  const clearSearchHistory = () => {
+    setSearchHistory([]);
+    saveSearchHistory([]);
+  };
+
   const submitSearchTask = async () => {
     const trimmedQuery = query.trim();
     if (!trimmedQuery) {
       toast(pickLocaleText(locale, '请先输入要搜索的问题或线索', 'Please enter a search question or lead first'), 'err');
       return;
     }
+    rememberSearch(trimmedQuery);
     setSubmittingTask(true);
     try {
       const payload = {
@@ -424,51 +521,41 @@ export default function WebSearchPanel() {
   };
 
   return (
-    <div style={{ display: 'grid', gap: 18 }}>
-      <div
-        style={{
-          padding: 20,
-          borderRadius: 20,
-          border: '1px solid var(--line)',
-          background: 'linear-gradient(135deg, rgba(68,110,255,0.14), rgba(58,208,182,0.08) 50%, rgba(160,122,255,0.12))',
-          boxShadow: '0 18px 50px rgba(0,0,0,0.16)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div style={{ maxWidth: 760 }}>
-            <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>
-              {pickLocaleText(locale, 'AI 搜索引擎', 'AI Search Engine')}
+    <div className="search-panel-shell" style={{ gap: isCompactViewport ? 10 : 18 }}>
+      <div className="search-panel-hero" style={{ padding: isCompactViewport ? 12 : 20, borderRadius: isCompactViewport ? 16 : 24 }}>
+        <div className="search-panel-hero__top" style={{ gridTemplateColumns: isCompactViewport ? '1fr' : 'minmax(0, 1fr) auto' }}>
+          <div className="search-panel-hero__copy">
+            {!isCompactViewport ? (
+              <div className="search-panel-hero__eyebrow">{pickLocaleText(locale, '搜索', 'Search')}</div>
+            ) : null}
+            <div className="search-panel-hero__title" style={{ fontSize: isCompactViewport ? 18 : 30 }}>
+              {pickLocaleText(locale, '搜索', 'Search')}
             </div>
-            <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.2, marginBottom: 10 }}>
-              {pickLocaleText(locale, '从全网信号里直接定位你要的答案与线索', 'Find answers and signals across the web with AI-ranked results')}
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 760, lineHeight: 1.7 }}>
-                  {pickLocaleText(
-                    locale,
-                    '你可以像搜索引擎一样直接提问，再通过高级搜索补充主题范围、时效、相关度、搜索深度、结果数量与重点关键词；系统会自动处理你的搜索请求。',
-                    'Ask directly like a search engine, then refine the scope, freshness, ranking, depth, result size, and focus keywords with Advanced Search. The system will handle your search request automatically.',
-                  )}
+            <div className="search-panel-hero__summary">
+              {pickLocaleText(
+                locale,
+                '将查询、筛选与状态信息压缩到同一工作台，减少空白与跳视，让桌面端更聚焦。',
+                'Compress query, filters, and status into one workbench so the desktop view feels tighter and easier to scan.',
+              )}
             </div>
           </div>
-          <button className="btn btn-g" onClick={() => setShowAdvanced((value) => !value)} style={{ fontSize: 12, padding: '8px 14px' }}>
-            {showAdvanced
-              ? pickLocaleText(locale, '关闭高级搜索', 'Hide Advanced Search')
-              : pickLocaleText(locale, '高级搜索', 'Advanced Search')}
-          </button>
+          <div className="search-panel-hero__actions" style={{ justifyItems: isCompactViewport ? 'stretch' : 'end' }}>
+            <button className="btn btn-g" onClick={() => setShowAdvanced((value) => !value)} style={{ width: isCompactViewport ? '100%' : 'auto', fontSize: 12, padding: isCompactViewport ? '8px 10px' : '8px 14px' }}>
+              {showAdvanced
+                ? pickLocaleText(locale, '收起高级搜索', 'Hide Advanced Search')
+                : pickLocaleText(locale, '高级搜索', 'Advanced Search')}
+            </button>
+          </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 18,
-            padding: 12,
-            borderRadius: 16,
-            background: 'rgba(8,12,24,0.55)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            display: 'grid',
-            gap: 12,
-          }}
-        >
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <div className="search-panel-hero__chips" style={{ marginTop: isCompactViewport ? 10 : 14 }}>
+          {advancedSummary.slice(0, 4).map((item) => (
+            <span key={item} className="chip">{item}</span>
+          ))}
+        </div>
+
+        <div className="search-panel-workbench" style={{ marginTop: isCompactViewport ? 12 : 18, padding: isCompactViewport ? 10 : 16, borderRadius: isCompactViewport ? 12 : 20 }}>
+          <div className="search-panel-form" style={{ gridTemplateColumns: isCompactViewport ? '1fr 1fr' : 'minmax(0, 1fr) auto auto' }}>
             <input
               type="text"
               value={query}
@@ -480,27 +567,18 @@ export default function WebSearchPanel() {
                 }
               }}
               placeholder={pickLocaleText(locale, '搜索问题、主题、公司、事件或关键词', 'Search topics, companies, events, or keywords')}
-              style={{
-                flex: 1,
-                minWidth: 260,
-                padding: '12px 14px',
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.08)',
-                background: 'rgba(255,255,255,0.04)',
-                color: 'var(--text)',
-                outline: 'none',
-                fontSize: 14,
-              }}
+              className="search-panel-input"
+              style={{ gridColumn: isCompactViewport ? '1 / -1' : undefined }}
             />
-            <button className="btn-refresh" onClick={() => setQuery('')} style={{ padding: '10px 14px', fontSize: 12 }}>
+            <button className="btn-refresh search-panel-clear-btn" onClick={() => setQuery('')} style={{ width: isCompactViewport ? '100%' : 'auto', minWidth: 0 }}>
               {pickLocaleText(locale, '清空查询', 'Clear Query')}
             </button>
-            <button className="auth-primary" disabled={submittingTask} onClick={submitSearchTask} style={{ width: 'auto', minWidth: 120, height: 44 }}>
+            <button className="auth-primary search-panel-submit-btn" disabled={submittingTask} onClick={submitSearchTask} style={{ width: '100%', minWidth: isCompactViewport ? 0 : 132 }}>
               {submittingTask ? pickLocaleText(locale, '搜索中…', 'Searching...') : pickLocaleText(locale, '搜索', 'Search')}
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="search-panel-suggestions">
             {suggestionChips.map((chip) => (
               <button
                 key={chip}
@@ -513,36 +591,30 @@ export default function WebSearchPanel() {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1.2fr) minmax(280px, 1fr)', gap: 12 }}>
-            <div style={{ padding: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', display: 'grid', gap: 10 }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '当前搜索设置', 'Current Search Settings')}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-                  {pickLocaleText(locale, '这里会概览当前搜索会带上的主要限制条件。', 'This card summarizes the active search constraints.')}
+          <div className="search-panel-meta-grid" style={{ gridTemplateColumns: isCompactViewport ? '1fr' : 'minmax(300px, 1.18fr) minmax(280px, 0.92fr)' }}>
+            <div className="search-panel-meta-card search-panel-meta-card--setup">
+              <div className="search-panel-meta-card__head">
+                <div>
+                  <div className="search-panel-meta-card__title">{pickLocaleText(locale, '当前配置', 'Current Setup')}</div>
+                  <div className="search-panel-meta-card__desc">
+                    {pickLocaleText(locale, '当前检索参数一目了然，无需大块空白容器。', 'Keep the active retrieval parameters readable without oversized empty blocks.')}
+                  </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <span className="chip ok">{pickLocaleText(locale, '系统自动处理', 'Handled Automatically')}</span>
+              <div className="search-panel-meta-card__chips">
                 <span className="chip">{getFreshnessLabel(locale, freshnessDays)}</span>
                 <span className="chip">{getRankingLabel(locale, rankingMode)}</span>
                 <span className="chip">{getDepthLabel(locale, localConfig.search_depth || 'standard')}</span>
                 <span className="chip">{formatCount(locale, resultLimit, '条', 'results')}</span>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-                {pickLocaleText(
-                  locale,
-                  `已启用 ${enabledSet.size} 个主题范围，设置了 ${(localConfig.keywords || []).length} 个重点关键词，单次结果最多展示 ${resultLimit} 条。`,
-                  `${enabledSet.size} topic scopes are enabled, ${(localConfig.keywords || []).length} focus keyword(s) are active, and up to ${resultLimit} results are shown per run.`,
-                )}
-              </div>
             </div>
 
-            <div style={{ padding: 12, borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', display: 'grid', gap: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="search-panel-meta-card search-panel-meta-card--status">
+              <div className="search-panel-meta-card__head">
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '搜索处理状态', 'Search Handling Status')}</div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
-                    {pickLocaleText(locale, '这里会显示当前搜索处理是否正忙于其他任务或讨论。', 'This shows whether search handling is currently busy with another task or discussion.')}
+                  <div className="search-panel-meta-card__title">{pickLocaleText(locale, '当前状态', 'Current Status')}</div>
+                  <div className="search-panel-meta-card__desc">
+                    {pickLocaleText(locale, '将执行主体、负载状态与说明收敛为一张状态卡。', 'Unify operator, workload state, and guidance into one concise status card.')}
                   </div>
                 </div>
                 <button className="chip" onClick={loadCollabBusy} style={{ cursor: 'pointer' }}>
@@ -550,12 +622,12 @@ export default function WebSearchPanel() {
                 </button>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ fontSize: 24 }}>{searchSpecialistMeta.emoji}</span>
+              <div className="search-panel-status-row">
+                <div className="search-panel-status-actor">
+                  <span className="search-panel-status-actor__emoji">{searchSpecialistMeta.emoji}</span>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 800 }}>{searchSpecialistMeta.label}</div>
-                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>{searchSpecialistMeta.role}</div>
+                    <div className="search-panel-status-actor__title">{searchSpecialistMeta.label}</div>
+                    <div className="search-panel-status-actor__meta">{pickLocaleText(locale, '搜索协作', 'Search Collaboration')}</div>
                   </div>
                 </div>
                 <span
@@ -570,20 +642,15 @@ export default function WebSearchPanel() {
                 </span>
               </div>
 
-              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-                {searchSpecialistBusy ? (
-                  <>
-                    {renderBusyStateLabel(searchSpecialistBusy, locale)}
-                    {searchSpecialistBusy.task_title
-                      ? pickLocaleText(locale, ` · 当前任务：${searchSpecialistBusy.task_title}`, ` · Current task: ${searchSpecialistBusy.task_title}`)
-                      : ''}
-                  </>
-                ) : pickLocaleText(locale, '当前搜索处理空闲，可以直接发起新的搜索请求。', 'Search handling is currently available, and you can start a new search request now.')}
+              <div className="search-panel-status-copy">
+                {searchSpecialistBusy
+                  ? pickLocaleText(locale, '正在处理检索任务，可稍后刷新状态。', 'A search task is in progress. Refresh the status in a moment.')
+                  : pickLocaleText(locale, '可发起新搜索', 'Ready for a new search')}
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="search-panel-topic-row">
             <button className={`chip ${activeCategory === 'all' ? 'ok' : ''}`} onClick={() => setActiveCategory('all')} style={{ cursor: 'pointer' }}>
               {pickLocaleText(locale, '全部主题', 'All Topics')}
             </button>
@@ -614,6 +681,7 @@ export default function WebSearchPanel() {
       {showAdvanced ? (
         <SearchSettingsPanel
           locale={locale}
+          isCompactViewport={isCompactViewport}
           config={localConfig}
           enabledSet={enabledSet}
           allTopicScopes={allTopicScopes}
@@ -627,26 +695,26 @@ export default function WebSearchPanel() {
         />
       ) : null}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isCompactViewport ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fit, minmax(180px, 1fr))', gap: isCompactViewport ? 10 : 12 }}>
         <MetricCard
           title={pickLocaleText(locale, '结果规模', 'Result Coverage')}
           value={formatCount(locale, totalResults, '条', 'results')}
-          hint={pickLocaleText(locale, '当前筛选条件下的结果总数', 'Total results under current filters')}
+          hint={pickLocaleText(locale, '结果总数', 'Total results')}
         />
         <MetricCard
           title={pickLocaleText(locale, '重点命中', 'Focus Matches')}
           value={formatCount(locale, focusMatches, '条', 'matches')}
-          hint={pickLocaleText(locale, '包含重点关键词的结果数量', 'Results matching your focus keywords')}
+          hint={pickLocaleText(locale, '关键词命中', 'Keyword matches')}
         />
         <MetricCard
-          title={pickLocaleText(locale, '信源数量', 'Source Diversity')}
-          value={String(sourceCount)}
-          hint={pickLocaleText(locale, '当前结果涉及的独立来源', 'Distinct sources represented in current results')}
+          title={pickLocaleText(locale, '来源数量', 'Sources')}
+          value={formatCount(locale, sourceCount, '个', 'sources')}
+          hint={pickLocaleText(locale, '来源域名', 'Source domains')}
         />
         <MetricCard
           title={pickLocaleText(locale, '最近更新', 'Last Updated')}
           value={searchBrief?.generated_at || '--'}
-          hint={dateStr || pickLocaleText(locale, '等待首次抓取', 'Waiting for first indexing run')}
+          hint={dateStr || pickLocaleText(locale, '暂无更新时间', 'No update time yet')}
         />
       </div>
 
@@ -655,16 +723,16 @@ export default function WebSearchPanel() {
           {pickLocaleText(
             locale,
             query
-              ? '当前查询没有命中结果。你可以换一个问题，或在高级搜索里调整主题范围、鲜度与相关度。'
-              : '当前还没有可展示的搜索结果。你可以直接发起搜索，或先在高级搜索里设置主题范围、鲜度和重点关键词。',
+              ? '当前查询没有命中结果。'
+              : '暂无搜索结果。',
             query
-              ? 'No result matches your current query. Try another question, or refine the scope, freshness, and ranking in Advanced Search.'
-              : 'There are no search results yet. Start a search, or set topic scope, freshness, and focus keywords in Advanced Search first.',
+              ? 'No results match the current query.'
+              : 'No search results yet.',
           )}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(320px, 0.9fr)', gap: 16, alignItems: 'start' }}>
-          <div style={{ display: 'grid', gap: 12 }}>
+        <div className="web-search-results-layout" style={{ display: 'grid', gridTemplateColumns: isCompactViewport ? '1fr' : 'minmax(0, 1.4fr) minmax(280px, 0.8fr)', gap: isCompactViewport ? 12 : 16, alignItems: 'start' }}>
+          <div className="web-search-results-list" style={{ display: 'grid', gap: 12 }}>
             {filteredResults.map((item, idx) => {
               const meta = CAT_META[item.category] || { icon: '📰', color: 'var(--acc)', descZh: item.category, descEn: item.category };
               const host = hostnameOf(item.link);
@@ -672,22 +740,23 @@ export default function WebSearchPanel() {
               return (
                 <div
                   key={`${item.link}-${idx}`}
-                  className="mb-card"
+                  className="mb-card web-search-result-card"
                   onClick={() => window.open(item.link, '_blank', 'noopener,noreferrer')}
                   style={{
                     cursor: 'pointer',
-                    padding: 14,
-                    borderRadius: 16,
+                      padding: isCompactViewport ? 12 : 14,
+                      borderRadius: isCompactViewport ? 14 : 16,
+
                     border: '1px solid var(--line)',
                     background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
                   }}
                 >
-                  <div style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
+                  <div style={{ display: 'flex', flexDirection: isCompactViewport ? 'column' : 'row', gap: isCompactViewport ? 10 : 14, alignItems: 'stretch' }}>
                     <div
                       style={{
-                        width: 112,
-                        minWidth: 112,
-                        height: 88,
+                        width: isCompactViewport ? '100%' : 112,
+                        minWidth: isCompactViewport ? 0 : 112,
+                        height: isCompactViewport ? 150 : 88,
                         borderRadius: 12,
                         overflow: 'hidden',
                         background: `${meta.color}18`,
@@ -720,8 +789,8 @@ export default function WebSearchPanel() {
                         {item.kwHits > 0 ? <span className="chip ok">{pickLocaleText(locale, `命中 ${item.kwHits} 个重点词`, `${item.kwHits} focus match(es)`)}</span> : null}
                         {idx < 3 ? <span className="chip">Top {idx + 1}</span> : null}
                       </div>
-                      <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.45, marginBottom: 8 }}>{item.title}</div>
-                      <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 10 }}>
+                      <div style={{ fontSize: isCompactViewport ? 15 : 17, fontWeight: 800, lineHeight: 1.45, marginBottom: 8 }}>{item.title}</div>
+                      <div style={{ fontSize: isCompactViewport ? 12 : 13, color: 'var(--muted)', lineHeight: isCompactViewport ? 1.6 : 1.7, marginBottom: 10 }}>
                         {item.summary || item.desc || pickLocaleText(locale, '暂无摘要', 'No summary available')}
                       </div>
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 11, color: 'var(--muted)' }}>
@@ -736,7 +805,7 @@ export default function WebSearchPanel() {
             })}
           </div>
 
-          <div style={{ display: 'grid', gap: 12, position: 'sticky', top: 14 }}>
+          <div className="web-search-insight-rail" style={{ display: 'grid', gap: 12, position: isCompactViewport ? 'static' : 'sticky', top: isCompactViewport ? undefined : 14 }}>
             <InsightPanel title={pickLocaleText(locale, 'AI 检索摘要', 'AI Search Snapshot')}>
               <div style={{ display: 'grid', gap: 10, fontSize: 13, color: 'var(--muted)', lineHeight: 1.7 }}>
                 <div>
@@ -789,6 +858,49 @@ export default function WebSearchPanel() {
           </div>
         </div>
       )}
+
+      {searchHistory.length ? (
+        <div style={{ marginTop: 8 }}>
+          <InsightPanel title={pickLocaleText(locale, '最近搜索记录', 'Recent Search History')}>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 13, fontWeight: 800 }}>{pickLocaleText(locale, '最近搜索', 'Recent Searches')}</div>
+                  <span className="chip ok">
+                    {pickLocaleText(locale, `${searchHistory.length} 条`, `${searchHistory.length}`)}
+                  </span>
+                </div>
+                <button className="chip" onClick={clearSearchHistory} style={{ cursor: 'pointer' }}>
+                  {pickLocaleText(locale, '清空记录', 'Clear')}
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {searchHistory.map((item) => (
+                  <span key={item.id} style={{ display: 'inline-flex', gap: 6, alignItems: 'center', maxWidth: '100%' }}>
+                    <button
+                      className="chip"
+                      onClick={() => setQuery(item.query)}
+                      style={{ cursor: 'pointer', maxWidth: '100%', textAlign: 'left' }}
+                      title={item.query}
+                    >
+                      {item.query}
+                    </button>
+                    <button
+                      className="chip"
+                      onClick={() => removeHistoryItem(item.id)}
+                      style={{ cursor: 'pointer', color: 'var(--muted)' }}
+                      title={pickLocaleText(locale, '删除该记录', 'Delete this history item')}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </InsightPanel>
+        </div>
+      ) : null}
+
     </div>
   );
 }
@@ -823,6 +935,7 @@ function InsightPanel({ title, children }: { title: string; children: ReactNode 
 
 function SearchSettingsPanel({
   locale,
+  isCompactViewport,
   config,
   enabledSet,
   allTopicScopes,
@@ -835,6 +948,7 @@ function SearchSettingsPanel({
   onSave,
 }: {
   locale: Locale;
+  isCompactViewport: boolean;
   config: SearchAdvancedConfig;
   enabledSet: Set<string>;
   allTopicScopes: string[];
@@ -851,7 +965,7 @@ function SearchSettingsPanel({
   const customTopicSet = new Set(config.custom_topics || []);
 
   return (
-    <div style={{ padding: 18, background: 'var(--panel2)', borderRadius: 18, border: '1px solid var(--line)', display: 'grid', gap: 18 }}>
+    <div style={{ padding: isCompactViewport ? 14 : 18, background: 'var(--panel2)', borderRadius: isCompactViewport ? 16 : 18, border: '1px solid var(--line)', display: 'grid', gap: isCompactViewport ? 14 : 18 }}>
       <div>
         <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{pickLocaleText(locale, '高级搜索', 'Advanced Search')}</div>
         <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
@@ -901,7 +1015,7 @@ function SearchSettingsPanel({
                 setNewTopic('');
               }
             }}
-            style={{ flex: 1, minWidth: 260, padding: '8px 10px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12, outline: 'none' }}
+            style={{ flex: 1, minWidth: isCompactViewport ? '100%' : 260, padding: '8px 10px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12, outline: 'none' }}
           />
           <button className="btn btn-g" onClick={() => { onAddTopic(newTopic.trim()); setNewTopic(''); }} style={{ fontSize: 12, padding: '8px 14px' }}>
             {pickLocaleText(locale, '添加主题', 'Add Topic')}
@@ -932,7 +1046,7 @@ function SearchSettingsPanel({
                 setNewKw('');
               }
             }}
-            style={{ flex: 1, minWidth: 240, padding: '8px 10px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12, outline: 'none' }}
+            style={{ flex: 1, minWidth: isCompactViewport ? '100%' : 240, padding: '8px 10px', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 10, color: 'var(--text)', fontSize: 12, outline: 'none' }}
           />
           <button className="btn btn-g" onClick={() => { onAddKeyword(newKw.trim()); setNewKw(''); }} style={{ fontSize: 12, padding: '8px 14px' }}>
             {pickLocaleText(locale, '添加关键词', 'Add Keyword')}
@@ -940,7 +1054,7 @@ function SearchSettingsPanel({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isCompactViewport ? '1fr' : 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
         <div style={{ display: 'grid', gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 700 }}>{pickLocaleText(locale, '鲜度范围', 'Freshness')}</div>
           <select

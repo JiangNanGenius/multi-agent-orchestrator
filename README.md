@@ -17,8 +17,7 @@
 - [Context Refresh and Recovery / 上下文刷新与恢复链](#context-refresh-and-recovery--上下文刷新与恢复链)
 - [Governance, Watchdog, and Reporting / 治理、巡检与汇报闭环](#governance-watchdog-and-reporting--治理巡检与汇报闭环)
 - [Documentation Map / 文档阅读入口](#documentation-map--文档阅读入口)
-- [Demo Preview / 当前界面预览](#demo-preview--当前界面预览)
-- [Classic Screenshots / 经典界面截图](#classic-screenshots--经典界面截图)
+- [Public Interface Notes / 公开界面说明](#public-interface-notes--公开界面说明)
 - [Repository Structure / 目录速览](#repository-structure--目录速览)
 - [Attribution / 来源与致谢](#attribution--来源与致谢)
 - [Version Log / 版本日志](#version-log--版本日志)
@@ -139,28 +138,15 @@ To avoid turning the homepage into a mixed document of product copy, technical i
 | What was completed in this modernization round / 本轮改造到底做了哪些事 | [`TODO_task_workspace_ledger.md`](TODO_task_workspace_ledger.md) |
 | What the end-to-end validation covered / E2E 验证覆盖了什么 | [`edict/E2E_task_workspace_validation_result_2026-04-09.json`](edict/E2E_task_workspace_validation_result_2026-04-09.json) |
 
-## Demo Preview / 当前界面预览
+## Public Interface Notes / 公开界面说明
 
-The public repository keeps several current-state previews so visitors can immediately understand the dashboard operating surface. These previews do not replace hands-on use, but they help clarify that the system already exposes unified intake, task-oriented panels, and governed operations rather than a single chat box.[1]
+The public repository no longer embeds runtime dashboard preview images in the main README. This keeps the documentation lighter, avoids stale visual residues from earlier interface phases, and reduces the chance that cached screenshots will misrepresent the current product state.[1]
 
-公开仓库保留了几张当前运行态预览图，目的是让访客一进入仓库就能理解系统的操作面已经不是单一聊天框，而是一个围绕任务组织的看板式工作台。[1]
+公开仓库不再在首页 README 中内嵌运行态界面预览图。这样做可以避免旧阶段界面残留、减少截图缓存导致的认知偏差，并把首页重点重新放回到能力边界、目录结构与使用方式说明上。[1]
 
-| Module / 模块 | What It Shows / 展示重点 | Preview / 预览 |
-| --- | --- | --- |
-| Task Publishing / 任务发布 | Unified intake for governed task creation / 面向治理型任务创建的统一入口 | ![任务发布运行态预览](docs/previews/dashboard-task-publish.webp) |
-| Skill Management / 技能管理 | Background-task style skill orchestration and history / 面向后台任务化技能操作与历史查看 | ![技能管理运行态预览](docs/previews/dashboard-skill-management.webp) |
-| AI Search / AI 搜索引擎 | Agent-driven search task launch and expert selection / 面向 Agent 驱动搜索任务与专家选择 | ![AI 搜索引擎运行态预览](docs/previews/dashboard-web-search.webp) |
+If you need to understand the current operating surface, please rely on the user guide, architecture notes, and the actual authenticated product environment instead of static preview snapshots.
 
-## Classic Screenshots / 经典界面截图
-
-In addition to the preview cards above, the repository also keeps classic dashboard screenshots that are useful for understanding the main board view and task-detail interaction in a more literal way. They are especially helpful for readers who want to inspect the visual structure of the task board and the governance-oriented detail panel.[1]
-
-除了上面的主预览图外，仓库也保留了更传统的界面截图，用于直观看到任务看板总览与任务详情交互。这组截图更适合帮助读者理解看板布局、任务卡片形态与治理型详情面板的视觉结构。[1]
-
-| Screenshot / 截图 | Focus / 展示重点 |
-| --- | --- |
-| ![任务看板总览](docs/screenshots/01-kanban-main.png) | Main dashboard board with task cards, top navigation, and governed workspace surface / 展示任务卡片、顶部导航与总体工作台结构 |
-| ![任务流转详情](docs/screenshots/03-task-detail.png) | Task detail dialog with stage flow, actions, and execution log area / 展示任务阶段流转、详情操作与执行日志区域 |
+如果需要了解当前工作界面，请优先参考用户文档、技术架构说明以及实际登录后的产品环境，而不是静态截图。
 
 ## Repository Structure / 目录速览
 

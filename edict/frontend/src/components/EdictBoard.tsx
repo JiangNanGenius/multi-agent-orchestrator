@@ -1,4 +1,5 @@
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { LayoutDashboard } from 'lucide-react';
 import { useStore, getPipeStatus, stateLabel, deptColor, isArchived, isEdict, getSchedulerSummary, DEPTS } from '../store';
 import { api, type Task, type CollabAgentBusyEntry, type CreateTaskPayload, type ScanAction } from '../api';
 import { pickLocaleText, type Locale } from '../i18n';
@@ -30,11 +31,30 @@ const EXECUTION_TARGET_IDS = new Set([
 
 const DEFAULT_FORM: QuickCreateForm = {
   title: '',
-  owner: '面板值守',
+  owner: '',
   autoAssign: true,
   targetDepts: [],
   priority: 'normal',
 };
+
+type DemoTaskLike = Task & {
+  templateId?: string;
+  templateParams?: Record<string, unknown>;
+};
+
+function isReleaseDemoNoiseTask(task: Task): boolean {
+  const meta = task as DemoTaskLike;
+  const params = meta.templateParams && typeof meta.templateParams === 'object'
+    ? meta.templateParams
+    : {};
+  const entry = typeof params.entry === 'string' ? params.entry : '';
+  const title = String(meta.title || '');
+
+  return meta.id === 'JJC-20260408-001'
+    || title.includes('示例任务：验证持久化聊天会话窗口与刷新恢复')
+    || (meta.templateId === 'skills_config_dialog' && entry === 'demo-board');
+}
+
 
 type ProgressCheckRecord = {
   id: string;
@@ -110,9 +130,9 @@ function buildTaskPayload(locale: Locale, form: QuickCreateForm): CreateTaskPayl
   return {
     title: form.title.trim(),
     org: pickLocaleText(locale, '系统安排', 'System Assignment'),
-    owner: form.owner.trim() || (locale === 'en' ? 'Dashboard Operator' : '面板值守'),
+    owner: form.owner.trim() || (locale === 'en' ? 'Workspace Desk' : '工作台值守'),
     priority: form.priority,
-    ...(form.autoAssign || !normalizedTargets.length
+    ...(!normalizedTargets.length
       ? {}
       : {
           targetDept: normalizedTargets[0],
@@ -135,28 +155,15 @@ function TargetExpertSelector({
   onToggleTarget: (deptId: string) => void;
 }) {
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
-      <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '协助处理的人（可选）', 'Helpers (Optional)')}</span>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          className={`chip ${form.autoAssign ? 'ok' : ''}`}
-          onClick={() => onModeChange(true)}
-          style={{ cursor: 'pointer' }}
+      <div style={{ display: 'grid', gap: 10 }}>
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '协助处理的 Agent（可选）', 'Supporting Agents (Optional)')}</span>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(104px, 1fr))',
+            gap: 8,
+          }}
         >
-          {pickLocaleText(locale, '自动分配', 'Auto assign')}
-        </button>
-        <button
-          type="button"
-          className={`chip ${!form.autoAssign ? 'ok' : ''}`}
-          onClick={() => onModeChange(false)}
-          style={{ cursor: 'pointer' }}
-        >
-          {pickLocaleText(locale, '指定助手', 'Choose assistants')}
-        </button>
-      </div>
-      {!form.autoAssign ? (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {targetOptions.map((dept) => {
             const active = form.targetDepts.includes(dept.id);
             return (
@@ -166,6 +173,13 @@ function TargetExpertSelector({
                 className="chip"
                 onClick={() => onToggleTarget(dept.id)}
                 style={{
+                  width: '100%',
+                  minHeight: 44,
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  lineHeight: 1.35,
+                  whiteSpace: 'normal',
+                  padding: '10px 8px',
                   cursor: 'pointer',
                   borderColor: active ? 'var(--acc)' : 'var(--line)',
                   color: active ? 'var(--acc)' : 'var(--text)',
@@ -177,13 +191,11 @@ function TargetExpertSelector({
             );
           })}
         </div>
-      ) : null}
+
       <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>
-        {form.autoAssign
-          ? pickLocaleText(locale, '当前为自动安排，我们会根据内容选择合适的处理人。', 'Auto assignment is on. The system will choose suitable assistants based on the task.')
-          : form.targetDepts.length
-            ? pickLocaleText(locale, `已指定 ${form.targetDepts.length} 位处理助手：${form.targetDepts.map((id) => targetOptions.find((item) => item.id === id)?.label || id).join('、')}`, `Selected ${form.targetDepts.length} assistant(s): ${form.targetDepts.map((id) => targetOptions.find((item) => item.id === id)?.label || id).join(', ')}`)
-            : pickLocaleText(locale, '请至少选择一位处理人，或切回自动安排。', 'Select at least one assistant, or switch back to auto assignment.')}
+        {form.targetDepts.length
+          ? pickLocaleText(locale, `已选择 ${form.targetDepts.length} 个协助处理的 Agent：${form.targetDepts.map((id) => targetOptions.find((item) => item.id === id)?.label || id).join('、')}。系统仍会自动安排流程，但会优先参考这些 Agent。`, `Selected ${form.targetDepts.length} supporting agent(s): ${form.targetDepts.map((id) => targetOptions.find((item) => item.id === id)?.label || id).join(', ')}. Routing stays automatic, but these agents will be prioritized as collaborators.`)
+          : pickLocaleText(locale, '不指定也可以，系统会自动安排；如果你已有明确协助对象，可在这里补充。', 'You can leave this empty and let the system route automatically. If you already know which agents should help, add them here.')}
       </div>
     </div>
   );
@@ -207,13 +219,22 @@ function MiniPipe({ task }: { task: Task }) {
   );
 }
 
-function renderBusyStateLabel(entry: CollabAgentBusyEntry): string {
+function renderBusyStateLabel(entry: CollabAgentBusyEntry, locale: Locale): string {
   const source = entry.occupancy_kind || entry.source_type || '';
+  if (locale === 'en') {
+    if (source === 'task_active') return 'Task running';
+    if (source === 'task_reserved') return 'Task reserved';
+    if (source === 'task_paused') return 'Task paused';
+    if (source === 'task_blocked') return 'Task blocked';
+    if (source === 'meeting' || source === 'meeting_reserved') return entry.state === 'reserved' ? 'Queued for collaboration' : 'In collaboration';
+    if (source === 'chat') return 'In discussion';
+    return entry.label || 'Busy';
+  }
   if (source === 'task_active') return '任务执行中';
   if (source === 'task_reserved') return '任务预占中';
   if (source === 'task_paused') return '任务暂停中';
   if (source === 'task_blocked') return '任务阻塞中';
-  if (source === 'meeting') return '协作处理中';
+  if (source === 'meeting' || source === 'meeting_reserved') return entry.state === 'reserved' ? '等待协作' : '协作处理中';
   if (source === 'chat') return '讨论占用中';
   return entry.label || '忙碌中';
 }
@@ -266,11 +287,6 @@ function QuickCreateTaskModal({
       toast(pickLocaleText(locale, '请先填写任务标题', 'Please enter a task title'), 'err');
       return;
     }
-    if (!form.autoAssign && !form.targetDepts.length) {
-      toast(pickLocaleText(locale, '请至少选择一位处理助手，或切回自动安排', 'Select at least one assistant, or switch back to auto assignment'), 'err');
-      return;
-    }
-
     const payload: CreateTaskPayload = buildTaskPayload(locale, form);
 
     setSubmitting(true);
@@ -303,8 +319,8 @@ function QuickCreateTaskModal({
         <div style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>
           {pickLocaleText(
             locale,
-            '你只需要填写内容和紧急程度，我们会为你安排合适的人继续处理。',
-            'Fill in the request and urgency, and we will arrange the right people to continue the work.',
+            '你只需要填写内容和紧急程度，系统会自动安排流程；如果你已有明确的协助处理 Agent，也可以一并补充。',
+            'Fill in the request and urgency. The workflow stays automatic, and you can optionally name supporting agents if you already know who should help.',
           )}
         </div>
 
@@ -314,17 +330,8 @@ function QuickCreateTaskModal({
             <input
               value={form.title}
               onChange={(e) => updateField('title', e.target.value)}
-              placeholder={pickLocaleText(locale, '例如：整理本周发布说明并同步测试结论', 'Example: Prepare this week\'s release notes and sync test conclusions')}
+                placeholder={pickLocaleText(locale, '请输入任务标题', 'Enter task title')}
               autoFocus
-            />
-          </label>
-
-          <label className="auth-label">
-              <span>{pickLocaleText(locale, '分配方式', 'Assignment')}</span>
-            <input
-              value={pickLocaleText(locale, '系统自动安排', 'Automatic Assignment')}
-              readOnly
-              style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'rgba(106,239,154,0.08)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}
             />
           </label>
 
@@ -346,7 +353,7 @@ function QuickCreateTaskModal({
             <input
               value={form.owner}
               onChange={(e) => updateField('owner', e.target.value)}
-              placeholder={pickLocaleText(locale, '例如：产品运营值守', 'Example: Product Operations Desk')}
+                placeholder={pickLocaleText(locale, '请输入发起人', 'Enter requester')}
             />
           </label>
 
@@ -389,21 +396,12 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleModeChange = (autoAssign: boolean) => {
-    setForm((prev) => ({
-      ...prev,
-      autoAssign,
-      targetDepts: autoAssign ? [] : prev.targetDepts,
-    }));
-  };
-
   const toggleTargetDept = (deptId: string) => {
     setForm((prev) => {
       const exists = prev.targetDepts.includes(deptId);
       const next = exists ? prev.targetDepts.filter((item) => item !== deptId) : [...prev.targetDepts, deptId];
       return {
         ...prev,
-        autoAssign: false,
         targetDepts: next,
       };
     });
@@ -416,11 +414,6 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
       toast(pickLocaleText(locale, '请先填写任务标题', 'Please enter a task title'), 'err');
       return;
     }
-    if (!form.autoAssign && !form.targetDepts.length) {
-      toast(pickLocaleText(locale, '请至少选择一位处理助手，或切回自动安排', 'Select at least one assistant, or switch back to auto assignment'), 'err');
-      return;
-    }
-
     const payload: CreateTaskPayload = buildTaskPayload(locale, form);
 
     setSubmitting(true);
@@ -441,69 +434,62 @@ function InlineQuickCreatePanel({ onSubmitSuccess }: { onSubmitSuccess: () => vo
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        marginBottom: 16,
-        padding: 16,
-        borderRadius: 18,
-        border: '1px solid var(--line)',
-        background: 'linear-gradient(135deg, rgba(92,123,255,0.08), rgba(76,195,138,0.06))',
-        display: 'grid',
-        gap: 12,
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+    <div style={{ display: 'grid', gap: 16, marginBottom: 16 }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          padding: 16,
+          borderRadius: 18,
+          border: '1px solid var(--line)',
+          background: 'linear-gradient(135deg, rgba(92,123,255,0.08), rgba(76,195,138,0.06))',
+          display: 'grid',
+          gap: 12,
+        }}
+      >
         <div>
           <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>
-            {pickLocaleText(locale, '快速发布任务', 'Quick Task Launch')}
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-            {pickLocaleText(locale, '你可以直接在这里写下待办事项，系统会按优先级与目标助手继续安排后续步骤。', 'Describe the task here and the system will continue routing it by priority and selected assistants.')}
+            {pickLocaleText(locale, '发布任务', 'Publish Task')}
           </div>
         </div>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 2fr) repeat(4, minmax(140px, 1fr)) auto', gap: 10, alignItems: 'end' }}>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '事项标题', 'Title')}</span>
-          <input
-            value={form.title}
-            onChange={(e) => updateField('title', e.target.value)}
-            placeholder={pickLocaleText(locale, '例如：整理本周版本发布说明并同步测试结论', 'Example: Prepare this week\'s release notes and sync QA conclusions')}
-            style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}
-          />
-        </label>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '处理方式', 'Handling Mode')}</span>
-          <input value={pickLocaleText(locale, '自动安排', 'Automatic Assignment')} readOnly style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'rgba(106,239,154,0.08)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }} />
-        </label>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '紧急程度', 'Urgency')}</span>
-          <select value={form.priority} onChange={(e) => updateField('priority', e.target.value as QuickCreateForm['priority'])} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}>
-            <option value="low">{pickLocaleText(locale, '低', 'Low')}</option>
-            <option value="normal">{pickLocaleText(locale, '中', 'Normal')}</option>
-            <option value="high">{pickLocaleText(locale, '高', 'High')}</option>
-          </select>
-        </label>
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '发起人', 'Requester')}</span>
-          <input value={form.owner} onChange={(e) => updateField('owner', e.target.value)} placeholder={pickLocaleText(locale, '例如：产品运营值守', 'Example: Product Operations Desk')} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }} />
-        </label>
-        <div style={{ display: 'grid', gap: 6, minWidth: 280 }}>
-          <TargetExpertSelector
-            locale={locale}
-            form={form}
-            targetOptions={targetOptions}
-            onModeChange={handleModeChange}
-            onToggleTarget={toggleTargetDept}
-          />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: 10, alignItems: 'end' }}>
+          <label style={{ display: 'grid', gap: 6, gridColumn: '1 / -1' }}>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '事项标题', 'Title')}</span>
+            <input
+              value={form.title}
+              onChange={(e) => updateField('title', e.target.value)}
+              placeholder={pickLocaleText(locale, '请输入任务标题', 'Enter task title')}
+              style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}
+            />
+          </label>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '紧急程度', 'Urgency')}</span>
+            <select value={form.priority} onChange={(e) => updateField('priority', e.target.value as QuickCreateForm['priority'])} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }}>
+              <option value="low">{pickLocaleText(locale, '低', 'Low')}</option>
+              <option value="normal">{pickLocaleText(locale, '中', 'Normal')}</option>
+              <option value="high">{pickLocaleText(locale, '高', 'High')}</option>
+            </select>
+          </label>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{pickLocaleText(locale, '发起人', 'Requester')}</span>
+            <input value={form.owner} onChange={(e) => updateField('owner', e.target.value)} placeholder={pickLocaleText(locale, '请输入发起人', 'Enter requester')} style={{ width: '100%', border: '1px solid var(--line)', borderRadius: 10, background: 'var(--panel2)', color: 'var(--text)', padding: '11px 12px', outline: 'none' }} />
+          </label>
+          <div style={{ display: 'grid', gap: 6, gridColumn: '1 / -1' }}>
+            <TargetExpertSelector
+              locale={locale}
+              form={form}
+              targetOptions={targetOptions}
+              onModeChange={() => undefined}
+              onToggleTarget={toggleTargetDept}
+            />
+          </div>
+          <button type="submit" className="auth-primary" disabled={submitting} style={{ width: '100%', minWidth: 0, height: 44, gridColumn: '1 / -1' }}>
+            {submitting ? pickLocaleText(locale, '发布中…', 'Publishing...') : pickLocaleText(locale, '发布任务', 'Publish Task')}
+          </button>
         </div>
-        <button type="submit" className="auth-primary" disabled={submitting} style={{ width: 'auto', minWidth: 140, height: 44 }}>
-          {submitting ? pickLocaleText(locale, '发布中…', 'Publishing...') : pickLocaleText(locale, '发布任务', 'Publish Task')}
-        </button>
-      </div>
-    </form>
+      </form>
+
+    </div>
   );
 }
 
@@ -529,7 +515,7 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
   const busyNames = busyEntries.map((entry) => entry.name).filter(Boolean);
   const busyLead = busyEntries[0] || null;
   const busySummary = busyLead
-    ? `${renderBusyStateLabel(busyLead)} · ${busyNames.join('、')}`
+    ? `${renderBusyStateLabel(busyLead, locale)} · ${busyNames.join(locale === 'en' ? ', ' : '、')}`
     : '';
   const workspace = task.workspace || {};
   const taskPolicy = task.workspaceTaskPolicy || workspace.task_policy || {};
@@ -557,8 +543,8 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
     const lightweight = kind === 'lightweight' || !!taskPolicy.lightweight;
     workspaceChips.push({
       text: lightweight
-        ? pickLocaleText(locale, '轻量任务', 'Lightweight')
-        : pickLocaleText(locale, '标准任务', 'Standard'),
+        ? pickLocaleText(locale, '轻型', 'Lite')
+        : pickLocaleText(locale, '标准', 'Standard'),
       color: lightweight ? '#67e8a5' : '#cbd5e1',
       bg: lightweight ? '#0f2219' : 'rgba(148,163,184,0.10)',
       border: lightweight ? '#4cc38a44' : 'rgba(148,163,184,0.25)',
@@ -568,8 +554,8 @@ function EdictCard({ task, busyEntries }: { task: Task; busyEntries: CollabAgent
   if (projectSizeEstimate >= 50 || storageTier === 'cold') {
     workspaceChips.push({
       text: projectSizeEstimate >= 50
-        ? pickLocaleText(locale, `超大任务 · ${projectSizeEstimate.toFixed(projectSizeEstimate >= 100 ? 0 : 1)}GB`, `Large Task · ${projectSizeEstimate.toFixed(projectSizeEstimate >= 100 ? 0 : 1)}GB`)
-        : pickLocaleText(locale, '冷盘任务', 'Cold-tier Task'),
+        ? pickLocaleText(locale, `大体量 · ${projectSizeEstimate.toFixed(projectSizeEstimate >= 100 ? 0 : 1)}GB`, `Large · ${projectSizeEstimate.toFixed(projectSizeEstimate >= 100 ? 0 : 1)}GB`)
+        : pickLocaleText(locale, '归档层', 'Archive Tier'),
       color: '#60a5fa',
       bg: 'rgba(59,130,246,0.12)',
       border: 'rgba(59,130,246,0.30)',
@@ -792,6 +778,7 @@ export default function EdictBoard() {
   const collabAgentBusyData = useStore((s) => s.collabAgentBusyData);
   const taskFilter = useStore((s) => s.taskFilter);
   const setTaskFilter = useStore((s) => s.setTaskFilter);
+  const setModalTaskId = useStore((s) => s.setModalTaskId);
   const toast = useStore((s) => s.toast);
   const loadAll = useStore((s) => s.loadAll);
   const [showQuickCreate, setShowQuickCreate] = useState(false);
@@ -800,7 +787,7 @@ export default function EdictBoard() {
   const [checkHistory, setCheckHistory] = useState<ProgressCheckRecord[]>(() => loadProgressCheckHistory());
 
   const tasks = liveStatus?.tasks || [];
-  const allEdicts = tasks.filter(isEdict);
+  const allEdicts = tasks.filter((task) => isEdict(task) && !isReleaseDemoNoiseTask(task));
   const activeEdicts = allEdicts.filter((t) => !isArchived(t));
   const archivedEdicts = allEdicts.filter((t) => isArchived(t));
 
@@ -811,7 +798,55 @@ export default function EdictBoard() {
 
   visibleTasks.sort((a, b) => (STATE_ORDER[a.state] ?? 9) - (STATE_ORDER[b.state] ?? 9));
 
+  const runningCount = activeEdicts.filter((t) => ['Doing', 'Review', 'Assigned', 'ControlCenter', 'ReviewCenter', 'PlanCenter'].includes(t.state)).length;
+  const blockedCount = activeEdicts.filter((t) => t.state === 'Blocked').length;
+  const attentionTasks = activeEdicts.filter((t) => ['Blocked', 'Review', 'ReviewCenter'].includes(t.state) || !!String(t.block || '').trim());
+  const attentionCount = attentionTasks.length;
+  const completedCount = allEdicts.filter((t) => ['Done', 'Cancelled'].includes(t.state)).length;
+  const completionRate = allEdicts.length ? Math.round((completedCount / allEdicts.length) * 100) : 0;
+  const busyAgentCount = new Set((collabAgentBusyData?.busy || []).map((entry) => entry.agent_id || entry.name || '').filter(Boolean)).size;
+
   const unArchivedDone = allEdicts.filter((t) => !t.archived && ['Done', 'Cancelled'].includes(t.state));
+  const spotlightTasks = activeEdicts.slice(0, 4);
+  const runningTasks = activeEdicts.filter((t) => ['Doing', 'Assigned', 'PlanCenter', 'ControlCenter'].includes(t.state)).slice(0, 4);
+  const recentDoneTasks = allEdicts.filter((t) => ['Done', 'Cancelled'].includes(t.state)).slice(0, 4);
+  const integratedHistoryTasks = (taskFilter === 'archived' ? archivedEdicts : archivedEdicts.slice(0, 6)).sort((a, b) => {
+    const aTime = new Date(a.updatedAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || 0).getTime();
+    return bTime - aTime;
+  });
+  const singleTaskMode = allEdicts.length === 1;
+  const primaryTask = spotlightTasks[0] || visibleTasks[0] || null;
+
+  const heroMetrics = [
+    {
+      label: pickLocaleText(locale, '活跃执行', 'Active Execution'),
+      value: String(runningCount),
+      detail: singleTaskMode
+        ? pickLocaleText(locale, '当前仅保留一条主任务，版面改为紧凑聚焦', 'A single active mission is kept in focus with a compact layout')
+        : pickLocaleText(locale, '仍在推进中的任务与流程', 'Tasks and flows still in motion'),
+    },
+    {
+      label: pickLocaleText(locale, '阻塞风险', 'Blocked Risk'),
+      value: String(blockedCount),
+      detail: pickLocaleText(locale, '需要立即催办或改派的事项', 'Items that may need intervention or rerouting'),
+    },
+    {
+      label: pickLocaleText(locale, '协同占用', 'Busy Agents'),
+      value: String(busyAgentCount),
+      detail: pickLocaleText(locale, '当前正参与任务或讨论的 Agent', 'Agents currently occupied by work or discussions'),
+    },
+    {
+      label: pickLocaleText(locale, '完成率', 'Completion Rate'),
+      value: `${completionRate}%`,
+      detail: pickLocaleText(locale, `累计 ${completedCount}/${allEdicts.length || 0} 已结束`, `${completedCount}/${allEdicts.length || 0} completed overall`),
+    },
+  ];
+
+  const singleTaskActionLabel = taskFilter === 'all'
+    ? pickLocaleText(locale, '只看当前任务', 'Focus Current Task')
+    : pickLocaleText(locale, '查看全部列表', 'View Full List');
+
   const taskBusyMap = (collabAgentBusyData?.busy || []).reduce<Record<string, CollabAgentBusyEntry[]>>((acc, entry) => {
     const taskId = entry.task_id || '';
     if (!taskId) return acc;
@@ -820,13 +855,19 @@ export default function EdictBoard() {
     return acc;
   }, {});
 
+  const openTask = (taskId: string) => setModalTaskId(taskId);
+
   const handleArchiveAll = async () => {
     if (!confirm(pickLocaleText(locale, '将所有已完成或已取消的任务单移入归档？', 'Move all completed or cancelled tasks into archive?'))) return;
 
     try {
       const r = await api.archiveAllDone();
-      if (r.ok) { toast(locale === 'en' ? `📦 ${r.count || 0} task(s) archived` : `📦 ${r.count || 0} 个任务单已归档`); loadAll(); }
-      else toast(r.error || pickLocaleText(locale, '批量归档失败', 'Bulk archive failed'), 'err');
+      if (r.ok) {
+        toast(locale === 'en' ? `📦 ${r.count || 0} task(s) archived` : `📦 ${r.count || 0} 个任务单已归档`);
+        loadAll();
+      } else {
+        toast(r.error || pickLocaleText(locale, '批量归档失败', 'Bulk archive failed'), 'err');
+      }
     } catch {
       toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
     }
@@ -868,41 +909,299 @@ export default function EdictBoard() {
     }
   };
 
+  const renderTaskStrip = (task: Task, tone: 'default' | 'danger' | 'success' = 'default', layout: 'default' | 'compact' = 'default') => {
+    const stateTone = tone === 'danger'
+      ? 'rgba(255,82,112,0.08)'
+      : tone === 'success'
+        ? 'rgba(46,204,138,0.08)'
+        : 'rgba(106,158,255,0.08)';
+    const compact = layout === 'compact';
+    const taskBusyEntries = taskBusyMap[task.id] || [];
+    const taskBusyNames = taskBusyEntries.map((entry) => entry.name).filter(Boolean);
+    const collaborationSummary = taskBusyNames.length > 0
+      ? pickLocaleText(locale, `当前协同：${taskBusyNames.join('、')}`, `Collaborating: ${taskBusyNames.join(', ')}`)
+      : task.currentDept
+        ? pickLocaleText(locale, `当前处理环节：${task.currentDept}`, `Current step: ${task.currentDept}`)
+        : pickLocaleText(locale, '处理中', 'In progress');
+    const metaItems = [
+      task.org,
+      task.currentDept && task.currentDept !== task.org ? task.currentDept : '',
+      task.eta && task.eta !== '-' ? `📅 ${task.eta}` : '',
+    ].filter(Boolean);
+
+    return (
+      <button
+        key={task.id}
+        type="button"
+        className={`mission-board__task-strip${compact ? ' mission-board__task-strip--compact' : ''}`}
+        onClick={() => openTask(task.id)}
+        style={{
+          width: '100%',
+          textAlign: 'left',
+          display: 'grid',
+          gap: compact ? 6 : 8,
+          padding: compact ? '12px 14px' : '14px 16px',
+          borderRadius: compact ? 14 : 16,
+          border: '1px solid rgba(255,255,255,0.08)',
+          background: stateTone,
+          color: 'var(--text)',
+          cursor: 'pointer',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: 11, color: 'var(--acc)', fontWeight: 700 }}>{task.id}</div>
+          <span className={`tag st-${task.state}`}>{stateLabel(task, locale)}</span>
+        </div>
+        <div style={{ fontSize: compact ? 13 : 14, fontWeight: 700, lineHeight: 1.55 }}>{task.title || pickLocaleText(locale, '(无标题)', '(Untitled)')}</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: compact ? 1.55 : 1.7 }}>
+          {task.now && task.now !== '-'
+            ? task.now.slice(0, compact ? 72 : 96)
+            : pickLocaleText(locale, '打开任务详情。', 'Open task details.')}
+        </div>
+        <div className="mission-board__task-collab">
+          <span className="mission-board__task-collab-label">{pickLocaleText(locale, '协同摘要', 'Collab')}</span>
+          <span className="mission-board__task-collab-value">{collaborationSummary}</span>
+        </div>
+        {metaItems.length > 0 ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {metaItems.map((item) => (
+              <span
+                key={`${task.id}-${item}`}
+                style={{
+                  fontSize: 10,
+                  lineHeight: 1.2,
+                  padding: '4px 8px',
+                  borderRadius: 999,
+                  border: '1px solid rgba(148,163,184,0.24)',
+                  background: 'rgba(15,23,42,0.42)',
+                  color: 'var(--text-soft)',
+                }}
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </button>
+    );
+  };
+
   return (
-    <div>
-      <div className="archive-bar">
-        <span className="ab-label">{pickLocaleText(locale, '筛选:', 'Filter:')}</span>
-        {(['active', 'archived', 'all'] as const).map((f) => (
-          <button
-            key={f}
-            className={`ab-btn ${taskFilter === f ? 'active' : ''}`}
-            onClick={() => setTaskFilter(f)}
-          >
-            {f === 'active' ? pickLocaleText(locale, '活跃', 'Active') : f === 'archived' ? pickLocaleText(locale, '归档', 'Archived') : pickLocaleText(locale, '全部', 'All')}
-          </button>
-        ))}
-        <button className="ab-btn" onClick={() => setShowQuickCreate(true)}>
-          {pickLocaleText(locale, '＋ 高级发布', '+ Advanced Create')}
-        </button>
-        {unArchivedDone.length > 0 && (
-          <button className="ab-btn" onClick={handleArchiveAll}>{pickLocaleText(locale, '📦 一键归档', '📦 Archive All')}</button>
-        )}
-        <span className="ab-count">
-          {locale === 'en' ? `Active ${activeEdicts.length} · Archived ${archivedEdicts.length} · Total ${allEdicts.length}` : `活跃 ${activeEdicts.length} · 归档 ${archivedEdicts.length} · 共 ${allEdicts.length}`}
-        </span>
-        <button className="ab-scan" onClick={handleScan} disabled={checkingProgress}>{checkingProgress ? pickLocaleText(locale, '检查中…', 'Checking...') : pickLocaleText(locale, '检查进度', 'Check Progress')}</button>
+    <div className={`mission-board${singleTaskMode ? ' mission-board--single' : ''}`}>
+      <div className={`mission-board__hero-shell${singleTaskMode ? ' mission-board__hero-shell--single' : ''}`}>
+        <section className="mission-board__hero-panel">
+          <div className="mission-board__hero-copy">
+            <div className="mission-board__hero-brand">
+              <div className="mission-board__hero-logo mission-board__hero-logo--section" aria-hidden="true"><LayoutDashboard size={20} /></div>
+              <div>
+                <div className="ec-id">{pickLocaleText(locale, singleTaskMode ? '任务详情' : '今日态势', singleTaskMode ? 'Task Detail' : 'Today Overview')}</div>
+                <div className="mission-board__hero-title">
+                  {pickLocaleText(
+                    locale,
+                    singleTaskMode ? '当前任务' : '当前任务态势',
+                    singleTaskMode ? 'Current Task' : 'Current Mission Snapshot',
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {singleTaskMode ? (
+            <div
+              style={{
+                display: 'grid',
+                gap: 12,
+                padding: 14,
+                borderRadius: 18,
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.03)',
+              }}
+            >
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+                {[
+                  {
+                    label: pickLocaleText(locale, '发布', 'Publish'),
+                    detail: pickLocaleText(locale, '新建任务', 'New task'),
+                  },
+                  {
+                    label: pickLocaleText(locale, '进入', 'Enter'),
+                    detail: pickLocaleText(locale, '打开当前任务', 'Open current task'),
+                  },
+                  {
+                    label: pickLocaleText(locale, '检查', 'Check'),
+                    detail: pickLocaleText(locale, '查看状态', 'Check status'),
+                  },
+                  {
+                    label: pickLocaleText(locale, '处置', 'Handle'),
+                    detail: pickLocaleText(locale, '继续处理', 'Continue handling'),
+                  },
+                ].map((item) => (
+                  <div key={item.label} className="mission-board__metric-card" style={{ minHeight: 0 }}>
+                    <div className="mission-board__metric-label">{item.label}</div>
+                    <div className="mission-board__metric-detail" style={{ marginTop: 8 }}>{item.detail}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mission-board__quick-create" style={{ marginTop: 0 }}>
+                <InlineQuickCreatePanel onSubmitSuccess={() => loadAll()} />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mission-board__metric-grid">
+                {heroMetrics.map((item) => (
+                  <div key={item.label} className="mission-board__metric-card">
+                    <div className="mission-board__metric-label">{item.label}</div>
+                    <div className="mission-board__metric-value">{item.value}</div>
+                    <div className="mission-board__metric-detail">{item.detail}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mission-board__quick-create">
+                <InlineQuickCreatePanel onSubmitSuccess={() => loadAll()} />
+              </div>
+            </>
+          )}
+        </section>
+
+        <section className={`mission-board__workspace-panel${singleTaskMode ? ' mission-board__workspace-panel--single' : ''}`}>
+          <div className="mission-board__panel-topline">
+            <div>
+              <div className="ec-id">{pickLocaleText(locale, singleTaskMode ? '当前任务' : '最近工作区', singleTaskMode ? 'Current Task' : 'Recent Workspaces')}</div>
+              <div className="mission-board__panel-title">
+                {pickLocaleText(
+                  locale,
+                  singleTaskMode ? '当前任务' : '任务列表',
+                  singleTaskMode ? 'Current task' : 'Task list',
+                )}
+              </div>
+            </div>
+          </div>
+
+
+          {singleTaskMode && primaryTask ? (
+            <div className="mission-board__focus-summary">
+              <span className="chip ok">{pickLocaleText(locale, '当前唯一任务', 'Only Active Task')}</span>
+              <span className={`tag st-${primaryTask.state}`}>{stateLabel(primaryTask, locale)}</span>
+              {primaryTask.org ? <span className="chip">{primaryTask.org}</span> : null}
+              {attentionCount > 0 ? <span className="chip err">{pickLocaleText(locale, `待处置 ${attentionCount}`, `${attentionCount} need handling`)}</span> : null}
+            </div>
+          ) : null}
+
+          <div className={`mission-board__workspace-list${singleTaskMode ? ' mission-board__workspace-list--single' : ''}`}>
+            {spotlightTasks.length > 0
+              ? (singleTaskMode && primaryTask
+                ? renderTaskStrip(primaryTask, ['Blocked', 'Review', 'ReviewCenter'].includes(primaryTask.state) ? 'danger' : 'default', 'compact')
+                : spotlightTasks.map((task) => renderTaskStrip(task, ['Blocked', 'Review', 'ReviewCenter'].includes(task.state) ? 'danger' : 'default')))
+              : (
+                <div className="empty" style={{ padding: 18 }}>
+                  {pickLocaleText(locale, '暂无进行中任务', 'No active task')}
+                </div>
+              )}
+          </div>
+
+          <div className={`mission-board__workspace-actions${singleTaskMode ? ' mission-board__workspace-actions--single' : ''}`}>
+            {singleTaskMode && primaryTask ? <button className="ab-btn active" onClick={() => openTask(primaryTask.id)}>{pickLocaleText(locale, '进入当前任务', 'Open Current Task')}</button> : null}
+            <button className="ab-scan" onClick={handleScan} disabled={checkingProgress}>{checkingProgress ? pickLocaleText(locale, '检查中…', 'Checking...') : pickLocaleText(locale, '检查进度', 'Check Progress')}</button>
+            {singleTaskMode ? (
+              <button className="ab-btn" onClick={unArchivedDone.length > 0 ? handleArchiveAll : () => setTaskFilter(taskFilter === 'all' ? 'active' : 'all')}>
+                {unArchivedDone.length > 0
+                  ? pickLocaleText(locale, '处置已完成项', 'Handle Completed Items')
+                  : singleTaskActionLabel}
+              </button>
+            ) : (
+              <button className="ab-btn" onClick={() => setTaskFilter('active')}>
+                {pickLocaleText(locale, '只看活跃任务', 'Show Active Only')}
+              </button>
+            )}
+          </div>
+        </section>
       </div>
 
-      <InlineQuickCreatePanel onSubmitSuccess={() => loadAll()} />
+      {!singleTaskMode ? (
+        <section className="mission-board__lane-shell">
+          <div className="mission-board__section-topline">
+            <div>
+              <div className="ec-id">{pickLocaleText(locale, '执行分区', 'Execution Lanes')}</div>
+              <div className="mission-board__section-title">{pickLocaleText(locale, '按状态查看任务', 'Browse tasks by status')}</div>
+            </div>
+            <div className="archive-bar mission-board__filter-bar" style={{ margin: 0 }}>
+              <span className="ab-label">{pickLocaleText(locale, '筛选:', 'Filter:')}</span>
+              {(['active', 'archived', 'all'] as const).map((f) => (
+                <button
+                  key={f}
+                  className={`ab-btn ${taskFilter === f ? 'active' : ''}`}
+                  onClick={() => setTaskFilter(f)}
+                >
+                  {f === 'active' ? pickLocaleText(locale, '活跃', 'Active') : f === 'archived' ? pickLocaleText(locale, '归档', 'Archived') : pickLocaleText(locale, '全部', 'All')}
+                </button>
+              ))}
+              {unArchivedDone.length > 0 ? <button className="ab-btn" onClick={handleArchiveAll}>{pickLocaleText(locale, '📦 一键归档', '📦 Archive All')}</button> : null}
+            </div>
+          </div>
+
+          <div className="mission-board__lane-grid">
+            <div className="mission-board__lane mission-board__lane--danger">
+              <div className="mission-board__lane-head">
+                <div className="mission-board__lane-title">{pickLocaleText(locale, '优先关注', 'Priority Attention')}</div>
+                <span className="chip err">{attentionCount}</span>
+              </div>
+              <div className="mission-board__lane-text">{pickLocaleText(locale, '需要优先处理', 'Needs attention')}</div>
+              <div className="mission-board__lane-list">
+                {attentionTasks.length > 0
+                  ? attentionTasks.slice(0, 4).map((task) => renderTaskStrip(task, 'danger'))
+                  : <div className="empty" style={{ padding: 18 }}>{pickLocaleText(locale, '暂无重点事项', 'No priority item')}</div>}
+              </div>
+            </div>
+
+            <div className="mission-board__lane mission-board__lane--primary">
+              <div className="mission-board__lane-head">
+                <div className="mission-board__lane-title">{pickLocaleText(locale, '推进中', 'In Motion')}</div>
+                <span className="chip ok">{runningTasks.length}</span>
+              </div>
+              <div className="mission-board__lane-text">{pickLocaleText(locale, '当前进行中', 'Currently active')}</div>
+              <div className="mission-board__lane-list">
+                {runningTasks.length > 0
+                  ? runningTasks.map((task) => renderTaskStrip(task))
+                  : <div className="empty" style={{ padding: 18 }}>{pickLocaleText(locale, '暂无进行中任务', 'No active task')}</div>}
+              </div>
+            </div>
+
+            <div className="mission-board__lane mission-board__lane--success">
+              <div className="mission-board__lane-head">
+                <div className="mission-board__lane-title">{pickLocaleText(locale, '最近完成', 'Recently Completed')}</div>
+                <span className="chip ok">{recentDoneTasks.length}</span>
+              </div>
+              <div className="mission-board__lane-text">{pickLocaleText(locale, '最近结束', 'Recently finished')}</div>
+              <div className="mission-board__lane-list">
+                {recentDoneTasks.length > 0
+                  ? recentDoneTasks.map((task) => renderTaskStrip(task, 'success'))
+                  : <div className="empty" style={{ padding: 18 }}>{pickLocaleText(locale, '暂无已完成任务', 'No completed task')}</div>}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : attentionCount > 0 ? (
+        <section className="mission-board__lane-shell" style={{ paddingTop: 18, paddingBottom: 18 }}>
+          <div className="mission-board__section-topline" style={{ marginBottom: 12 }}>
+            <div>
+              <div className="ec-id">{pickLocaleText(locale, '待处置事项', 'Items Requiring Handling')}</div>
+              <div className="mission-board__section-title">{pickLocaleText(locale, '当前待处理', 'Pending now')}</div>
+            </div>
+          </div>
+          <div className="mission-board__workspace-list mission-board__workspace-list--single">
+            {attentionTasks.slice(0, 4).map((task) => renderTaskStrip(task, 'danger', 'compact'))}
+          </div>
+        </section>
+      ) : null}
 
       {(checkingProgress || lastCheck || checkHistory.length > 0) ? (
-        <div style={{ marginBottom: 16, padding: 16, borderRadius: 18, border: '1px solid var(--line)', background: 'var(--panel2)', display: 'grid', gap: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <section className="mission-board__insight-shell">
+          <div className="mission-board__section-topline">
             <div>
-              <div style={{ fontSize: 18, fontWeight: 800 }}>{pickLocaleText(locale, '检查进度', 'Progress Check')}</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7, marginTop: 4 }}>
-                {pickLocaleText(locale, '这里会显示最近一次检查结果，以及最近几次自动整理出的跟进记录。', 'This area shows the latest progress check and the recent follow-up records collected from checks.')}
-              </div>
+              <div className="ec-id">{pickLocaleText(locale, '进度检查', 'Progress Check')}</div>
+              <div className="mission-board__section-title">{pickLocaleText(locale, '最近检查记录', 'Recent checks')}</div>
             </div>
             {checkHistory.length > 0 ? (
               <button
@@ -919,28 +1218,26 @@ export default function EdictBoard() {
             ) : null}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(320px, 1.1fr)', gap: 12 }}>
-            <div style={{ padding: 14, borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', display: 'grid', gap: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 14, fontWeight: 800 }}>{pickLocaleText(locale, '本次结果', 'Latest Result')}</div>
+          <div className="mission-board__insight-grid">
+            <div className="mission-board__insight-card">
+              <div className="mission-board__insight-head">
+                <div className="mission-board__insight-title">{pickLocaleText(locale, '本次结果', 'Latest Result')}</div>
                 <span className={`chip ${lastCheck?.ok ? 'ok' : ''}`}>{checkingProgress ? pickLocaleText(locale, '检查中…', 'Checking...') : lastCheck ? formatCheckTime(locale, lastCheck.checkedAt) : pickLocaleText(locale, '等待检查', 'Waiting for a check')}</span>
               </div>
-              <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1 }}>
-                {checkingProgress ? '...' : String(lastCheck?.count || 0)}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
+              <div className="mission-board__insight-value">{checkingProgress ? '...' : String(lastCheck?.count || 0)}</div>
+              <div className="mission-board__insight-text">
                 {checkingProgress
                   ? pickLocaleText(locale, '正在查看当前事项是否有需要继续跟进、重新安排或提醒处理的地方。', 'Checking whether any item needs follow-up, re-arrangement, or extra attention.')
-                  : lastCheck?.ok
+                  : lastCheck
                     ? ((lastCheck.count || 0) > 0
                       ? pickLocaleText(locale, `最近一次检查发现 ${lastCheck.count} 条需要继续跟进的事项。`, `The latest check found ${lastCheck.count} item(s) that need follow-up.`)
                       : pickLocaleText(locale, '最近一次检查未发现需要额外处理的事项。', 'The latest check found no item that needs extra handling.'))
-                    : (lastCheck?.error || pickLocaleText(locale, '最近一次检查未成功完成。', 'The latest check did not complete successfully.'))}
+                    : pickLocaleText(locale, '运行一次检查后，这里会显示整理摘要。', 'Run a check once and the summary will appear here.')}
               </div>
               {lastCheck?.actions?.length ? (
-                <div style={{ display: 'grid', gap: 8 }}>
+                <div className="mission-board__action-note-list">
                   {lastCheck.actions.slice(0, 3).map((item, index) => (
-                    <div key={`${item.taskId}-${index}`} style={{ fontSize: 12, lineHeight: 1.7, padding: '10px 12px', borderRadius: 12, background: 'rgba(122,162,255,0.08)', border: '1px solid rgba(122,162,255,0.14)' }}>
+                    <div key={`${item.taskId}-${index}`} className="mission-board__action-note">
                       {describeProgressAction(locale, item)}
                     </div>
                   ))}
@@ -948,22 +1245,22 @@ export default function EdictBoard() {
               ) : null}
             </div>
 
-            <div style={{ padding: 14, borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', display: 'grid', gap: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 14, fontWeight: 800 }}>{pickLocaleText(locale, '最近记录', 'Recent History')}</div>
-                <span style={{ fontSize: 11, color: 'var(--muted)' }}>{pickLocaleText(locale, `保留最近 ${Math.min(checkHistory.length || 8, 8)} 次`, `Keep the latest ${Math.min(checkHistory.length || 8, 8)} checks`)}</span>
+            <div className="mission-board__insight-card">
+              <div className="mission-board__insight-head">
+                <div className="mission-board__insight-title">{pickLocaleText(locale, '最近记录', 'Recent History')}</div>
+                <span className="mission-board__hint-text">{pickLocaleText(locale, `保留最近 ${Math.min(checkHistory.length || 8, 8)} 次`, `Keep the latest ${Math.min(checkHistory.length || 8, 8)} checks`)}</span>
               </div>
               {checkHistory.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>{pickLocaleText(locale, '还没有历史记录。完成一次检查后，这里会自动保留摘要。', 'No history yet. After a check is completed, a summary will be kept here automatically.')}</div>
+                <div className="mission-board__insight-text">{pickLocaleText(locale, '还没有历史记录。完成一次检查后，这里会自动保留摘要。', 'No history yet. After a check is completed, a summary will be kept here automatically.')}</div>
               ) : (
-                <div style={{ display: 'grid', gap: 8 }}>
+                <div className="mission-board__history-list">
                   {checkHistory.map((record) => (
-                    <div key={record.id} style={{ padding: '10px 12px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', display: 'grid', gap: 4 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <div style={{ fontSize: 12, fontWeight: 700 }}>{formatCheckTime(locale, record.checkedAt)}</div>
+                    <div key={record.id} className="mission-board__history-item">
+                      <div className="mission-board__history-head">
+                        <div className="mission-board__history-time">{formatCheckTime(locale, record.checkedAt)}</div>
                         <span className={`chip ${record.ok ? 'ok' : ''}`}>{record.ok ? pickLocaleText(locale, `${record.count} 条需跟进`, `${record.count} to follow up`) : pickLocaleText(locale, '未完成', 'Incomplete')}</span>
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
+                      <div className="mission-board__insight-text">
                         {record.ok
                           ? ((record.actions || []).length
                             ? describeProgressAction(locale, record.actions[0])
@@ -976,21 +1273,63 @@ export default function EdictBoard() {
               )}
             </div>
           </div>
-        </div>
+        </section>
       ) : null}
 
-      <div className="edict-grid">
-        {visibleTasks.length === 0 ? (
-          <div className="empty" style={{ gridColumn: '1/-1' }}>
-            {pickLocaleText(locale, '暂无任务单', 'No tasks yet')}<br />
-            <small style={{ fontSize: 11, marginTop: 6, display: 'block', color: 'var(--muted)' }}>
-              {pickLocaleText(locale, '你可以直接从看板发布新任务，或通过提示词中心、搜索面板等入口把需求送入同一协作流程。', 'You can launch a task directly from the board, or send work into the same workflow through the Prompt Center or the search panel.')}
-            </small>
+      <section className={`mission-board__catalog-shell${visibleTasks.length === 1 ? ' mission-board__catalog-shell--single' : ''}`}>
+        <div className="mission-board__section-topline">
+          <div>
+            <div className="ec-id">{pickLocaleText(locale, visibleTasks.length === 1 ? '当前任务卡' : '完整任务列表', visibleTasks.length === 1 ? 'Current Task Card' : 'Full Mission Grid')}</div>
+            <div className="mission-board__section-title">{pickLocaleText(locale, visibleTasks.length === 1 ? '任务详情' : '任务列表', visibleTasks.length === 1 ? 'Task Details' : 'Task List')}</div>
           </div>
-        ) : (
-          visibleTasks.map((t) => <EdictCard key={t.id} task={t} busyEntries={taskBusyMap[t.id] || []} />)
-        )}
-      </div>
+          <div className="mission-board__hint-text">
+            {locale === 'en' ? `Active ${activeEdicts.length} · Archived ${archivedEdicts.length} · Total ${allEdicts.length}` : `活跃 ${activeEdicts.length} · 归档 ${archivedEdicts.length} · 共 ${allEdicts.length}`}
+          </div>
+        </div>
+
+        <div className={`edict-grid${visibleTasks.length === 1 ? ' edict-grid--single' : ''}`}>
+          {visibleTasks.length === 0 ? (
+            <div className="empty" style={{ gridColumn: '1/-1' }}>
+              {pickLocaleText(locale, '暂无任务单', 'No tasks yet')}<br />
+              <small style={{ fontSize: 11, marginTop: 6, display: 'block', color: 'var(--muted)' }}>
+                {pickLocaleText(locale, '可在上方新建任务。', 'Create a task above.')}
+              </small>
+            </div>
+          ) : (
+            visibleTasks.map((t) => <EdictCard key={t.id} task={t} busyEntries={taskBusyMap[t.id] || []} />)
+          )}
+        </div>
+      </section>
+
+      <section className="mission-board__catalog-shell">
+        <div className="mission-board__section-topline">
+          <div>
+            <div className="ec-id">{pickLocaleText(locale, '历史任务整合区', 'Integrated Task History')}</div>
+            <div className="mission-board__section-title">{pickLocaleText(locale, '历史任务', 'Task History')}</div>
+          </div>
+          <div className="archive-bar mission-board__filter-bar" style={{ margin: 0 }}>
+            <span className="ab-label">{pickLocaleText(locale, '历史视图:', 'History View:')}</span>
+            <button className={`ab-btn ${taskFilter === 'archived' ? 'active' : ''}`} onClick={() => setTaskFilter(taskFilter === 'archived' ? 'all' : 'archived')}>
+              {taskFilter === 'archived' ? pickLocaleText(locale, '返回综合视图', 'Back to Combined View') : pickLocaleText(locale, '查看全部归档', 'View All Archived')}
+            </button>
+            {taskFilter !== 'active' ? <button className="ab-btn" onClick={() => setTaskFilter('active')}>{pickLocaleText(locale, '回到活跃任务', 'Back to Active')}</button> : null}
+          </div>
+        </div>
+
+        <div style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.8, marginBottom: 14 }}>
+          {pickLocaleText(locale, '这里聚合已归档、已完成或已取消的历史任务，方便回看结果、恢复上下文和继续复盘，而不会破坏上方详细任务卡在单任务模式下的紧凑高度。', 'This section gathers archived, completed, or cancelled work for review, context recovery, and retrospective follow-up without disturbing the compact card height used above in single-task mode.')}
+        </div>
+
+        <div className={`mission-board__workspace-list${singleTaskMode ? ' mission-board__workspace-list--single' : ''}`}>
+          {integratedHistoryTasks.length > 0 ? (
+            integratedHistoryTasks.map((task) => renderTaskStrip(task, 'success', singleTaskMode ? 'compact' : 'default'))
+          ) : (
+            <div className="empty" style={{ padding: 18 }}>
+              {pickLocaleText(locale, '当前没有历史任务。', 'There is no task history yet.')}
+            </div>
+          )}
+        </div>
+      </section>
 
       {showQuickCreate && (
         <QuickCreateTaskModal
@@ -1001,3 +1340,4 @@ export default function EdictBoard() {
     </div>
   );
 }
+

@@ -32,6 +32,7 @@ from .task_workspace import (
     generate_task_code,
     push_workspace_notification,
     reactivate_task_workspace,
+    remove_task_workspace,
     run_workspace_watchdog,
     set_workspace_risk_control,
     sync_workspace_for_task,
@@ -665,6 +666,36 @@ class TaskService:
         return task
 
     # ── 查询 ──
+
+    async def delete_task(
+        self,
+        task_id: uuid.UUID,
+        *,
+        agent: str = "system",
+        reason: str = "",
+        delete_workspace: bool = True,
+    ) -> dict[str, Any]:
+        task = await self._get_task(task_id)
+        original_meta = dict(task.meta or {})
+        removed_workspace_paths: list[str] = []
+        if delete_workspace:
+            updated_meta = remove_task_workspace(task.to_dict())
+            removed_workspace_paths = list(((updated_meta.get("workspace") or {}).get("deleted_paths") or []))
+            task.meta = updated_meta
+            task.updated_at = datetime.now(timezone.utc)
+        task_data = task.to_dict()
+        await self.db.delete(task)
+        await self.db.commit()
+        return {
+            "task_id": str(task_id),
+            "title": task.title,
+            "agent": agent,
+            "reason": reason,
+            "deleted_workspace": bool(delete_workspace),
+            "removed_workspace_paths": removed_workspace_paths,
+            "workspace": (original_meta.get("workspace") or {}),
+            "task": task_data,
+        }
 
     async def get_task(self, task_id: uuid.UUID) -> Task:
         return await self._get_task(task_id)

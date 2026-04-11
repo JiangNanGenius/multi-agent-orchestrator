@@ -6,7 +6,7 @@
 
 | 项目 | 说明 |
 |---|---|
-| 当前唯一主 Todo | `/home/ubuntu/multi-agent-orchestrator_public/todo.md` |
+| 当前唯一主 Todo | `todo.md` |
 | 本文件状态 | 归档，仅保留用于追溯上下文恢复阶段的历史记录 |
 | 后续维护规则 | 新增事项、完成勾选、阶段进度都只更新主 `todo.md` |
 

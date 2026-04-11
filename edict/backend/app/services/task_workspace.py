@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import mimetypes
 import re
 import shutil
+import tempfile
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -1314,6 +1317,226 @@ def reactivate_task_workspace(task: dict[str, Any], *, move_to_hot: bool | None 
     return refreshed
 
 
+def _workspace_root_from_task(task: dict[str, Any]) -> Path:
+    meta = dict(task.get("meta") or {})
+    workspace = dict(meta.get("workspace") or {})
+    candidates = [
+        workspace.get("actual_workspace_path"),
+        workspace.get("path"),
+        workspace.get("cold_archive_path"),
+    ]
+    for candidate in candidates:
+        if not candidate:
+            continue
+        path = Path(str(candidate)).expanduser()
+        if not path.is_absolute():
+            path = (PROJECT_ROOT / path).resolve()
+        else:
+            path = path.resolve()
+        return path
+    raise ValueError("任务工作区不存在")
+
+
+TEXT_PREVIEW_SUFFIXES = {
+    ".md",
+    ".markdown",
+    ".txt",
+    ".py",
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".ini",
+    ".cfg",
+    ".conf",
+    ".env",
+    ".csv",
+    ".log",
+    ".html",
+    ".css",
+    ".scss",
+    ".sql",
+    ".sh",
+    ".bat",
+    ".xml",
+    ".svg",
+    ".rst",
+}
+
+
+def _resolve_workspace_relative_path(root: Path, relative_path: str | None = None) -> Path:
+    root = root.resolve()
+    normalized = str(relative_path or "").strip().replace("\\", "/")
+    if normalized in {"", ".", "/"}:
+        return root
+    candidate = (root / normalized).resolve()
+    if candidate != root and root not in candidate.parents:
+        raise ValueError("非法工作区路径")
+    return candidate
+
+
+def _serialize_workspace_entry(base_root: Path, entry: Path) -> dict[str, Any]:
+    stat = entry.stat()
+    relative_path = "" if entry == base_root else entry.relative_to(base_root).as_posix()
+    mime_type = mimetypes.guess_type(entry.name)[0] or "application/octet-stream"
+    is_text = entry.is_file() and entry.suffix.lower() in TEXT_PREVIEW_SUFFIXES
+    return {
+        "name": entry.name,
+        "path": relative_path,
+        "kind": "directory" if entry.is_dir() else "file",
+        "size": int(stat.st_size),
+        "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "mime_type": mime_type,
+        "text_previewable": is_text,
+        "editable": is_text,
+    }
+
+
+def list_task_workspace_entries(task: dict[str, Any], relative_path: str = "") -> dict[str, Any]:
+    root = _workspace_root_from_task(task)
+    root.mkdir(parents=True, exist_ok=True)
+    current = _resolve_workspace_relative_path(root, relative_path)
+    if not current.exists():
+        raise ValueError("工作区路径不存在")
+    if current.is_file():
+        raise ValueError("目标不是目录")
+    entries = sorted(current.iterdir(), key=lambda item: (not item.is_dir(), item.name.lower()))
+    current_rel = "" if current == root else current.relative_to(root).as_posix()
+    parent_rel = "" if current == root else current.relative_to(root).parent.as_posix()
+    if parent_rel == ".":
+        parent_rel = ""
+    return {
+        "root": str(root),
+        "current_path": current_rel,
+        "parent_path": parent_rel,
+        "entries": [_serialize_workspace_entry(root, item) for item in entries],
+    }
+
+
+def read_task_workspace_text(task: dict[str, Any], relative_path: str) -> dict[str, Any]:
+    if not relative_path:
+        raise ValueError("缺少文件路径")
+    root = _workspace_root_from_task(task)
+    target = _resolve_workspace_relative_path(root, relative_path)
+    if not target.exists() or not target.is_file():
+        raise ValueError("目标文件不存在")
+    if target.suffix.lower() not in TEXT_PREVIEW_SUFFIXES:
+        raise ValueError("该文件类型暂不支持在线查看")
+    content = target.read_text(encoding="utf-8", errors="replace")
+    stat = target.stat()
+    return {
+        "path": target.relative_to(root).as_posix(),
+        "content": content,
+        "size": int(stat.st_size),
+        "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat().replace("+00:00", "Z"),
+        "editable": True,
+    }
+
+
+def write_task_workspace_text(task: dict[str, Any], relative_path: str, content: str) -> dict[str, Any]:
+    if not relative_path:
+        raise ValueError("缺少文件路径")
+    root = _workspace_root_from_task(task)
+    target = _resolve_workspace_relative_path(root, relative_path)
+    if target.exists() and target.is_dir():
+        raise ValueError("不能将目录保存为文本文件")
+    if target.suffix.lower() not in TEXT_PREVIEW_SUFFIXES:
+        raise ValueError("该文件类型暂不支持在线编辑")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+    stat = target.stat()
+    return {
+        "path": target.relative_to(root).as_posix(),
+        "size": int(stat.st_size),
+        "modified_at": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat().replace("+00:00", "Z"),
+    }
+
+
+def resolve_task_workspace_download_path(task: dict[str, Any], relative_path: str) -> tuple[Path, str]:
+    if not relative_path:
+        raise ValueError("缺少文件路径")
+    root = _workspace_root_from_task(task)
+    target = _resolve_workspace_relative_path(root, relative_path)
+    if not target.exists() or not target.is_file():
+        raise ValueError("目标文件不存在")
+    return target, target.name
+
+
+def create_task_workspace_archive(task: dict[str, Any], relative_paths: list[str] | None = None) -> tuple[Path, str]:
+    root = _workspace_root_from_task(task)
+    if not root.exists():
+        raise ValueError("任务工作区不存在")
+    task_code = ((task.get("meta") or {}).get("workspace") or {}).get("task_code") or str(task.get("id") or "task")
+    safe_name = _safe_slug(str(task.get("title") or task_code), limit=32)
+    selected_paths = [str(path).strip().strip("/") for path in (relative_paths or []) if str(path).strip()]
+    fd, archive_path_str = tempfile.mkstemp(prefix=f"{task_code}_", suffix=".zip")
+    Path(archive_path_str).unlink(missing_ok=True)
+    archive_path = Path(archive_path_str)
+    with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        seen: set[str] = set()
+        if selected_paths:
+            added = 0
+            for relative_path in selected_paths:
+                target = _resolve_workspace_relative_path(root, relative_path)
+                if not target.exists():
+                    raise ValueError(f"工作区条目不存在：{relative_path}")
+                candidates = [target] if target.is_file() else [item for item in target.rglob("*") if item.is_file()]
+                for item in candidates:
+                    arcname = item.relative_to(root).as_posix()
+                    if arcname in seen:
+                        continue
+                    zf.write(item, arcname=arcname)
+                    seen.add(arcname)
+                    added += 1
+            if added == 0:
+                raise ValueError("未找到可打包的工作区文件")
+        else:
+            for item in root.rglob("*"):
+                if not item.is_file():
+                    continue
+                zf.write(item, arcname=item.relative_to(root).as_posix())
+    filename = f"{task_code}_{safe_name}{'_selected' if selected_paths else ''}.zip"
+    return archive_path, filename
+
+
+def remove_task_workspace(task: dict[str, Any]) -> dict[str, Any]:
+    meta = dict(task.get("meta") or {})
+    workspace = dict(meta.get("workspace") or {})
+    targets = {
+        str(Path(path).expanduser().resolve())
+        for path in [
+            workspace.get("actual_workspace_path"),
+            workspace.get("path"),
+            workspace.get("cold_archive_path"),
+            workspace.get("metadata_mirror_path"),
+        ]
+        if path
+    }
+    removed: list[str] = []
+    for target_str in sorted(targets):
+        target = Path(target_str)
+        if not target.exists():
+            continue
+        if target.is_dir():
+            shutil.rmtree(target)
+        else:
+            target.unlink(missing_ok=True)
+        removed.append(target_str)
+    workspace["deleted_at"] = utc_now_iso()
+    workspace["deleted_paths"] = removed
+    workspace["actual_workspace_path"] = ""
+    workspace["path"] = ""
+    workspace["cold_archive_path"] = ""
+    workspace["metadata_mirror_path"] = ""
+    workspace["archive_status"] = "deleted"
+    meta["workspace"] = workspace
+    return meta
+
+
 __all__ = [
     "TASK_WORKSPACE_ROOT",
     "COLD_ARCHIVE_ROOT",
@@ -1324,6 +1547,12 @@ __all__ = [
     "archive_task_workspace",
     "reactivate_task_workspace",
     "run_workspace_watchdog",
+    "list_task_workspace_entries",
+    "read_task_workspace_text",
+    "write_task_workspace_text",
+    "resolve_task_workspace_download_path",
+    "create_task_workspace_archive",
+    "remove_task_workspace",
     "get_hot_workspace_root",
     "get_cold_workspace_root",
 ]

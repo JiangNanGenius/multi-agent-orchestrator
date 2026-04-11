@@ -255,13 +255,13 @@ export default function TemplatePanel() {
         }}
       >
         <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.04em', color: 'var(--acc)' }}>
-          {pickLocaleText(locale, '提示词中心', 'Prompt Center')}
+          {pickLocaleText(locale, '任务模板', 'Task Templates')}
         </div>
         <div style={{ fontSize: 20, fontWeight: 800 }}>
-          {pickLocaleText(locale, '用结构化提示词快速发起任务', 'Launch tasks quickly with structured prompts')}
+          {pickLocaleText(locale, '用结构化任务模板快速发起任务', 'Launch tasks quickly with structured task templates')}
         </div>
         <div style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--muted)' }}>
-          {pickLocaleText(locale, '这里沉淀常用提示词模板、输出要求与协作入口。你可以先预览即将提交的提示词，再把任务发送到总控中心继续流转。', 'This panel keeps reusable prompt templates, output expectations, and collaboration entry points. Preview the generated prompt before sending the task to the Control Center.')}
+          {pickLocaleText(locale, '这里沉淀常用任务模板、输出要求与协作入口。你可以先预览即将提交的任务内容，再把任务发送到总控中心继续流转。', 'This panel keeps reusable task templates, output expectations, and collaboration entry points. Preview the generated task content before sending it to the Control Center.')}
         </div>
       </div>
 
@@ -306,7 +306,7 @@ export default function TemplatePanel() {
             <button className="modal-close" onClick={() => setFormTpl(null)}>✕</button>
             <div className="modal-body">
               <div style={{ fontSize: 11, color: 'var(--acc)', fontWeight: 700, letterSpacing: '.04em', marginBottom: 4 }}>
-                  {pickLocaleText(locale, '提示词中心', 'Prompt Center')}
+                  {pickLocaleText(locale, '任务模板', 'Task Templates')}
 
               </div>
               <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>

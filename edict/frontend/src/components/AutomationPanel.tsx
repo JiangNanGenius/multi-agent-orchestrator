@@ -53,6 +53,38 @@ function collectRiskApprovals(tasks: Task[]) {
     .slice(0, 8);
 }
 
+function collectQuickTaskRecords(tasks: Task[], locale: 'zh' | 'en' = 'zh') {
+  return tasks
+    .filter((task) => {
+      const orgTrace = [task.org, task.currentDept, task.targetDept, ...(task.targetDepts || [])]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      const controlledByHub = orgTrace.includes('总控') || orgTrace.includes('control');
+      const shortFlow = (task.flow_log?.length || 0) <= 2;
+      const noDispatch = !(task.targetDept || task.targetDepts?.length);
+      const lightweight = Boolean(task.workspaceTaskPolicy?.lightweight);
+      return Boolean(lightweight || (controlledByHub && (shortFlow || noDispatch)));
+    })
+    .map((task) => {
+      const latest = [...(task.flow_log || [])].sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))[0];
+      return {
+        taskId: task.id,
+        title: task.title || (locale === 'en' ? '(Untitled)' : '(无标题)'),
+        at: latest?.at || task.updatedAt || task.now || '',
+        detail:
+          latest?.remark ||
+          (locale === 'en'
+            ? 'Handled directly by the control center without dispatching to another team.'
+            : '由总控中心直接处理，未再分发到其他团队。'),
+        owner: task.currentDept || task.org || (locale === 'en' ? 'Control Center' : '总控中心'),
+        state: task.state || '',
+      };
+    })
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)))
+    .slice(0, 10);
+}
+
 export default function AutomationPanel() {
   const locale = useStore((s) => s.locale);
   const liveStatus = useStore((s) => s.liveStatus);
@@ -101,6 +133,7 @@ export default function AutomationPanel() {
   const recentLogs = useMemo(() => collectAutomationLogs(tasks, locale), [tasks, locale]);
   const boardNotices = useMemo(() => collectBoardNotices(tasks), [tasks]);
   const pendingRiskApprovals = useMemo(() => collectRiskApprovals(tasks), [tasks]);
+  const quickTaskRecords = useMemo(() => collectQuickTaskRecords(tasks, locale), [tasks, locale]);
 
   const handleScan = async () => {
     try {
@@ -121,7 +154,7 @@ export default function AutomationPanel() {
       <div className="auto-hero">
         <div>
           <div className="auto-title">{pickLocaleText(locale, '自动处理概览', 'Auto Handling Overview')}</div>
-          <div className="auto-subtitle">{pickLocaleText(locale, '集中查看任务自动处理覆盖情况、风险分布与最近系统处理记录。', 'View task auto-handling coverage, risk distribution, and recent system actions in one place.')}</div>
+          <div className="auto-subtitle">{pickLocaleText(locale, '查看自动处理、风险和系统记录。', 'View auto handling, risks, and system logs.')}</div>
         </div>
         <button className="btn-refresh" onClick={handleScan}>{pickLocaleText(locale, '🧭 立即巡检', '🧭 Run Scan')}</button>
       </div>
@@ -170,7 +203,7 @@ export default function AutomationPanel() {
       </div>
 
       <div className="auto-rule-panel">
-        <div className="auto-section-title">{pickLocaleText(locale, '处理规则说明', 'Handling Rules')}</div>
+        <div className="auto-section-title">{pickLocaleText(locale, '处理规则', 'Handling Rules')}</div>
         <div className="auto-rule-grid">
           <div className="auto-rule-card">
             <div className="auto-rule-name">{pickLocaleText(locale, '自动处理 · 基础设置', 'Automatic Handling · Basic Setup')}</div>
@@ -200,7 +233,7 @@ export default function AutomationPanel() {
           <div className="auto-section-title">{pickLocaleText(locale, '看板通知中心', 'Board Notification Center')}</div>
           <div className="auto-log-list">
             {boardNotices.length === 0 ? (
-              <div className="empty">{pickLocaleText(locale, '当前还没有工作区通知', 'No workspace notifications yet')}</div>
+              <div className="empty">{pickLocaleText(locale, '暂无工作区通知', 'No workspace notifications')}</div>
             ) : (
               boardNotices.map((entry) => (
                 <div key={`${entry.taskId}-${entry.notification?.id || entry.index}`} className="auto-log-item" onClick={() => setModalTaskId(entry.taskId)}>
@@ -270,10 +303,29 @@ export default function AutomationPanel() {
         </div>
 
         <div className="auto-panel">
-          <div className="auto-section-title">{pickLocaleText(locale, '近期系统处理记录', 'Recent System Action Logs')}</div>
+          <div className="auto-section-title">{pickLocaleText(locale, '快速任务记录', 'Quick Task Records')}</div>
+          <div className="auto-log-list">
+            {quickTaskRecords.length === 0 ? (
+              <div className="empty">{pickLocaleText(locale, '暂无直办任务记录', 'No direct task records')}</div>
+            ) : (
+              quickTaskRecords.map((entry, idx) => (
+                <div key={`${entry.taskId}-${idx}`} className="auto-log-item" onClick={() => setModalTaskId(entry.taskId)}>
+                  <div className="auto-log-time">{entry.at ? entry.at.replace('T', ' ').substring(5, 19) : '—'}</div>
+                  <div className="auto-log-main">
+                    <div className="auto-log-title">{entry.taskId} · {entry.title}</div>
+                    <div className="auto-log-desc">{entry.owner} · {entry.detail.replace(/^🧭\s*/, '')}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="auto-panel">
+          <div className="auto-section-title">{pickLocaleText(locale, '任务处理记录', 'Task Handling Logs')}</div>
           <div className="auto-log-list">
             {recentLogs.length === 0 ? (
-              <div className="empty">{pickLocaleText(locale, '当前还没有系统处理记录', 'No system action logs have been recorded yet')}</div>
+              <div className="empty">{pickLocaleText(locale, '暂无系统处理记录', 'No system action logs')}</div>
             ) : (
               recentLogs.map((log, idx) => (
                 <div key={`${log.taskId}-${idx}`} className="auto-log-item" onClick={() => setModalTaskId(log.taskId)}>
