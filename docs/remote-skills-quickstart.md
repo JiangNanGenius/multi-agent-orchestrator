@@ -331,7 +331,6 @@ ls -la ~/.openclaw/workspace-plan_center/skills/
 ## 更多信息
 
 - 📚 [完整指南](remote-skills-guide.md)
-- 🏛️ [架构文档](task-dispatch-architecture.md)
+- 🏛️ [架构文档](current_architecture_overview.md)
 - 🌐 官方技能注册表：<https://clawhub.ai>
 - 🤝 [项目贡献](../CONTRIBUTING.md)
-

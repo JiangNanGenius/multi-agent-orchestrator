@@ -452,7 +452,7 @@ python3 scripts/skill_manager.py check-updates --interval weekly
 
 ## API 完整参考
 
-详见 [任务分发流转架构文档](task-dispatch-architecture.md) 的第三部分（API 与工具）。
+详见 [当前架构与处理逻辑总览](current_architecture_overview.md) 与 [技术文档](technical-architecture.md) 中的 API 与工具部分。
 
 ---
 

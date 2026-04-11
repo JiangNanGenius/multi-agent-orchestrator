@@ -46,6 +46,7 @@ class TaskCreate(BaseModel):
     creator: str = "system"
     tags: list[str] = []
     meta: dict | None = None
+    initial_state: str | None = None
 
 
 class TaskTransition(BaseModel):
@@ -57,6 +58,13 @@ class TaskTransition(BaseModel):
 class TaskProgress(BaseModel):
     agent: str
     content: str
+
+
+class TaskFlowAppend(BaseModel):
+    from_dept: str
+    to_dept: str
+    remark: str = ""
+    agent: str = "system"
 
 
 class TaskTodoUpdate(BaseModel):
@@ -198,6 +206,10 @@ async def create_task(
     svc: TaskService = Depends(get_task_service),
 ):
     """创建新任务。"""
+    try:
+        initial_state = TaskState(body.initial_state) if body.initial_state else TaskState.ControlCenter
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid state: {body.initial_state}")
     task = await svc.create_task(
         title=body.title,
         description=body.description,
@@ -205,6 +217,7 @@ async def create_task(
         assignee_org=body.assignee_org,
         creator=body.creator,
         tags=body.tags,
+        initial_state=initial_state,
         meta=body.meta,
     )
     return {"task_id": str(task.task_id), "trace_id": str(task.trace_id), "state": task.state.value}
@@ -271,6 +284,26 @@ async def add_progress(
     """添加进度记录。"""
     try:
         await svc.add_progress(task_id, body.agent, body.content)
+        return {"message": "ok"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/{task_id}/flow")
+async def append_flow(
+    task_id: uuid.UUID,
+    body: TaskFlowAppend,
+    svc: TaskService = Depends(get_task_service),
+):
+    """追加结构化流转记录（不修改状态）。"""
+    try:
+        await svc.append_flow_log(
+            task_id=task_id,
+            from_state=body.from_dept,
+            to_state=body.to_dept,
+            agent=body.agent,
+            remark=body.remark,
+        )
         return {"message": "ok"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

@@ -4,23 +4,23 @@
 
 ## 看板操作强制规则
 
-> 所有看板操作必须使用 `kanban_update.py` CLI 命令，不要手工直接读写 JSON 文件。
-> 直接改文件容易因为路径、锁或格式问题造成静默失败，最终导致看板状态与实际执行进度不一致。
+> 所有看板操作必须使用 CLI 命令，不要手工直接读写 JSON 文件。
+> 优先使用 `task_db.py`（DB 主线）；仅在兼容场景下使用 `kanban_update.py`。
 
 ### 看板命令参考
 
 ```bash
 # 更新状态
-python3 scripts/kanban_update.py state <id> <state> "<说明>"
+python3 scripts/task_db.py transition <uuid> <state> --reason "<说明>"
 
 # 流转记录
-python3 scripts/kanban_update.py flow <id> "<from>" "<to>" "<remark>"
+python3 scripts/task_db.py flow <uuid> "<from>" "<to>" --remark "<remark>"
 
 # 实时进展上报
-python3 scripts/kanban_update.py progress <id> "<当前在做什么>" "<计划1✅|计划2🔄|计划3>"
+python3 scripts/task_db.py progress <uuid> "<当前在做什么>"
 
 # 子任务管理
-python3 scripts/kanban_update.py todo <id> <todo_id> "<title>" <status> --detail "<产出详情>"
+python3 scripts/task_db.py todos <uuid> '[{"id":"1","title":"子任务","status":"in-progress"}]'
 ```
 
 ---
@@ -29,15 +29,12 @@ python3 scripts/kanban_update.py todo <id> <todo_id> "<title>" <status> --detail
 
 > 执行任务过程中，必须在每个关键步骤调用 `progress` 命令上报当前进展。
 >
-> `progress` 不会改变任务状态，只负责更新看板中的“当前动态”和“计划清单”。真正的状态流转仍通过 `state` 与 `flow` 完成。
+> `progress` 不会改变任务状态。真正的状态流转通过 `transition` 与 `flow` 完成，`todos` 用于更新计划清单。
 
 ### 完成子任务时补充产出详情
 
 ```bash
-python3 scripts/kanban_update.py todo JJC-xxx 1 "[子任务名]" completed --detail "产出概要：
-- 要点1
-- 要点2
-验证结果：通过"
+python3 scripts/task_db.py todos <uuid> '[{"id":"1","title":"[子任务名]","status":"completed","detail":"产出概要: ... 验证结果: 通过"}]'
 ```
 
 ---

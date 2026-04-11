@@ -12,6 +12,14 @@
 
 This public repository has been prepared as a **sanitized release**. It keeps the dashboard, backend, frontend, agent templates, and deployment-facing documentation, while removing private environment material, local runtime traces, sensitive review artifacts, and other content that should not be exposed in a public repository.
 
+## Deepened Description (2026-04-11)
+
+To reduce onboarding ambiguity, this README now emphasizes three practical interpretation rules:
+
+1. **Read the task lifecycle first, not the feature inventory first**: intake, transition, execution visibility, and archive continuity define the real product boundary.
+2. **Validate the observability loop before expanding scope**: if you can create a task, see state/progress changes, and confirm archived outputs, the core system is already operational.
+3. **Unify contracts before customization**: keep task ID semantics, API routes, and operational scripts aligned before adding more panels or specialist roles.
+
 | Dimension | Current public-release policy |
 | --- | --- |
 | Public repository name | **multi-agent-orchestrator** |

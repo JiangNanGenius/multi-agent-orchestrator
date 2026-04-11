@@ -381,6 +381,45 @@ class TaskService:
         log.info(f"Task {task_id} state: {old_state.value} → {new_state.value} by {agent}")
         return task
 
+    async def append_flow_log(
+        self,
+        task_id: uuid.UUID,
+        from_state: str,
+        to_state: str,
+        agent: str = "system",
+        remark: str = "",
+    ) -> Task:
+        """追加结构化流转日志，不触发状态机流转。"""
+        stmt = select(Task).where(Task.task_id == task_id).with_for_update()
+        result = await self.db.execute(stmt)
+        task = result.scalar_one_or_none()
+        if task is None:
+            raise ValueError(f"Task not found: {task_id}")
+
+        event_time = datetime.now(timezone.utc).isoformat()
+        flow_entry = {
+            "from": from_state,
+            "to": to_state,
+            "agent": agent,
+            "reason": remark,
+            "remark": remark,
+            "ts": event_time,
+            "at": event_time,
+        }
+        if task.flow_log is None:
+            task.flow_log = []
+        task.flow_log = [*task.flow_log, flow_entry]
+        task.updated_at = datetime.now(timezone.utc)
+        task.meta = self._sync_workspace(
+            task,
+            event="task.flow.appended",
+            summary=remark or f"追加流转记录：{from_state} → {to_state}",
+            agent=agent,
+            payload={"from": from_state, "to": to_state, "remark": remark},
+        )
+        await self.db.commit()
+        return task
+
     # ── 派发请求 ──
 
     async def request_dispatch(

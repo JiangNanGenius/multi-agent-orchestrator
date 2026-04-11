@@ -8,6 +8,14 @@
 
 当前公开版已经提供任务看板、运行监控、任务详情、模型配置、技能配置、Agent 管理工作台、协作会话、记忆中心、模板中心、AI 搜索引擎与协同讨论等可视化入口，重点是让用户能从界面上直接看懂“任务现在到哪一步、谁在处理、结果放在哪里、之后还能不能继续接着做”。[1] [4] [5]
 
+## 描述深化（2026-04-11）
+
+为便于首次接触者快速建立统一心智模型，这里补充三条“先看什么、再做什么、如何判断是否跑通”的描述主线：
+
+1. **先看任务主线，而不是先看模块数量**：建议先理解“任务入口 → 状态推进 → 结果沉淀”这一主链路，再回看各页面功能；这样更容易识别哪些能力是核心、哪些是辅助。[1] [2] [3]
+2. **先跑可观测闭环，而不是一次性追求全功能**：只要你能在看板看到任务创建、状态变化、进展记录与结果归档，就已经完成最关键的最小可用闭环。[1] [4] [5]
+3. **先统一入口契约，再做扩展定制**：二次开发时应优先统一任务 ID、API 路由和操作脚本，再新增角色或面板，避免“功能增加但主线分裂”的维护风险。[2] [3]
+
 ## 一眼看懂界面
 
 如果你第一次打开这个仓库，最有帮助的不是先看实现细节，而是先看系统界面到底如何承载一条任务。下面这组首页预览图，分别对应任务总览、单任务追踪、角色协作与历史沉淀四个最关键的用户感知层面。[1] [4] [5]
@@ -117,8 +125,8 @@
 
 | 项目 | 说明 |
 | --- | --- |
-| [cft0808/agentorchestrator](https://github.com/cft0808/agentorchestrator) | 当前公开版整理所参考的上游之一 [6] |
 | [wanikua/danghuangshang](https://github.com/wanikua/danghuangshang) | 当前公开版整理所参考的上游之一 [7] |
+| [cft0808/edict](https://github.com/cft0808/edict) | 当前公开版整理所参考的上游之一 [6] |
 
 ## Version Log / 版本日志
 
@@ -138,5 +146,5 @@
 [3]: ./docs/current_architecture_overview.md "当前架构与处理逻辑总览"
 [4]: ./docs/screenshots/README.md "截图说明"
 [5]: ./agentorchestrator/scripts/e2e_task_workspace_validation.py "E2E 联调脚本入口"
-[6]: https://github.com/cft0808/agentorchestrator "cft0808/agentorchestrator"
+[6]: https://github.com/cft0808/edict "cft0808/edict"
 [7]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"

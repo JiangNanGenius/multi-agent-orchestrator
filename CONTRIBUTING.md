@@ -31,7 +31,7 @@ Please read the repository documentation before opening a pull request. The foll
 | --- | --- |
 | `README.md` | Project overview, architecture positioning, and public release notes |
 | `README_EN.md` | English overview for external readers |
-| `docs/task-dispatch-architecture.md` | Core orchestration architecture and task lifecycle |
+| `docs/current_architecture_overview.md` | Core orchestration architecture and task lifecycle |
 | `docs/getting-started.md` | Local setup and development orientation |
 | `SECURITY.md` | Security reporting expectations |
 
