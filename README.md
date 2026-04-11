@@ -29,6 +29,15 @@
 
 这些界面放在一起，表达的并不是“页面很多”，而是这套系统把**看全局、查细节、管协作、留历史**放进了一条连续的用户路径里。[1] [2] [4]
 
+## 延伸阅读
+
+如果你已经大致理解首页定位，接下来更适合看的不是零散提交记录，而是两份更中性的公开复盘文档：一份讲项目在持续演进中的判断与取舍，另一份专门解释这次协作架构重写背后的思路。它们都不是“已发表文章”的归档，而是面向公开仓库读者整理的补充说明。[8] [9]
+
+| 想继续了解什么 | 建议阅读 |
+| --- | --- |
+| 项目在演进过程中主要在修什么问题 | [项目感想与实践复盘](./docs/project-reflections.md) |
+| 这次多智能体协作架构为什么要这样重写 | [架构重写复盘记录](./docs/architecture-reflection-notes.md) |
+
 ## 基础流程图
 
 如果要用一张图去解释这套系统最基本的工作方式，那么它可以被概括为：**任务进入系统后先被整理，再被分派执行，过程中持续回显状态，最后完成交付并沉淀为可续接的历史。** 这也是为什么首页除了讲功能介绍，还需要把“它是怎么运转的”直接展示出来。[1] [2] [3] [5]
@@ -149,3 +158,5 @@
 [5]: ./agentorchestrator/scripts/e2e_task_workspace_validation.py "E2E 联调脚本入口"
 [6]: https://github.com/cft0808/edict "cft0808/edict"
 [7]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
+[8]: ./docs/project-reflections.md "项目感想与实践复盘"
+[9]: ./docs/architecture-reflection-notes.md "架构重写复盘记录"

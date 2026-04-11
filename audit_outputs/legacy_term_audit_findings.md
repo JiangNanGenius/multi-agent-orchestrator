@@ -2,7 +2,7 @@
 
 ## 审计范围
 
-本轮继续围绕旧“三省六部”与“官员/奏折”叙事残留展开排查，重点覆盖前端源码、静态看板、后端接口、同步脚本、启动脚本与项目文档。当前草稿仅记录已确认命中位置，供下一步集中替换与统一映射使用。
+本轮继续围绕旧历史化叙事与“官员/奏折”类命名残留展开排查，重点覆盖前端源码、静态看板、后端接口、同步脚本、启动脚本与项目文档。当前草稿仅记录已确认命中位置，供下一步集中替换与统一映射使用。
 
 ## 一、前端源码残留
 
@@ -15,7 +15,7 @@
 | `agentorchestrator/frontend/src/components/MemorialPanel.tsx` | 组件名、函数名、局部变量 | `MemorialPanel`、`MemorialDetailModal`、`exportMemorial`、局部变量 `mems` | 结果归档页主体 | 迁移到 `ArchivePanel`、`ArchiveDetailModal`、`exportArchive` |
 | `agentorchestrator/frontend/src/components/AgentOrchestratorBoard.tsx` 与相关组件 | 任务语义函数 | `isAgentOrchestrator`、`AgentOrchestratorBoard` | 任务板、若干过滤逻辑 | 如决定彻底去历史兼容，建议迁移到 `isTaskRecord`、`TaskBoard` |
 | `agentorchestrator/frontend/src/index.css` | 样式注释、类族命名 | `Officials`、`Memorials`、`mem-*`、`off-*`、`od-agentorchestrator-list` | 样式层、组件选择器 | 若不保留兼容，建议按新面板名重命名类族 |
-| `agentorchestrator/frontend/tailwind.config.js` | 历史注释 | `三省六部主题色` | 开发配置注释 | 可直接改为“多中心协作主题色”之类现代注释 |
+| `agentorchestrator/frontend/tailwind.config.js` | 历史注释 | `旧协作主题色注释` | 开发配置注释 | 可直接改为“多中心协作主题色”之类现代注释 |
 
 ## 二、静态看板与构建产物残留
 
@@ -40,7 +40,7 @@
 | `start.sh` | 初始化数据文件 | `officials.json`、`officials_stats.json` | 首次启动与空目录初始化 | 应与统计文件迁移同步调整 |
 | `agentorchestrator.sh` | 初始化数据文件 | `officials.json`、`officials_stats.json` | 服务管理脚本 | 同上 |
 | `install.ps1` | 初始化示例字段、同步脚本调用 | `official` 字段、`sync_officials_stats.py` | Windows 安装链路 | 需要与脚本更名和字段迁移同步 |
-| `requirements.txt` | 历史表述注释 | `三省六部 · Python 依赖` | 用户可见注释 | 可直接清理 |
+| `requirements.txt` | 历史表述注释 | `旧协作命名 · Python 依赖` | 用户可见注释 | 可直接清理 |
 | `agents/control_center/SOUL.md` | 命令示例字段 | `kanban_update.py ... <official>` | 角色说明文档与人工操作示例 | 应改成新责任字段名，避免把旧接口再传播出去 |
 
 ## 五、文档与说明残留

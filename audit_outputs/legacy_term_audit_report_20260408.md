@@ -2,7 +2,7 @@
 
 ## 摘要
 
-本轮继续对仓库中与旧**“三省六部”**叙事以及 **official / memorial / agentorchestrator** 这一组历史内部命名相关的残留进行了复核。结果表明，当前残留已不主要集中在对外首屏文案，而是分布在**统计数据主链路、前端全局状态、静态看板实现、脚本初始化、后端接口字段、截图资产名和安装文档**等多个层面。其中，最关键的问题并不是零散的中文旧称，而是 `officials`、`memorials`、`tasks` 这一组历史内部键名仍然横跨前后端和脚本链路持续存在，已经构成下一轮命名体系重构的主阻塞点。[1] [2] [3] [4] [5]
+本轮继续对仓库中与旧**历史化叙事**以及 **official / memorial / agentorchestrator** 这一组历史内部命名相关的残留进行了复核。结果表明，当前残留已不主要集中在对外首屏文案，而是分布在**统计数据主链路、前端全局状态、静态看板实现、脚本初始化、后端接口字段、截图资产名和安装文档**等多个层面。其中，最关键的问题并不是零散的中文旧称，而是 `officials`、`memorials`、`tasks` 这一组历史内部键名仍然横跨前后端和脚本链路持续存在，已经构成下一轮命名体系重构的主阻塞点。[1] [2] [3] [4] [5]
 
 从影响面看，**统计生产端、接口暴露端与前端消费端仍共用一套旧字段契约**。例如，统计脚本仍输出 `officials`、`top_official` 与 `participated_tasks`，前端 API 类型仍定义 `OfficialInfo` 与 `OfficialsData`，而前端状态与组件又继续围绕 `officialsData`、`selectedOfficial`、`loadOfficials`、`OfficialPanel`、`MemorialPanel` 等命名展开。[2] [3] [4] [5] 这意味着如果下一步要按“几乎完全重构、不考虑历史兼容”的要求推进，就不适合继续零散修补，而应先建立新的**单一权威映射层**，再进行一轮主链路同步替换。[3] [4] [5]
 
@@ -20,7 +20,7 @@
 | 后端字段 | `official` 字段、`/api/court-discuss/officials`、`officials list required` | 高 | 与前端字段和讨论接口一起改名 |
 | 脚本与初始化 | `sync_officials_stats.py`、`officials_stats.json`、`officials.json` | 高 | 作为主链路迁移的一部分同步重命名 |
 | 文档与截图 | `06-official-overview.png`、`08-memorials.png`、文档命令旧名 | 中 | 主链路稳定后统一更新 |
-| 中文历史注释 | `三省六部主题色`、`三省六部 · Python 依赖` 等 | 中 | 可在主链路完成后集中收口 |
+| 中文历史注释 | `旧协作主题色注释`、`旧协作命名 · Python 依赖` 等 | 中 | 可在主链路完成后集中收口 |
 
 ## 二、前端源码残留清单
 
@@ -36,7 +36,7 @@
 | `agentorchestrator/frontend/src/components/OfficialPanel.tsx` | `OfficialPanel`、`officialsData`、`selectedOfficial` | Agent 总览主面板 | `AgentOverviewPanel`、`agentsData`、`selectedAgent` |
 | `agentorchestrator/frontend/src/components/MemorialPanel.tsx` | `MemorialPanel`、`MemorialDetailModal`、`exportMemorial`、变量 `mems` | 结果归档主面板 | `ArchivePanel`、`ArchiveDetailModal`、`exportArchive`、`archives` |
 | `agentorchestrator/frontend/src/index.css` | `Officials`、`Memorials` 注释与 `off-*`、`mem-*`、`od-agentorchestrator-list` | 样式命名体系 | 按新组件名统一更换类族 |
-| `agentorchestrator/frontend/tailwind.config.js` | `三省六部主题色` 注释 | 开发配置注释 | 改为现代协作主题说明 |
+| `agentorchestrator/frontend/tailwind.config.js` | `旧协作主题色注释` | 开发配置注释 | 改为现代协作主题说明 |
 
 ## 三、静态看板与构建产物残留清单
 
@@ -76,7 +76,7 @@
 | 统计脚本 | `scripts/sync_officials_stats.py` | 文件名、`DEFAULT_OFFICIALS`、`officials`、`top_official`、`participated_tasks` | P0 |
 | 启动脚本 | `start.sh`、`agentorchestrator.sh` | `officials.json`、`officials_stats.json` 初始化 | P1 |
 | 安装脚本 | `install.ps1` | `official` 字段、`sync_officials_stats.py` 调用 | P1 |
-| 依赖说明 | `requirements.txt` | `三省六部 · Python 依赖` 注释 | P2 |
+| 依赖说明 | `requirements.txt` | `旧协作命名 · Python 依赖` 注释 | P2 |
 | 角色文档 | `agents/control_center/SOUL.md` | `kanban_update.py ... <official>` 示例 | P2 |
 | 安装文档 | `WINDOWS_INSTALL_CN.md` | `officials_stats.json`、`/api/officials-stats` | P1 |
 | 宣传文档 | `docs/wechat-article.md` | `06-official-overview.png`、`08-memorials.png`、`sync_officials_stats.py` | P2 |
