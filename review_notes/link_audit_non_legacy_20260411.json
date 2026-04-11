@@ -554,14 +554,6 @@
     {
       "file": "docs/wechat-article.md",
       "kind": "image",
-      "target": "demo.gif",
-      "type": "local",
-      "ok": true,
-      "resolved": "docs/demo.gif"
-    },
-    {
-      "file": "docs/wechat-article.md",
-      "kind": "image",
       "target": "screenshots/01-kanban-main.png",
       "type": "local",
       "ok": true,

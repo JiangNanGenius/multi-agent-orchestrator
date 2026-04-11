@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Record a demo video of the dashboard and convert to GIF."""
+"""Record a dashboard tour video and convert it to a GIF asset."""
 from playwright.sync_api import sync_playwright
 import subprocess, os, time
 
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 VIDEO_DIR = os.path.join(ROOT, 'docs', '_video_tmp')
-OUTPUT_GIF = os.path.join(ROOT, 'docs', 'demo.gif')
+OUTPUT_GIF = os.path.join(ROOT, 'docs', 'dashboard-tour.gif')
 URL = 'http://localhost:7891'
 
 def main():

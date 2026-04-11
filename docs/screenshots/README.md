@@ -27,7 +27,7 @@ python3 dashboard/server.py &
 # 自动截取全部 11 张截图
 python3 scripts/take_screenshots.py
 
-# 录制 demo GIF（需要 ffmpeg）
+# 录制演示 GIF（默认输出 `docs/dashboard-tour.gif`，需要 ffmpeg）
 python3 scripts/record_demo.py
 ```
 
