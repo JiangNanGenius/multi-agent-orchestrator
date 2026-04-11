@@ -4,7 +4,13 @@
 支持自动发现 agent workspace 下的 Skills 目录
 输出多Agent智作中枢所需的现代中文节点标签与职责元数据
 """
-import json, os, pathlib, datetime, logging
+import json, os, pathlib, datetime, logging, sys
+
+if __package__ in (None, ''):
+    scripts_dir = pathlib.Path(__file__).resolve().parent
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+
 from file_lock import atomic_json_write
 
 log = logging.getLogger('sync_agent_config')
@@ -324,7 +330,7 @@ def build_registry_spec(agent: dict) -> dict:
         },
         'deployment': {
             'projectSourcePath': existing_deployment.get('projectSourcePath') or f'agents/{agent["id"]}/SOUL.md',
-            'workspaceTargetPath': existing_deployment.get('workspaceTargetPath') or str(pathlib.Path.home() / f'.openclaw/workspace-{agent["id"]}' / 'soul.md'),
+            'workspaceTargetPath': existing_deployment.get('workspaceTargetPath') or str(pathlib.Path.home() / f'.openclaw/workspace-{agent["id"]}' / 'SOUL.md'),
             'legacyTargets': [],
             'deployOnSync': existing_deployment.get('deployOnSync', True),
             'writeSpecSidecar': existing_deployment.get('writeSpecSidecar', True),

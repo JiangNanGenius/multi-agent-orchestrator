@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-11 08:13:48",
+  "generatedAt": "2026-04-11 19:49:55",
   "requiredSections": [
     "角色定义",
     "核心职责",
@@ -12,14 +12,14 @@
   "agents": [
     {
       "agentId": "control_center",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/control_center/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/control_center/SOUL.md",
       "hasRequiredSections": true,
       "missingSections": [],
       "deployStrategy": "source"
     },
     {
       "agentId": "plan_center",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/plan_center/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/plan_center/SOUL.md",
       "hasRequiredSections": false,
       "missingSections": [
         "看板操作"
@@ -28,63 +28,63 @@
     },
     {
       "agentId": "review_center",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/review_center/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/review_center/SOUL.md",
       "hasRequiredSections": true,
       "missingSections": [],
       "deployStrategy": "source"
     },
     {
       "agentId": "dispatch_center",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/dispatch_center/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/dispatch_center/SOUL.md",
       "hasRequiredSections": true,
       "missingSections": [],
       "deployStrategy": "source"
     },
     {
       "agentId": "docs_specialist",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/docs_specialist/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/docs_specialist/SOUL.md",
       "hasRequiredSections": true,
       "missingSections": [],
       "deployStrategy": "source"
     },
     {
       "agentId": "data_specialist",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/data_specialist/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/data_specialist/SOUL.md",
       "hasRequiredSections": true,
       "missingSections": [],
       "deployStrategy": "source"
     },
     {
       "agentId": "code_specialist",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/code_specialist/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/code_specialist/SOUL.md",
       "hasRequiredSections": true,
       "missingSections": [],
       "deployStrategy": "source"
     },
     {
       "agentId": "audit_specialist",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/audit_specialist/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/audit_specialist/SOUL.md",
       "hasRequiredSections": true,
       "missingSections": [],
       "deployStrategy": "source"
     },
     {
       "agentId": "deploy_specialist",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/deploy_specialist/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/deploy_specialist/SOUL.md",
       "hasRequiredSections": true,
       "missingSections": [],
       "deployStrategy": "source"
     },
     {
       "agentId": "admin_specialist",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/admin_specialist/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/admin_specialist/SOUL.md",
       "hasRequiredSections": true,
       "missingSections": [],
       "deployStrategy": "source"
     },
     {
       "agentId": "expert_curator",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/expert_curator/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/expert_curator/SOUL.md",
       "hasRequiredSections": false,
       "missingSections": [
         "看板操作"
@@ -93,7 +93,7 @@
     },
     {
       "agentId": "search_specialist",
-      "sourcePath": "/home/ubuntu/multi-agent-orchestrator_public/agents/search_specialist/SOUL.md",
+      "sourcePath": "/workspace/multi-agent-orchestrator/agents/search_specialist/SOUL.md",
       "hasRequiredSections": false,
       "missingSections": [
         "看板操作"

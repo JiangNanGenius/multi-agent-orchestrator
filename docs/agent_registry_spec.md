@@ -144,7 +144,7 @@
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `projectSourcePath` | string | 项目内 Agent 目录路径 |
-| `workspaceTargetPath` | string | `~/.openclaw/workspace-{agentId}/soul.md` |
+| `workspaceTargetPath` | string | `~/.openclaw/workspace-{agentId}/SOUL.md` |
 | `deployOnSync` | boolean | 同步配置时是否自动部署 |
 | `writeSpecSidecar` | boolean | 是否写入 `.registry.json` 之类 sidecar |
 | `writeGeneratedSoulSnapshot` | boolean | 是否保留最近生成快照 |
@@ -254,7 +254,7 @@
   },
   "deployment": {
     "projectSourcePath": "agents/control_center/SOUL.md",
-    "workspaceTargetPath": "~/.openclaw/workspace-control_center/soul.md",
+    "workspaceTargetPath": "~/.openclaw/workspace-control_center/SOUL.md",
     "deployOnSync": true,
     "writeSpecSidecar": true,
     "writeGeneratedSoulSnapshot": true,
@@ -272,7 +272,7 @@
 | 1. 生成规范 | Agent 元数据、职责边界、运行策略 | `registry/specs/{agent_id}.json` |
 | 2. 生成 SOUL | Registry 规范 + 模板 | `registry/generated/{agent_id}.SOUL.md` |
 | 3. 发布正式 SOUL | 生成快照 | `agents/{agent_id}/SOUL.md` |
-| 4. 自动部署 | 正式 SOUL + 脚本同步 | workspace 中的 `soul.md` 与 scripts |
+| 4. 自动部署 | 正式 SOUL + 脚本同步 | workspace 中的 `SOUL.md` 与 scripts |
 
 建议在同步脚本中补充以下动作。
 
@@ -303,7 +303,7 @@
 |---|---|
 | 规范可落盘 | 每个 Agent 都有独立 registry spec 文件 |
 | SOUL 可自动生成 | 可基于 spec 生成一整份完整 `SOUL.md` |
-| SOUL 可自动部署 | 同步后 workspace 中的 `soul.md` 自动更新 |
+| SOUL 可自动部署 | 同步后 workspace 中的 `SOUL.md` 自动更新 |
 | Agent 可自动识别 | 运行态 `data/agent_config.json` 含 registry 与 runtimePolicy |
 | 总控中心实时性明确 | 总控中心默认高实时，仅系统性修复允许长时执行 |
 | 串行约束明确 | 所有 Agent 运行策略均体现单 Agent 单任务 |
