@@ -1,0 +1,15 @@
+flowchart LR
+    A[用户提交任务<br/>输入需求、目标或问题] --> B[系统整理任务<br/>梳理目标、优先级与处理路径]
+    B --> C[分派合适角色<br/>按任务类型调用不同 Agent、模型或技能]
+    C --> D[执行过程回显<br/>在看板、监控与详情中持续更新状态]
+    D --> E[结果交付<br/>输出结论、文件、建议或下一步动作]
+    E --> F[记忆与归档沉淀<br/>保留历史、模板与可复用经验]
+    F --> G[后续任务续接<br/>在原有上下文上继续推进新一轮处理]
+
+    classDef user fill:#E8F0FE,stroke:#4A73E8,color:#1F2A44,stroke-width:1.5px;
+    classDef system fill:#EEF7ED,stroke:#4A8F5D,color:#1D3324,stroke-width:1.5px;
+    classDef result fill:#FFF4E5,stroke:#E79A2F,color:#553300,stroke-width:1.5px;
+
+    class A,G user;
+    class B,C,D,F system;
+    class E result;

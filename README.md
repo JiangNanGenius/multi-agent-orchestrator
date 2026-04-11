@@ -8,6 +8,34 @@
 
 当前公开版已经提供任务看板、运行监控、任务详情、模型配置、技能配置、Agent 管理工作台、协作会话、记忆中心、模板中心、AI 搜索引擎与协同讨论等可视化入口，重点是让用户能从界面上直接看懂“任务现在到哪一步、谁在处理、结果放在哪里、之后还能不能继续接着做”。[1] [4] [5]
 
+## 一眼看懂界面
+
+如果你第一次打开这个仓库，最有帮助的不是先看实现细节，而是先看系统界面到底如何承载一条任务。下面这组首页预览图，分别对应任务总览、单任务追踪、角色协作与历史沉淀四个最关键的用户感知层面。[1] [4] [5]
+
+| 界面预览 | 用户能直接理解的内容 |
+| --- | --- |
+| ![任务看板总览](./docs/screenshots/01-kanban-main.png) | **任务看板总览**用于快速判断当前任务池的状态分布、优先级和处理节奏，帮助用户先看清全局再进入具体任务。[1] [4] |
+| ![任务详情视图](./docs/screenshots/03-task-detail.png) | **任务详情视图**用于追踪单个任务的背景、当前状态、过程摘要和结果线索，减少反复翻找上下文的成本。[1] [4] |
+| ![Agent 管理工作台](./docs/screenshots/06-official-overview.png) | **Agent 管理工作台**用于理解不同角色如何分组、协作和接力，让执行过程不再是黑盒。[1] [4] |
+| ![记忆中心](./docs/screenshots/08-memorials.png) | **记忆中心**用于沉淀历史任务、长期记忆和可复用经验，方便后续继续推进同类工作。[1] [4] [5] |
+
+这些界面放在一起，表达的并不是“页面很多”，而是这套系统把**看全局、查细节、管协作、留历史**放进了一条连续的用户路径里。[1] [2] [4]
+
+## 基础流程图
+
+如果要用一张图去解释这套系统最基本的工作方式，那么它可以被概括为：**任务进入系统后先被整理，再被分派执行，过程中持续回显状态，最后完成交付并沉淀为可续接的历史。** 这也是为什么首页除了讲功能介绍，还需要把“它是怎么运转的”直接展示出来。[1] [2] [3] [5]
+
+![首页基础流程图](./docs/diagrams/homepage-basic-flow.png)
+
+| 流程节点 | 用户视角下的含义 |
+| --- | --- |
+| 提交任务 | 你把问题、目标或需求正式送进系统，形成可追踪的任务入口。[1] [2] |
+| 整理任务 | 系统先把零散描述转成更清晰的目标、步骤与优先级，避免任务一开始就混乱。[2] [3] |
+| 分派角色 | 任务会交给更合适的角色、模型或技能组合处理，而不是由单一窗口硬撑到底。[1] [3] [4] |
+| 过程回显 | 你可以在看板、监控与详情中看到任务如何推进，而不是只能等待最终结果。[1] [4] |
+| 结果交付 | 系统输出结果、建议、文件或下一步动作，方便立即使用或继续衔接。[2] [5] |
+| 记忆沉淀 | 任务结束后，历史、模板和经验会被保留下来，为下一轮处理提供基础。[1] [4] [5] |
+
 ## 这套系统适合解决什么问题
 
 很多团队在使用 Agent 时真正遇到的问题，并不是“模型不够多”，而是任务一旦变复杂，就容易出现入口分散、过程不可见、责任不清、结果难追、历史难续的问题。这个项目的意义，在于把这些问题收束到同一条任务主线里，让协作更像一个稳定运转的工作系统，而不是临时性的聊天实验。[1] [2] [3]
@@ -96,6 +124,7 @@
 
 | Date / 日期 | Change / 变更 |
 | --- | --- |
+| 2026-04-11 | Added a homepage interface showcase and a simplified task flow diagram so first-time visitors can understand the product from screens and flow before reading implementation details / 为首页补充界面展示区与简化任务流程图，让初次访问者先从界面和流程理解产品，再进入实现细节 [1] [2] [3] [4] [5] |
 | 2026-04-11 | Rewrote the homepage README into a more user-oriented entry, reduced implementation-heavy wording, and clarified product positioning, feature value, and the basic task flow logic / 将首页 README 改写为更用户导向的版本，弱化实现细节，强化产品定位、功能价值与任务基础逻辑说明 [1] [2] [3] [4] [5] |
 | 2026-04-09 | Rewrote the homepage README into a bilingual Chinese-English entry, updated project positioning, added user and technical documentation links, and integrated new governance flow diagrams / 将首页 README 重写为中英文双语入口，更新项目定位，加入用户文档与技术文档入口，并整合新的治理流程图 [1] [2] [3] [4] |
 | 2026-04-09 | Documented task workspace, file ledger, cold/hot tiering, archive reactivation, `/new` rule, watchdog, Feishu reporting, and frontend governance entries / 同步纳入任务工作区、文件化账本、冷热分层、归档回迁、`/new` 规则、看门狗、飞书汇报与前端治理入口 [2] [3] [5] |
