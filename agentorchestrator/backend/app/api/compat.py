@@ -1,10 +1,15 @@
 """Compatibility API endpoints for dashboard-era frontend contracts."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import get_db
+from ..models.task import Task, TaskState
 from ..services.task_service import TaskService
 from ..services.event_bus import get_event_bus
 
@@ -39,3 +44,146 @@ async def live_status_compat(svc: TaskService = Depends(get_task_service)):
         },
         "last_updated": status.get("last_updated"),
     }
+
+
+@router.get("/api/auth/status")
+async def auth_status_compat():
+    """Backend-only mode auth compatibility (no dashboard session required)."""
+    return {
+        "authenticated": True,
+        "mustChangePassword": False,
+        "currentUser": "backend",
+        "username": "backend",
+        "ok": True,
+    }
+
+
+@router.get("/api/agent-config")
+async def agent_config_compat():
+    """Provide a minimal legacy payload so frontend can boot in backend-only mode."""
+    return {
+        "agents": [],
+        "knownModels": [],
+        "dispatchChannel": "openclaw",
+        "ok": True,
+    }
+
+
+class CompatCreateTask(BaseModel):
+    title: str
+    org: str | None = None
+    owner: str | None = None
+    targetDept: str | None = None
+    targetDepts: list[str] | None = None
+    priority: str | None = "中"
+    templateId: str | None = None
+    params: dict | None = None
+
+
+class CompatTaskAction(BaseModel):
+    taskId: str
+    action: str
+    reason: str = ""
+
+
+class CompatReviewAction(BaseModel):
+    taskId: str
+    action: str
+    comment: str = ""
+
+
+class CompatAdvanceAction(BaseModel):
+    taskId: str
+    comment: str = ""
+
+
+async def _resolve_task_id(raw_task_id: str, db: AsyncSession) -> uuid.UUID:
+    try:
+        return uuid.UUID(raw_task_id)
+    except ValueError:
+        pass
+
+    stmt = select(Task).where(Task.tags.contains([raw_task_id]))
+    task = (await db.execute(stmt)).scalars().first()
+    if not task:
+        stmt2 = select(Task).where(Task.meta["legacy_id"].astext == raw_task_id)
+        task = (await db.execute(stmt2)).scalars().first()
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task not found: {raw_task_id}")
+    return task.task_id
+
+
+@router.post("/api/create-task")
+async def create_task_compat(
+    body: CompatCreateTask,
+    svc: TaskService = Depends(get_task_service),
+):
+    task = await svc.create_task(
+        title=body.title,
+        description=str((body.params or {}).get("request") or ""),
+        priority=body.priority or "中",
+        assignee_org=(body.targetDept or (body.targetDepts or [None])[0]),
+        creator=body.owner or "compat",
+        tags=[],
+        meta={"legacy_payload": body.model_dump()},
+    )
+    return {"ok": True, "taskId": str(task.task_id), "message": "ok"}
+
+
+@router.post("/api/task-action")
+async def task_action_compat(
+    body: CompatTaskAction,
+    db: AsyncSession = Depends(get_db),
+    svc: TaskService = Depends(get_task_service),
+):
+    task_id = await _resolve_task_id(body.taskId, db)
+    action = body.action.strip().lower()
+    mapping = {
+        "stop": TaskState.Blocked,
+        "cancel": TaskState.Cancelled,
+        "resume": TaskState.ControlCenter,
+    }
+    target_state = mapping.get(action)
+    if not target_state:
+        return {"ok": False, "error": f"Unsupported action: {body.action}"}
+    await svc.transition_state(task_id, target_state, "compat", body.reason)
+    return {"ok": True, "message": "ok"}
+
+
+@router.post("/api/review-action")
+async def review_action_compat(
+    body: CompatReviewAction,
+    db: AsyncSession = Depends(get_db),
+    svc: TaskService = Depends(get_task_service),
+):
+    task_id = await _resolve_task_id(body.taskId, db)
+    action = body.action.strip().lower()
+    target_state = TaskState.Done if action == "approve" else TaskState.ReviewCenter
+    await svc.transition_state(task_id, target_state, "compat-review", body.comment)
+    return {"ok": True, "message": "ok"}
+
+
+@router.post("/api/advance-state")
+async def advance_state_compat(
+    body: CompatAdvanceAction,
+    db: AsyncSession = Depends(get_db),
+    svc: TaskService = Depends(get_task_service),
+):
+    task_id = await _resolve_task_id(body.taskId, db)
+    task = await svc.get_task(task_id)
+    next_map = {
+        TaskState.ControlCenter: TaskState.PlanCenter,
+        TaskState.PlanCenter: TaskState.ReviewCenter,
+        TaskState.ReviewCenter: TaskState.Assigned,
+        TaskState.Assigned: TaskState.Doing,
+        TaskState.Next: TaskState.Doing,
+        TaskState.Doing: TaskState.Review,
+        TaskState.Review: TaskState.Done,
+        TaskState.Pending: TaskState.ControlCenter,
+    }
+    current_state = task.state if isinstance(task.state, TaskState) else TaskState(str(task.state))
+    target_state = next_map.get(current_state)
+    if not target_state:
+        return {"ok": False, "error": f"No forward transition for state: {current_state.value}"}
+    await svc.transition_state(task_id, target_state, "compat-advance", body.comment)
+    return {"ok": True, "message": "ok", "state": target_state.value}
