@@ -88,11 +88,11 @@
 | 项目 | 结果 |
 | :--- | :--- |
 | 运行链路核查 | 已确认运行时按 `GLOBAL.md -> groups/*.md -> agents/<agent_id>/SOUL.md` 的顺序拼装提示词 |
-| 部署路径核查 | 已确认实际工作区使用 `~/.openclaw/workspace-*/soul.md`，并统一收敛到现代 `workspace-<agent_id>` 与 `agents/<agent_id>/SOUL.md` 链路 |
+| 部署路径核查 | 已确认实际工作区使用 `~/.openclaw/workspace-*/SOUL.md`，并统一收敛到现代 `workspace-<agent_id>` 与 `agents/<agent_id>/SOUL.md` 链路 |
 | 结构缺口发现 | 已发现多数历史手写 SOUL 文件未覆盖“角色定义”“任务处理流程”“异常与阻塞处理”等标准章节 |
 | 同步脚本修复 | 已为 `scripts/sync_agent_config.py` 增加章节检测、标准骨架补齐、原始细则保留和校验报告输出 |
 | 生成模板修复 | 已修复自动生成 SOUL 快照中未展开占位符的问题 |
-| 部署验证 | 已重新执行同步并验证 11 个实际运行 Agent 的 `~/.openclaw/workspace-*/soul.md` 全部包含标准章节，结果为 `OVERALL_OK=True` |
+| 部署验证 | 已重新执行同步并验证 11 个实际运行 Agent 的 `~/.openclaw/workspace-*/SOUL.md` 全部包含标准章节，结果为 `OVERALL_OK=True` |
 
 当前结论是：**SOUL 现在已经具备标准化部署兜底能力**。即使仓库中的部分历史 SOUL 文档结构不完整，实际部署到运行工作区的版本也会被自动补齐为完整可用的提示词文档，同时保留原始角色专用细则，不会因为本轮收尾而丢失业务提示词细节。
 
