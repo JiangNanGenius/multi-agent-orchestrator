@@ -86,9 +86,9 @@ def detect_official(agent_id):
         'data_specialist': ('数据专家', '数据专家'),
         'docs_specialist': ('文案专家', '文案专家'),
         'code_specialist': ('代码专家', '代码专家'),
-        'audit_specialist': ('合规专家', '合规专家'),
+        'audit_specialist': ('审计专家', '审计专家'),
         'deploy_specialist': ('部署专家', '部署专家'),
-        'admin_specialist': ('Agent管理专家', 'Agent管理专家'),
+        'admin_specialist': ('管理专家', '管理专家'),
         'search_specialist': ('搜索专家', '搜索专家'),
     }
     return mapping.get(agent_id, ('调度协调', '调度中心'))

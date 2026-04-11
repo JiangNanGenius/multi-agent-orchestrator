@@ -82,7 +82,7 @@
 | 文件 | 已做内容 |
 | --- | --- |
 | `docs/remote-skills-guide.md` | 将“三省六部”及旧角色称谓改为职责化表述 |
-| `docs/remote-skills-quickstart.md` | 将启动输出与角色示例改为 Edict / 职责化表述 |
+| `docs/remote-skills-quickstart.md` | 将启动输出与角色示例改为 AgentOrchestrator / 职责化表述 |
 | `docs/getting-started.md` | 删除 Docker 镜像相关表述 |
 | `docs/wechat.md` | 将公众号文案中的朝堂式叙事改为工程化/职责化表述 |
 | `agents/groups/liubu.md` | 将“六部 / 尚书省”式说明改为“专业执行组 / 调度中心” |
@@ -153,10 +153,10 @@
 | `examples/competitive-analysis.md` | 仍大量使用旧角色体系和三省六部名称 |
 | `examples/weekly-report.md` | 预计仍有旧体系表述，尚未重新处理 |
 | `tests/` 下相关样例 | 仍可能直接使用旧 ID / 旧组织名 |
-| `scripts/` 与 `edict/scripts/` | 仍存在旧组织名、旧状态说明、旧 agent 映射 |
+| `scripts/` 与 `agentorchestrator/scripts/` | 仍存在旧组织名、旧状态说明、旧 agent 映射 |
 | `migration/versions/001_initial.py` | 仍有默认组织名“太子”等旧值 |
 | `dashboard/`、`frontend/`、前端模板数据 | 从扫描结果看仍有旧称谓/旧部门数组/旧流程文案 |
-| `edict_agent_architecture.md` | 仍明确提到“三省六部逻辑” |
+| `task_agent_architecture.md` | 仍明确提到“三省六部逻辑” |
 | 其余 agents 目录 | 只改了部分 SOUL，尚未完成整目录与 agent ID 级别重命名 |
 
 ---

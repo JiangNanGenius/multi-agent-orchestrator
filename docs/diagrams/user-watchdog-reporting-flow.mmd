@@ -1,0 +1,31 @@
+flowchart LR
+    RUN[任务运行中]
+    WD[看门狗巡检]
+    CHECK[状态与文件健康检查]
+    ISSUE{是否发现异常}
+    FIX[补写缺失文件\n修复账本\n标记 /new 建议]
+    REPORT[写入进度与汇报事件]
+    FEISHU[飞书汇报发送或模拟发送]
+    LEDGER[回写 ledger/reports.jsonl\n与任务元数据]
+    GOVERN[调度/评审/执行继续推进]
+
+    RUN --> WD --> CHECK --> ISSUE
+    ISSUE -- 是 --> FIX --> REPORT
+    ISSUE -- 否 --> REPORT
+    REPORT --> FEISHU --> LEDGER --> GOVERN --> RUN
+
+    subgraph CLOSELOOP[治理闭环]
+        WD
+        CHECK
+        FIX
+        REPORT
+        FEISHU
+        LEDGER
+    end
+
+    classDef core fill:#132238,stroke:#5b8cff,color:#ffffff;
+    classDef warn fill:#2a1a0a,stroke:#f59e0b,color:#ffffff;
+    classDef good fill:#10261b,stroke:#22c55e,color:#ffffff;
+    class RUN,WD,CHECK,REPORT,FEISHU,LEDGER,GOVERN core;
+    class ISSUE,FIX warn;
+    class CLOSELOOP good;

@@ -111,19 +111,19 @@
 - [ ] 手动更新 `agents/plan_center/SOUL.md`
 - [ ] 手动更新 `agents/dispatch_center/SOUL.md`
 - [ ] 手动更新 `agents/code_specialist/SOUL.md`
-- [ ] 扩展 `edict/backend/app/services/task_workspace.py` 的通知与风险确认元数据
-- [ ] 扩展 `edict/backend/app/services/task_service.py` 的通知与风险确认写回逻辑
-- [ ] 检查并同步 `edict/backend/app/models/task.py` 的序列化字段
-- [ ] 检查并同步 `edict/frontend/src/api.ts` 的类型定义
+- [ ] 扩展 `agentorchestrator/backend/app/services/task_workspace.py` 的通知与风险确认元数据
+- [ ] 扩展 `agentorchestrator/backend/app/services/task_service.py` 的通知与风险确认写回逻辑
+- [ ] 检查并同步 `agentorchestrator/backend/app/models/task.py` 的序列化字段
+- [ ] 检查并同步 `agentorchestrator/frontend/src/api.ts` 的类型定义
 - [ ] 更新看板前端组件，补齐通知展示与风险提醒入口
 - [ ] 更新 `scripts/kanban_update.py`，加入通知写回与风险确认记录入口
-- [ ] 更新 `edict/scripts/task_watchdog.py`，加入 `/new` 监督与通知生成逻辑
+- [ ] 更新 `agentorchestrator/scripts/task_watchdog.py`，加入 `/new` 监督与通知生成逻辑
 
 ## F. 当前统一结论
 
 后续执行顺序固定为：**先收尾设置中心，再补齐主持人版会议控制台与 Agent 管理，再处理技能库、中英文切换与整体 UI / 文案，最后决定是否把搜索页与任务入口遗留项一并收口，并完成统一验证、备份、部署与推送。**
 
-## G. 2026-04-10 补充收口记录（Edict 前端可视化与交互梳理）
+## G. 2026-04-10 补充收口记录（AgentOrchestrator 前端可视化与交互梳理）
 
 本轮补充收口的重点不再是“功能是否存在”，而是进一步确认**页面元素是否都能显性展示、交互链路是否便于理解、以及后续重构时哪些位置最值得优先重做**。围绕这一目标，前端已完成以下补记事项：
 

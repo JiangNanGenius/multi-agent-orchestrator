@@ -233,8 +233,8 @@ def extract_token(headers) -> str | None:
     cookie = headers.get('Cookie', '')
     for part in cookie.split(';'):
         part = part.strip()
-        if part.startswith('edict_token='):
-            return part[len('edict_token='):]
+        if part.startswith('agentorchestrator_token='):
+            return part[len('agentorchestrator_token='):]
     return None
 
 

@@ -8,8 +8,8 @@
   python3 scripts/refresh_watcher.py
 
 部署方式:
-  - systemd: 参见 edict.service
-  - docker-compose: 参见 edict/docker-compose.yml
+  - systemd: 参见 agentorchestrator.service
+  - docker-compose: 参见 agentorchestrator/docker-compose.yml
   - 手动前台: python3 scripts/refresh_watcher.py
 """
 import logging
@@ -20,7 +20,7 @@ import subprocess
 import sys
 import time
 
-_BASE = pathlib.Path(os.environ.get('EDICT_HOME', '')).resolve() if os.environ.get('EDICT_HOME') else pathlib.Path(__file__).resolve().parent.parent
+_BASE = pathlib.Path(os.environ.get('AGENTORCHESTRATOR_HOME', '')).resolve() if os.environ.get('AGENTORCHESTRATOR_HOME') else pathlib.Path(__file__).resolve().parent.parent
 SIGNAL_FILE = _BASE / 'data' / '.refresh_pending'
 PID_FILE = _BASE / 'data' / '.refresh_watcher_pid'
 REFRESH_SCRIPT = _BASE / 'scripts' / 'refresh_live_data.py'

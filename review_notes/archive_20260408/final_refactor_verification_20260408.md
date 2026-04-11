@@ -29,7 +29,7 @@
 
 ### 2. 安装、前端与看板
 
-已经清理 `install.sh`、`install.ps1` 中对旧 `main` 认证目录和旧主入口路径的假设，改为现代 `control_center`/现代工作区命名。看板前端 `dashboard/dashboard.html` 以及 `edict/frontend/src/components` 下与监控、会话、讨论、状态过滤相关的组件，也已移除对 `main` 主会话和旧命名的特殊兼容渲染。
+已经清理 `install.sh`、`install.ps1` 中对旧 `main` 认证目录和旧主入口路径的假设，改为现代 `control_center`/现代工作区命名。看板前端 `dashboard/dashboard.html` 以及 `agentorchestrator/frontend/src/components` 下与监控、会话、讨论、状态过滤相关的组件，也已移除对 `main` 主会话和旧命名的特殊兼容渲染。
 
 ### 3. 文档与 SOUL 基线
 
@@ -47,7 +47,7 @@
 
 ## 上下文管理复核结论
 
-本轮按用户要求，对**上下文窗口管理**做了实现级复核。结论是：当前核心逻辑集中在 `edict/backend/app/workers/dispatch_worker.py` 与 `edict/backend/app/models/task.py`，并且已处于现代命名体系之下。
+本轮按用户要求，对**上下文窗口管理**做了实现级复核。结论是：当前核心逻辑集中在 `agentorchestrator/backend/app/workers/dispatch_worker.py` 与 `agentorchestrator/backend/app/models/task.py`，并且已处于现代命名体系之下。
 
 | 检查点 | 结论 |
 | :--- | :--- |
@@ -59,11 +59,11 @@
 
 ## 成果审核与状态流转复核结论
 
-本轮也对**成果审核链路**进行了代码级检查。结论是：当前 canonical 状态机以 `edict/backend/app/models/task.py` 为准，`scripts/kanban_update.py` 已与其保持一致，且存在 `PendingConfirm` 等高风险操作中间态，不需要借助旧命名兼容来维持流转。
+本轮也对**成果审核链路**进行了代码级检查。结论是：当前 canonical 状态机以 `agentorchestrator/backend/app/models/task.py` 为准，`scripts/kanban_update.py` 已与其保持一致，且存在 `PendingConfirm` 等高风险操作中间态，不需要借助旧命名兼容来维持流转。
 
 | 检查点 | 结论 |
 | :--- | :--- |
-| 状态机来源 | `edict/backend/app/models/task.py` |
+| 状态机来源 | `agentorchestrator/backend/app/models/task.py` |
 | 脚本侧一致性 | `scripts/kanban_update.py` 与 canonical 状态机保持一致 |
 | 高风险确认 | `PendingConfirm` 仍在，且确认权限中心使用现代命名映射 |
 | 旧兼容入口 | 未发现为 `main` 或旧朝廷式角色保留的额外审核分支 |
@@ -87,7 +87,7 @@ python3 scripts/sync_officials_stats.py
 
 ### 2. 全仓残留扫描
 
-针对 `docs`、`agents`、`dashboard`、`edict/backend`、`edict/frontend/src`、`scripts`、`tests`、`data`、`registry/specs`、`registry/generated` 做了多轮定向扫描。在最终收口后，已未命中旧 `agent_id`、旧 `main` 主入口路径或旧 SOUL/Registry 主产物引用。最后一轮扫描仅出现命令行参数中指向不存在脚本的 `grep` 警告，这不是仓库残留内容。
+针对 `docs`、`agents`、`dashboard`、`agentorchestrator/backend`、`agentorchestrator/frontend/src`、`scripts`、`tests`、`data`、`registry/specs`、`registry/generated` 做了多轮定向扫描。在最终收口后，已未命中旧 `agent_id`、旧 `main` 主入口路径或旧 SOUL/Registry 主产物引用。最后一轮扫描仅出现命令行参数中指向不存在脚本的 `grep` 警告，这不是仓库残留内容。
 
 ### 3. 回归测试
 

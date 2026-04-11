@@ -262,7 +262,7 @@ cd multi-agent-orchestrator
 bash install.sh
 
 # 若 AI 判断为增量更新，则优先执行：
-cd edict/frontend && npm install && npm run build && cd ../..
+cd agentorchestrator/frontend && npm install && npm run build && cd ../..
 python3 scripts/sync_agent_config.py
 python3 scripts/sync_agents_overview.py
 python3 scripts/refresh_live_data.py

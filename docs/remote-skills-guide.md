@@ -7,7 +7,7 @@
 - **GitHub 仓库** (raw.githubusercontent.com)
 - **任何 HTTPS URL** (需返回有效的 skill 文件)
 - **本地文件路径**
-- **内置仓库** (官方 skills 库)
+- **ClawHub 官方注册表**（OpenClaw 官方 skills / plugins 分发入口）
 
 ---
 
@@ -159,27 +159,31 @@ python3 scripts/skill_manager.py remove-remote \
 
 ## 官方 Skills 库
 
-### OpenClaw Skills Hub
+### ClawHub（OpenClaw 官方注册表）
 
-> **官方 skills 库地址**: https://github.com/openclaw-ai/skills-hub
+> **官方站点**: https://clawhub.ai  
+> **官方文档**: https://docs.openclaw.ai/tools/clawhub
 
-可用 skills 列表：
+ClawHub 是 OpenClaw 当前公开的 **skills / plugins 注册表**。与旧版文档中的 GitHub 仓库式地址不同，当前更推荐直接通过 **ClawHub** 或原生命令完成搜索、安装、更新与同步，而不是依赖已经失效的 `openclaw-ai/skills-hub` 静态仓库链接。
 
-| Skill 名称 | 描述 | 适用 Agent | 源 URL |
-|-----------|------|----------|--------|
-| `code_review` | 代码审查（支持 Python/JS/Go） | 代码专家 / 审计专家 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/code_review/SKILL.md |
-| `api_design` | API 设计审查 | 代码专家 / 部署专家 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/api_design/SKILL.md |
-| `security_audit` | 安全审计 | 审计专家 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/security_audit/SKILL.md |
-| `data_analysis` | 数据分析 | 数据专家 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/data_analysis/SKILL.md |
-| `doc_generation` | 文档生成 | 文档专家 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/doc_generation/SKILL.md |
-| `test_framework` | 测试框架设计 | 部署专家 / 审计专家 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/test_framework/SKILL.md |
+可参考的官方能力包括：
 
-**一键导入官方 skills**
+| 能力 | 推荐入口 | 说明 |
+|-----------|------|--------|
+| 搜索 skills | `openclaw skills search "关键词"` | 先在官方注册表中检索可用 skill |
+| 安装 skills | `openclaw skills install <skill-slug>` | 直接从 ClawHub 安装指定 skill |
+| 更新已安装 skills | `openclaw skills update --all` | 同步本地已安装 skill 的最新版本 |
+| 安装 plugins | `openclaw plugins install clawhub:<package>` | 通过官方注册表安装插件 |
+
+**示例：从官方注册表导入或同步 skills**
 
 ```bash
-python3 scripts/skill_manager.py import-official-hub \
-  --agents plan_center,review_center,dispatch_center,code_specialist,audit_specialist,docs_specialist
+openclaw skills search "code review"
+openclaw skills install <skill-slug>
+openclaw skills update --all
 ```
+
+如果你的环境仍需要使用本项目的辅助脚本，请优先参考上面的官方入口，再结合本仓库的远程 skill 管理能力进行接入，而不要继续使用失效的旧 GitHub Hub 地址。
 
 ---
 
@@ -397,7 +401,7 @@ A: 不支持（安全考虑）。可以：
 
 **Q: 如何创建自己的 skills 库？**
 
-A: 参考 [OpenClaw Skills Hub](https://github.com/openclaw-ai/skills-hub) 的结构创建自己的仓库，然后：
+A: 可参考本项目文档中的目录约定，或先在 [ClawHub](https://clawhub.ai) 浏览现有 skill 的组织方式，再按相同结构创建自己的仓库，然后：
 
 ```bash
 git clone https://github.com/yourname/my-skills-hub.git
@@ -442,7 +446,7 @@ python3 scripts/skill_manager.py check-updates --interval weekly
 
 ### 5. 贡献社区
 
-成熟的 skills 可向 [OpenClaw Skills Hub](https://github.com/openclaw-ai/skills-hub) 贡献。
+成熟的 skills 可优先发布到你自己的仓库，或根据官方当前生态入口提交到 [ClawHub](https://clawhub.ai) / OpenClaw 社区渠道。
 
 ---
 

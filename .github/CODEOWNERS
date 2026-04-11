@@ -1,4 +1,4 @@
-# Edict — 代码所有权定义
+# AgentOrchestrator — 代码所有权定义
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 #
 # 当 PR 涉及以下路径时，GitHub 会自动请求对应 owner 做 review。
@@ -13,7 +13,7 @@
 /dashboard/server.py    @cft0808
 /dashboard/court_discuss.py @cft0808
 /agents/                @cft0808
-/edict/backend/         @cft0808
+/agentorchestrator/backend/         @cft0808
 
 # ── 数据与配置 ────────────────────────────────────────
 /data/                  @cft0808

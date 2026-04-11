@@ -3,9 +3,9 @@
 看板任务更新工具 - 供多角色协作节点调用
 
 本工具操作 data/tasks_source.json（JSON 看板模式）。
-如果您已部署 edict/backend（Postgres + Redis 事件总线模式），
-请使用 edict/backend API 端点代替本脚本，或运行迁移脚本：
-  python3 edict/migration/migrate_json_to_pg.py
+如果您已部署 agentorchestrator/backend（Postgres + Redis 事件总线模式），
+请使用 agentorchestrator/backend API 端点代替本脚本，或运行迁移脚本：
+  python3 agentorchestrator/migration/migrate_json_to_pg.py
 
 两种模式互相独立，数据不会自动同步。
 
@@ -32,7 +32,7 @@
 import datetime
 import json, pathlib, sys, subprocess, logging, os, re
 
-_BASE = pathlib.Path(os.environ['EDICT_HOME']) if 'EDICT_HOME' in os.environ else pathlib.Path(__file__).resolve().parent.parent
+_BASE = pathlib.Path(os.environ['AGENTORCHESTRATOR_HOME']) if 'AGENTORCHESTRATOR_HOME' in os.environ else pathlib.Path(__file__).resolve().parent.parent
 TASKS_FILE = _BASE / 'data' / 'tasks_source.json'
 REFRESH_SCRIPT = _BASE / 'scripts' / 'refresh_live_data.py'
 
@@ -46,8 +46,8 @@ from utils import now_iso  # noqa: E402
 
 # ── 从 task.py 动态加载权威状态转换表（Single Source of Truth）──
 def _load_canonical_transitions() -> dict:
-    """从 edict/backend 源码解析状态转换表，无需 import（避免 SQLAlchemy 依赖）。"""
-    task_py = _BASE / "edict" / "backend" / "app" / "models" / "task.py"
+    """从 agentorchestrator/backend 源码解析状态转换表，无需 import（避免 SQLAlchemy 依赖）。"""
+    task_py = _BASE / "agentorchestrator" / "backend" / "app" / "models" / "task.py"
     source = task_py.read_text(encoding="utf-8")
 
     m = re.search(r"STATE_TRANSITIONS\s*=\s*\{", source)
@@ -90,15 +90,16 @@ _STATE_AGENT_MAP = {
 
 _ORG_AGENT_MAP = {
     '文案专家': 'docs_specialist', '数据专家': 'data_specialist', '代码专家': 'code_specialist',
-    '合规专家': 'audit_specialist', '部署专家': 'deploy_specialist', 'Agent管理专家': 'admin_specialist',
+    '审计专家': 'audit_specialist', '合规专家': 'audit_specialist',
+    '部署专家': 'deploy_specialist', '管理专家': 'admin_specialist', 'Agent管理专家': 'admin_specialist', '技能管理员': 'admin_specialist',
     '规划中心': 'plan_center', '评审中心': 'review_center', '调度中心': 'dispatch_center',
 }
 
 _AGENT_LABELS = {
     'control_center': '总控中心',
     'plan_center': '规划中心', 'review_center': '评审中心', 'dispatch_center': '调度中心',
-    'docs_specialist': '文案专家', 'data_specialist': '数据专家', 'code_specialist': '代码专家', 'audit_specialist': '合规专家',
-    'deploy_specialist': '部署专家', 'admin_specialist': 'Agent管理专家', 'search_specialist': '搜索专家',
+    'docs_specialist': '文案专家', 'data_specialist': '数据专家', 'code_specialist': '代码专家', 'audit_specialist': '审计专家',
+    'deploy_specialist': '部署专家', 'admin_specialist': '管理专家', 'search_specialist': '搜索专家',
 }
 
 MAX_PROGRESS_LOG = 100  # 单任务最大进展日志条数
@@ -314,12 +315,12 @@ def cmd_create(task_id, title, state, org, owner, remark=None):
 
 
 # ── 状态流转合法性校验 ──
-# 从 task.py 动态加载（如果 edict 目录存在），否则使用内置 fallback
-_edict_task_path = _BASE / "edict" / "backend" / "app" / "models" / "task.py"
-if _edict_task_path.exists():
+# 从 task.py 动态加载（如果 agentorchestrator 目录存在），否则使用内置 fallback
+_agentorchestrator_task_path = _BASE / "agentorchestrator" / "backend" / "app" / "models" / "task.py"
+if _agentorchestrator_task_path.exists():
     _VALID_TRANSITIONS = _load_canonical_transitions()
 else:
-    # Fallback：当 edict 目录不存在时使用内置定义（必须与 task.py 保持一致）
+    # Fallback：当 agentorchestrator 目录不存在时使用内置定义（必须与 task.py 保持一致）
     _VALID_TRANSITIONS = {
         'Pending':        {'ControlCenter', 'Cancelled'},
         'ControlCenter':  {'PlanCenter', 'Cancelled'},

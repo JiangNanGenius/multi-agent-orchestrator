@@ -1,0 +1,4 @@
+agents/audit_specialist/SOUL.md:120:- Agent管理专家（admin_specialist）负责人事、培训与 Agent 管理
+agents/data_specialist/SOUL.md:120:- Agent管理专家（admin_specialist）负责人事、培训与 Agent 管理
+agents/deploy_specialist/SOUL.md:120:- Agent管理专家（admin_specialist）负责人事、培训与 Agent 管理
+agents/docs_specialist/SOUL.md:120:- Agent管理专家（admin_specialist）负责人事、培训与 Agent 管理

@@ -169,16 +169,16 @@ multi-agent-orchestrator/
 ├── agents/
 ├── dashboard/
 ├── docs/
-└── edict/
+└── agentorchestrator/
 ```
 
-The source tree keeps several historical directory names for engineering continuity, including `edict/backend/` and `edict/frontend/`. These are **internal repository paths only**, not the public-facing project name.
+The source tree keeps several historical directory names for engineering continuity, including `agentorchestrator/backend/` and `agentorchestrator/frontend/`. These are **internal repository paths only**, not the public-facing project name.
 
 | Path | Purpose | Current expectation |
 | --- | --- | --- |
 | `dashboard/` | Public dashboard entry, archive view, and runtime surfaces | Chinese default, English support available |
-| `edict/backend/` | Backend services, task models, orchestration logic | Deployment-oriented backend code |
-| `edict/frontend/` | Frontend source and build project | Source of the dashboard UI and static build |
+| `agentorchestrator/backend/` | Backend services, task models, orchestration logic | Deployment-oriented backend code |
+| `agentorchestrator/frontend/` | Frontend source and build project | Source of the dashboard UI and static build |
 | `agents/` | Agent templates and role instructions | Chinese-first semantic layer |
 | `docs/` | Supplementary deployment and architecture documents | Public-facing support materials |
 
@@ -201,7 +201,7 @@ Before continuing, it is worth confirming that the public release includes all e
 
 ```bash
 ls dashboard
-ls edict
+ls agentorchestrator
 ls agents
 ls docs
 ```
@@ -209,8 +209,8 @@ ls docs
 | Directory | Purpose | What to verify during deployment |
 | --- | --- | --- |
 | `dashboard/` | Main public-facing entry after deployment | Whether it serves the latest built frontend assets |
-| `edict/backend/` | Backend services and task APIs | Whether task, scheduler, and agent data can be loaded correctly |
-| `edict/frontend/` | React frontend source | Whether the UI can be built successfully |
+| `agentorchestrator/backend/` | Backend services and task APIs | Whether task, scheduler, and agent data can be loaded correctly |
+| `agentorchestrator/frontend/` | React frontend source | Whether the UI can be built successfully |
 | `agents/` | SOUL files, GLOBAL content, and group rules | Whether they can be synchronized into the OpenClaw workspaces |
 | `docs/` | Supplemental notes and progress records | Whether any public-facing documentation still needs cleanup |
 
@@ -238,7 +238,7 @@ When the AI explicitly recommends a one-shot initialization, `install.sh` or `in
 | Initialize data | Prepares the baseline files required by the dashboard and runtime views |
 | Create shared links | Connects shared resources such as `data/` and `scripts/` into workspaces |
 | Synchronize credentials | Copies already configured model credentials to other agents |
-| Build the frontend | Installs frontend dependencies and builds the UI inside `edict/frontend/` |
+| Build the frontend | Installs frontend dependencies and builds the UI inside `agentorchestrator/frontend/` |
 | Run initial synchronization | Generates agent configuration, statistics, and dashboard data |
 | Restart the gateway | Reloads the runtime so the new configuration can take effect |
 
@@ -249,7 +249,7 @@ If your OpenClaw workspaces and agents already exist, and you only want to updat
 #### 4.1 Build the frontend
 
 ```bash
-cd edict/frontend
+cd agentorchestrator/frontend
 npm install
 npm run build
 cd ../..
@@ -316,10 +316,10 @@ If you plan to evolve this repository further, it is usually safer to proceed in
 
 | Goal | Recommended starting point | Minimum safe first move |
 | --- | --- | --- |
-| Replace visible branding or UI wording | `edict/frontend/`, `dashboard/` | Keep APIs and state transitions unchanged first; only update visible text and static assets |
+| Replace visible branding or UI wording | `agentorchestrator/frontend/`, `dashboard/` | Keep APIs and state transitions unchanged first; only update visible text and static assets |
 | Expand role sets or industry terminology | `agents/`, `scripts/sync_agent_config.py` | Add mappings and prompt material first, then synchronize; avoid replacing all historical templates at once |
-| Add new automation rules or external notification channels | `edict/backend/`, automation panels | Introduce data structures and fallback paths before exposing the feature in the UI |
-| Build stronger English business support | `edict/frontend/src/i18n.ts` and dashboard panels | Finish a switchable bilingual layer first, then decide whether separate English SOUL support is necessary |
+| Add new automation rules or external notification channels | `agentorchestrator/backend/`, automation panels | Introduce data structures and fallback paths before exposing the feature in the UI |
+| Build stronger English business support | `agentorchestrator/frontend/src/i18n.ts` and dashboard panels | Finish a switchable bilingual layer first, then decide whether separate English SOUL support is necessary |
 | Turn recurring work into reusable system capability | related `skills/`, `docs/`, and scripts | Treat it as a system-capability task, with validation and traceable updates |
 
 ### Public documentation that should stay aligned
@@ -348,7 +348,7 @@ cd multi-agent-orchestrator
 If you are updating an existing deployment, the following command set is the preferred path.
 
 ```bash
-cd edict/frontend && npm install && npm run build && cd ../..
+cd agentorchestrator/frontend && npm install && npm run build && cd ../..
 python3 scripts/sync_agent_config.py
 python3 scripts/sync_agents_overview.py
 python3 scripts/refresh_live_data.py
@@ -359,15 +359,15 @@ openclaw gateway restart
 
 ## Quick Start
 
-If you are already familiar with the repository structure, you can jump straight into the deployment guide above. If you only want to browse the project quickly, start with `dashboard/`, `edict/backend/`, `edict/frontend/`, and `agents/`. For a first deployment, it is still safer to make the default Chinese version work first and customize later.
+If you are already familiar with the repository structure, you can jump straight into the deployment guide above. If you only want to browse the project quickly, start with `dashboard/`, `agentorchestrator/backend/`, `agentorchestrator/frontend/`, and `agents/`. For a first deployment, it is still safer to make the default Chinese version work first and customize later.
 
 ### Continue module-by-module if needed
 
 | Module | Suggested next step |
 | --- | --- |
 | Dashboard | Inspect `dashboard/` and verify visible text, workflow stages, and archive panels |
-| Frontend source | Work inside `edict/frontend/`, install dependencies, and build the UI |
-| Backend | Inspect `edict/backend/` for task models and orchestration logic |
+| Frontend source | Work inside `agentorchestrator/frontend/`, install dependencies, and build the UI |
+| Backend | Inspect `agentorchestrator/backend/` for task models and orchestration logic |
 | Agent templates | Review `agents/` only when customizing responsibilities or prompts |
 | Documentation | Read `docs/` for supplemental deployment notes |
 
@@ -424,7 +424,7 @@ Before pushing changes to a public repository, complete at least one validation 
 | Change type | Recommended minimum validation |
 | --- | --- |
 | Documentation-only updates | Check heading hierarchy, links, image paths, version notes, and alignment across the Chinese, English, and Japanese README files |
-| Dashboard or frontend changes | Run the build inside `edict/frontend/` and confirm that the critical screens still load correctly |
+| Dashboard or frontend changes | Run the build inside `agentorchestrator/frontend/` and confirm that the critical screens still load correctly |
 | Python service or script changes | Run syntax checks and verify the safe execution path of the affected service or script |
 | Sanitization or public-release cleanup | Re-scan for secrets, webhooks, logs, runtime snapshots, private notes, and local machine paths |
 
@@ -447,11 +447,11 @@ If you plan to connect this repository to an existing environment, or continue e
 
 | Symptom | Check first | Recommended action |
 | --- | --- | --- |
-| Frontend build fails | Whether `edict/frontend/` dependencies are complete, whether the Node version matches, and whether recent bilingual changes introduced type errors | Run a build regression first, then trace the most recent changed files |
+| Frontend build fails | Whether `agentorchestrator/frontend/` dependencies are complete, whether the Node version matches, and whether recent bilingual changes introduced type errors | Run a build regression first, then trace the most recent changed files |
 | Dashboard opens but shows empty content | Whether backend APIs, sync scripts, and stats refresh steps have actually been executed | Re-run config sync and data refresh first, then inspect API availability |
 | First-login or password-change flow behaves unexpectedly | Default account flow, auth state, and browser cache | Confirm the enforced first-login password-change path before checking forms and backend endpoints |
 | Agents are registered but cannot call a model | Whether the primary agent already has usable model credentials and whether auth sync was completed | Complete the primary auth setup first, then choose auth sync or rerun initialization |
-| Chinese or legacy wording still appears after switching to English | Whether the target panel already uses the locale layer and whether compatibility values are still leaking through directly | Check `edict/frontend/src/i18n.ts` and the affected panel component first |
+| Chinese or legacy wording still appears after switching to English | Whether the target panel already uses the locale layer and whether compatibility values are still leaking through directly | Check `agentorchestrator/frontend/src/i18n.ts` and the affected panel component first |
 | Unsure whether a public push is still safe | Whether logs, snapshots, secrets, machine paths, or internal notes are still present | Re-run a full sanitization review against the public-release checklist |
 
 ## Recommended Public Maintenance Cadence

@@ -39,7 +39,7 @@
 
 ### 2. 看板前端也以手动归档为主
 
-在 `dashboard/dashboard.html` 与 `edict/frontend/src/components/EdictBoard.tsx` 中，均存在以下入口：
+在 `dashboard/dashboard.html` 与 `agentorchestrator/frontend/src/components/AgentOrchestratorBoard.tsx` 中，均存在以下入口：
 
 | 入口 | 现状 |
 |---|---|

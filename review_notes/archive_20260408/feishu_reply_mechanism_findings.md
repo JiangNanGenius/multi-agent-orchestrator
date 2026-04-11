@@ -13,7 +13,7 @@
   - **没有区分普通消息、群聊回帖、线程内回复、私聊直回等回复策略。**
 
 ### 2. 飞书通知通道
-- 文件：`edict/backend/app/channels/feishu.py`
+- 文件：`agentorchestrator/backend/app/channels/feishu.py`
 - 现状：
   - 当前仅支持机器人 webhook 卡片发送。
   - `send(webhook, title, content, url=None)` 只构造 interactive card 并 POST 到 webhook。
@@ -25,7 +25,7 @@
 ### 3. 看板前端
 - 文件：
   - `dashboard/dashboard.html`
-  - `edict/frontend/src/components/SessionsPanel.tsx`
+  - `agentorchestrator/frontend/src/components/SessionsPanel.tsx`
 - 现状：
   - 已把 `feishu/direct` 标识展示为“飞书对话”。
   - 会过滤 `NO_REPLY`，并清理 `[[reply_to_current]]` 标记。
@@ -35,7 +35,7 @@
 ### 4. 文本脱敏/清洗
 - 文件：
   - `scripts/kanban_update.py`
-  - `edict/scripts/kanban_update_edict.py`
+  - `agentorchestrator/scripts/kanban_update_agentorchestrator.py`
 - 现状：
   - 已清洗 `message_id|session_id|chat_id|open_id|user_id|tenant_key` 等系统元数据，避免直接出现在任务描述中。
 - 含义：
@@ -50,11 +50,11 @@
    - 从运行时会话来源中尽量保留飞书消息上下文
    - 为看板和后续治理提供标准化回复策略字段
 
-2. `edict/backend/app/channels/feishu.py`
+2. `agentorchestrator/backend/app/channels/feishu.py`
    - 将现有 webhook 发送抽象升级为可扩展接口
    - 为后续接入“按消息回复 / 按线程回复 / 群聊回帖”预留参数模型
 
-3. `dashboard/dashboard.html` 与 `edict/frontend/src/components/SessionsPanel.tsx`
+3. `dashboard/dashboard.html` 与 `agentorchestrator/frontend/src/components/SessionsPanel.tsx`
    - 在会话详情中补充 reply metadata 的展示与诊断能力
 
 ## 暂未在仓库中找到的实现

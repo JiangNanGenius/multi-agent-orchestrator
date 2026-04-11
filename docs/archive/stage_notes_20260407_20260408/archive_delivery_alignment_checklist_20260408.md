@@ -94,7 +94,7 @@
 [3]: ./roadmap_ownership_rules_20260408.md "路线图归属与承诺口径规则"
 [4]: ../dashboard/server.py "归档接口实现"
 [5]: ../dashboard/dashboard.html "旧版看板中的归档入口与归档文案"
-[6]: ../edict/frontend/src/components/EdictBoard.tsx "前端看板组件中的归档逻辑"
+[6]: ../agentorchestrator/frontend/src/components/AgentOrchestratorBoard.tsx "前端看板组件中的归档逻辑"
 [7]: ./getting-started.md "安装与使用文档中的归档表述"
 [8]: ./wechat-article.md "对外介绍文案中的归档表述"
 [9]: ./delivery_gate_update_20260408.md "最终交付检查关卡补充说明"
@@ -102,7 +102,7 @@
 
 ## 七、补充核查结论：后台定时巡检不等于自动归档
 
-本轮又沿着用户截图恢复出的线索，继续核查了项目里是否存在“后台定时任务在任务完成后静置一段时间自动归档”的实现。复核重点覆盖 `dashboard/server.py`、`dashboard/dashboard.html`、`edict/frontend/src/components/EdictBoard.tsx` 以及现有恢复文档。核查结果显示：项目**确实存在后台定时巡检线程**，但其职责是停滞任务治理，而不是完成任务自动归档。[11] [12] [13]
+本轮又沿着用户截图恢复出的线索，继续核查了项目里是否存在“后台定时任务在任务完成后静置一段时间自动归档”的实现。复核重点覆盖 `dashboard/server.py`、`dashboard/dashboard.html`、`agentorchestrator/frontend/src/components/AgentOrchestratorBoard.tsx` 以及现有恢复文档。核查结果显示：项目**确实存在后台定时巡检线程**，但其职责是停滞任务治理，而不是完成任务自动归档。[11] [12] [13]
 
 在 `dashboard/server.py` 中，服务启动后会额外拉起一个后台线程，每 **120 秒**执行一次 `handle_scheduler_scan(threshold_sec=180)`。该扫描逻辑会根据任务停滞时长与调度配置，执行**自动重试、升级协调、自动回滚或自动挂起**等动作；但在这条链路里，并没有调用 `handle_archive_task`，也没有出现“Done/Cancelled 后超过某时间即归档”的判断条件。[11]
 
@@ -114,7 +114,7 @@
 | 扫描是否自动归档已完成任务 | **未发现** |
 | 是否存在静置 N 时间后自动归档阈值 | **未发现** |
 
-这一点也和前端行为相互印证。无论是 `dashboard/dashboard.html` 还是 React 版 `EdictBoard.tsx`，当前都把归档入口落在**单任务归档 / 取消归档**与**一键归档已完成任务**这两类显式操作上；而“🧭 总控巡检”调用的是 `/api/scheduler-scan`，语义上对应巡检与调度治理，不应被理解为归档入口。[12] [13]
+这一点也和前端行为相互印证。无论是 `dashboard/dashboard.html` 还是 React 版 `AgentOrchestratorBoard.tsx`，当前都把归档入口落在**单任务归档 / 取消归档**与**一键归档已完成任务**这两类显式操作上；而“🧭 总控巡检”调用的是 `/api/scheduler-scan`，语义上对应巡检与调度治理，不应被理解为归档入口。[12] [13]
 
 > 因此，目前最准确的判断应当是：**仓库存在自动巡检，但不存在已确认的“静置多久后自动归档”机制。自动巡检负责处理停滞任务，不负责把完成任务自动送入归档。**
 
@@ -134,5 +134,5 @@
 
 [11]: ../dashboard/server.py "后台定时巡检与归档接口实现"
 [12]: ../dashboard/dashboard.html "旧版看板中的巡检与归档入口"
-[13]: ../edict/frontend/src/components/EdictBoard.tsx "React 看板中的巡检与归档入口"
+[13]: ../agentorchestrator/frontend/src/components/AgentOrchestratorBoard.tsx "React 看板中的巡检与归档入口"
 

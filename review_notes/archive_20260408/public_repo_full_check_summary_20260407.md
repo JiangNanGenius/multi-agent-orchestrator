@@ -10,12 +10,12 @@
 
 | 类别 | 说明 | 典型位置 | 风险判断 |
 | --- | --- | --- | --- |
-| 旧仓库链接残留 | 仍指向 `cft0808/edict` 的 clone、Docker、Issues、Discussions、Security Advisories、Star History 等链接 | `README_EN.md`、`README_JA.md`、`CONTRIBUTING.md`、`SECURITY.md`、`.github/ISSUE_TEMPLATE/config.yml` | 高 |
-| 旧项目品牌与对外宣传残留 | 仍以 `Edict` 作为主品牌，保留旧 WeChat 标识、二维码、账号名与宣传收口文案 | `README_EN.md`、`README_JA.md` | 高 |
+| 旧仓库链接残留 | 仍指向 `cft0808/agentorchestrator` 的 clone、Docker、Issues、Discussions、Security Advisories、Star History 等链接 | `README_EN.md`、`README_JA.md`、`CONTRIBUTING.md`、`SECURITY.md`、`.github/ISSUE_TEMPLATE/config.yml` | 高 |
+| 旧项目品牌与对外宣传残留 | 仍以 `AgentOrchestrator` 作为主品牌，保留旧 WeChat 标识、二维码、账号名与宣传收口文案 | `README_EN.md`、`README_JA.md` | 高 |
 | 旧角色体系直接对外展示 | README 架构图与角色表仍使用 `Crown Prince / Planning Dept / Review Dept / Dispatch Dept`、三省六部、吏部/礼部等旧体系称谓 | `README_EN.md`、`README_JA.md`、部分 `agents/` 文档 | 高 |
 | 公开版定位不一致 | 中文 README 已切换为现代中文架构表述，但英文、日文 README 仍保留旧叙事，导致公开仓库首页与多语言说明不一致 | `README.md`、`README_EN.md`、`README_JA.md` | 高 |
 | 可见配置入口未同步 | GitHub 提问入口、文档入口、安全报告入口仍跳旧仓库 | `.github/ISSUE_TEMPLATE/config.yml`、`SECURITY.md`、`CONTRIBUTING.md` | 高 |
-| 引用保留与“残留未清理”混杂 | `wanikua/danghuangshang` 与 `cft0808/edict` 的来源说明本身应保留，但必须与“运行入口/宣传链接/主品牌文案”分开，不应混为一体 | `README.md`、`PUBLIC_REPO_METADATA.md` | 中 |
+| 引用保留与“残留未清理”混杂 | `wanikua/danghuangshang` 与 `cft0808/agentorchestrator` 的来源说明本身应保留，但必须与“运行入口/宣传链接/主品牌文案”分开，不应混为一体 | `README.md`、`PUBLIC_REPO_METADATA.md` | 中 |
 | 内部角色模板文档仍是旧体系 | `agents/*/SOUL.md` 与 `agents/groups/*.md` 大量保留三省六部与旧角色代号，若公开访客直接浏览会形成“主文档已现代化、代码人格仍停留旧制”的割裂感 | `agents/` 目录 | 中高 |
 
 ## 已核实的代表性问题
@@ -25,22 +25,22 @@
 中文 README 的主叙事已经基本切换为现代中文架构，但仍需进一步检查是否存在以下问题：
 
 1. 虽然正文已改为“总控中心 / 规划中心 / 评审中心 / 调度中心 / 专业执行角色”，但若关联文档仍保留旧体系，会造成仓库整体观感不一致。
-2. Attribution 中保留对 `wanikua/danghuangshang` 与 `cft0808/edict` 的引用是合理的，但必须明确它们属于“来源说明”，不是“当前推荐入口”。
+2. Attribution 中保留对 `wanikua/danghuangshang` 与 `cft0808/agentorchestrator` 的引用是合理的，但必须明确它们属于“来源说明”，不是“当前推荐入口”。
 
 ### 2. 英文 README
 
 英文 README 目前仍属于旧版公开宣传文案，问题最集中，包括但不限于：
 
-- 仍使用 `Edict` 作为主项目名。
+- 仍使用 `AgentOrchestrator` 作为主项目名。
 - 仍使用 `Crown Prince`、`Planning Dept`、`Review Dept`、`Dispatch Dept` 等旧体系角色称谓。
-- 仍保留 `docker run -p 7891:7891 cft0808/edict`。
-- 仍保留 `git clone https://github.com/cft0808/edict.git`。
+- 仍保留 `docker run -p 7891:7891 cft0808/agentorchestrator`。
+- 仍保留 `git clone https://github.com/cft0808/agentorchestrator.git`。
 - 仍保留旧 Star History 链接。
 - 仍保留 WeChat 二维码、`cft0808` 账号和对外宣传信息。
 
 ### 3. 日文 README
 
-日文 README 与英文 README 类似，整体仍是旧版 `Edict` 叙事，属于整篇未完成现代化改写，而不是零星遗留。
+日文 README 与英文 README 类似，整体仍是旧版 `AgentOrchestrator` 叙事，属于整篇未完成现代化改写，而不是零星遗留。
 
 ### 4. CONTRIBUTING / SECURITY / Issue 模板
 

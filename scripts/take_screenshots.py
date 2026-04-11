@@ -46,7 +46,7 @@ def wait_idle(page: Page, delay_ms: int = 1200) -> None:
 def set_capture_prefs(page: Page, *, show_ceremony: bool) -> None:
     page.evaluate(
         """(showCeremony) => {
-            localStorage.setItem('edict_locale', 'zh');
+            localStorage.setItem('agentorchestrator_locale', 'zh');
             if (showCeremony) {
                 localStorage.removeItem('openclaw_startup_transition_date');
             } else {
@@ -149,7 +149,7 @@ def screenshot(page: Page, filename: str) -> None:
 
 def capture_task_detail(page: Page) -> None:
     click_nav(page, '任务中枢')
-    cards = page.locator('.edict-card')
+    cards = page.locator('.agentorchestrator-card')
     if cards.count() == 0:
         print('⚠️ no task card found, skip 03-task-detail.png')
         return
@@ -248,7 +248,7 @@ def main() -> None:
         )
         ctx.add_cookies([
             {
-                'name': 'edict_token',
+                'name': 'agentorchestrator_token',
                 'value': token,
                 'domain': cookie_domain,
                 'path': '/',

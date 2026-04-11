@@ -136,4 +136,4 @@
 [1]: ../README.md "项目首页 README"
 [2]: ../TODO_task_workspace_ledger.md "任务工作区与账本改造 Todo"
 [3]: ./current_architecture_overview.md "当前架构与处理逻辑总览"
-[4]: ../edict/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"
+[4]: ../agentorchestrator/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"

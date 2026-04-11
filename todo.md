@@ -11,7 +11,7 @@
 | 主 Todo 入口 | 已统一 | 后续只维护本文件 |
 | README 预览图补充 | 已完成 | 已加入任务发布、技能管理、全网搜索三张预览图 |
 | 全网搜索页改造 | 已完成首轮闭环 | 已支持后台任务发起、历史保留、查看结果、查看任务、删除记录 |
-| 前端构建产物治理 | 已完成 | `edict/frontend/dist/` 已改为不纳管 |
+| 前端构建产物治理 | 已完成 | `agentorchestrator/frontend/dist/` 已改为不纳管 |
 | 公开界面脱敏 | 已完成首轮收口 | 用户可见旧命名已基本替换，内部兼容 ID 保留 |
 | GitHub 推送 | 已完成 | 最新已推送到当前远端 `main` |
 | 备份与留痕 | 已完成 | 已生成 final 备份并写入最终工作日志 |
@@ -55,7 +55,7 @@
 
 - [x] 重构 `agents.json` 中的全部 agent ID、路径与调用链
 - [x] 重命名 `agents/` 目录结构，并同步修改 SOUL 文档、职责关系与调用说明
-- [x] 重构 `scripts/`、`edict/scripts/`、`migration/` 中残留的旧组织名、旧状态与旧 agent ID
+- [x] 重构 `scripts/`、`agentorchestrator/scripts/`、`migration/` 中残留的旧组织名、旧状态与旧 agent ID
 - [x] 重构 `tests/` 中直接对外可见或会影响演示输出的旧 ID 与旧术语样例
 - [x] 全仓二次扫描并确认旧 agent ID、旧术语与残余历史叙事已基本清零（源码/测试主链范围）
 

@@ -25,8 +25,8 @@ openclaw init
 ## 第二步：克隆并安装多Agent智作中枢
 
 ```bash
-git clone https://github.com/cft0808/edict.git
-cd edict
+git clone https://github.com/cft0808/agentorchestrator.git
+cd agentorchestrator
 chmod +x install.sh && ./install.sh
 ```
 
@@ -159,7 +159,7 @@ python3 dashboard/server.py
 ```bash
 # 方法一：为任意 Agent 配置后重新运行 install.sh（推荐）
 openclaw agents add control_center   # 按提示输入 Anthropic API Key
-cd edict && ./install.sh             # 自动同步到所有 Agent，并生成只读建议清单
+cd agentorchestrator && ./install.sh             # 自动同步到所有 Agent，并生成只读建议清单
 
 # 方法二：手动复制 auth 文件
 MAIN_AUTH=$(find ~/.openclaw/agents -name auth-profiles.json | head -1)
@@ -243,7 +243,7 @@ openclaw gateway restart
 
 ## 📚 更多资源
 
-- [🏠 项目首页](https://github.com/cft0808/edict)
+- [🏠 项目首页](https://github.com/cft0808/agentorchestrator)
 - [📖 README](../README.md)
 - [🤝 贡献指南](../CONTRIBUTING.md)
 - [💬 OpenClaw 文档](https://docs.openclaw.ai)

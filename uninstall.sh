@@ -1,6 +1,6 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════
-# EDICT · OpenClaw Multi-Agent System 一键卸载脚本
+# AGENTORCHESTRATOR · OpenClaw Multi-Agent System 一键卸载脚本
 # ══════════════════════════════════════════════════════════════
 set -e
 
@@ -13,7 +13,7 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC
 banner() {
   echo ""
   echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
-  echo -e "${BLUE}║  🏛️  EDICT · 卸载向导                     ║${NC}"
+  echo -e "${BLUE}║  🏛️  AGENTORCHESTRATOR · 卸载向导                     ║${NC}"
   echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"
   echo ""
 }
@@ -160,6 +160,6 @@ restart_gateway
 
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║  ✅  EDICT 卸载完成！                             ║${NC}"
+echo -e "${GREEN}║  ✅  AGENTORCHESTRATOR 卸载完成！                             ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════════╝${NC}"
 echo ""

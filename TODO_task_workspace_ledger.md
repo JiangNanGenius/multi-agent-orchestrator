@@ -34,7 +34,7 @@
 
 这一组尽量后置，等后端字段和流转规则稳定后一次性接入，减少来回返工。
 
-当前已完成第二轮前端字段接入：`api.ts` 已补齐任务工作区、`/new` 建议、小任务策略、看门狗与飞书汇报类型；`TaskModal.tsx` 已接入任务代号、工作区路径、任务策略、存储层级、`/new` 判断、关联任务、摘要/续接提示、看门狗状态、飞书汇报状态，以及 `README` / `TODO` / `TASK_RECORD` / `HANDOFF` / `LINKS` / `STATUS`、`latest_context`、`resume_export`、`ledger`、`context`、`snapshots`、`exports`、`artifacts`、`agent_notes`、冷归档与回迁目标等路径入口；`EdictBoard.tsx` 已在任务卡片摘要中补充 `taskCode`、轻量任务标签、超大任务估算、冷归档状态、可回迁标记、`/new` 建议、看门狗与汇报状态，并完成前端构建校验。
+当前已完成第二轮前端字段接入：`api.ts` 已补齐任务工作区、`/new` 建议、小任务策略、看门狗与飞书汇报类型；`TaskModal.tsx` 已接入任务代号、工作区路径、任务策略、存储层级、`/new` 判断、关联任务、摘要/续接提示、看门狗状态、飞书汇报状态，以及 `README` / `TODO` / `TASK_RECORD` / `HANDOFF` / `LINKS` / `STATUS`、`latest_context`、`resume_export`、`ledger`、`context`、`snapshots`、`exports`、`artifacts`、`agent_notes`、冷归档与回迁目标等路径入口；`AgentOrchestratorBoard.tsx` 已在任务卡片摘要中补充 `taskCode`、轻量任务标签、超大任务估算、冷归档状态、可回迁标记、`/new` 建议、看门狗与汇报状态，并完成前端构建校验。
 
 - [x] 扩展前端展示，增加 Todo、任务链接、工作区路径与账本进度入口。现已在任务详情中补齐工作区路径、关联任务、文件入口与账本/归档路径入口，满足联调所需的直接查看与复制路径能力。
 - [x] 升级看板任务面板详细信息展示，将任务代号、工作区路径、`README` / `TODO` / `TASK_RECORD` / `HANDOFF` / `LINKS` / `STATUS` 入口、任务链路、归档状态、冷归档路径、回迁状态、`/new` 建议、看门狗健康状态纳入详情区。当前详情面板已完成上述字段展示，后续仅需在联调阶段视需要补更强的归档/回迁直接操作入口。

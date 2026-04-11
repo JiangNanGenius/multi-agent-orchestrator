@@ -11,16 +11,16 @@
 | 前端 API | 新增 `schedulerConfig(taskId, config)` 方法，并补充 `SchedulerInfo` 类型字段 |
 | 任务弹窗 | 新增“自动化配置”表单，可设置启用自动托管、停滞阈值、最大重试、自动回滚、最大回滚 |
 | 可观测信息 | 弹窗中已展示稳定快照信息、最大回滚次数以及已有调度状态数据 |
-| 构建验证 | 已在 `edict/frontend` 目录执行 `pnpm install` 与 `pnpm build`，构建成功 |
+| 构建验证 | 已在 `agentorchestrator/frontend` 目录执行 `pnpm install` 与 `pnpm build`，构建成功 |
 
 ## 本轮涉及文件
 
 | 文件 | 变更说明 |
 | :--- | :--- |
 | `dashboard/server.py` | 新增任务级自动化配置保存接口，调度扫描逻辑增加启用开关判断 |
-| `edict/frontend/src/api.ts` | 补充自动化配置保存 API 与 scheduler 类型字段 |
-| `edict/frontend/src/components/TaskModal.tsx` | 实现任务级自动化配置表单与保存交互 |
-| `edict/frontend/src/index.css` | 增加自动化配置表单样式 |
+| `agentorchestrator/frontend/src/api.ts` | 补充自动化配置保存 API 与 scheduler 类型字段 |
+| `agentorchestrator/frontend/src/components/TaskModal.tsx` | 实现任务级自动化配置表单与保存交互 |
+| `agentorchestrator/frontend/src/index.css` | 增加自动化配置表单样式 |
 | `docs/automation-task-management-design.md` | 保留设计方案文档，供后续扩展到规则中心时参考 |
 
 ## 下一步建议
@@ -47,19 +47,19 @@
 | 任务详情 | 已在任务弹窗调度区增加自动动作日志视图，可查看自动重试、升级协调、回滚与调度相关记录 |
 | 自动化中心 | 已新增顶层“自动化中心”标签页，集中展示自动托管覆盖率、重点观察任务、近期自动动作日志与规则中心初版 |
 | 样式系统 | 已补充自动化中心、自动动作日志与摘要卡片样式，保持与现有看板风格一致 |
-| 部署产物 | 已将 `edict/frontend/dist` 最新构建结果同步覆盖到 `dashboard/dist` |
+| 部署产物 | 已将 `agentorchestrator/frontend/dist` 最新构建结果同步覆盖到 `dashboard/dist` |
 
 ### 本轮新增或继续修改的文件
 
 | 文件 | 变更说明 |
 | :--- | :--- |
-| `edict/frontend/src/store.ts` | 注册 `automation` 顶层标签，并承接自动化摘要展示能力 |
-| `edict/frontend/src/components/EdictBoard.tsx` | 增加任务卡片自动化摘要 |
-| `edict/frontend/src/components/MonitorPanel.tsx` | 增加监控任务卡片自动化摘要 |
-| `edict/frontend/src/components/TaskModal.tsx` | 增加自动动作日志内联视图 |
-| `edict/frontend/src/components/AutomationPanel.tsx` | 新增自动化中心初版面板 |
-| `edict/frontend/src/App.tsx` | 接入自动化中心顶层入口与标签徽标 |
-| `edict/frontend/src/index.css` | 增加自动化中心与日志样式 |
+| `agentorchestrator/frontend/src/store.ts` | 注册 `automation` 顶层标签，并承接自动化摘要展示能力 |
+| `agentorchestrator/frontend/src/components/AgentOrchestratorBoard.tsx` | 增加任务卡片自动化摘要 |
+| `agentorchestrator/frontend/src/components/MonitorPanel.tsx` | 增加监控任务卡片自动化摘要 |
+| `agentorchestrator/frontend/src/components/TaskModal.tsx` | 增加自动动作日志内联视图 |
+| `agentorchestrator/frontend/src/components/AutomationPanel.tsx` | 新增自动化中心初版面板 |
+| `agentorchestrator/frontend/src/App.tsx` | 接入自动化中心顶层入口与标签徽标 |
+| `agentorchestrator/frontend/src/index.css` | 增加自动化中心与日志样式 |
 | `dashboard/dist/*` | 已同步最新前端构建产物 |
 
 ### 当前状态判断

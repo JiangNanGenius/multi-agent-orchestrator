@@ -8,7 +8,7 @@
 
 ## 现状梳理
 
-从现有代码结构看，协同讨论后端的核心入口集中在 `dashboard/court_discuss.py` 与 `dashboard/server.py`。前者负责会话创建、推进、结束和摘要生成，后者负责将这些能力暴露成 `/api/collab-discuss/*` 路由。前端会议室则集中在 `edict/frontend/src/components/CourtDiscussion.tsx`，通过 `api.ts` 中的 `collabDiscussStart`、`collabDiscussAdvance`、`collabDiscussConclude` 等接口完成会话级交互。
+从现有代码结构看，协同讨论后端的核心入口集中在 `dashboard/court_discuss.py` 与 `dashboard/server.py`。前者负责会话创建、推进、结束和摘要生成，后者负责将这些能力暴露成 `/api/collab-discuss/*` 路由。前端会议室则集中在 `agentorchestrator/frontend/src/components/CourtDiscussion.tsx`，通过 `api.ts` 中的 `collabDiscussStart`、`collabDiscussAdvance`、`collabDiscussConclude` 等接口完成会话级交互。
 
 | 模块 | 现有能力 | 当前缺口 |
 | --- | --- | --- |

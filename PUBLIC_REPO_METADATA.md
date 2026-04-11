@@ -51,9 +51,9 @@ The primary referenced upstream project for this public release is **wanikua/dan
 
 - https://github.com/wanikua/danghuangshang
 
-This repository also includes a codebase modernization and public-release cleanup based on **cft0808/edict**:
+This repository also includes a codebase modernization and public-release cleanup based on **cft0808/agentorchestrator**:
 
-- https://github.com/cft0808/edict
+- https://github.com/cft0808/agentorchestrator
 
 Please retain MIT License notices and explicit attribution to both upstream references when redistributing or further modifying this public release.
 

@@ -14,7 +14,7 @@
 | `docs/user-guide.md` | 使用者、协作者 | 任务如何进入、推进、交付与归档 |
 | `docs/technical-architecture.md` | 维护者、开发者、部署者 | 底层机制如何实现、模块如何分工 |
 | `TODO_task_workspace_ledger.md` | 改造执行者 | 本轮改造到底做了哪些事 |
-| `edict/E2E_task_workspace_validation_result_2026-04-09.json` | 联调与回归验证者 | 主链路是否真实跑通 |
+| `agentorchestrator/E2E_task_workspace_validation_result_2026-04-09.json` | 联调与回归验证者 | 主链路是否真实跑通 |
 
 ## 二、总体架构：从“状态机 + 事件驱动”扩展到“工作区 + 账本 + 归档治理”
 
@@ -51,8 +51,8 @@ Orchestrator Worker / 调度逻辑
 | 层级 | 主要位置 | 核心职责 | 本轮变化 |
 | --- | --- | --- | --- |
 | 公开文档层 | `README.md`、`docs/*` | 统一公开口径、用户说明与技术说明 | 增加双文档体系入口 [1] |
-| 前端操作层 | `edict/frontend/src/*`、`dashboard/` | 任务发布、详情查看、归档回迁、搜索与技能入口 | 补齐任务工作区与归档操作入口 [2] |
-| 后端 API 层 | `edict/backend/app/main.py`、`api/*` | 暴露任务、状态、管理与实时接口 | 对外提供工作区与新字段返回 [3] |
+| 前端操作层 | `agentorchestrator/frontend/src/*`、`dashboard/` | 任务发布、详情查看、归档回迁、搜索与技能入口 | 补齐任务工作区与归档操作入口 [2] |
+| 后端 API 层 | `agentorchestrator/backend/app/main.py`、`api/*` | 暴露任务、状态、管理与实时接口 | 对外提供工作区与新字段返回 [3] |
 | 任务领域层 | `models/task.py`、`services/task_service.py` | 维护任务状态机、字段结构与流转规则 | 对齐工作区、看门狗、`/new` 字段 [3] [4] |
 | 工作区与账本层 | `task_workspaces/`、`task_workspace.py` | 承接任务文件、账本、索引与恢复文件链 | 本轮新增核心底座 [2] [4] |
 | 治理与巡检层 | `task_watchdog.py`、worker、汇报逻辑 | 巡检、修复、归档、回迁、汇报、续接建议 | 本轮新增重点能力 [2] [4] |
@@ -209,11 +209,11 @@ E2E 结果中可见，当前 `/new` 结构至少已经包括 `should_refresh`、
 | 1 | `README.md` | 先建立公开主入口认知 |
 | 2 | `docs/user-guide.md` | 理解用户视角与流程 |
 | 3 | `docs/technical-architecture.md` | 理解底层机制与模块边界 |
-| 4 | `edict/backend/app/models/task.py` | 理解任务模型与状态结构 |
-| 5 | `edict/backend/app/services/task_service.py` | 理解任务创建、更新与字段输出 |
-| 6 | `edict/backend/app/services/task_workspace.py` | 理解工作区与账本逻辑 |
-| 7 | `edict/scripts/task_watchdog.py` | 理解巡检与修复实现 |
-| 8 | `edict/frontend/src/components/TaskModal.tsx` | 理解前端如何暴露这些能力 |
+| 4 | `agentorchestrator/backend/app/models/task.py` | 理解任务模型与状态结构 |
+| 5 | `agentorchestrator/backend/app/services/task_service.py` | 理解任务创建、更新与字段输出 |
+| 6 | `agentorchestrator/backend/app/services/task_workspace.py` | 理解工作区与账本逻辑 |
+| 7 | `agentorchestrator/scripts/task_watchdog.py` | 理解巡检与修复实现 |
+| 8 | `agentorchestrator/frontend/src/components/TaskModal.tsx` | 理解前端如何暴露这些能力 |
 
 ## 十五、版本日志
 
@@ -232,5 +232,5 @@ E2E 结果中可见，当前 `/new` 结构至少已经包括 `should_refresh`、
 [1]: ../README.md "项目首页 README"
 [2]: ../TODO_task_workspace_ledger.md "任务工作区与账本改造 Todo"
 [3]: ./current_architecture_overview.md "当前架构与处理逻辑总览"
-[4]: ../edict/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"
-[5]: ../edict/DELIVERY_task_workspace_final_2026-04-09.md "最终交付说明"
+[4]: ../agentorchestrator/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"
+[5]: ../agentorchestrator/DELIVERY_task_workspace_final_2026-04-09.md "最终交付说明"

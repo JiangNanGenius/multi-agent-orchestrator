@@ -111,7 +111,7 @@
 | 历史审计记录 | `docs/gap_audit_20260407.md` | 建议保留，不应强行改写，否则会失去“当时问题是什么”的审计价值 |
 | 浏览器核查记录 | `docs/browser_findings_20260407_refresh_and_dispatch.md` | 建议保留原始发现，因其本身就是记录“曾出现旧标签”的证据 |
 | 历史宣传/说明材料 | `docs/wechat.md`、少量 `docs/task-dispatch-architecture.md` 内部示例 | 如需要完全品牌统一，可再做一轮“历史内容现代化重写”；若作为发展史材料，也可保留并增加“历史叙事”标注 |
-| 源码中的兼容注释 | 如 `edict/frontend/src/api.ts` 的旧注释 | 不影响运行，可在后续代码洁净化阶段继续收口 |
+| 源码中的兼容注释 | 如 `agentorchestrator/frontend/src/api.ts` 的旧注释 | 不影响运行，可在后续代码洁净化阶段继续收口 |
 
 ## 五、建议的后续动作
 

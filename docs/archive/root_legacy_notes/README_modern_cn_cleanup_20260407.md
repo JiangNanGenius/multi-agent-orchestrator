@@ -1,4 +1,4 @@
-# edict 项目现代中文架构收口记录
+# agentorchestrator 项目现代中文架构收口记录
 
 ## 任务背景
 
@@ -10,11 +10,11 @@
 | --- | --- | --- |
 | 架构文档 | 持续清理 `docs/task-dispatch-architecture.md` 后半段中的旧体系描述 | 已形成当时的阶段性收口版本，供后续重构继续参考 |
 | 微信文章 | 核查 `docs/wechat-article.md` 中的宣传表述 | 已纳入统一检查范围，继续按现代命名收口 |
-| 后端模型 | 修正 `edict/backend/app/models/task.py` 中的说明、组织映射与兼容注释 | 用户可见组织名称已切换为现代命名 |
-| 后端接口 | 修正 `edict/backend/app/api/agents.py`、`edict/backend/app/main.py` 中的标题与角色说明 | 面向外部展示的命名已切换为现代中文体系 |
+| 后端模型 | 修正 `agentorchestrator/backend/app/models/task.py` 中的说明、组织映射与兼容注释 | 用户可见组织名称已切换为现代命名 |
+| 后端接口 | 修正 `agentorchestrator/backend/app/api/agents.py`、`agentorchestrator/backend/app/main.py` 中的标题与角色说明 | 面向外部展示的命名已切换为现代中文体系 |
 | 仪表板逻辑 | 修正 `dashboard/server.py` 中组织到 Agent 的映射关系 | 现代中文组织名与执行专家绑定关系已校正 |
 | 协同讨论模块 | 修正 `dashboard/court_discuss.py` 中角色名称、职责说明与系统文案 | 已从旧官制叙事切换为现代协作角色叙事 |
-| 前端源码核查 | 检查 `dashboard/dashboard.html`、`edict/frontend/src/store.ts`、`edict/frontend/src/index.css` | 旧术语主要留在兼容别名、状态键和样式选择器层，不构成首屏直接外露 |
+| 前端源码核查 | 检查 `dashboard/dashboard.html`、`agentorchestrator/frontend/src/store.ts`、`agentorchestrator/frontend/src/index.css` | 旧术语主要留在兼容别名、状态键和样式选择器层，不构成首屏直接外露 |
 | 构建验证 | 执行前端构建 | 已通过，无新增类型或打包错误 |
 | 页面验证 | 打开本地仪表板并检查首页、协作节点、结果归档页签 | 当前首屏未发现旧体系术语直接暴露 |
 
@@ -36,7 +36,7 @@
 
 ## 当时建议的后续方向（归档）
 
-如果要继续把代码层痕迹也尽量收干净，当时建议下一轮优先处理三个位置。第一，统一 `edict/frontend/src/index.css` 中的注释标题，例如将“省部调度”“朝堂议政动画”等说明改为当时目标中的产品化命名；第二，视兼容需求评估是否保留旧 `.dt-*` 选择器，如果历史数据已经全部过渡，可逐步替换为现代类名；第三，补扫 `orchestrator_worker.py`、`auth.py` 这类尚未完全重写说明文字的文件，把模块头部注释一并收口。上述内容现仅保留为历史建议，不再代表当前仓库的待办优先级。
+如果要继续把代码层痕迹也尽量收干净，当时建议下一轮优先处理三个位置。第一，统一 `agentorchestrator/frontend/src/index.css` 中的注释标题，例如将“省部调度”“朝堂议政动画”等说明改为当时目标中的产品化命名；第二，视兼容需求评估是否保留旧 `.dt-*` 选择器，如果历史数据已经全部过渡，可逐步替换为现代类名；第三，补扫 `orchestrator_worker.py`、`auth.py` 这类尚未完全重写说明文字的文件，把模块头部注释一并收口。上述内容现仅保留为历史建议，不再代表当前仓库的待办优先级。
 
 ## 项目内留痕
 
@@ -51,5 +51,5 @@
 
 | 日期 | 版本 | 变更说明 |
 | --- | --- | --- |
-| 2026-04-07 | v1 | 完成 edict 项目现代中文架构命名的阶段性收口，补充前端与仪表板回归验证记录，并形成项目内归档留痕文档 |
+| 2026-04-07 | v1 | 完成 agentorchestrator 项目现代中文架构命名的阶段性收口，补充前端与仪表板回归验证记录，并形成项目内归档留痕文档 |
 | 2026-04-08 | v1-archive-note | 明确本文仅为历史归档说明，不再作为当前仓库状态与待办判断依据 |

@@ -9,13 +9,13 @@ agents:
   - changed-files:
     - any-glob-to-any-file: 'agents/**'
 
-edict-backend:
+agentorchestrator-backend:
   - changed-files:
-    - any-glob-to-any-file: 'edict/backend/**'
+    - any-glob-to-any-file: 'agentorchestrator/backend/**'
 
-edict-frontend:
+agentorchestrator-frontend:
   - changed-files:
-    - any-glob-to-any-file: 'edict/frontend/**'
+    - any-glob-to-any-file: 'agentorchestrator/frontend/**'
 
 scripts:
   - changed-files:

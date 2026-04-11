@@ -1,4 +1,4 @@
-# EDICT · OpenClaw 安装脚本 (Windows)
+# AGENTORCHESTRATOR · OpenClaw 安装脚本 (Windows)
 # PowerShell 版本 — 对应 install.sh
 # ══════════════════════════════════════════════════════════════
 #Requires -Version 5.1
@@ -18,13 +18,14 @@ $AGENTS = @(
     "audit_specialist",
     "deploy_specialist",
     "admin_specialist",
+    "expert_curator",
     "search_specialist"
 )
 
 function Write-Banner {
     Write-Host ""
     Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Blue
-    Write-Host "║  EDICT · OpenClaw 本地对接辅助 (Win)   ║" -ForegroundColor Blue
+    Write-Host "║  AGENTORCHESTRATOR · OpenClaw 本地对接辅助 (Win)   ║" -ForegroundColor Blue
     Write-Host "║  AI 部署优先，脚本仅用于本地补齐       ║" -ForegroundColor Blue
     Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Blue
     Write-Host ""
@@ -135,13 +136,14 @@ required = [
     {'id': 'control_center', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-control_center'), 'subagents': {'allowAgents': ['plan_center']}},
     {'id': 'plan_center', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-plan_center'), 'subagents': {'allowAgents': ['review_center', 'dispatch_center']}},
     {'id': 'review_center', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-review_center'), 'subagents': {'allowAgents': ['dispatch_center', 'plan_center']}},
-    {'id': 'dispatch_center', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-dispatch_center'), 'subagents': {'allowAgents': ['plan_center', 'review_center', 'data_specialist', 'docs_specialist', 'code_specialist', 'audit_specialist', 'deploy_specialist', 'admin_specialist', 'search_specialist']}},
+    {'id': 'dispatch_center', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-dispatch_center'), 'subagents': {'allowAgents': ['plan_center', 'review_center', 'data_specialist', 'docs_specialist', 'code_specialist', 'audit_specialist', 'deploy_specialist', 'admin_specialist', 'expert_curator', 'search_specialist']}},
     {'id': 'data_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-data_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
     {'id': 'docs_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-docs_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
     {'id': 'code_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-code_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
     {'id': 'audit_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-audit_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
     {'id': 'deploy_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-deploy_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
     {'id': 'admin_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-admin_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
+    {'id': 'expert_curator', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-expert_curator'), 'subagents': {'allowAgents': ['dispatch_center']}},
     {'id': 'search_specialist', 'workspace': str(pathlib.Path(os.environ['USERPROFILE']) / '.openclaw/workspace-search_specialist'), 'subagents': {'allowAgents': ['dispatch_center']}},
 ]
 existing = {item.get('id') for item in cfg.get('agents', {}).get('list', []) if item.get('id')}
@@ -199,15 +201,15 @@ tasks = [{
     'id': 'JJC-DEMO-001',
     'title': '🎉 系统初始化完成',
     'owner': '系统看板',
-    'org': 'EDICT',
+    'org': 'AGENTORCHESTRATOR',
     'state': 'Done',
-    'now': 'EDICT 系统已就绪',
+    'now': 'AGENTORCHESTRATOR 系统已就绪',
     'eta': '-',
     'block': '无',
     'output': '',
     'ac': '系统正常运行',
     'flow_log': [
-        {'at': '2024-01-01T00:00:00Z', 'from': 'system', 'to': 'control_center', 'remark': '初始化 EDICT 系统'},
+        {'at': '2024-01-01T00:00:00Z', 'from': 'system', 'to': 'control_center', 'remark': '初始化 AGENTORCHESTRATOR 系统'},
         {'at': '2024-01-01T00:01:00Z', 'from': 'control_center', 'to': 'plan_center', 'remark': '提交初始化方案规划'},
         {'at': '2024-01-01T00:02:00Z', 'from': 'plan_center', 'to': 'review_center', 'remark': '提交初始化方案审核'},
         {'at': '2024-01-01T00:03:00Z', 'from': 'review_center', 'to': 'dispatch_center', 'remark': '✅ 审核通过并进入派发'},
@@ -330,24 +332,40 @@ function Build-Frontend {
     $node = Get-Command node -ErrorAction SilentlyContinue
     if (-not $node) {
         Warn "未找到 node，跳过前端构建。看板将使用预构建版本（如果存在）"
-        Warn "请安装 Node.js 18+ 后运行: cd edict\frontend && npm install && npm run build"
+        Warn "请安装 Node.js 18+ 后运行: cd agentorchestrator\frontend && npm install && npm run build"
         return
     }
 
-    $pkgJson = Join-Path $REPO_DIR "edict\frontend\package.json"
+    $pkgJson = Join-Path $REPO_DIR "agentorchestrator\frontend\package.json"
     if (Test-Path $pkgJson) {
-        Push-Location (Join-Path $REPO_DIR "edict\frontend")
-        npm install --silent 2>$null
-        npm run build 2>$null
-        Pop-Location
-        $indexHtml = Join-Path $REPO_DIR "dashboard\dist\index.html"
-        if (Test-Path $indexHtml) {
-            Log "前端构建完成: dashboard\dist\"
+        Push-Location (Join-Path $REPO_DIR "agentorchestrator\frontend")
+        $pnpmLock = Join-Path (Get-Location) "pnpm-lock.yaml"
+        if (Get-Command pnpm -ErrorAction SilentlyContinue -and (Test-Path $pnpmLock)) {
+            pnpm install --silent
+            pnpm build
         } else {
-            Warn "前端构建可能失败，请手动检查"
+            npm install --silent 2>$null
+            npm run build 2>$null
+        }
+        Pop-Location
+
+        $frontendDist = Join-Path $REPO_DIR "agentorchestrator\frontend\dist"
+        $dashboardDist = Join-Path $REPO_DIR "dashboard\dist"
+        $indexHtml = Join-Path $dashboardDist "index.html"
+        if (Test-Path $frontendDist) {
+            if (Test-Path $dashboardDist) {
+                Remove-Item $dashboardDist -Recurse -Force
+            }
+            New-Item -ItemType Directory -Path (Join-Path $REPO_DIR "dashboard") -Force | Out-Null
+            Copy-Item $frontendDist $dashboardDist -Recurse
+            Log "前端构建并同步完成: dashboard\dist\"
+        } elseif (Test-Path $indexHtml) {
+            Warn "未检测到 agentorchestrator\frontend\dist，继续使用现有 dashboard\dist"
+        } else {
+            Warn "前端构建失败：未找到可部署的 dist 产物，请手动检查"
         }
     } else {
-        Warn "未找到 edict\frontend\package.json，跳过前端构建"
+        Warn "未找到 agentorchestrator\frontend\package.json，跳过前端构建"
     }
 }
 
@@ -387,7 +405,7 @@ Restart-Gateway
 
 Write-Host ""
 Write-Host "╔══════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║  EDICT 安装完成！                               ║" -ForegroundColor Green
+Write-Host "║  AGENTORCHESTRATOR 安装完成！                               ║" -ForegroundColor Green
 Write-Host "╚══════════════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""
 Write-Host "下一步："

@@ -45,9 +45,9 @@
     .panel{display:none}.panel.active{display:block}
 
     /* ══ 任务看板 ══ */
-    .edict-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
-    .edict-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;transition:border-color .15s,transform .1s,box-shadow .15s}
-    .edict-card:hover{border-color:var(--acc);transform:translateY(-2px);box-shadow:0 4px 20px rgba(106,158,255,.1)}
+    .agentorchestrator-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+    .agentorchestrator-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;transition:border-color .15s,transform .1s,box-shadow .15s}
+    .agentorchestrator-card:hover{border-color:var(--acc);transform:translateY(-2px);box-shadow:0 4px 20px rgba(106,158,255,.1)}
 
     /* pipeline strip on card */
     .ec-pipe{display:flex;align-items:center;gap:0;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
@@ -360,8 +360,8 @@
     .global-scan-history .gsh-count.ok{color:var(--ok);border-color:#2ecc8a44}
     .global-scan-history .gsh-count.warn{color:var(--acc);border-color:#6a9eff55}
     /* archived card styling */
-    .edict-card.archived{opacity:.55;border-style:dashed}
-    .edict-card.archived:hover{opacity:.85}
+    .agentorchestrator-card.archived{opacity:.55;border-style:dashed}
+    .agentorchestrator-card.archived:hover{opacity:.85}
 
     /* ══ TODO LIST ══ */
     .todo-section{margin-bottom:18px}
@@ -560,8 +560,8 @@
     .cost-chip b{font-size:15px}
     .cost-chip.hi{border-color:#ff527044}.cost-chip.md{border-color:#f5c84244}.cost-chip.lo{border-color:#2ecc8a44}
 
-    /* edict list */
-    .od-edict-list{display:flex;flex-direction:column;gap:5px}
+    /* agentorchestrator list */
+    .od-agentorchestrator-list{display:flex;flex-direction:column;gap:5px}
     .oe-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel2);border-radius:7px;font-size:12px;cursor:pointer}
     .oe-item:hover{background:#141c30}
     .oe-id{font-size:10px;color:var(--acc);font-weight:700;min-width:110px}
@@ -836,7 +836,7 @@
     </div>
     <div class="global-scan-detail" id="global-scan-detail"></div>
     <div class="global-scan-history" id="global-scan-history"></div>
-    <div id="edict-grid" class="edict-grid"></div>
+    <div id="agentorchestrator-grid" class="agentorchestrator-grid"></div>
   </div>
 
   <!-- ══ 运行调度 ══ -->
@@ -1402,6 +1402,7 @@ const AGENT_ARCHITECTURE = {
   audit_specialist:{label:'合规专家', role:'合规审查专家', rank:'专业执行组', emoji:'⚖️', color:'#cc4444'},
   deploy_specialist:{label:'部署专家', role:'部署运维专家', rank:'专业执行组', emoji:'🧰', color:'#ff5270'},
   admin_specialist:{label:'技能管理员', role:'技能管理支持', rank:'专业执行组', emoji:'🗂️', color:'#9b59b6'},
+  expert_curator:{label:'专家编组官', role:'专家新增、下线与名册治理', rank:'治理角色', emoji:'🧩', color:'#7be0ff'},
   search_specialist:{label:'搜索专家', role:'全网搜索专家', rank:'支撑能力', emoji:'🌐', color:'#36cfc9'}
 };
 const AGENT_LABEL_TO_ID = Object.fromEntries(Object.entries(AGENT_ARCHITECTURE).flatMap(([id, meta]) => [
@@ -1409,6 +1410,10 @@ const AGENT_LABEL_TO_ID = Object.fromEntries(Object.entries(AGENT_ARCHITECTURE).
   [meta.label, id],
   [meta.role, id]
 ]));
+Object.assign(AGENT_LABEL_TO_ID, {
+  '专家编排师':'expert_curator',
+  '专家发现、角色编排与协作能力治理':'expert_curator'
+});
 const DEPT_COLOR = {
   '任务入口':'#ffd700',
   '结果归档':'#2ecc8a',
@@ -1503,8 +1508,8 @@ function updateLiveSummaryChips(payload){
     cs.className = 'chip ' + (sync.ok ? 'ok' : 'warn');
   }
   if(ct){
-    const edictCount = tasks.filter(isEdict).length;
-    ct.textContent = `${edictCount} 任务`;
+    const taskCount = tasks.filter(isAgentOrchestrator).length;
+    ct.textContent = `${taskCount} 任务`;
   }
 }
 function refreshOpenedTaskModal(changedIds, removedIds){
@@ -1738,7 +1743,7 @@ function renderContextWindowPanel(t){
 
 /* ══ TASK CLASSIFICATION ══ */
 // 主任务：JJC-* 开头，有真实标题
-function isEdict(t){ return /^JJC-/i.test(t.id||'') }
+function isAgentOrchestrator(t){ return /^JJC-/i.test(t.id||'') }
 // 系统会话：OC-* / MC-* 开头
 function isSession(t){ return /^(OC-|MC-)/i.test(t.id||'') }
 // 归档判定：仅检查显式 archived 标记（Done/Cancelled 留在活跃视图，等用户手动归档）
@@ -1791,6 +1796,7 @@ function pipeActionForDept(dept, task, remark=''){
     '合规专家':'执行',
     '部署专家':'执行',
     '技能管理员':'执行',
+    '专家编组官':'治理',
     '搜索专家':'执行',
   };
   return defaults[normalized] || '处理';
@@ -1896,7 +1902,7 @@ function miniPipe(t){
 
 /* ══ TASK CARDS ══ */
 function renderTasks(tasks){
-  const allTasks = tasks.filter(isEdict);
+  const allTasks = tasks.filter(isAgentOrchestrator);
   const activeTasks = allTasks.filter(t=>!isArchived(t));
   const archivedTasks = allTasks.filter(t=>isArchived(t));
   // Apply filter
@@ -1916,7 +1922,7 @@ function renderTasks(tasks){
   // Show "一键归档" button if there are un-archived Done/Cancelled tasks
   const unArchivedDone = allTasks.filter(t=>!t.archived && ['Done','Cancelled'].includes(t.state));
   document.getElementById('btn-archive-done').style.display = unArchivedDone.length ? '' : 'none';
-  const el = document.getElementById('edict-grid');
+  const el = document.getElementById('agentorchestrator-grid');
   if(!visibleTasks.length){
     el.innerHTML='<div class="empty" style="grid-column:1/-1">暂无任务<br><small style="font-size:11px;margin-top:6px;display:block;color:var(--muted)">通过飞书提交任务后，由总控中心预处理并转入后续协作流程</small></div>';
     return;
@@ -1935,7 +1941,7 @@ function renderTasks(tasks){
     const canResume = ['Blocked','Cancelled'].includes(t.state);
     const archCls = isArchived(t) ? ' archived' : '';
     return `
-    <div class="edict-card${archCls}" onclick='openTask(${JSON.stringify(t.id)})'>
+    <div class="agentorchestrator-card${archCls}" onclick='openTask(${JSON.stringify(t.id)})'>
       ${miniPipe(t)}
       <div class="ec-id">${esc(t.id)}</div>
       <div class="ec-title">${esc(t.title||'(无标题)')}</div>
@@ -2076,11 +2082,12 @@ function renderMonitor(tasks){
     {id:'audit_specialist', label:'合规专家', emoji:'⚖️', role:'合规审查专家', rank:'专业执行组'},
     {id:'deploy_specialist', label:'部署专家', emoji:'🧰', role:'部署运维专家', rank:'专业执行组'},
     {id:'admin_specialist', label:'技能管理员', emoji:'🗂️', role:'技能管理支持', rank:'专业执行组'},
+    {id:'expert_curator', label:'专家编组官', emoji:'🧩', role:'专家新增、下线与名册治理', rank:'治理角色'},
     {id:'search_specialist', label:'搜索专家', emoji:'🌐', role:'全网搜索专家', rank:'支撑能力'},
   ];
 
   // 每个中心或专家当前承接的任务：从 JJC 任务里找 org 匹配且非 Done 的
-  const activeTasks = tasks.filter(t => isEdict(t) && t.state !== 'Done' && t.state !== 'Next');
+  const activeTasks = tasks.filter(t => isAgentOrchestrator(t) && t.state !== 'Done' && t.state !== 'Next');
   // Agent 统计数据（如已加载）
   const offMap = {};
   if(agentsOverviewData && agentsOverviewData.agents){
@@ -2092,7 +2099,7 @@ function renderMonitor(tasks){
     // 该节点正在处理的任务
     const myTasks = activeTasks.filter(t => t.org === d.label);
     // 也从 flow_log 中找最近参与的任务
-    const recentEdict = tasks.filter(t=>isEdict(t))
+    const recentTask = tasks.filter(t=>isAgentOrchestrator(t))
       .find(t=>(t.flow_log||[]).some(f=>f.from===d.label||f.to===d.label));
 
     const off = offMap[d.id]||{};
@@ -2154,7 +2161,7 @@ function renderMonitor(tasks){
           </div>`).join('') :
           `<div class="dc-idle">
             <span style="font-size:20px">🪭</span>
-            <span>候命中 ${recentEdict?`· 最近参与 <b style="color:var(--muted)">${esc(recentEdict.id)}</b>`:'· 尚无任务记录'}</span>
+            <span>候命中 ${recentTask?`· 最近参与 <b style="color:var(--muted)">${esc(recentTask.id)}</b>`:'· 尚无任务记录'}</span>
           </div>`}
       </div>
       <div class="dc-footer">
@@ -2506,7 +2513,7 @@ function renderLiveActivity(data){
   const phaseBar = document.getElementById('la-phase-bar');
   if(phaseBar && data.phaseDurations && data.phaseDurations.length){
     const maxDur = Math.max(...data.phaseDurations.map(p=>p.durationSec||1), 1);
-    const phaseColors = {'总控中心':'#f97316','规划中心':'#3b82f6','评审中心':'#8b5cf6','调度中心':'#10b981','专业执行组':'#06b6d4','文案专家':'#ec4899','数据专家':'#f59e0b','代码专家':'#44aaff','合规专家':'#6366f1','部署专家':'#ff5270','技能管理员':'#d946ef','任务入口':'#eab308','结果归档':'#22c55e'};
+    const phaseColors = {'总控中心':'#f97316','规划中心':'#3b82f6','评审中心':'#8b5cf6','调度中心':'#10b981','专业执行组':'#06b6d4','文案专家':'#ec4899','数据专家':'#f59e0b','代码专家':'#44aaff','合规专家':'#6366f1','部署专家':'#ff5270','技能管理员':'#d946ef','专家编组官':'#7be0ff','任务入口':'#eab308','结果归档':'#22c55e'};
     let totalDurText = data.totalDuration ? `<span style="margin-left:auto;font-size:10px;color:var(--muted)">总耗时 ${data.totalDuration}</span>` : '';
     phaseBar.innerHTML = `<div style="padding:4px 0 8px;border-bottom:1px solid var(--border)">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="font-size:11px;font-weight:600;color:var(--fg)">⏱ 阶段耗时</span>${totalDurText}</div>
@@ -2572,7 +2579,7 @@ function renderLiveActivity(data){
   if(dot){dot.classList.toggle('idle',!isActive);}
 
   // Agent label map
-  const _agentLabels={control_center:'总控中心',plan_center:'规划中心',review_center:'评审中心',dispatch_center:'调度中心',docs_specialist:'文案专家',data_specialist:'数据专家',code_specialist:'代码专家',audit_specialist:'合规专家',deploy_specialist:'部署专家',admin_specialist:'技能管理员',search_specialist:'搜索专家'};
+  const _agentLabels={control_center:'总控中心',plan_center:'规划中心',review_center:'评审中心',dispatch_center:'调度中心',docs_specialist:'文案专家',data_specialist:'数据专家',code_specialist:'代码专家',audit_specialist:'合规专家',deploy_specialist:'部署专家',admin_specialist:'技能管理员',expert_curator:'专家编组官',search_specialist:'搜索专家'};
 
   const renderEntry=(a)=>{
     const time=a.at?fmtActivityTime(a.at):'';
@@ -4004,7 +4011,7 @@ const AGENT_EMOJI_MAP = {};
 const AGENT_LABEL_MAP = {};
 let sessFilter = 'all';
 
-// isEdict already defined above
+// isAgentOrchestrator already defined above
 
 /* 从 title 和 sourceMeta 中提取人类可读名称 */
 function humanTitle(t){
@@ -4119,7 +4126,7 @@ function renderSessions(tasks){
       AGENT_LABEL_MAP[a.id] = a.label||a.id;
     });
   }
-  const sessions = tasks.filter(t=>!isEdict(t));
+  const sessions = tasks.filter(t=>!isAgentOrchestrator(t));
   document.getElementById('tb-s').textContent = sessions.length;
   // apply filter
   let filtered = sessions;
@@ -5065,7 +5072,7 @@ function selectAgentOverview(id, el){
       <div class="od-sec-title">参与任务（${tasks.length} 个）</div>
       ${!tasks.length
         ? '<div style="font-size:12px;color:var(--muted);padding:8px 0">暂无任务记录</div>'
-        : `<div class="od-edict-list">${tasks.map(e=>`
+        : `<div class="od-agentorchestrator-list">${tasks.map(e=>`
           <div class="oe-item" onclick='openTask(${JSON.stringify(e.id)})'>
             <span class="oe-id">${esc(e.id)}</span>
             <span class="oe-title">${esc(e.title.substring(0,35))}</span>
@@ -5766,13 +5773,13 @@ async function loadTaskOutput(taskId){
   }
 }
 
-/* ══ FREE EDICT ══ */
-async function submitFreeEdict(){
-  const input = document.getElementById('free-edict-input');
+/* ══ FREE AGENTORCHESTRATOR ══ */
+async function submitFreeTask(){
+  const input = document.getElementById('free-agentorchestrator-input');
   const text = (input.value||'').trim();
   if(!text || text.length < 6){ toast('请输入至少6个字的任务内容','err'); return; }
   if(!confirm('确认发起任务？\n\n'+text.substring(0,200)+(text.length>200?'…':''))) return;
-  const priority = document.getElementById('free-edict-priority').value;
+  const priority = document.getElementById('free-agentorchestrator-priority').value;
   try{
     const r = await postJ(API+'/create-task', {
       title: text.substring(0,120),

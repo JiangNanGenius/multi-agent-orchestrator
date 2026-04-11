@@ -109,8 +109,8 @@
   },
   "metadata": {
     "generatedBy": "scripts/sync_agent_config.py",
-    "updatedAt": "2026-04-09 10:47:07",
-    "workspace": ".openclaw/workspace-docs_specialist",
+    "updatedAt": "2026-04-11 08:13:48",
+    "workspace": "/home/ubuntu/.openclaw/workspace-docs_specialist",
     "model": "unknown"
   }
 }

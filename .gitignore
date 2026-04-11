@@ -29,14 +29,14 @@ venv/
 
 # Node.js
 node_modules/
-edict/frontend/node_modules/
+agentorchestrator/frontend/node_modules/
 *.tsbuildinfo
 
 # Vite cache
 .vite/
 
 # Frontend build artifacts
-edict/frontend/dist/
+agentorchestrator/frontend/dist/
 
 # IDE
 .vscode/
@@ -56,20 +56,20 @@ data
 /audit_outputs/dashboard_runtime_preview_*.md
 /audit_outputs/internal_preview_notes_*.md
 /artifacts/
-/edict/TODO_*.md
-/edict/WORKLOG_*.md
-/edict/DELIVERY_*.md
-/edict/E2E_*_result_*.json
-/edict/notes_*.md
-/edict/tmp_*
-/edict/mobile_probe*
-/edict/mobile_live_audit.*
-/edict/qa_round10_mobile_artifacts/
-/edict/qa_round10_mobile.spec.js
-/edict/qa_round10_mobile_run.js
-/edict/frontend/.notes/
-/edict/frontend/.task_notes/
-/edict/frontend/review/
-/edict/frontend/test-results/
-/edict/test-results/
+/agentorchestrator/TODO_*.md
+/agentorchestrator/WORKLOG_*.md
+/agentorchestrator/DELIVERY_*.md
+/agentorchestrator/E2E_*_result_*.json
+/agentorchestrator/notes_*.md
+/agentorchestrator/tmp_*
+/agentorchestrator/mobile_probe*
+/agentorchestrator/mobile_live_audit.*
+/agentorchestrator/qa_round10_mobile_artifacts/
+/agentorchestrator/qa_round10_mobile.spec.js
+/agentorchestrator/qa_round10_mobile_run.js
+/agentorchestrator/frontend/.notes/
+/agentorchestrator/frontend/.task_notes/
+/agentorchestrator/frontend/review/
+/agentorchestrator/frontend/test-results/
+/agentorchestrator/test-results/
 /review_notes/demo_*.md

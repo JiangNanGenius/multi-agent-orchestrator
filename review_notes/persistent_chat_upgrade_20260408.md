@@ -16,22 +16,22 @@
 
 ### 前端
 
-1. 新增 `edict/frontend/src/components/PersistentAgentChat.tsx`
+1. 新增 `agentorchestrator/frontend/src/components/PersistentAgentChat.tsx`
    - 统一封装左侧会话列表、中间草稿/任务聊天区、右侧快捷意图与规则区。
    - 草稿态使用 `localStorage` 保存最近消息、未发送输入与当前选中会话，支持刷新恢复。
    - 已创建任务态通过 `taskId` 拉取 `taskActivity`，并定时刷新活动流，支持后台执行后恢复追踪。
 
-2. 重写 `edict/frontend/src/components/SkillsConfig.tsx`
+2. 重写 `agentorchestrator/frontend/src/components/SkillsConfig.tsx`
    - 保留本地技能名册与新增技能能力。
    - 将“技能管理员任务窗口”升级为“技能管理员会话窗口”。
    - 创建任务时继续复用 `templateId = skills_config_dialog` 与 `targetAgentId = admin_specialist`，因此历史任务也能按 Agent 分类恢复。
 
-3. 重写 `edict/frontend/src/components/OfficialPanel.tsx`
+3. 重写 `agentorchestrator/frontend/src/components/OfficialPanel.tsx`
    - 保留 Agent 贡献排行与详情面板。
    - 将专家编组官入口改为可展开的持久化聊天会话窗口。
    - 删除动作的说明区继续只展示“后续增设专家”，用于帮助用户正确描述治理对象。
 
-4. 更新 `edict/frontend/src/api.ts`
+4. 更新 `agentorchestrator/frontend/src/api.ts`
    - 新增 `taskAppendMessage(taskId, agentId, message)`。
 
 ### 后端
@@ -79,6 +79,6 @@
 
 ## 后续注意事项
 
-1. 当前前端仍然对接 `dashboard/server.py`，不是 `edict/backend/app/api/tasks.py`。若后续整体切换到 FastAPI 后端，需要将本次续聊接口与活动流聚合逻辑同步迁移。
+1. 当前前端仍然对接 `dashboard/server.py`，不是 `agentorchestrator/backend/app/api/tasks.py`。若后续整体切换到 FastAPI 后端，需要将本次续聊接口与活动流聚合逻辑同步迁移。
 2. 本地联调中 `wake_agent` 依赖外部命令 `openclaw`。若部署环境未提供该命令，追加说明仍会成功写入活动流，但不会真正唤醒对应 Agent。
 3. 若未来希望同一套窗口扩展到更多 Agent，会优先复用 `PersistentAgentChat` 组件，只需定义会话筛选规则、快捷意图与草稿摘要策略。

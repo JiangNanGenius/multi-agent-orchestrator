@@ -103,8 +103,8 @@
 | --- | --- |
 | `dashboard/court_discuss.py` | 旧 ID 与旧角色模板 deeply embedded |
 | `dashboard/dashboard.html` | 旧 ID 在前端逻辑中大量硬编码 |
-| `edict/migration/versions/001_initial.py` | 仍有默认组织值如“太子” |
-| `edict/scripts/kanban_update_edict.py` | 仍有旧状态流转、旧中文组织名与旧 ID 映射 |
+| `agentorchestrator/migration/versions/001_initial.py` | 仍有默认组织值如“太子” |
+| `agentorchestrator/scripts/kanban_update_agentorchestrator.py` | 仍有旧状态流转、旧中文组织名与旧 ID 映射 |
 
 ### 3. 文档与示例层
 
@@ -155,7 +155,7 @@
 | 1 | 先锁定全部最终新 ID 映射表 | 目前只明确锁定了 `centercontrol`，其余仍需统一最终写死 |
 | 2 | 修改 `agents.json` | 作为全系统 agent 主配置，是目录与调用链的总入口 |
 | 3 | 重命名 `agents/` 目录及其内部引用 | 先结构后文案，避免继续出现半新半旧 |
-| 4 | 修改 `scripts/`、`edict/scripts/`、`migration/` | 处理状态流转、组织名和默认值 |
+| 4 | 修改 `scripts/`、`agentorchestrator/scripts/`、`migration/` | 处理状态流转、组织名和默认值 |
 | 5 | 修改 `dashboard/` 源文件 | 包括过滤器、角色表、已知 agent 列表、唤醒目标等 |
 | 6 | 处理 `dashboard/dist/` 产物 | 视项目构建方式决定重建或替换 |
 | 7 | 重写 `docs/`、`examples/`、`README` | 用最终结构反推文档，减少反复返工 |

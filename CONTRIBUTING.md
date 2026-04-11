@@ -128,8 +128,8 @@ http://127.0.0.1:7891
 | Module | Suggested action |
 | --- | --- |
 | Dashboard service | `python3 dashboard/server.py` |
-| Frontend | Work inside `edict/frontend/` and run the local build flow |
-| Backend | Extend services and orchestration logic in `edict/backend/` |
+| Frontend | Work inside `agentorchestrator/frontend/` and run the local build flow |
+| Backend | Extend services and orchestration logic in `agentorchestrator/backend/` |
 | Scripts | Run task-refresh or sync scripts inside `scripts/` as needed |
 
 If you add new developer instructions, please update the relevant documentation so that public users can follow the same workflow.

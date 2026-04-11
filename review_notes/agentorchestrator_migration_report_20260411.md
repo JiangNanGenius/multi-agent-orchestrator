@@ -1,0 +1,149 @@
+# agentorchestrator 迁移执行报告（2026-04-11）
+
+## 已重命名路径
+
+- `review_notes/audit_links_non_task.py` → `review_notes/audit_links_non_legacy.py`
+- `review_notes/recheck_markdown_links_non_task.py` → `review_notes/recheck_markdown_links_non_legacy.py`
+- `review_notes/link_audit_non_task_20260411.json` → `review_notes/link_audit_non_legacy_20260411.json`
+- `review_notes/link_audit_non_task_postfix_20260411.json` → `review_notes/link_audit_non_legacy_postfix_20260411.json`
+- `review_notes/task_full_scan_20260411.txt` → `review_notes/agentorchestrator_full_scan_20260411.txt`
+- `review_notes/task_modernization_delivery_2026-04-10.md` → `review_notes/agentorchestrator_modernization_delivery_2026-04-10.md`
+- `review_notes/task_residual_check_delivery_20260411.md` → `review_notes/agentorchestrator_residual_check_delivery_20260411.md`
+- `review_notes/task_scan_summary_20260411.md` → `review_notes/agentorchestrator_scan_summary_20260411.md`
+- `task_agent_architecture.md` → `agentorchestrator_agent_architecture.md`
+- `task.sh` → `agentorchestrator.sh`
+- `task.service` → `agentorchestrator.service`
+- `task/scripts/kanban_update_task.py` → `task/scripts/kanban_update_agentorchestrator.py`
+- `task/frontend/src/components/TaskBoard.tsx` → `task/frontend/src/components/AgentOrchestratorBoard.tsx`
+- `task` → `agentorchestrator`
+
+## 已改写文本文件
+
+- `COLLAB_GLOBAL_AGENT_BUSY_STATE.md`
+- `CONTRIBUTING.md`
+- `PUBLIC_REPO_METADATA.md`
+- `README.md`
+- `README_EN.md`
+- `README_JA.md`
+- `TASK_WORKSPACE_LEDGER_DESIGN.md`
+- `TODO_manus_2026-04-09.md`
+- `TODO_task_workspace_ledger.md`
+- `WINDOWS_INSTALL_CN.md`
+- `agentorchestrator.sh`
+- `install.ps1`
+- `install.sh`
+- `requirements.txt`
+- `todo.md`
+- `uninstall.sh`
+- `DEPLOYMENT_PRECHECK_REPORT_2026-04-11.md`
+- `agentorchestrator.service`
+- `DEPLOYMENT_FIX_AND_VERIFY_2026-04-11.md`
+- `agentorchestrator_agent_architecture.md`
+- `.github/labeler.yml`
+- `audit_outputs/legacy_term_audit_findings.md`
+- `audit_outputs/legacy_term_audit_report_20260408.md`
+- `audit_outputs/legacy_terms_cn.txt`
+- `audit_outputs/publish_candidate_files.txt`
+- `audit_outputs/publish_targets.txt`
+- `audit_outputs/secret_scan_hits.txt`
+- `dashboard/auth.py`
+- `dashboard/dashboard.html`
+- `dashboard/server.py`
+- `dashboard/dist/assets/index-DE7ZHGBS.js`
+- `dashboard/dist/assets/index-DYeAbTBD.css`
+- `docs/agent_registry_spec.md`
+- `docs/automation-task-management-design.md`
+- `docs/current_architecture_overview.md`
+- `docs/current_capability_boundary.md`
+- `docs/getting-started.md`
+- `docs/project-progress-log.md`
+- `docs/remote-skills-quickstart.md`
+- `docs/task-dispatch-architecture.md`
+- `docs/technical-architecture.md`
+- `docs/user-guide.md`
+- `docs/wechat-article.md`
+- `docs/archive/root_legacy_notes/README_modern_cn_cleanup_20260407.md`
+- `docs/archive/root_legacy_notes/TODO_legacy_term_audit.md`
+- `docs/archive/stage_notes_20260407_20260408/archive_delivery_alignment_checklist_20260408.md`
+- `docs/archive/stage_notes_20260407_20260408/change_log_20260407.md`
+- `docs/archive/stage_notes_20260407_20260408/context_recovery_note_20260408.md`
+- `docs/archive/stage_notes_20260407_20260408/final_delivery_report_20260407.md`
+- `docs/archive/stage_notes_20260407_20260408/gap_audit_20260407.md`
+- `docs/archive/stage_notes_20260407_20260408/logic_chain_memory_20260408.md`
+- `docs/archive/stage_notes_20260407_20260408/project_understanding_20260408.md`
+- `docs/archive/stage_notes_20260407_20260408/source_attribution_notes_20260407.md`
+- `agentorchestrator/README.md`
+- `agentorchestrator/WORKLOG_2026-04-08_final_push.md`
+- `agentorchestrator/alembic.ini`
+- `agentorchestrator/SCREENSHOT_REFRESH_RESULT_2026-04-11.md`
+- `agentorchestrator/backend/requirements.txt`
+- `agentorchestrator/backend/app/__init__.py`
+- `agentorchestrator/backend/app/config.py`
+- `agentorchestrator/backend/app/main.py`
+- `agentorchestrator/backend/app/api/admin.py`
+- `agentorchestrator/backend/app/api/agents.py`
+- `agentorchestrator/backend/app/api/events.py`
+- `agentorchestrator/backend/app/api/legacy.py`
+- `agentorchestrator/backend/app/api/tasks.py`
+- `agentorchestrator/backend/app/api/websocket.py`
+- `agentorchestrator/backend/app/channels/webhook.py`
+- `agentorchestrator/backend/app/models/__init__.py`
+- `agentorchestrator/backend/app/models/event.py`
+- `agentorchestrator/backend/app/models/task.py`
+- `agentorchestrator/backend/app/models/thought.py`
+- `agentorchestrator/backend/app/models/todo.py`
+- `agentorchestrator/backend/app/services/event_bus.py`
+- `agentorchestrator/backend/app/services/task_service.py`
+- `agentorchestrator/backend/app/workers/dispatch_worker.py`
+- `agentorchestrator/backend/app/workers/orchestrator_worker.py`
+- `agentorchestrator/backend/app/workers/outbox_relay.py`
+- `agentorchestrator/frontend/USER_UI_REWRITE_REPORT.md`
+- `agentorchestrator/frontend/package-lock.json`
+- `agentorchestrator/frontend/package.json`
+- `agentorchestrator/frontend/src/App.tsx`
+- `agentorchestrator/frontend/src/i18n.ts`
+- `agentorchestrator/frontend/src/index.css`
+- `agentorchestrator/frontend/src/store.ts`
+- `agentorchestrator/frontend/src/components/AutomationPanel.tsx`
+- `agentorchestrator/frontend/src/components/CourtCeremony.tsx`
+- `agentorchestrator/frontend/src/components/CourtDiscussion.tsx`
+- `agentorchestrator/frontend/src/components/MemorialPanel.tsx`
+- `agentorchestrator/frontend/src/components/MonitorPanel.tsx`
+- `agentorchestrator/frontend/src/components/OfficialPanel.tsx`
+- `agentorchestrator/frontend/src/components/SessionsPanel.tsx`
+- `agentorchestrator/frontend/src/components/SkillsConfig.tsx`
+- `agentorchestrator/frontend/src/components/AgentOrchestratorBoard.tsx`
+- `agentorchestrator/frontend/dist/assets/index-DYeAbTBD.css`
+- `agentorchestrator/frontend/dist/assets/index-DE7ZHGBS.js`
+- `agentorchestrator/migration/migrate_json_to_pg.py`
+- `agentorchestrator/scripts/kanban_update_agentorchestrator.py`
+- `review_notes/agentorchestrator_scan_summary_20260411.md`
+- `review_notes/persistent_chat_upgrade_20260408.md`
+- `review_notes/link_audit_non_legacy_postfix_20260411.json`
+- `review_notes/link_audit_non_legacy_20260411.json`
+- `review_notes/agentorchestrator_full_scan_20260411.txt`
+- `review_notes/document_link_fix_summary_20260411.md`
+- `review_notes/kanban_screenshot_issue_note_20260411.md`
+- `review_notes/agentorchestrator_migration_todo_20260411.md`
+- `review_notes/agentorchestrator_migrate_20260411.py`
+- `review_notes/audit_links_non_legacy.py`
+- `review_notes/recheck_markdown_links_non_legacy.py`
+- `review_notes/agentorchestrator_modernization_delivery_2026-04-10.md`
+- `review_notes/agentorchestrator_residual_check_delivery_20260411.md`
+- `review_notes/archive_20260408/feishu_reply_mechanism_findings.md`
+- `review_notes/archive_20260408/final_refactor_verification_20260408.md`
+- `review_notes/archive_20260408/full_legacy_scan_20260408.txt`
+- `review_notes/archive_20260408/full_legacy_scan_clean_sources_20260408.txt`
+- `review_notes/archive_20260408/full_public_audit_hits_20260407.txt`
+- `review_notes/archive_20260408/full_rename_audit_20260408.txt`
+- `review_notes/archive_20260408/full_rename_audit_summary_20260408.md`
+- `review_notes/archive_20260408/legacy_terms_and_docker_audit_20260408.md`
+- `review_notes/archive_20260408/phase3_hotspots_after_agents_rewrite_20260408.md`
+- `review_notes/archive_20260408/public_repo_full_check_summary_20260407.md`
+- `review_notes/archive_20260408/restructure_checkpoint_20260408.md`
+- `scripts/kanban_update.py`
+- `scripts/record_demo.py`
+- `scripts/refresh_watcher.py`
+- `scripts/run_loop.sh`
+- `scripts/take_screenshots.py`
+- `tests/test_state_machine_consistency.py`

@@ -16,7 +16,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 def _load_pg_transitions() -> dict[str, set[str]]:
     """从 task.py 源码解析 STATE_TRANSITIONS（无需 import，避免 SQLAlchemy 依赖）。"""
-    task_py = ROOT / "edict" / "backend" / "app" / "models" / "task.py"
+    task_py = ROOT / "agentorchestrator" / "backend" / "app" / "models" / "task.py"
     source = task_py.read_text(encoding="utf-8")
 
     # 提取 TaskState enum 成员名

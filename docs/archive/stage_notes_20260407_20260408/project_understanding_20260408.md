@@ -47,16 +47,16 @@
 
 ## 四、前端到底已经长成什么样子
 
-从 `App.tsx`、`api.ts`、`store.ts` 与 `EdictBoard.tsx` 可以确认，前端已经不再是一个只看任务列表的简陋页面，而是一个包含**任务看板、协同讨论、运行监控、自动化中心、Agent 总览、模型配置、技能配置、快速任务、结果归档、模板中心、全网搜索**等多个顶层标签的完整操作台。[9] [12] [13]
+从 `App.tsx`、`api.ts`、`store.ts` 与 `AgentOrchestratorBoard.tsx` 可以确认，前端已经不再是一个只看任务列表的简陋页面，而是一个包含**任务看板、协同讨论、运行监控、自动化中心、Agent 总览、模型配置、技能配置、快速任务、结果归档、模板中心、全网搜索**等多个顶层标签的完整操作台。[9] [12] [13]
 
 前端架构也比较清晰。`api.ts` 负责把所有后端接口标准化为类型化调用；`store.ts` 负责定义前端的领域模型，包括任务管线、状态中文化、归档分类、自动化摘要和全局标签结构；各个组件再在这一抽象层之上渲染具体面板。[9] [12] [13] 这说明项目在界面层已经具备相当稳定的产品表面，而不是停留在“演示页面”阶段。
 
 | 前端层次 | 主要职责 | 代表文件 |
 |---|---|---|
-| 应用壳层 | 登录、鉴权、标签页装配、整体布局 | `edict/frontend/src/App.tsx` [12] |
-| API 层 | 封装所有后端接口与类型 | `edict/frontend/src/api.ts` [13] |
-| 领域映射层 | 管线定义、状态标签、自动化摘要、标签配置 | `edict/frontend/src/store.ts` [9] |
-| 任务看板层 | 任务卡片、归档操作、批量归档、总控巡检入口 | `edict/frontend/src/components/EdictBoard.tsx` [14] |
+| 应用壳层 | 登录、鉴权、标签页装配、整体布局 | `agentorchestrator/frontend/src/App.tsx` [12] |
+| API 层 | 封装所有后端接口与类型 | `agentorchestrator/frontend/src/api.ts` [13] |
+| 领域映射层 | 管线定义、状态标签、自动化摘要、标签配置 | `agentorchestrator/frontend/src/store.ts` [9] |
+| 任务看板层 | 任务卡片、归档操作、批量归档、总控巡检入口 | `agentorchestrator/frontend/src/components/AgentOrchestratorBoard.tsx` [14] |
 
 ## 五、自动化托管是这个项目的新重点，但它不等于自动归档
 
@@ -83,7 +83,7 @@
 | 原始任务数据 | 保存任务状态、日志、归档、自动化配置 | `tasks_source.json` / `tasks.json` [10] |
 | 运行时配置 | 定义 Agent 实时策略、并发、修复范围、注册信息 | `agent_config.json` [11] |
 | 刷新脚本输出 | 聚合为前端直接消费的实时态 | `live_status.json` [11] |
-| 前端摘要 | 将调度、归档、状态流转翻译成用户可读界面 | `store.ts` / `EdictBoard.tsx` [9] [14] |
+| 前端摘要 | 将调度、归档、状态流转翻译成用户可读界面 | `store.ts` / `AgentOrchestratorBoard.tsx` [9] [14] |
 
 ## 七、Agent 资产与部署链路说明了什么
 
@@ -128,10 +128,10 @@
 [6]: ./scripts/sync_agent_config.py "Agent 配置同步与 SOUL 部署脚本"
 [7]: ./docs/attachment_context_addendum_20260408.md "新增附件补充上下文说明"
 [8]: ./docs/plan_alignment_review_20260408.md "计划对齐复盘文档"
-[9]: ./edict/frontend/src/store.ts "前端状态仓库与领域映射"
+[9]: ./agentorchestrator/frontend/src/store.ts "前端状态仓库与领域映射"
 [10]: ./dashboard/server.py "看板本地 API 主服务"
 [11]: ./scripts/refresh_live_data.py "实时数据刷新脚本"
-[12]: ./edict/frontend/src/App.tsx "前端应用入口"
-[13]: ./edict/frontend/src/api.ts "前端 API 层"
-[14]: ./edict/frontend/src/components/EdictBoard.tsx "任务看板组件"
+[12]: ./agentorchestrator/frontend/src/App.tsx "前端应用入口"
+[13]: ./agentorchestrator/frontend/src/api.ts "前端 API 层"
+[14]: ./agentorchestrator/frontend/src/components/AgentOrchestratorBoard.tsx "任务看板组件"
 [15]: ./docs/current_todo_20260408.md "当前阶段新版 TODO"

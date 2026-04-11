@@ -32,21 +32,21 @@
 | P0 | `install.ps1` | Windows 安装脚本 | 与 `install.sh` 相同，仍保留全套旧 ID 和旧工作目录 |
 | P0 | `dashboard/dashboard.html` | 旧看板主页面 | 仍含旧 CSS 类、旧过滤器、旧 agent 注册表、旧映射、旧“早朝简报”页签与相关文案 |
 | P0 | `dashboard/server.py` | 看板后端 | 仍含旧 agent 列表、旧状态映射、旧触发器命名与旧升级目标 |
-| P0 | `edict/backend/app/models/task.py` | 后端状态到 agent 映射 | 仍大量映射到旧 ID，且保留旧组织名与中文别名 |
-| P0 | `edict/backend/app/workers/orchestrator_worker.py` | 主编排器 | 仍以旧状态流转和旧 agent 作为默认目标与升级链 |
-| P0 | `edict/backend/app/workers/dispatch_worker.py` | 派发与分组逻辑 | 仍保留 `sansheng` / `liubu` 分组、旧 agent 池和旧提醒文案 |
-| P0 | `edict/backend/app/api/agents.py` | agent 展示配置 | 仍暴露旧 `zaochao` 与旧 ID 到前端 API |
-| P0 | `edict/frontend/src/store.ts` | 前端核心映射 | 仍保留旧颜色、旧中文别名替换、旧 agent 列表、晨报中心旧叙事 |
-| P0 | `edict/frontend/src/components/TaskModal.tsx` | 任务详情映射 | 仍将旧 ID 直接映射到中文名称 |
-| P0 | `edict/frontend/src/components/CourtDiscussion.tsx` | 协同讨论组件 | 仍使用旧 ID、旧位置布局和旧分组结构 |
-| P0 | `edict/frontend/src/components/CourtCeremony.tsx` | 仪式文案 | 仍显示“早朝开始” |
+| P0 | `agentorchestrator/backend/app/models/task.py` | 后端状态到 agent 映射 | 仍大量映射到旧 ID，且保留旧组织名与中文别名 |
+| P0 | `agentorchestrator/backend/app/workers/orchestrator_worker.py` | 主编排器 | 仍以旧状态流转和旧 agent 作为默认目标与升级链 |
+| P0 | `agentorchestrator/backend/app/workers/dispatch_worker.py` | 派发与分组逻辑 | 仍保留 `sansheng` / `liubu` 分组、旧 agent 池和旧提醒文案 |
+| P0 | `agentorchestrator/backend/app/api/agents.py` | agent 展示配置 | 仍暴露旧 `zaochao` 与旧 ID 到前端 API |
+| P0 | `agentorchestrator/frontend/src/store.ts` | 前端核心映射 | 仍保留旧颜色、旧中文别名替换、旧 agent 列表、晨报中心旧叙事 |
+| P0 | `agentorchestrator/frontend/src/components/TaskModal.tsx` | 任务详情映射 | 仍将旧 ID 直接映射到中文名称 |
+| P0 | `agentorchestrator/frontend/src/components/CourtDiscussion.tsx` | 协同讨论组件 | 仍使用旧 ID、旧位置布局和旧分组结构 |
+| P0 | `agentorchestrator/frontend/src/components/CourtCeremony.tsx` | 仪式文案 | 仍显示“早朝开始” |
 | P0 | `dashboard/dist/assets/*` | 编译产物 | 仍含旧看板代码；待源码改完后必须重新构建 |
 | P1 | `README_EN.md` | 安装示例 | 仍提示 `openclaw agents add taizi` |
 | P1 | `WINDOWS_INSTALL_CN.md` | 安装文档 | 仍保留旧 workspace 目录与旧 agent 列表 |
 | P1 | `docs/remote-skills-guide.md` | 远程技能文档 | 仍使用 `zhongshu`、`bingbu` 等旧 agent 示例与旧路径 |
 | P1 | `docs/remote-skills-quickstart.md` | 快速入门 | 与上类似，旧 agent 名称密集残留 |
 | P1 | `README_modern_cn_cleanup_20260407.md` | 旧清理复盘文档 | 仍记录历史兼容说明，需重写或明确归档语义 |
-| P2 | `edict/frontend/src/index.css` | 旧样式类 | 仍保留 `dt-中书省` 等旧类名，需与前端 store / 页面展示一并替换 |
+| P2 | `agentorchestrator/frontend/src/index.css` | 旧样式类 | 仍保留 `dt-中书省` 等旧类名，需与前端 store / 页面展示一并替换 |
 
 ## 推荐的后续执行顺序
 

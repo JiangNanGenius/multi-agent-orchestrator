@@ -27,7 +27,7 @@ PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 scripts_dir = str(PROJECT_ROOT / 'scripts')
 if scripts_dir not in sys.path:
     sys.path.insert(0, scripts_dir)
-BACKEND_DIR = str(PROJECT_ROOT / 'edict' / 'backend')
+BACKEND_DIR = str(PROJECT_ROOT / 'agentorchestrator' / 'backend')
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 from file_lock import atomic_json_read, atomic_json_write, atomic_json_update
@@ -51,7 +51,7 @@ from court_discuss import (
 log = logging.getLogger('server')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(message)s', datefmt='%H:%M:%S')
 
-CHANNELS_DIR = PROJECT_ROOT / 'edict' / 'backend' / 'app' / 'channels'
+CHANNELS_DIR = PROJECT_ROOT / 'agentorchestrator' / 'backend' / 'app' / 'channels'
 from app.channels import get_channel, get_channel_info, CHANNELS as NOTIFICATION_CHANNELS
 
 OCLAW_HOME = pathlib.Path.home() / '.openclaw'
@@ -1056,9 +1056,9 @@ _AGENT_DEPTS = [
     {'id':'docs_specialist',  'label':'文案专家', 'emoji':'📝', 'role':'内容文档专家',     'rank':'专业执行组'},
     {'id':'data_specialist',  'label':'数据专家', 'emoji':'💰', 'role':'数据分析专家',     'rank':'专业执行组'},
     {'id':'code_specialist',  'label':'代码专家', 'emoji':'💻', 'role':'工程实现专家',     'rank':'专业执行组'},
-    {'id':'audit_specialist', 'label':'合规专家', 'emoji':'⚖️', 'role':'合规审查专家',     'rank':'专业执行组'},
+    {'id':'audit_specialist', 'label':'审计专家', 'emoji':'⚖️', 'role':'审计审查专家',     'rank':'专业执行组'},
     {'id':'deploy_specialist','label':'部署专家', 'emoji':'🧰', 'role':'部署运维专家',     'rank':'专业执行组'},
-    {'id':'admin_specialist', 'label':'技能管理员', 'emoji':'🗂️', 'role':'技能管理支持',     'rank':'专业执行组'},
+    {'id':'admin_specialist', 'label':'管理专家', 'emoji':'🗂️', 'role':'技能管理支持',     'rank':'专业执行组'},
     {'id':'search_specialist','label':'搜索专家', 'emoji':'🌐', 'role':'全网搜索专家',     'rank':'支撑能力'},
 ]
 
@@ -2886,7 +2886,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json; charset=utf-8')
                     self.send_header('Content-Length', str(len(body_bytes)))
-                    self.send_header('Set-Cookie', f'edict_token={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
+                    self.send_header('Set-Cookie', f'agentorchestrator_token={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
                     cors_headers(self)
                     self.end_headers()
                     self.wfile.write(body_bytes)
@@ -2901,7 +2901,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
                 self.send_header('Content-Length', str(len(body_bytes)))
-                self.send_header('Set-Cookie', 'edict_token=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0')
+                self.send_header('Set-Cookie', 'agentorchestrator_token=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0')
                 cors_headers(self)
                 self.end_headers()
                 self.wfile.write(body_bytes)
@@ -2931,7 +2931,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json; charset=utf-8')
                     self.send_header('Content-Length', str(len(body_bytes)))
-                    self.send_header('Set-Cookie', f'edict_token={new_token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
+                    self.send_header('Set-Cookie', f'agentorchestrator_token={new_token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
                     cors_headers(self)
                     self.end_headers()
                     self.wfile.write(body_bytes)
@@ -2955,7 +2955,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json; charset=utf-8')
                     self.send_header('Content-Length', str(len(body_bytes)))
-                    self.send_header('Set-Cookie', f'edict_token={new_token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
+                    self.send_header('Set-Cookie', f'agentorchestrator_token={new_token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
                     cors_headers(self)
                     self.end_headers()
                     self.wfile.write(body_bytes)
@@ -2975,7 +2975,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_response(200)
                     self.send_header('Content-Type', 'application/json; charset=utf-8')
                     self.send_header('Content-Length', str(len(body_bytes)))
-                    self.send_header('Set-Cookie', f'edict_token={new_token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
+                    self.send_header('Set-Cookie', f'agentorchestrator_token={new_token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400')
                     cors_headers(self)
                     self.end_headers()
                     self.wfile.write(body_bytes)

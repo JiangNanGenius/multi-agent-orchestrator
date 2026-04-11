@@ -1,0 +1,717 @@
+{
+  "root": "/home/ubuntu/multi-agent-orchestrator_public",
+  "checked_files": [
+    ".github/ISSUE_TEMPLATE/bug_report.md",
+    ".github/ISSUE_TEMPLATE/feature_request.md",
+    ".github/ISSUE_TEMPLATE/question.md",
+    ".github/pull_request_template.md",
+    ".pytest_cache/README.md",
+    "CODE_OF_CONDUCT.md",
+    "COLLAB_GLOBAL_AGENT_BUSY_STATE.md",
+    "COLLAB_MEETING_REDESIGN.md",
+    "CONTRIBUTING.md",
+    "DEPLOYMENT_FIX_AND_VERIFY_2026-04-11.md",
+    "DEPLOYMENT_PRECHECK_REPORT_2026-04-11.md",
+    "PUBLIC_REPO_METADATA.md",
+    "README.md",
+    "README_EN.md",
+    "README_JA.md",
+    "ROADMAP.md",
+    "SECURITY.md",
+    "TASK_WORKSPACE_LEDGER_DESIGN.md",
+    "TODO_manus_2026-04-09.md",
+    "TODO_task_workspace_ledger.md",
+    "WINDOWS_INSTALL_CN.md",
+    "agents/GLOBAL.md",
+    "agents/admin_specialist/SOUL.md",
+    "agents/audit_specialist/SOUL.md",
+    "agents/code_specialist/SOUL.md",
+    "agents/control_center/SOUL.md",
+    "agents/data_specialist/SOUL.md",
+    "agents/deploy_specialist/SOUL.md",
+    "agents/dispatch_center/SOUL.md",
+    "agents/docs_specialist/SOUL.md",
+    "agents/expert_curator/SOUL.md",
+    "agents/groups/centers.md",
+    "agents/groups/specialists.md",
+    "agents/plan_center/SOUL.md",
+    "agents/review_center/SOUL.md",
+    "agents/search_specialist/SOUL.md",
+    "audit_outputs/legacy_term_audit_findings.md",
+    "audit_outputs/legacy_term_audit_report_20260408.md",
+    "docs/agent_registry_spec.md",
+    "docs/ai_deployment_checklist_and_prompts_20260408.md",
+    "docs/archive/root_legacy_notes/README_modern_cn_cleanup_20260407.md",
+    "docs/archive/root_legacy_notes/TODO_collab_meeting_refactor.md",
+    "docs/archive/root_legacy_notes/TODO_legacy_term_audit.md",
+    "docs/archive/root_legacy_notes/TODO_soul_standardization.md",
+    "docs/archive/stage_notes_20260407_20260408/archive_delivery_alignment_checklist_20260408.md",
+    "docs/archive/stage_notes_20260407_20260408/attachment_context_addendum_20260408.md",
+    "docs/archive/stage_notes_20260407_20260408/browser_findings_20260407_refresh_and_dispatch.md",
+    "docs/archive/stage_notes_20260407_20260408/change_log_20260407.md",
+    "docs/archive/stage_notes_20260407_20260408/context_management_update_20260408.md",
+    "docs/archive/stage_notes_20260407_20260408/context_recovery_note_20260408.md",
+    "docs/archive/stage_notes_20260407_20260408/current_todo_20260408.md",
+    "docs/archive/stage_notes_20260407_20260408/delivery_gate_update_20260408.md",
+    "docs/archive/stage_notes_20260407_20260408/final_delivery_report_20260407.md",
+    "docs/archive/stage_notes_20260407_20260408/gap_audit_20260407.md",
+    "docs/archive/stage_notes_20260407_20260408/logic_chain_memory_20260408.md",
+    "docs/archive/stage_notes_20260407_20260408/modernization_plan_20260407.md",
+    "docs/archive/stage_notes_20260407_20260408/plan_alignment_review_20260408.md",
+    "docs/archive/stage_notes_20260407_20260408/project_understanding_20260408.md",
+    "docs/archive/stage_notes_20260407_20260408/readme_workflow_review_notes.md",
+    "docs/archive/stage_notes_20260407_20260408/roadmap_ownership_rules_20260408.md",
+    "docs/archive/stage_notes_20260407_20260408/source_attribution_notes_20260407.md",
+    "docs/automation-task-management-design.md",
+    "docs/current_architecture_overview.md",
+    "docs/current_capability_boundary.md",
+    "docs/getting-started.md",
+    "docs/project-progress-log.md",
+    "docs/readme-user-flow-diagrams.md",
+    "docs/remote-skills-guide.md",
+    "docs/remote-skills-quickstart.md",
+    "docs/screenshots/README.md",
+    "docs/task-dispatch-architecture.md",
+    "docs/technical-architecture.md",
+    "docs/user-guide.md",
+    "docs/wechat-article.md",
+    "docs/wechat.md",
+    "task_agent_architecture.md",
+    "examples/README.md",
+    "examples/code-review.md",
+    "examples/competitive-analysis.md",
+    "examples/weekly-report.md",
+    "notes_meeting_panel_verification_2026-04-10.md",
+    "notes_settings_center_verification_2026-04-09.md",
+    "registry/generated/admin_specialist.SOUL.md",
+    "registry/generated/audit_specialist.SOUL.md",
+    "registry/generated/code_specialist.SOUL.md",
+    "registry/generated/control_center.SOUL.md",
+    "registry/generated/data_specialist.SOUL.md",
+    "registry/generated/deploy_specialist.SOUL.md",
+    "registry/generated/dispatch_center.SOUL.md",
+    "registry/generated/docs_specialist.SOUL.md",
+    "registry/generated/expert_curator.SOUL.md",
+    "registry/generated/plan_center.SOUL.md",
+    "registry/generated/review_center.SOUL.md",
+    "registry/generated/search_specialist.SOUL.md",
+    "review_notes/archive_20260408/feishu_reply_mechanism_findings.md",
+    "review_notes/archive_20260408/final_refactor_verification_20260408.md",
+    "review_notes/archive_20260408/full_rename_audit_summary_20260408.md",
+    "review_notes/archive_20260408/legacy_agent_id_closure_audit_20260408.md",
+    "review_notes/archive_20260408/legacy_terms_and_docker_audit_20260408.md",
+    "review_notes/archive_20260408/phase3_hotspots_after_agents_rewrite_20260408.md",
+    "review_notes/archive_20260408/public_repo_full_check_summary_20260407.md",
+    "review_notes/archive_20260408/restructure_checkpoint_20260408.md",
+    "review_notes/chat_persistence_todo_20260409.md",
+    "review_notes/deploy_readiness_todo_20260411.md",
+    "review_notes/task_modernization_delivery_2026-04-10.md",
+    "review_notes/master_requirements_20260410.md",
+    "review_notes/panel_upgrade_delivery_20260409.md",
+    "review_notes/panel_upgrade_todo_20260409.md",
+    "review_notes/panel_upgrade_validation_20260409.md",
+    "review_notes/persistent_chat_upgrade_20260408.md",
+    "review_notes/todo_search_rework_20260409.md",
+    "review_notes/ui_restore_check_2026-04-10.md",
+    "review_notes/ui_restore_recheck_2026-04-10.md",
+    "todo.md"
+  ],
+  "problems": [],
+  "all_results": [
+    {
+      "file": ".pytest_cache/README.md",
+      "kind": "link",
+      "target": "https://docs.pytest.org/en/stable/how-to/cache.html",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://docs.pytest.org/en/stable/how-to/cache.html"
+    },
+    {
+      "file": "CODE_OF_CONDUCT.md",
+      "kind": "link",
+      "target": "https://www.contributor-covenant.org",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://www.contributor-covenant.org/"
+    },
+    {
+      "file": "CONTRIBUTING.md",
+      "kind": "link",
+      "target": "CODE_OF_CONDUCT.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "CODE_OF_CONDUCT.md"
+    },
+    {
+      "file": "CONTRIBUTING.md",
+      "kind": "link",
+      "target": "SECURITY.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "SECURITY.md"
+    },
+    {
+      "file": "README.md",
+      "kind": "image",
+      "target": "./docs/screenshots/01-kanban-main.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/01-kanban-main.png"
+    },
+    {
+      "file": "README.md",
+      "kind": "image",
+      "target": "./docs/screenshots/03-task-detail.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/03-task-detail.png"
+    },
+    {
+      "file": "README.md",
+      "kind": "image",
+      "target": "./docs/screenshots/06-official-overview.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/06-official-overview.png"
+    },
+    {
+      "file": "README.md",
+      "kind": "image",
+      "target": "./docs/screenshots/08-memorials.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/08-memorials.png"
+    },
+    {
+      "file": "README.md",
+      "kind": "image",
+      "target": "./docs/diagrams/homepage-basic-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/diagrams/homepage-basic-flow.png"
+    },
+    {
+      "file": "README.md",
+      "kind": "link",
+      "target": "./docs/user-guide.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/user-guide.md"
+    },
+    {
+      "file": "README.md",
+      "kind": "link",
+      "target": "./docs/screenshots/README.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/README.md"
+    },
+    {
+      "file": "README.md",
+      "kind": "link",
+      "target": "./docs/current_architecture_overview.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/current_architecture_overview.md"
+    },
+    {
+      "file": "README.md",
+      "kind": "link",
+      "target": "./docs/technical-architecture.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/technical-architecture.md"
+    },
+    {
+      "file": "README.md",
+      "kind": "link",
+      "target": "https://github.com/cft0808/agentorchestrator",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://github.com/cft0808/agentorchestrator"
+    },
+    {
+      "file": "README.md",
+      "kind": "link",
+      "target": "https://github.com/wanikua/danghuangshang",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://github.com/wanikua/danghuangshang"
+    },
+    {
+      "file": "README_EN.md",
+      "kind": "image",
+      "target": "docs/readme-governance-intake-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/readme-governance-intake-flow.png"
+    },
+    {
+      "file": "README_EN.md",
+      "kind": "image",
+      "target": "docs/readme-governance-review-loop.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/readme-governance-review-loop.png"
+    },
+    {
+      "file": "README_EN.md",
+      "kind": "image",
+      "target": "docs/readme-governance-execution-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/readme-governance-execution-flow.png"
+    },
+    {
+      "file": "README_EN.md",
+      "kind": "image",
+      "target": "docs/readme-deployment-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/readme-deployment-flow.png"
+    },
+    {
+      "file": "README_EN.md",
+      "kind": "image",
+      "target": "docs/readme-dashboard-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/readme-dashboard-flow.png"
+    },
+    {
+      "file": "README_EN.md",
+      "kind": "link",
+      "target": "./CONTRIBUTING.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "CONTRIBUTING.md"
+    },
+    {
+      "file": "README_EN.md",
+      "kind": "link",
+      "target": "./SECURITY.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "SECURITY.md"
+    },
+    {
+      "file": "README_EN.md",
+      "kind": "link",
+      "target": "./LICENSE",
+      "type": "local",
+      "ok": true,
+      "resolved": "LICENSE"
+    },
+    {
+      "file": "README_JA.md",
+      "kind": "image",
+      "target": "docs/readme-governance-intake-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/readme-governance-intake-flow.png"
+    },
+    {
+      "file": "README_JA.md",
+      "kind": "image",
+      "target": "docs/readme-governance-review-loop.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/readme-governance-review-loop.png"
+    },
+    {
+      "file": "README_JA.md",
+      "kind": "image",
+      "target": "docs/readme-governance-execution-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/readme-governance-execution-flow.png"
+    },
+    {
+      "file": "README_JA.md",
+      "kind": "image",
+      "target": "docs/readme-deployment-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/readme-deployment-flow.png"
+    },
+    {
+      "file": "README_JA.md",
+      "kind": "image",
+      "target": "docs/readme-dashboard-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/readme-dashboard-flow.png"
+    },
+    {
+      "file": "README_JA.md",
+      "kind": "link",
+      "target": "./CONTRIBUTING.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "CONTRIBUTING.md"
+    },
+    {
+      "file": "README_JA.md",
+      "kind": "link",
+      "target": "./SECURITY.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "SECURITY.md"
+    },
+    {
+      "file": "ROADMAP.md",
+      "kind": "link",
+      "target": "CONTRIBUTING.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "CONTRIBUTING.md"
+    },
+    {
+      "file": "SECURITY.md",
+      "kind": "link",
+      "target": "https://github.com/JiangNanGenius/multi-agent-orchestrator/security/advisories/new",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FJiangNanGenius%2Fmulti-agent-orchestrator%2Fsecurity%2Fadvisories%2Fnew"
+    },
+    {
+      "file": "docs/archive/stage_notes_20260407_20260408/source_attribution_notes_20260407.md",
+      "kind": "link",
+      "target": "https://github.com/wanikua/danghuangshang",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://github.com/wanikua/danghuangshang"
+    },
+    {
+      "file": "docs/current_architecture_overview.md",
+      "kind": "link",
+      "target": "../agentorchestrator/backend/app/main.py",
+      "type": "local",
+      "ok": true,
+      "resolved": "agentorchestrator/backend/app/main.py"
+    },
+    {
+      "file": "docs/current_architecture_overview.md",
+      "kind": "link",
+      "target": "../agentorchestrator/backend/app/services/task_service.py",
+      "type": "local",
+      "ok": true,
+      "resolved": "agentorchestrator/backend/app/services/task_service.py"
+    },
+    {
+      "file": "docs/current_architecture_overview.md",
+      "kind": "link",
+      "target": "../agentorchestrator/frontend/src/store.ts",
+      "type": "local",
+      "ok": true,
+      "resolved": "agentorchestrator/frontend/src/store.ts"
+    },
+    {
+      "file": "docs/current_architecture_overview.md",
+      "kind": "link",
+      "target": "../agentorchestrator/backend/app/models/task.py",
+      "type": "local",
+      "ok": true,
+      "resolved": "agentorchestrator/backend/app/models/task.py"
+    },
+    {
+      "file": "docs/current_architecture_overview.md",
+      "kind": "link",
+      "target": "../agentorchestrator/backend/app/workers/orchestrator_worker.py",
+      "type": "local",
+      "ok": true,
+      "resolved": "agentorchestrator/backend/app/workers/orchestrator_worker.py"
+    },
+    {
+      "file": "docs/current_architecture_overview.md",
+      "kind": "link",
+      "target": "../agents.json",
+      "type": "local",
+      "ok": true,
+      "resolved": "agents.json"
+    },
+    {
+      "file": "docs/getting-started.md",
+      "kind": "link",
+      "target": "https://openclaw.ai",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://openclaw.ai/"
+    },
+    {
+      "file": "docs/getting-started.md",
+      "kind": "link",
+      "target": "https://github.com/cft0808/agentorchestrator",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://github.com/cft0808/agentorchestrator"
+    },
+    {
+      "file": "docs/getting-started.md",
+      "kind": "link",
+      "target": "../README.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "README.md"
+    },
+    {
+      "file": "docs/getting-started.md",
+      "kind": "link",
+      "target": "../CONTRIBUTING.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "CONTRIBUTING.md"
+    },
+    {
+      "file": "docs/getting-started.md",
+      "kind": "link",
+      "target": "https://docs.openclaw.ai",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://docs.openclaw.ai/"
+    },
+    {
+      "file": "docs/getting-started.md",
+      "kind": "link",
+      "target": "wechat.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/wechat.md"
+    },
+    {
+      "file": "docs/getting-started.md",
+      "kind": "link",
+      "target": "current_architecture_overview.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/current_architecture_overview.md"
+    },
+    {
+      "file": "docs/remote-skills-guide.md",
+      "kind": "link",
+      "target": "https://clawhub.ai",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://clawhub.ai/"
+    },
+    {
+      "file": "docs/remote-skills-guide.md",
+      "kind": "link",
+      "target": "task-dispatch-architecture.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/task-dispatch-architecture.md"
+    },
+    {
+      "file": "docs/remote-skills-quickstart.md",
+      "kind": "link",
+      "target": "remote-skills-guide.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/remote-skills-guide.md"
+    },
+    {
+      "file": "docs/remote-skills-quickstart.md",
+      "kind": "link",
+      "target": "task-dispatch-architecture.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/task-dispatch-architecture.md"
+    },
+    {
+      "file": "docs/remote-skills-quickstart.md",
+      "kind": "link",
+      "target": "../CONTRIBUTING.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "CONTRIBUTING.md"
+    },
+    {
+      "file": "docs/remote-skills-quickstart.md",
+      "kind": "link",
+      "target": "https://clawhub.ai",
+      "type": "external",
+      "ok": true,
+      "status": 200,
+      "resolved": "https://clawhub.ai/"
+    },
+    {
+      "file": "docs/technical-architecture.md",
+      "kind": "image",
+      "target": "./diagrams/technical-system-architecture.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/diagrams/technical-system-architecture.png"
+    },
+    {
+      "file": "docs/technical-architecture.md",
+      "kind": "image",
+      "target": "./diagrams/technical-workspace-governance-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/diagrams/technical-workspace-governance-flow.png"
+    },
+    {
+      "file": "docs/user-guide.md",
+      "kind": "image",
+      "target": "./diagrams/user-governance-lifecycle.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/diagrams/user-governance-lifecycle.png"
+    },
+    {
+      "file": "docs/user-guide.md",
+      "kind": "image",
+      "target": "./diagrams/user-workspace-ledger-map.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/diagrams/user-workspace-ledger-map.png"
+    },
+    {
+      "file": "docs/user-guide.md",
+      "kind": "image",
+      "target": "./diagrams/user-cold-hot-archive-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/diagrams/user-cold-hot-archive-flow.png"
+    },
+    {
+      "file": "docs/user-guide.md",
+      "kind": "image",
+      "target": "./diagrams/user-new-refresh-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/diagrams/user-new-refresh-flow.png"
+    },
+    {
+      "file": "docs/user-guide.md",
+      "kind": "image",
+      "target": "./diagrams/user-watchdog-reporting-flow.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/diagrams/user-watchdog-reporting-flow.png"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "screenshots/01-kanban-main.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/01-kanban-main.png"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "screenshots/11-ceremony.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/11-ceremony.png"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "demo.gif",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/demo.gif"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "screenshots/02-monitor.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/02-monitor.png"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "screenshots/08-memorials.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/08-memorials.png"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "screenshots/09-templates.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/09-templates.png"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "screenshots/04-model-config.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/04-model-config.png"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "screenshots/06-official-overview.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/06-official-overview.png"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "screenshots/10-morning-briefing.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/10-morning-briefing.png"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "screenshots/03-task-detail.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/03-task-detail.png"
+    },
+    {
+      "file": "docs/wechat-article.md",
+      "kind": "image",
+      "target": "screenshots/05-skills-config.png",
+      "type": "local",
+      "ok": true,
+      "resolved": "docs/screenshots/05-skills-config.png"
+    },
+    {
+      "file": "examples/README.md",
+      "kind": "link",
+      "target": "competitive-analysis.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "examples/competitive-analysis.md"
+    },
+    {
+      "file": "examples/README.md",
+      "kind": "link",
+      "target": "code-review.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "examples/code-review.md"
+    },
+    {
+      "file": "examples/README.md",
+      "kind": "link",
+      "target": "weekly-report.md",
+      "type": "local",
+      "ok": true,
+      "resolved": "examples/weekly-report.md"
+    }
+  ]
+}

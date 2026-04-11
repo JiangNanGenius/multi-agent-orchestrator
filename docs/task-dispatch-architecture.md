@@ -1601,7 +1601,7 @@ curl http://127.0.0.1:7891/api/task-activity/JJC-20260302-001
 
 ## Workflow state vs execution ownership
 
-In Edict workflows, **workflow state** and **execution ownership** are related but not always identical.
+In AgentOrchestrator workflows, **workflow state** and **execution ownership** are related but not always identical.
 
 ### Workflow state
 Workflow state describes the current institutional stage of a task, for example:

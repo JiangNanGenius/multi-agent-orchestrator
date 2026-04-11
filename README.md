@@ -117,7 +117,7 @@
 
 | 项目 | 说明 |
 | --- | --- |
-| [cft0808/edict](https://github.com/cft0808/edict) | 当前公开版整理所参考的上游之一 [6] |
+| [cft0808/agentorchestrator](https://github.com/cft0808/agentorchestrator) | 当前公开版整理所参考的上游之一 [6] |
 | [wanikua/danghuangshang](https://github.com/wanikua/danghuangshang) | 当前公开版整理所参考的上游之一 [7] |
 
 ## Version Log / 版本日志
@@ -137,6 +137,6 @@
 [2]: ./docs/technical-architecture.md "技术文档"
 [3]: ./docs/current_architecture_overview.md "当前架构与处理逻辑总览"
 [4]: ./docs/screenshots/README.md "截图说明"
-[5]: ./edict/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"
-[6]: https://github.com/cft0808/edict "cft0808/edict"
+[5]: ./agentorchestrator/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"
+[6]: https://github.com/cft0808/agentorchestrator "cft0808/agentorchestrator"
 [7]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"

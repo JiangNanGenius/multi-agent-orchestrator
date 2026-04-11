@@ -2,7 +2,7 @@
 
 ## 1. 引用来源仓库
 
-- 上游参考一：`cft0808/edict`
+- 上游参考一：`cft0808/agentorchestrator`
 - 上游参考二：`wanikua/danghuangshang`
 - 访问页面：[https://github.com/wanikua/danghuangshang](https://github.com/wanikua/danghuangshang)
 
@@ -26,7 +26,7 @@
 1. 根目录 `LICENSE` 文件保留 MIT License，不删除、不替换为与上游不兼容的许可文本。
 2. `README.md` 中新增或保留“来源 / 致谢 / 引用说明”章节。
 3. 在改造说明文档中明确写出：
-   - 本项目基于 `cft0808/edict` 进行重构与现代化改造；
+   - 本项目基于 `cft0808/agentorchestrator` 进行重构与现代化改造；
    - 同时参考了 `wanikua/danghuangshang` 的相关思路与公开仓库内容；
    - 按上游公开说明保留 MIT License 与来源引用。
 4. 如界面页脚、关于页、文档页存在许可说明区域，应补充简洁引用语句，而不是仅在代码层保留。
@@ -36,11 +36,11 @@
 
 ### README 建议表述
 
-> 本项目当前版本“多Agent智作中枢”基于开源项目 `cft0808/edict` 进行现代化重构，并参考了 `wanikua/danghuangshang` 的公开实现思路与组织方式。遵循上游项目公开许可要求，保留 MIT License，并在文档中注明来源与致谢信息。
+> 本项目当前版本“多Agent智作中枢”基于开源项目 `cft0808/agentorchestrator` 进行现代化重构，并参考了 `wanikua/danghuangshang` 的公开实现思路与组织方式。遵循上游项目公开许可要求，保留 MIT License，并在文档中注明来源与致谢信息。
 
 ### 关于 / 页脚建议表述
 
-> 基于开源项目改造，保留 MIT License，并感谢 `cft0808/edict` 与 `wanikua/danghuangshang` 社区贡献。
+> 基于开源项目改造，保留 MIT License，并感谢 `cft0808/agentorchestrator` 与 `wanikua/danghuangshang` 社区贡献。
 
 ## 5. 注意事项
 

@@ -34,9 +34,9 @@ DEFAULT_AGENTS = [
     {'id':'docs_specialist', 'label':'文案专家',       'role':'文案专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
     {'id':'data_specialist', 'label':'数据专家',       'role':'数据专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
     {'id':'code_specialist', 'label':'代码专家',       'role':'代码专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
-    {'id':'audit_specialist','label':'合规专家',       'role':'合规专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
+    {'id':'audit_specialist','label':'审计专家',       'role':'审计专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
     {'id':'deploy_specialist','label':'部署专家',      'role':'部署专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
-    {'id':'admin_specialist','label':'Agent管理专家',  'role':'Agent管理专家',      'group':'专业执行组', 'rank':'专业专家'},
+    {'id':'admin_specialist','label':'管理专家',        'role':'管理专家 Agent',      'group':'专业执行组', 'rank':'专业专家'},
     {'id':'search_specialist','label':'搜索专家',      'role':'全网搜索 Agent',     'group':'支持中心',   'rank':'支持节点'},
 ]
 

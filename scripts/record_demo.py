@@ -45,7 +45,7 @@ def main():
 
         # === Scene 3: Click a task (3s) ===
         print('📜 Scene 3: Task detail...')
-        cards = page.locator('.edict-card')
+        cards = page.locator('.agentorchestrator-card')
         if cards.count() > 0:
             cards.first.click()
             page.wait_for_timeout(2500)

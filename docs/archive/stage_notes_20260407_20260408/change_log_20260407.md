@@ -11,10 +11,10 @@
 | 类别 | 本轮已完成内容 | 主要文件 |
 |---|---|---|
 | 运行看板 | 新增“直连调度中心”窗口，并确保真实首页入口指向已改造的 `dashboard.html` | `dashboard/dashboard.html` `dashboard/server.py` |
-| 中文体系统一 | 将运行调度、任务详情、在线状态、阶段标签、Agent 标签等大面积旧体系名称统一为现代中文体系 | `dashboard/dashboard.html` `dashboard/server.py` `edict/frontend/src/**/*` |
+| 中文体系统一 | 将运行调度、任务详情、在线状态、阶段标签、Agent 标签等大面积旧体系名称统一为现代中文体系 | `dashboard/dashboard.html` `dashboard/server.py` `agentorchestrator/frontend/src/**/*` |
 | 刷新机制 | 真实运行看板主刷新链路改为 **增量优先**，并保留任务详情局部回显与联动刷新 | `dashboard/dashboard.html` |
 | Registry / SOUL / 部署 | 安装与同步链路说明已统一为 **Registry 自动生成、SOUL 自动部署、openclaw.json 只读对接** | `install.sh` `docs/getting-started.md` `README.md` `ROADMAP.md` |
-| 上下文窗口管理 | 新增容量评估、预警分级、压缩归档、续写提示、看板徽标与任务详情面板 | `edict/backend/app/config.py` `edict/backend/app/workers/dispatch_worker.py` `edict/backend/app/models/task.py` `dashboard/dashboard.html` |
+| 上下文窗口管理 | 新增容量评估、预警分级、压缩归档、续写提示、看板徽标与任务详情面板 | `agentorchestrator/backend/app/config.py` `agentorchestrator/backend/app/workers/dispatch_worker.py` `agentorchestrator/backend/app/models/task.py` `dashboard/dashboard.html` |
 | 核心文档 | README、快速开始、路线图、Windows 安装文档已补入现代中文体系与上下文治理说明 | `README.md` `docs/getting-started.md` `ROADMAP.md` `WINDOWS_INSTALL_CN.md` |
 
 ## 上下文窗口管理已落地的处理方案

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════
-# EDICT · OpenClaw 安装脚本
+# AGENTORCHESTRATOR · OpenClaw 安装脚本
 # ══════════════════════════════════════════════════════════════
 set -e
 
@@ -13,7 +13,7 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC
 banner() {
   echo ""
   echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
-  echo -e "${BLUE}║  EDICT · OpenClaw 本地对接辅助            ║${NC}"
+  echo -e "${BLUE}║  AGENTORCHESTRATOR · OpenClaw 本地对接辅助            ║${NC}"
   echo -e "${BLUE}║  AI 部署优先，脚本仅用于本地补齐          ║${NC}"
   echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"
   echo ""
@@ -92,7 +92,7 @@ backup_existing() {
 create_workspaces() {
   info "创建 Agent Workspace..."
   
-  AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist search_specialist)
+  AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist)
   for agent in "${AGENTS[@]}"; do
     ws="$OC_HOME/workspace-$agent"
     mkdir -p "$ws/skills"
@@ -133,13 +133,14 @@ required = [
     {"id": "control_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-control_center'), "subagents": {"allowAgents": ["plan_center"]}},
     {"id": "plan_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-plan_center'), "subagents": {"allowAgents": ["review_center", "dispatch_center"]}},
     {"id": "review_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-review_center'), "subagents": {"allowAgents": ["dispatch_center", "plan_center"]}},
-    {"id": "dispatch_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-dispatch_center'), "subagents": {"allowAgents": ["plan_center", "review_center", "data_specialist", "docs_specialist", "code_specialist", "audit_specialist", "deploy_specialist", "admin_specialist", "search_specialist"]}},
+    {"id": "dispatch_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-dispatch_center'), "subagents": {"allowAgents": ["plan_center", "review_center", "data_specialist", "docs_specialist", "code_specialist", "audit_specialist", "deploy_specialist", "admin_specialist", "expert_curator", "search_specialist"]}},
     {"id": "data_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-data_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
     {"id": "docs_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-docs_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
     {"id": "code_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-code_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
     {"id": "audit_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-audit_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
     {"id": "deploy_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-deploy_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
     {"id": "admin_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-admin_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
+    {"id": "expert_curator", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-expert_curator'), "subagents": {"allowAgents": ["dispatch_center"]}},
     {"id": "search_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-search_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
 ]
 existing = {item.get('id') for item in cfg.get('agents', {}).get('list', []) if item.get('id')}
@@ -195,15 +196,15 @@ tasks = [
         "id": "JJC-DEMO-001",
         "title": "🎉 系统初始化完成",
         "owner": "系统看板",
-        "org": "EDICT",
+        "org": "AGENTORCHESTRATOR",
         "state": "Done",
-        "now": "EDICT 系统已就绪",
+        "now": "AGENTORCHESTRATOR 系统已就绪",
         "eta": "-",
         "block": "无",
         "output": "",
         "ac": "系统正常运行",
         "flow_log": [
-            {"at": "2024-01-01T00:00:00Z", "from": "system", "to": "control_center", "remark": "初始化 EDICT 系统"},
+            {"at": "2024-01-01T00:00:00Z", "from": "system", "to": "control_center", "remark": "初始化 AGENTORCHESTRATOR 系统"},
             {"at": "2024-01-01T00:01:00Z", "from": "control_center", "to": "plan_center", "remark": "提交初始化方案规划"},
             {"at": "2024-01-01T00:02:00Z", "from": "plan_center", "to": "review_center", "remark": "提交初始化方案审核"},
             {"at": "2024-01-01T00:03:00Z", "from": "review_center", "to": "dispatch_center", "remark": "✅ 审核通过并进入派发"},
@@ -226,7 +227,7 @@ PYEOF
 link_resources() {
   info "创建 data/scripts 软链接以确保 Agent 数据一致..."
   
-  AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist search_specialist)
+  AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist)
   LINKED=0
   for agent in "${AGENTS[@]}"; do
     ws="$OC_HOME/workspace-$agent"
@@ -320,7 +321,7 @@ sync_auth() {
     return
   fi
 
-  AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist search_specialist)
+  AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist)
   SYNCED=0
   for agent in "${AGENTS[@]}"; do
     AGENT_DIR="$OC_HOME/agents/$agent/agent"
@@ -340,22 +341,33 @@ build_frontend() {
 
   if ! command -v node &>/dev/null; then
     warn "未找到 node，跳过前端构建。看板将使用预构建版本（如果存在）"
-    warn "请安装 Node.js 18+ 后运行: cd edict/frontend && npm install && npm run build"
+    warn "请安装 Node.js 18+ 后运行: cd agentorchestrator/frontend && npm install && npm run build"
     return
   fi
 
-  if [ -f "$REPO_DIR/edict/frontend/package.json" ]; then
-    cd "$REPO_DIR/edict/frontend"
-    npm install --silent 2>/dev/null || npm install
-    npm run build 2>/dev/null
-    cd "$REPO_DIR"
-    if [ -f "$REPO_DIR/dashboard/dist/index.html" ]; then
-      log "前端构建完成: dashboard/dist/"
+  if [ -f "$REPO_DIR/agentorchestrator/frontend/package.json" ]; then
+    cd "$REPO_DIR/agentorchestrator/frontend"
+    if command -v pnpm &>/dev/null && [ -f "pnpm-lock.yaml" ]; then
+      pnpm install --silent || pnpm install
+      pnpm build
     else
-      warn "前端构建可能失败，请手动检查"
+      npm install --silent 2>/dev/null || npm install
+      npm run build
     fi
+
+    if [ -d "$REPO_DIR/agentorchestrator/frontend/dist" ]; then
+      rm -rf "$REPO_DIR/dashboard/dist"
+      mkdir -p "$REPO_DIR/dashboard"
+      cp -R "$REPO_DIR/agentorchestrator/frontend/dist" "$REPO_DIR/dashboard/dist"
+      log "前端构建并同步完成: dashboard/dist/"
+    elif [ -f "$REPO_DIR/dashboard/dist/index.html" ]; then
+      warn "未检测到 agentorchestrator/frontend/dist，继续使用现有 dashboard/dist"
+    else
+      warn "前端构建失败：未找到可部署的 dist 产物，请手动检查"
+    fi
+    cd "$REPO_DIR"
   else
-    warn "未找到 edict/frontend/package.json，跳过前端构建"
+    warn "未找到 agentorchestrator/frontend/package.json，跳过前端构建"
   fi
 }
 

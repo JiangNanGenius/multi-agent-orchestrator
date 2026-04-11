@@ -1,0 +1,8 @@
+agentorchestrator/backend/app/models/task.py:76:    "技能管理员": "admin_specialist",
+agentorchestrator/frontend/src/components/SkillsConfig.tsx:8:  if (agentId === 'admin_specialist' || agentLabel === '管理专家' || agentLabel === '技能管理员') return '技能管理助手';
+agentorchestrator/frontend/src/components/TemplatePanel.tsx:25:  合规专家: { zh: '合规专家', en: 'Compliance Specialist' },
+agentorchestrator/frontend/src/store.ts:250:    .replace(/Agent管理专家/g, '管理专家')
+dashboard/server.py:1287:    '合规专家': 'audit_specialist',
+dashboard/server.py:1290:    '技能管理员': 'admin_specialist',
+scripts/kanban_update.py:93:    '审计专家': 'audit_specialist', '合规专家': 'audit_specialist',
+scripts/kanban_update.py:94:    '部署专家': 'deploy_specialist', '管理专家': 'admin_specialist', 'Agent管理专家': 'admin_specialist', '技能管理员': 'admin_specialist',

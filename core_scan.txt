@@ -1,0 +1,170 @@
+=== edict_core ===
+agentorchestrator/frontend/node_modules/@types/node/crypto.d.ts:729:     * Initialization vectors should be unpredictable and unique; ideally, they will be
+agentorchestrator/frontend/node_modules/@types/node/crypto.d.ts:732:     * something has to be unpredictable and unique, but does not have to be secret;
+agentorchestrator/frontend/node_modules/@types/node/crypto.d.ts:733:     * remember that an attacker must not be able to predict ahead of time what a
+agentorchestrator/frontend/node_modules/@types/node/crypto.d.ts:990:     * Initialization vectors should be unpredictable and unique; ideally, they will be
+agentorchestrator/frontend/node_modules/@types/node/crypto.d.ts:993:     * something has to be unpredictable and unique, but does not have to be secret;
+agentorchestrator/frontend/node_modules/@types/node/crypto.d.ts:994:     * remember that an attacker must not be able to predict ahead of time what a given
+agentorchestrator/frontend/node_modules/@types/node/v8.d.ts:249:     * after the VM has started may result in unpredictable behavior, including
+agentorchestrator/frontend/node_modules/@types/react/experimental.d.ts:100:     * When multiple components need to fetch data, this data may arrive in an unpredictable order.
+agentorchestrator/frontend/node_modules/@types/react/index.d.ts:2614:         * Indicates whether inputting text could trigger display of one or more predictions of the user's intended value for an input and specifies how predictions would be
+agentorchestrator/frontend/node_modules/@types/react/ts5.0/experimental.d.ts:100:     * When multiple components need to fetch data, this data may arrive in an unpredictable order.
+agentorchestrator/frontend/node_modules/@types/react/ts5.0/index.d.ts:2615:         * Indicates whether inputting text could trigger display of one or more predictions of the user's intended value for an input and specifies how predictions would be
+agentorchestrator/frontend/node_modules/nanoid/non-secure/index.d.ts:3: * predictable random generator with bigger collision probability.
+agentorchestrator/frontend/node_modules/nanoid/non-secure/index.d.ts:17: * This method uses the non-secure predictable random generator
+agentorchestrator/frontend/node_modules/typescript/lib/lib.dom.d.ts:1476:    predictedEvents?: PointerEvent[];
+agentorchestrator/frontend/node_modules/typescript/lib/lib.dom.d.ts:24108:     * The **`getPredictedEvents()`** method of the PointerEvent interface returns a sequence of `PointerEvent` instances that are estimated future pointer positions.
+agentorchestrator/frontend/node_modules/typescript/lib/lib.dom.d.ts:24110:     * [MDN Reference](https://developer.mozilla.org/docs/Web/API/PointerEvent/getPredictedEvents)
+agentorchestrator/frontend/node_modules/typescript/lib/lib.dom.d.ts:24112:    getPredictedEvents(): PointerEvent[];
+agentorchestrator/frontend/node_modules/devtools-protocol/json/browser_protocol.json:27445:                    "id": "AttributionReportingAggregatableValueDictEntry",
+agentorchestrator/frontend/node_modules/devtools-protocol/json/browser_protocol.json:27473:                                "$ref": "AttributionReportingAggregatableValueDictEntry"
+agentorchestrator/frontend/node_modules/devtools-protocol/types/protocol.d.ts:19887:        export interface AttributionReportingAggregatableValueDictEntry {
+agentorchestrator/frontend/node_modules/devtools-protocol/types/protocol.d.ts:19901:            values: AttributionReportingAggregatableValueDictEntry[];
+agentorchestrator/frontend/node_modules/proxy-agent/node_modules/lru-cache/README.md:1069:later can make it much worse, and less predictable. If a library
+agentorchestrator/frontend/node_modules/.package-lock.json:2:  "name": "edict-dashboard",
+
+=== task_db_refs_core ===
+agents/admin_specialist/SOUL.md:35:python3 scripts/task_db.py get <task_id>
+agents/admin_specialist/SOUL.md:36:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<管理摘要>","admin_summary":"<当前执行进展>"}' --agent admin_specialist --summary "管理专家更新执行摘要"
+agents/admin_specialist/SOUL.md:37:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞说明>","admin_blocker":"<阻塞原因>"}' --agent admin_specialist --summary "管理专家回写阻塞说明"
+agents/admin_specialist/SOUL.md:38:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/admin_specialist/SOUL.md:99:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"管理专家已接单，开始执行子任务","admin_summary":"已进入管理执行阶段"}' --agent admin_specialist --summary "管理专家开始执行"
+agents/admin_specialist/SOUL.md:105:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"管理专家已完成执行，准备回传调度中心","admin_result_summary":"<产出摘要>"}' --agent admin_specialist --summary "管理专家提交执行结果"
+agents/admin_specialist/SOUL.md:114:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"管理专家遇到阻塞，等待调度中心协助","admin_blocker":"[阻塞原因]"}' --agent admin_specialist --summary "管理专家上报阻塞"
+agents/audit_specialist/SOUL.md:35:python3 scripts/task_db.py get <task_id>
+agents/audit_specialist/SOUL.md:36:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<审计摘要>","audit_summary":"<当前审计进展>"}' --agent audit_specialist --summary "审计专家更新审计摘要"
+agents/audit_specialist/SOUL.md:37:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞说明>","audit_blocker":"<阻塞原因>"}' --agent audit_specialist --summary "审计专家回写阻塞说明"
+agents/audit_specialist/SOUL.md:38:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/audit_specialist/SOUL.md:99:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"审计专家已接单，开始执行子任务","audit_summary":"已进入质量审查阶段"}' --agent audit_specialist --summary "审计专家开始执行"
+agents/audit_specialist/SOUL.md:105:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"审计专家已完成审查，准备回传调度中心","audit_result_summary":"<产出摘要>"}' --agent audit_specialist --summary "审计专家提交执行结果"
+agents/audit_specialist/SOUL.md:114:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"审计专家遇到阻塞，等待调度中心协助","audit_blocker":"[阻塞原因]"}' --agent audit_specialist --summary "审计专家上报阻塞"
+agents/audit_specialist/SOUL.md:135:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"代码审查完成，正在编写测试用例","audit_summary":"测试验证进行中"}' --agent audit_specialist --summary "审计专家更新阶段进展"
+agents/audit_specialist/SOUL.md:144:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<审计摘要>"}' --agent audit_specialist --summary "审计专家同步工作区摘要"
+agents/audit_specialist/SOUL.md:151:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"审计子任务已完成并补充产出详情"}' --agent audit_specialist --summary "审计专家补充子任务产出"
+agents/code_specialist/SOUL.md:37:python3 scripts/task_db.py get <task_id>
+agents/code_specialist/SOUL.md:38:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<实现摘要>","code_summary":"<当前实现进展>"}' --agent code_specialist --summary "代码专家更新实现摘要"
+agents/code_specialist/SOUL.md:39:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞说明>","code_blocker":"<阻塞原因>"}' --agent code_specialist --summary "代码专家回写阻塞说明"
+agents/code_specialist/SOUL.md:40:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/code_specialist/SOUL.md:120:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"代码专家已接单，开始实现子任务","code_summary":"已进入工程实现阶段"}' --agent code_specialist --summary "代码专家开始执行"
+agents/code_specialist/SOUL.md:126:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"代码专家已完成实现，准备回传调度中心","code_result_summary":"<产出摘要>"}' --agent code_specialist --summary "代码专家提交执行结果"
+agents/code_specialist/SOUL.md:135:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"代码专家遇到阻塞，等待调度中心协助","code_blocker":"[阻塞原因]"}' --agent code_specialist --summary "代码专家上报阻塞"
+agents/code_specialist/SOUL.md:163:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"正在实现XX模块，已完成接口定义","code_summary":"编码实现进行中"}' --agent code_specialist --summary "代码专家更新阶段进展"
+agents/code_specialist/SOUL.md:177:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<实现摘要>"}' --agent code_specialist --summary "代码专家同步工作区摘要"
+agents/code_specialist/SOUL.md:184:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"编码子任务已完成并补充产出详情"}' --agent code_specialist --summary "代码专家补充子任务产出"
+agents/control_center/SOUL.md:58:python3 scripts/task_db.py create "<标题>" --description "<需求概括>" --creator control_center --initial-state ControlCenter
+agents/control_center/SOUL.md:59:python3 scripts/task_db.py get <task_id>
+agents/control_center/SOUL.md:60:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<下一步建议>"}' --agent control_center --summary "总控中心更新工作区摘要"
+agents/control_center/SOUL.md:61:python3 scripts/task_db.py list --limit 20
+agents/control_center/SOUL.md:62:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/control_center/SOUL.md:179:python3 scripts/task_db.py create "你概括的简明标题" \
+agents/control_center/SOUL.md:209:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"总控中心已完成需求整理并转交规划中心","control_center_summary":"<你概括的简述>"}' --agent control_center --summary "总控中心转交规划中心"
+agents/control_center/SOUL.md:240:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"调度结果已由总控中心回传给用户","control_center_result_summary":"<摘要>"}' --agent control_center --summary "总控中心回传最终结果"
+agents/control_center/SOUL.md:266:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<摘要>"}' --agent control_center --summary "总控中心同步工作区"
+agents/control_center/SOUL.md:291:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"总控中心正在分析或转交任务","control_center_summary":"<当前阶段摘要>"}' --agent control_center --summary "总控中心更新阶段进展"
+agents/data_specialist/SOUL.md:35:python3 scripts/task_db.py get <task_id>
+agents/data_specialist/SOUL.md:36:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<数据摘要>","data_summary":"<当前分析进展>"}' --agent data_specialist --summary "数据专家更新分析摘要"
+agents/data_specialist/SOUL.md:37:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞说明>","data_blocker":"<阻塞原因>"}' --agent data_specialist --summary "数据专家回写阻塞说明"
+agents/data_specialist/SOUL.md:38:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/data_specialist/SOUL.md:99:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"数据专家已接单，开始执行子任务","data_summary":"已进入数据处理阶段"}' --agent data_specialist --summary "数据专家开始执行"
+agents/data_specialist/SOUL.md:105:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"数据专家已完成分析，准备回传调度中心","data_result_summary":"<产出摘要>"}' --agent data_specialist --summary "数据专家提交执行结果"
+agents/data_specialist/SOUL.md:114:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"数据专家遇到阻塞，等待调度中心协助","data_blocker":"[阻塞原因]"}' --agent data_specialist --summary "数据专家上报阻塞"
+agents/data_specialist/SOUL.md:136:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"数据清洗完成，正在进行聚合分析","data_summary":"统计分析进行中"}' --agent data_specialist --summary "数据专家更新阶段进展"
+agents/data_specialist/SOUL.md:145:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<数据摘要>"}' --agent data_specialist --summary "数据专家同步工作区摘要"
+agents/data_specialist/SOUL.md:152:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"数据子任务已完成并补充产出详情"}' --agent data_specialist --summary "数据专家补充子任务产出"
+agents/deploy_specialist/SOUL.md:35:python3 scripts/task_db.py get <task_id>
+agents/deploy_specialist/SOUL.md:36:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<部署摘要>","deploy_summary":"<当前部署进展>"}' --agent deploy_specialist --summary "部署专家更新部署摘要"
+agents/deploy_specialist/SOUL.md:37:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞说明>","deploy_blocker":"<阻塞原因>"}' --agent deploy_specialist --summary "部署专家回写阻塞说明"
+agents/deploy_specialist/SOUL.md:38:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/deploy_specialist/SOUL.md:99:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"部署专家已接单，开始执行子任务","deploy_summary":"已进入部署执行阶段"}' --agent deploy_specialist --summary "部署专家开始执行"
+agents/deploy_specialist/SOUL.md:105:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"部署专家已完成执行，准备回传调度中心","deploy_result_summary":"<产出摘要>"}' --agent deploy_specialist --summary "部署专家提交执行结果"
+agents/deploy_specialist/SOUL.md:114:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"部署专家遇到阻塞，等待调度中心协助","deploy_blocker":"[阻塞原因]"}' --agent deploy_specialist --summary "部署专家上报阻塞"
+agents/deploy_specialist/SOUL.md:135:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"配置完成，正在执行部署脚本","deploy_summary":"执行部署进行中"}' --agent deploy_specialist --summary "部署专家更新阶段进展"
+agents/deploy_specialist/SOUL.md:144:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<部署摘要>"}' --agent deploy_specialist --summary "部署专家同步工作区摘要"
+agents/deploy_specialist/SOUL.md:151:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"部署子任务已完成并补充产出详情"}' --agent deploy_specialist --summary "部署专家补充子任务产出"
+agents/dispatch_center/SOUL.md:37:python3 scripts/task_db.py get <task_id>
+agents/dispatch_center/SOUL.md:38:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<调度摘要>","dispatch_summary":"<派发说明>"}' --agent dispatch_center --summary "调度中心更新派发摘要"
+agents/dispatch_center/SOUL.md:39:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞或回退说明>","dispatch_blocker":"<原因>"}' --agent dispatch_center --summary "调度中心回写阻塞说明"
+agents/dispatch_center/SOUL.md:40:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<执行完成摘要>","dispatch_result_summary":"<结果摘要>"}' --agent dispatch_center --summary "调度中心整理执行结果"
+agents/dispatch_center/SOUL.md:41:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/dispatch_center/SOUL.md:104:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"调度中心已接手任务，正在派发 specialist","dispatch_summary":"开始按角色分发执行"}' --agent dispatch_center --summary "调度中心开始派发"
+agents/dispatch_center/SOUL.md:144:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"调度中心已完成汇总，准备回传规划中心","dispatch_result_summary":"<摘要>"}' --agent dispatch_center --summary "调度中心汇总执行结果"
+agents/dispatch_center/SOUL.md:167:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"已完成部署专家派发并确认接单","dispatch_summary":"执行角色分发已更新"}' --agent dispatch_center --summary "调度中心补充派发详情"
+agents/dispatch_center/SOUL.md:187:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"调度中心正在分析方案并确定派发对象","dispatch_summary":"派发分析进行中"}' --agent dispatch_center --summary "调度中心更新派发分析进展"
+agents/dispatch_center/SOUL.md:194:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"所有 specialist 已完成，调度中心正在汇总成果报告","dispatch_result_summary":"结果汇总进行中"}' --agent dispatch_center --summary "调度中心更新结果汇总进展"
+agents/docs_specialist/SOUL.md:35:python3 scripts/task_db.py get <task_id>
+agents/docs_specialist/SOUL.md:36:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<文档摘要>","docs_summary":"<当前撰写进展>"}' --agent docs_specialist --summary "文案专家更新文档摘要"
+agents/docs_specialist/SOUL.md:37:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞说明>","docs_blocker":"<阻塞原因>"}' --agent docs_specialist --summary "文案专家回写阻塞说明"
+agents/docs_specialist/SOUL.md:38:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/docs_specialist/SOUL.md:99:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"文案专家已接单，开始撰写子任务","docs_summary":"已进入文档撰写阶段"}' --agent docs_specialist --summary "文案专家开始执行"
+agents/docs_specialist/SOUL.md:105:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"文案专家已完成撰写，准备回传调度中心","docs_result_summary":"<产出摘要>"}' --agent docs_specialist --summary "文案专家提交执行结果"
+agents/docs_specialist/SOUL.md:114:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"文案专家遇到阻塞，等待调度中心协助","docs_blocker":"[阻塞原因]"}' --agent docs_specialist --summary "文案专家上报阻塞"
+agents/docs_specialist/SOUL.md:135:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"大纲已确定，正在撰写核心章节","docs_summary":"内容撰写进行中"}' --agent docs_specialist --summary "文案专家更新阶段进展"
+agents/docs_specialist/SOUL.md:144:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<文档摘要>"}' --agent docs_specialist --summary "文案专家同步工作区摘要"
+agents/docs_specialist/SOUL.md:151:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"文档子任务已完成并补充产出详情"}' --agent docs_specialist --summary "文案专家补充子任务产出"
+agents/expert_curator/SOUL.md:40:python3 scripts/task_db.py get <task_id>
+agents/expert_curator/SOUL.md:41:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<治理摘要>","curator_summary":"<当前治理进展>"}' --agent expert_curator --summary "专家编组官更新治理摘要"
+agents/expert_curator/SOUL.md:42:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞说明>","curator_blocker":"<阻塞原因>"}' --agent expert_curator --summary "专家编组官回写阻塞说明"
+agents/expert_curator/SOUL.md:43:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/expert_curator/SOUL.md:103:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"专家编组官已接单，正在核对任务类型与规则边界","curator_summary":"名册治理分析进行中"}' --agent expert_curator --summary "专家编组官开始执行"
+agents/expert_curator/SOUL.md:129:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"专家名册治理已完成，准备回传调度中心","curator_result_summary":"<变更摘要>"}' --agent expert_curator --summary "专家编组官提交治理结果"
+agents/expert_curator/SOUL.md:138:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"专家编组官遇到阻塞，等待调度中心确认","curator_blocker":"请求超出专家名册治理边界或命中预置专家删除限制"}' --agent expert_curator --summary "专家编组官上报阻塞"
+agents/plan_center/SOUL.md:37:python3 scripts/task_db.py get <task_id>
+agents/plan_center/SOUL.md:38:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<规划摘要>","plan_summary":"<方案摘要>"}' --agent plan_center --summary "规划中心更新方案摘要"
+agents/plan_center/SOUL.md:123:  python3 scripts/task_db.py create "任务标题" \
+agents/plan_center/SOUL.md:130:  python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"规划中心已接收任务，开始起草方案"}' --agent plan_center --summary "规划中心更新续接摘要"
+agents/plan_center/SOUL.md:162:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"调度执行完成，规划中心正在整理回传结果","plan_result_summary":"<摘要>"}' --agent plan_center --summary "规划中心整理执行结果"
+agents/plan_center/SOUL.md:172:python3 scripts/task_db.py create "<标题>" --description "<需求概括>" --creator plan_center --initial-state PlanCenter
+agents/plan_center/SOUL.md:173:python3 scripts/task_db.py get <task_id>
+agents/plan_center/SOUL.md:174:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<规划摘要>","plan_summary":"<方案摘要>"}' --agent plan_center --summary "规划中心更新方案摘要"
+agents/plan_center/SOUL.md:175:python3 scripts/task_db.py list --limit 20
+agents/plan_center/SOUL.md:176:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/plan_center/SOUL.md:192:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"规划中心已完成需求整理","plan_summary":"核心目标、约束条件与预期产出已确认"}' --agent plan_center --summary "规划中心补充需求整理结果"
+agents/plan_center/SOUL.md:224:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"规划中心正在分析任务内容并拆解核心需求","plan_summary":"需求分析进行中"}' --agent plan_center --summary "规划中心更新需求分析进展"
+agents/plan_center/SOUL.md:227:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"规划中心正在起草方案并预估资源","plan_summary":"方案起草进行中"}' --agent plan_center --summary "规划中心更新方案起草进展"
+agents/plan_center/SOUL.md:236:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"调度执行结果已返回，规划中心正在整理回传报告","plan_result_summary":"结果整理进行中"}' --agent plan_center --summary "规划中心更新结果整理进展"
+agents/review_center/SOUL.md:35:python3 scripts/task_db.py get <task_id>
+agents/review_center/SOUL.md:36:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<评审摘要>","review_summary":"<当前审议进展>"}' --agent review_center --summary "评审中心更新审议摘要"
+agents/review_center/SOUL.md:37:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<退回修改说明>","review_blocker":"<问题摘要>"}' --agent review_center --summary "评审中心回写退回意见"
+agents/review_center/SOUL.md:38:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<审议通过说明>","review_result_summary":"<结论摘要>"}' --agent review_center --summary "评审中心回写审议结论"
+agents/review_center/SOUL.md:116:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"可行性通过，正在检查子任务完整性，发现缺少回退方案","review_summary":"完整性审查进行中"}' --agent review_center --summary "评审中心更新阶段进展"
+agents/review_center/SOUL.md:130:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"评审中心退回方案，要求规划中心修改","review_blocker":"[摘要]"}' --agent review_center --summary "评审中心退回方案"
+agents/review_center/SOUL.md:148:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"评审中心已审议通过，建议进入调度执行","review_result_summary":"审议通过"}' --agent review_center --summary "评审中心通过方案"
+agents/search_specialist/SOUL.md:35:python3 scripts/task_db.py get <task_id>
+agents/search_specialist/SOUL.md:36:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<搜索摘要>","search_summary":"<当前检索进展>"}' --agent search_specialist --summary "搜索专家更新检索摘要"
+agents/search_specialist/SOUL.md:37:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"<阻塞说明>","search_blocker":"<阻塞原因>"}' --agent search_specialist --summary "搜索专家回写阻塞说明"
+agents/search_specialist/SOUL.md:38:python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
+agents/search_specialist/SOUL.md:195:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"已完成关键词拆解与首轮检索，正在交叉核对来源","search_summary":"交叉核对进行中"}' --agent search_specialist --summary "搜索专家更新阶段进展"
+agents/search_specialist/SOUL.md:202:python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"已获得主要搜索结果，正在整理摘要并准备回传","search_summary":"摘要整理进行中"}' --agent search_specialist --summary "搜索专家补充阶段进展"
+
+=== old_name_refs_core ===
+agents/audit_specialist/SOUL.md:120:- Agent管理专家（admin_specialist）负责人事、培训与 Agent 管理
+agents/data_specialist/SOUL.md:120:- Agent管理专家（admin_specialist）负责人事、培训与 Agent 管理
+agents/deploy_specialist/SOUL.md:120:- Agent管理专家（admin_specialist）负责人事、培训与 Agent 管理
+agents/docs_specialist/SOUL.md:120:- Agent管理专家（admin_specialist）负责人事、培训与 Agent 管理
+agentorchestrator/WORKLOG_2026-04-08_final_push.md:13:5. 公开界面中的“审计专家”等旧展示口径已统一为“合规专家”；`admin_specialist` 仅保留为内部技术 ID 与兼容映射。
+agentorchestrator/backend/app/api/agents.py:21:    "audit_specialist": {"name": "合规专家", "role": "质量审查、测试校验与合规把关", "icon": "⚖️"},
+agentorchestrator/backend/app/api/agents.py:23:    "admin_specialist": {"name": "技能管理员", "role": "技能管理、配置维护与运营支持", "icon": "🗂️"},
+agentorchestrator/backend/app/models/task.py:76:    "技能管理员": "admin_specialist",
+agentorchestrator/frontend/USER_UI_REWRITE_REPORT.md:36:| 管理员 / 管理专家 / 技能管理员 | 普通成员、功能整理助手等更用户化表达 |
+agentorchestrator/frontend/src/components/SkillsConfig.tsx:8:  if (agentId === 'admin_specialist' || agentLabel === '管理专家' || agentLabel === '技能管理员') return '技能管理助手';
+agentorchestrator/frontend/src/components/TemplatePanel.tsx:25:  合规专家: { zh: '合规专家', en: 'Compliance Specialist' },
+agentorchestrator/frontend/src/store.ts:250:    .replace(/Agent管理专家/g, '管理专家')
+agentorchestrator/scripts/kanban_update_agentorchestrator.py:75:    t = re.sub(r'^(传旨|下旨)([（(][^)）]*[)）])?[：:\uff1a]\s*', '', t)
+agentorchestrator/scripts/kanban_update_agentorchestrator.py:215:            'description': remark or f'下旨：{title}',
+scripts/kanban_update.py:93:    '合规专家': 'audit_specialist', '部署专家': 'deploy_specialist', 'Agent管理专家': 'admin_specialist',
+scripts/kanban_update.py:100:    'docs_specialist': '文案专家', 'data_specialist': '数据专家', 'code_specialist': '代码专家', 'audit_specialist': '合规专家',
+scripts/kanban_update.py:101:    'deploy_specialist': '部署专家', 'admin_specialist': 'Agent管理专家', 'search_specialist': '搜索专家',
+scripts/kanban_update.py:212:    t = re.sub(r'^(传旨|下旨|任务|指令|需求)([（(][^)）]*[)）])?[：:\uff1a]\s*', '', t)
+scripts/sync_agents_overview.py:37:    {'id':'audit_specialist','label':'合规专家',       'role':'合规专家 Agent',     'group':'专业执行组', 'rank':'专业专家'},
+scripts/sync_agents_overview.py:39:    {'id':'admin_specialist','label':'Agent管理专家',  'role':'Agent管理专家',      'group':'专业执行组', 'rank':'专业专家'},
+scripts/sync_from_openclaw_runtime.py:89:        'audit_specialist': ('合规专家', '合规专家'),
+scripts/sync_from_openclaw_runtime.py:91:        'admin_specialist': ('Agent管理专家', 'Agent管理专家'),
+dashboard/court_discuss.py:67:        'name': '合规专家', 'emoji': '⚖️', 'role': '合规审查专家',
+dashboard/court_discuss.py:79:        'name': '技能管理员', 'emoji': '🗂️', 'role': '技能管理支持',
+dashboard/server.py:853:    # 清理常见前缀: "传旨:" "下旨:" 等
+dashboard/server.py:854:    title = re.sub(r'^(传旨|下旨)[：:\uff1a]\s*', '', title)
+dashboard/server.py:1059:    {'id':'audit_specialist', 'label':'合规专家', 'emoji':'⚖️', 'role':'合规审查专家',     'rank':'专业执行组'},
+dashboard/server.py:1061:    {'id':'admin_specialist', 'label':'技能管理员', 'emoji':'🗂️', 'role':'技能管理支持',     'rank':'专业执行组'},
+dashboard/server.py:1287:    '合规专家': 'audit_specialist',
+dashboard/server.py:1290:    '技能管理员': 'admin_specialist',
+dashboard/server.py:1778:        if isinstance(remark, str) and remark.startswith('下旨：'):

@@ -7,17 +7,17 @@
 ```bash
 # 确保你在项目根目录
 python3 dashboard/server.py
-# 输出: Edict 看板启动 → http://127.0.0.1:7891
+# 输出: AgentOrchestrator 看板启动 → http://127.0.0.1:7891
 ```
 
-### 2. 添加官方 Skill（CLI）
+### 2. 添加远程 Skill（CLI）
 
 ```bash
 # 为规划中心添加代码审查 skill
 python3 scripts/skill_manager.py add-remote \
   --agent plan_center \
   --name code_review \
-  --source https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/code_review/SKILL.md \
+  --source https://raw.githubusercontent.com/your-org/skills-repo/main/code_review/SKILL.md \
   --description "代码审查能力"
 
 # 输出:
@@ -69,7 +69,7 @@ curl http://localhost:7891/api/remote-skills-list | jq .
 
 ## 常见操作
 
-### 一键导入官方库中的所有 skills
+### 一键导入预置远程 skills 集合
 
 ```bash
 python3 scripts/skill_manager.py import-official-hub \
@@ -121,7 +121,7 @@ python3 scripts/skill_manager.py remove-remote \
 4. 填写表单：
    - **Agent**: 从下拉列表选择（如 plan_center）
    - **Skill 名称**: 输入内部 ID 如 `code_review`
-   - **远程 URL**: 粘贴 GitHub URL 如 `https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/code_review/SKILL.md`
+   - **远程 URL**: 粘贴可访问的 GitHub Raw / HTTPS 地址，如 `https://raw.githubusercontent.com/your-org/skills-repo/main/code_review/SKILL.md`
    - **中文描述**: 可选，如 `代码审查能力`
 5. 点击 **导入** 按钮
 6. 等待 1-2 秒，看到 ✅ 成功提示
@@ -332,5 +332,6 @@ ls -la ~/.openclaw/workspace-plan_center/skills/
 
 - 📚 [完整指南](remote-skills-guide.md)
 - 🏛️ [架构文档](task-dispatch-architecture.md)
+- 🌐 官方技能注册表：<https://clawhub.ai>
 - 🤝 [项目贡献](../CONTRIBUTING.md)
 

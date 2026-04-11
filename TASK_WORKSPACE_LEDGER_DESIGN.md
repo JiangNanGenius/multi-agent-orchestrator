@@ -12,13 +12,13 @@
 
 | 现有位置 | 当前能力 | 对本方案的意义 |
 | --- | --- | --- |
-| `edict/backend/app/services/task_service.py` | 负责任务创建、状态流转、进度追加、Todo 更新 | 是数据库模式下创建工作区和同步账本的主入口 |
-| `edict/backend/app/models/task.py` | 定义任务结构、`meta`、`flow_log`、`progress_log`、`todos`、`archived` 等字段 | 适合扩展工作区路径、账本索引、归档状态等元数据 |
-| `edict/backend/app/workers/dispatch_worker.py` | 已具备跨 agent 交接、上下文压缩归档、续接提示能力 | 可直接复用其上下文归档、续写提示、任务上下文打包机制 |
+| `agentorchestrator/backend/app/services/task_service.py` | 负责任务创建、状态流转、进度追加、Todo 更新 | 是数据库模式下创建工作区和同步账本的主入口 |
+| `agentorchestrator/backend/app/models/task.py` | 定义任务结构、`meta`、`flow_log`、`progress_log`、`todos`、`archived` 等字段 | 适合扩展工作区路径、账本索引、归档状态等元数据 |
+| `agentorchestrator/backend/app/workers/dispatch_worker.py` | 已具备跨 agent 交接、上下文压缩归档、续接提示能力 | 可直接复用其上下文归档、续写提示、任务上下文打包机制 |
 | `scripts/kanban_update.py` | JSON 模式下已有文件锁、审计日志、任务进展追加等文件化更新模式 | 适合作为“文件数据库”风格账本的兼容入口 |
 | `scripts/refresh_live_data.py` | 将任务源数据投影为前端可消费的 `live_status.json` | 是前端展示工作区摘要、账本统计、归档路径的主要注入点 |
 | `dashboard/server.py` | 旧版接口层已有任务归档、Todo 更新、workspace 数据目录选择逻辑 | 可为兼容路径和冷归档落地提供辅助接入点 |
-| `edict/frontend/src/components/TaskModal.tsx` | 当前任务详情展示状态、Todo、计时等信息 | 是新增工作区链接、账本摘要、任务链路入口的首要展示位 |
+| `agentorchestrator/frontend/src/components/TaskModal.tsx` | 当前任务详情展示状态、Todo、计时等信息 | 是新增工作区链接、账本摘要、任务链路入口的首要展示位 |
 
 现状的关键问题在于：数据库里保存了任务状态，JSON 模式里保存了任务文件，但**并没有一个“任务自身的独立文件宇宙”**。这意味着 agent 在短上下文、跨任务接力、重新开新对话或发生记忆偏差时，恢复依据仍然不够稳定。
 
@@ -217,7 +217,7 @@ task_workspaces/
   "summary": "已完成前端任务详情弹窗字段扩展",
   "payload": {
     "changed_files": [
-      "edict/frontend/src/components/TaskModal.tsx"
+      "agentorchestrator/frontend/src/components/TaskModal.tsx"
     ]
   },
   "prev_hash": "...",

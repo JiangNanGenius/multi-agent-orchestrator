@@ -1,30 +1,30 @@
-./.github/ISSUE_TEMPLATE/config.yml:4:     url: https://github.com/cft0808/edict/discussions
-./.github/ISSUE_TEMPLATE/config.yml:7:     url: https://github.com/cft0808/edict/blob/main/docs/getting-started.md
-./CONTRIBUTING.md:228: - GitHub Issues: [提交问题](https://github.com/cft0808/edict/issues)
-./CONTRIBUTING.md:229: - GitHub Discussions: [社区讨论](https://github.com/cft0808/edict/discussions)
+./.github/ISSUE_TEMPLATE/config.yml:4:     url: https://github.com/cft0808/agentorchestrator/discussions
+./.github/ISSUE_TEMPLATE/config.yml:7:     url: https://github.com/cft0808/agentorchestrator/blob/main/docs/getting-started.md
+./CONTRIBUTING.md:228: - GitHub Issues: [提交问题](https://github.com/cft0808/agentorchestrator/issues)
+./CONTRIBUTING.md:229: - GitHub Discussions: [社区讨论](https://github.com/cft0808/agentorchestrator/discussions)
 ./PUBLIC_REPO_METADATA.md:48: The primary referenced upstream project for this public release is **wanikua/danghuangshang**:
 ./PUBLIC_REPO_METADATA.md:50: - https://github.com/wanikua/danghuangshang
-./PUBLIC_REPO_METADATA.md:52: This repository also includes a codebase modernization and public-release cleanup based on **cft0808/edict**:
-./PUBLIC_REPO_METADATA.md:54: - https://github.com/cft0808/edict
-./README.md:35: > **主要引用说明：** 本项目的公开整理与当前展示版本，主要引用并参考了 [`wanikua/danghuangshang`][4] 的公开实现思路、组织方式与许可要求；同时结合 [`cft0808/edict`][5] 的现有代码基础进行了现代化整理、命名收口与公开发布改写。相关引用已在本文档与仓库说明中明确保留。
+./PUBLIC_REPO_METADATA.md:52: This repository also includes a codebase modernization and public-release cleanup based on **cft0808/agentorchestrator**:
+./PUBLIC_REPO_METADATA.md:54: - https://github.com/cft0808/agentorchestrator
+./README.md:35: > **主要引用说明：** 本项目的公开整理与当前展示版本，主要引用并参考了 [`wanikua/danghuangshang`][4] 的公开实现思路、组织方式与许可要求；同时结合 [`cft0808/agentorchestrator`][5] 的现有代码基础进行了现代化整理、命名收口与公开发布改写。相关引用已在本文档与仓库说明中明确保留。
 ./README.md:277: | **主要引用来源** | [`wanikua/danghuangshang`][4] | 当前公开版 README、产品化展示表达、来源保留要求与部分组织思路的首要参考来源 |
-./README.md:278: | **代码整理基础** | [`cft0808/edict`][5] | 本次公开整理所基于的现有工程代码与界面演化基础 |
-./README.md:280: 本项目当前公开版本由 **JiangNanGenius** 整理与发布。在继续修改、分发或二次开发时，请继续保留 MIT License，并显式注明对 `wanikua/danghuangshang` 与 `cft0808/edict` 的来源引用和致谢信息。[4] [5]
+./README.md:278: | **代码整理基础** | [`cft0808/agentorchestrator`][5] | 本次公开整理所基于的现有工程代码与界面演化基础 |
+./README.md:280: 本项目当前公开版本由 **JiangNanGenius** 整理与发布。在继续修改、分发或二次开发时，请继续保留 MIT License，并显式注明对 `wanikua/danghuangshang` 与 `cft0808/agentorchestrator` 的来源引用和致谢信息。[4] [5]
 ./README.md:316: [4]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
-./README.md:317: [5]: https://github.com/cft0808/edict "cft0808/edict"
+./README.md:317: [5]: https://github.com/cft0808/agentorchestrator "cft0808/agentorchestrator"
 ./README_EN.md:8:   <sub>12 AI agents (11 business roles + 1 compatibility role) form the Three Departments & Six Ministries: Crown Prince triages, Planning proposes, Review vetoes, Dispatch assigns, Ministries execute.<br>Built-in <b>institutional review gates</b> that CrewAI doesn't have. A <b>real-time dashboard</
-./README_EN.md:51:   <sub>Issue edict → Crown Prince triage → Planning → Review → Ministries execute → Report back (30s)</sub>
-./README_EN.md:55: > 🐳 **No OpenClaw?** Run `docker run -p 7891:7891 cft0808/edict` to try the full dashboard with simulated data.
+./README_EN.md:51:   <sub>Issue agentorchestrator → Crown Prince triage → Planning → Review → Ministries execute → Report back (30s)</sub>
+./README_EN.md:55: > 🐳 **No OpenClaw?** Run `docker run -p 7891:7891 cft0808/agentorchestrator` to try the full dashboard with simulated data.
 ./README_EN.md:64: You (Emperor) → Crown Prince (Triage) → Planning Dept → Review Dept → Dispatch Dept → 6 Ministries → Report Back
 ./README_EN.md:65:    皇上              太子               中书省          门下省         尚书省           六部          回奏
 ./README_EN.md:70: - **Crown Prince (太子)** triages messages — casual chat gets auto-replied, real commands become tasks
 ./README_EN.md:71: - **Planning (中书省)** breaks your command into actionable sub-tasks
 ./README_EN.md:72: - **Review (门下省)** audits the plan — can reject and force re-planning
 ./README_EN.md:73: - **Dispatch (尚书省)** assigns approved tasks to specialist ministries
-./README_EN.md:105: Edict's **Review Department (门下省)** exists specifically for this:
+./README_EN.md:105: AgentOrchestrator's **Review Department (门下省)** exists specifically for this:
 ./README_EN.md:122: - **Crown Prince** (太子) message triage — auto-reply casual chat, create tasks for real commands
-./README_EN.md:193: docker run -p 7891:7891 cft0808/edict
-./README_EN.md:202: git clone https://github.com/cft0808/edict.git
+./README_EN.md:193: docker run -p 7891:7891 cft0808/agentorchestrator
+./README_EN.md:202: git clone https://github.com/cft0808/agentorchestrator.git
 ./README_EN.md:208: - Creates workspaces for all departments (`~/.openclaw/workspace-*`, including Crown Prince/HR/Briefing)
 ./README_EN.md:260:                            │     👑 Crown Prince (太子)          │
 ./README_EN.md:265:                            │      📜 Planning Dept (中书省)      │
@@ -39,13 +39,13 @@
 ./README_EN.md:332: │   ├── menxia/                 #   Review Dept
 ./README_EN.md:333: │   ├── shangshu/               #   Dispatch Dept
 ./README_EN.md:406: - [x] Crown Prince triage layer (chat vs task auto-routing)
-./README_EN.md:495: [![Star History Chart](https://api.star-history.com/svg?repos=cft0808/edict&type=Date)](https://star-history.com/#cft0808/edict&Date)
-./README_JA.md:55: > 🐳 **OpenClawをお持ちでない場合** `docker run -p 7891:7891 cft0808/edict` を実行すれば、シミュレーションデータでダッシュボード全機能をお試しいただけます。
+./README_EN.md:495: [![Star History Chart](https://api.star-history.com/svg?repos=cft0808/agentorchestrator&type=Date)](https://star-history.com/#cft0808/agentorchestrator&Date)
+./README_JA.md:55: > 🐳 **OpenClawをお持ちでない場合** `docker run -p 7891:7891 cft0808/agentorchestrator` を実行すれば、シミュレーションデータでダッシュボード全機能をお試しいただけます。
 ./README_JA.md:70: - **太子（Crown Prince）** がメッセージを振り分け — 雑談は自動返信、実際の指令はタスク化
 ./README_JA.md:122: - **太子**（Crown Prince）メッセージ振り分け — 雑談は自動返信、実際の指令はタスク作成
 ./README_JA.md:124: - **七部**（戸部・礼部・兵部・刑部・工部・吏部・朝報）による実行
-./README_JA.md:193: docker run -p 7891:7891 cft0808/edict
-./README_JA.md:202: git clone https://github.com/cft0808/edict.git
+./README_JA.md:193: docker run -p 7891:7891 cft0808/agentorchestrator
+./README_JA.md:202: git clone https://github.com/cft0808/agentorchestrator.git
 ./README_JA.md:208: - 全部署のワークスペースを作成（`~/.openclaw/workspace-*`、太子/吏部/朝報を含む）
 ./README_JA.md:260:                            │        👑 太子（Crown Prince）       │
 ./README_JA.md:265:                            │       📜 中書省（Planning Dept）      │
@@ -64,9 +64,9 @@
 ./README_JA.md:460: | [競合分析](examples/competitive-analysis.md) | 「CrewAI vs AutoGen vs LangGraphを分析せよ」 | 中書省→門下省→戸部+兵部+礼部 |
 ./README_JA.md:461: | [コードレビュー](examples/code-review.md) | 「このFastAPIコードのセキュリティ問題をレビューせよ」 | 中書省→門下省→兵部+刑部 |
 ./README_JA.md:462: | [週次レポート](examples/weekly-report.md) | 「今週のエンジニアリングチームレポートを生成せよ」 | 中書省→門下省→戸部+礼部 |
-./README_JA.md:494: [![Star History Chart](https://api.star-history.com/svg?repos=cft0808/edict&type=Date)](https://star-history.com/#cft0808/edict&Date)
+./README_JA.md:494: [![Star History Chart](https://api.star-history.com/svg?repos=cft0808/agentorchestrator&type=Date)](https://star-history.com/#cft0808/agentorchestrator&Date)
 ./README_modern_cn_cleanup_20260407.md:25: 结合源码检查结果，可以确认当前残留的旧术语主要集中在三类位置。其一是**兼容历史数据的别名映射**，例如前端颜色映射、部门归一化函数与后端状态修复逻辑中，用于将旧任务记录转换为现代命名。其二是**内部状态键或历史字段值**，例如 `Taizi`、`Zhongshu`、`Menxia` 等状态代号，它们仍承担兼容已有任务流转数据的职责。其三是**样式选择器与注释文本**，例如 `.dt-中书省` 等选择器名称或部分 CSS 注释，这类内容不会直接向用户展示，但在代码层面仍保留历史痕迹。
-./SECURITY.md:17: 1. **首选方式**：使用 [GitHub Security Advisories](https://github.com/cft0808/edict/security/advisories/new) 创建私密安全报告
+./SECURITY.md:17: 1. **首选方式**：使用 [GitHub Security Advisories](https://github.com/cft0808/agentorchestrator/security/advisories/new) 创建私密安全报告
 ./agents/bingbu/SOUL.md:1: # 兵部 · 尚书
 ./agents/bingbu/SOUL.md:3: 你是兵部尚书，负责在尚书省派发的任务中承担**工程实现、架构设计与功能开发**相关的执行工作。
 ./agents/bingbu/SOUL.md:6: 兵部掌管军事后勤，你的专长在于：
@@ -253,8 +253,8 @@
 ./dashboard/dashboard.html:87:     .dt-兵部{border-color:#44aaff44;color:#44aaff;background:#081828}
 ./dashboard/dashboard.html:88:     .dt-刑部{border-color:#cc444444;color:#cc4444;background:#280808}
 ./dashboard/dashboard.html:89:     .dt-工部{border-color:#14b8a644;color:#14b8a6;background:#081d1d}
-./dashboard/dashboard.html:708:       <div style="font-size:10px;color:var(--muted);margin-top:4px">基于开源项目改造 · 保留 MIT License · 引用 cft0808/edict 与 wanikua/danghuangshang</div>
-./dashboard/dashboard.html:954:     <div>保留 MIT License，并引用上游项目 <a href="https://github.com/cft0808/edict" target="_blank" rel="noreferrer" style="color:var(--acc)">cft0808/edict</a> 与 <a href="https://github.com/wanikua/danghuangshang" target="_blank" rel="noreferrer" style="color:var(--acc)">wanikua/danghuangshang</a>。</div>
+./dashboard/dashboard.html:708:       <div style="font-size:10px;color:var(--muted);margin-top:4px">基于开源项目改造 · 保留 MIT License · 引用 cft0808/agentorchestrator 与 wanikua/danghuangshang</div>
+./dashboard/dashboard.html:954:     <div>保留 MIT License，并引用上游项目 <a href="https://github.com/cft0808/agentorchestrator" target="_blank" rel="noreferrer" style="color:var(--acc)">cft0808/agentorchestrator</a> 与 <a href="https://github.com/wanikua/danghuangshang" target="_blank" rel="noreferrer" style="color:var(--acc)">wanikua/danghuangshang</a>。</div>
 ./dashboard/dashboard.html:1057:   '太子':'#e8a040','中书省':'#a07aff','门下省':'#6a9eff','尚书省':'#6aef9a','礼部':'#f5c842','户部':'#ff9a6a','兵部':'#44aaff','刑部':'#cc4444','工部':'#14b8a6','吏部':'#9b59b6','皇上':'#ffd700','任务发起人':'#ffd700','回奏':'#2ecc8a','六部':'#44aaff'
 ./dashboard/dashboard.html:1061:   '中书省':'规划中心',
 ./dashboard/dashboard.html:1062:   '门下省':'评审中心',
@@ -269,7 +269,7 @@
 ./dashboard/dashboard.html:2476:   // "兵部：Mission Control 映射验收" — already nice
 ./dashboard/dashboard.html:3414:     else if(['中书省','规划中心'].includes(f.to)||['中书省','规划中心'].includes(f.from)) planLog.push(f);
 ./dashboard/dashboard.html:3415:     else if(['门下省','评审中心'].includes(f.to)||['门下省','评审中心'].includes(f.from)) reviewLog.push(f);
-./dashboard/dashboard.html:3790:   window.open(`https://github.com/cft0808/edict/issues/new?title=${title}&body=${tmpl}&labels=${label}`, '_blank');
+./dashboard/dashboard.html:3790:   window.open(`https://github.com/cft0808/agentorchestrator/issues/new?title=${title}&body=${tmpl}&labels=${label}`, '_blank');
 ./dashboard/server.py:973:     '礼部': 'libu', '户部': 'hubu', '兵部': 'bingbu',
 ./dashboard/server.py:974:     '刑部': 'xingbu', '工部': 'gongbu', '吏部': 'libu_hr',
 ./dashboard/server.py:975:     '中书省': 'zhongshu', '门下省': 'menxia', '尚书省': 'shangshu', '太子': 'taizi',
@@ -464,7 +464,7 @@
 ./docker/demo_data/tasks_source.json:29:     "official": "兵部尚书",
 ./docker/demo_data/tasks_source.json:30:     "org": "兵部",
 ./docker/demo_data/tasks_source.json:32:     "now": "🔍 兵部正在审查 dashboard 模块代码",
-./docker/demo_data/tasks_source.json:39:       {"at": "2026-02-25T10:00:00Z", "from": "皇上", "to": "中书省", "remark": "📜 皇上下旨：对 edict 仓库进行代码审查"},
+./docker/demo_data/tasks_source.json:39:       {"at": "2026-02-25T10:00:00Z", "from": "皇上", "to": "中书省", "remark": "📜 皇上下旨：对 agentorchestrator 仓库进行代码审查"},
 ./docker/demo_data/tasks_source.json:40:       {"at": "2026-02-25T10:03:00Z", "from": "中书省", "to": "门下省", "remark": "📋 中书省规划完成"},
 ./docker/demo_data/tasks_source.json:41:       {"at": "2026-02-25T10:06:00Z", "from": "门下省", "to": "尚书省", "remark": "✅ 门下省审议通过"},
 ./docker/demo_data/tasks_source.json:42:       {"at": "2026-02-25T10:07:00Z", "from": "尚书省", "to": "兵部", "remark": "📮 尚书省派单 → 兵部执行"}
@@ -485,7 +485,7 @@
 ./docker/demo_data/tasks_source.json:85:       {"at": "2026-02-26T08:18:00Z", "from": "门下省", "to": "尚书省", "remark": "✅ 第二轮审议通过"},
 ./docker/demo_data/tasks_source.json:86:       {"at": "2026-02-26T08:20:00Z", "from": "尚书省", "to": "户部", "remark": "📮 派单 → 户部"},
 ./docker/demo_data/tasks_source.json:87:       {"at": "2026-02-26T09:00:00Z", "from": "户部", "to": "尚书省", "remark": "📦 初稿完成，待审查"}
-./docs/agent_registry_spec.md:316: [1]: https://github.com/cft0808/edict "cft0808/edict"
+./docs/agent_registry_spec.md:316: [1]: https://github.com/cft0808/agentorchestrator "cft0808/agentorchestrator"
 ./docs/agent_registry_spec.md:317: [2]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
 ./docs/browser_findings_20260407_refresh_and_dispatch.md:24: - 中书省
 ./docs/browser_findings_20260407_refresh_and_dispatch.md:25: - 门下省
@@ -498,10 +498,10 @@
 ./docs/final_delivery_report_20260407.md:37: | 尚书省 | 调度中心 |
 ./docs/final_delivery_report_20260407.md:39: | 礼部 / 户部 / 兵部 / 刑部 / 工部 / 吏部 | 文案专家 / 数据专家 / 代码专家 / 合规专家 / 部署专家 / Agent管理专家 |
 ./docs/gap_audit_20260407.md:12: | 服务端流程文案 | `dashboard/server.py` 中仍保留“皇上→太子→中书省→门下省→尚书省→六部”的状态推进文案与自动派发提示 | `dashboard/server.py` |
-./docs/gap_audit_20260407.md:14: | React 实际前端共享常量 | `edict/frontend/src/store.ts` 虽部分现代化，但仍混用“太子/中书省/门下省/尚书省/礼部/户部/兵部/工部/皇上”等旧标签 | `edict/frontend/src/store.ts` |
-./docs/gap_audit_20260407.md:16: | 模板与发起流程 | 模板中心仍有“下旨”“圣旨模板”“预览旨意”“旨意已下达”等旧交互表述，且部分路由默认写死到中书省 | 需继续处理 `edict/frontend/src/components/TemplatePanel.tsx` |
-./docs/getting-started.md:28: git clone https://github.com/cft0808/edict.git
-./docs/getting-started.md:216: - [🏠 项目首页](https://github.com/cft0808/edict)
+./docs/gap_audit_20260407.md:14: | React 实际前端共享常量 | `agentorchestrator/frontend/src/store.ts` 虽部分现代化，但仍混用“太子/中书省/门下省/尚书省/礼部/户部/兵部/工部/皇上”等旧标签 | `agentorchestrator/frontend/src/store.ts` |
+./docs/gap_audit_20260407.md:16: | 模板与发起流程 | 模板中心仍有“下旨”“圣旨模板”“预览旨意”“旨意已下达”等旧交互表述，且部分路由默认写死到中书省 | 需继续处理 `agentorchestrator/frontend/src/components/TemplatePanel.tsx` |
+./docs/getting-started.md:28: git clone https://github.com/cft0808/agentorchestrator.git
+./docs/getting-started.md:216: - [🏠 项目首页](https://github.com/cft0808/agentorchestrator)
 ./docs/remote-skills-guide.md:170: | `code_review` | 代码审查（支持 Python/JS/Go） | 兵部/刑部 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/code_review/SKILL.md |
 ./docs/remote-skills-guide.md:171: | `api_design` | API 设计审查 | 兵部/工部 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/api_design/SKILL.md |
 ./docs/remote-skills-guide.md:172: | `security_audit` | 安全审计 | 刑部 | https://raw.githubusercontent.com/openclaw-ai/skills-hub/main/security_audit/SKILL.md |
@@ -512,14 +512,14 @@
 ./docs/remote-skills-guide.md:296: - 刑部（合规审计）的安全检查
 ./docs/remote-skills-guide.md:297: - 门下省（审议把关）的质量评估
 ./docs/remote-skills-quickstart.md:16: # 为中书省添加代码审查 skill
-./docs/source_attribution_notes_20260407.md:5: - 上游参考一：`cft0808/edict`
+./docs/source_attribution_notes_20260407.md:5: - 上游参考一：`cft0808/agentorchestrator`
 ./docs/source_attribution_notes_20260407.md:6: - 上游参考二：`wanikua/danghuangshang`
 ./docs/source_attribution_notes_20260407.md:7: - 访问页面：[https://github.com/wanikua/danghuangshang](https://github.com/wanikua/danghuangshang)
 ./docs/source_attribution_notes_20260407.md:11: `wanikua/danghuangshang` 仓库首页公开说明中包含以下要点：
-./docs/source_attribution_notes_20260407.md:29:    - 本项目基于 `cft0808/edict` 进行重构与现代化改造；
+./docs/source_attribution_notes_20260407.md:29:    - 本项目基于 `cft0808/agentorchestrator` 进行重构与现代化改造；
 ./docs/source_attribution_notes_20260407.md:30:    - 同时参考了 `wanikua/danghuangshang` 的相关思路与公开仓库内容；
-./docs/source_attribution_notes_20260407.md:39: > 本项目当前版本“多Agent智作中枢”基于开源项目 `cft0808/edict` 进行现代化重构，并参考了 `wanikua/danghuangshang` 的公开实现思路与组织方式。遵循上游项目公开许可要求，保留 MIT License，并在文档中注明来源与致谢信息。
-./docs/source_attribution_notes_20260407.md:43: > 基于开源项目改造，保留 MIT License，并感谢 `cft0808/edict` 与 `wanikua/danghuangshang` 社区贡献。
+./docs/source_attribution_notes_20260407.md:39: > 本项目当前版本“多Agent智作中枢”基于开源项目 `cft0808/agentorchestrator` 进行现代化重构，并参考了 `wanikua/danghuangshang` 的公开实现思路与组织方式。遵循上游项目公开许可要求，保留 MIT License，并在文档中注明来源与致谢信息。
+./docs/source_attribution_notes_20260407.md:43: > 基于开源项目改造，保留 MIT License，并感谢 `cft0808/agentorchestrator` 与 `wanikua/danghuangshang` 社区贡献。
 ./docs/task-dispatch-architecture.md:81:                 ├─ 文案专家 (Libu)           - 文档编制与总结
 ./docs/task-dispatch-architecture.md:82:                 ├─ 数据专家 (Hubu)           - 数据分析与量化
 ./docs/task-dispatch-architecture.md:83:                 ├─ 代码专家 (Bingbu)         - 工程实现与改造
@@ -535,62 +535,62 @@
 ./docs/task-dispatch-architecture.md:1132:   "等待工部反馈继续"
 ./docs/task-dispatch-architecture.md:1136: # - task.block = "等待工部反馈继续"
 ./docs/task-dispatch-architecture.md:1142:   "工部已反馈，继续执行"
-./docs/wechat-article.md:80: **GitHub：https://github.com/cft0808/edict**
-./docs/wechat-article.md:247: **GitHub：https://github.com/cft0808/edict**
-./docs/wechat-article.md:253: docker run -p 7891:7891 cft0808/edict
-./docs/wechat-article.md:262: git clone https://github.com/cft0808/edict.git
-./docs/wechat-article.md:303: **GitHub：https://github.com/cft0808/edict**
+./docs/wechat-article.md:80: **GitHub：https://github.com/cft0808/agentorchestrator**
+./docs/wechat-article.md:247: **GitHub：https://github.com/cft0808/agentorchestrator**
+./docs/wechat-article.md:253: docker run -p 7891:7891 cft0808/agentorchestrator
+./docs/wechat-article.md:262: git clone https://github.com/cft0808/agentorchestrator.git
+./docs/wechat-article.md:303: **GitHub：https://github.com/cft0808/agentorchestrator**
 ./docs/wechat.md:19: - **为什么门下省是杀手锏** —— 以及它封驳了多少次中书省的方案
 ./docs/wechat.md:29: - 🔥 *Token 烧了 $50，结果门下省把方案驳回了三次*
 ./docs/wechat.md:30: - 🐛 *尚书省派发任务，六部全体罢工——原来 agent ID 写错了*
 ./docs/wechat.md:41: - 「快速通道」机制：简单任务跳过门下省审核
-./edict/backend/app/models/task.py:74:     "户部": "hubu",
-./edict/backend/app/models/task.py:75:     "礼部": "libu",
-./edict/backend/app/models/task.py:76:     "兵部": "bingbu",
-./edict/backend/app/models/task.py:77:     "刑部": "xingbu",
-./edict/backend/app/models/task.py:78:     "工部": "gongbu",
-./edict/backend/app/models/task.py:79:     "吏部": "libu_hr",
-./edict/backend/app/workers/dispatch_worker.py:159:         reminders.append("门下省审核：通过则流转 Assigned，不通过则退回 Zhongshu 并说明原因。")
-./edict/backend/app/workers/orchestrator_worker.py:54:     "Doing": TaskState.Assigned,   # 六部卡住 → 退回尚书省重新派发
-./edict/backend/app/workers/orchestrator_worker.py:56:     "Assigned": TaskState.Menxia,  # 尚书省卡住 → 退回门下省复核
-./edict/backend/app/workers/orchestrator_worker.py:57:     "Menxia": TaskState.Zhongshu,  # 门下省卡住 → 退回中书省重新规划
-./edict/backend/app/workers/orchestrator_worker.py:58:     "Zhongshu": TaskState.Taizi,   # 中书省卡住 → 退回太子重新起草
-./edict/backend/app/workers/orchestrator_worker.py:206:                 # 派发给尚书省让其决定分配
-./edict/backend/app/workers/orchestrator_worker.py:237:         2. 重试耗尽：向上级升级（如六部→尚书省→门下省）
-./edict/frontend/src/index.css:90: .dt-中书省 { border-color: #a07aff44; color: #a07aff; background: #1a0f38; }
-./edict/frontend/src/index.css:91: .dt-门下省 { border-color: #6a9eff44; color: #6a9eff; background: #0f1a38; }
-./edict/frontend/src/index.css:92: .dt-尚书省 { border-color: #6aef9a44; color: #6aef9a; background: #0a2018; }
-./edict/frontend/src/index.css:93: .dt-礼部 { border-color: #f5c84244; color: #f5c842; background: #201a08; }
-./edict/frontend/src/index.css:94: .dt-户部 { border-color: #ff9a6a44; color: #ff9a6a; background: #28100a; }
-./edict/frontend/src/index.css:95: .dt-兵部 { border-color: #ff527044; color: #ff5270; background: #280a10; }
-./edict/frontend/src/index.css:96: .dt-刑部 { border-color: #cc444444; color: #cc4444; background: #280808; }
-./edict/frontend/src/index.css:97: .dt-工部 { border-color: #44aaff44; color: #44aaff; background: #081828; }
-./edict/frontend/src/store.ts:42:   '太子': '#e8a040', '中书省': '#a07aff', '门下省': '#6a9eff', '尚书省': '#6aef9a',
-./edict/frontend/src/store.ts:43:   '礼部': '#f5c842', '户部': '#ff9a6a', '兵部': '#ff5270', '刑部': '#cc4444',
-./edict/frontend/src/store.ts:44:   '工部': '#44aaff', '吏部': '#9b59b6', '钦天监': '#36cfc9', '早朝官': '#36cfc9', '皇上': '#ffd700', '回奏': '#2ecc8a',
-./edict/frontend/src/store.ts:56:   '中书省': '规划中心',
-./edict/frontend/src/store.ts:57:   '门下省': '评审中心',
-./edict/frontend/src/store.ts:58:   '尚书省': '调度中心',
-./edict/frontend/src/store.ts:59:   '礼部': '文案专家',
-./edict/frontend/src/store.ts:60:   '户部': '数据专家',
-./edict/frontend/src/store.ts:61:   '兵部': '代码专家',
-./edict/frontend/src/store.ts:62:   '刑部': '合规专家',
-./edict/frontend/src/store.ts:63:   '工部': '部署专家',
-./edict/frontend/src/store.ts:64:   '吏部': 'Agent管理专家',
-./edict/frontend/src/store.ts:84:     .replace(/中书省/g, '规划中心')
-./edict/frontend/src/store.ts:85:     .replace(/门下省/g, '评审中心')
-./edict/frontend/src/store.ts:86:     .replace(/尚书省/g, '调度中心')
-./edict/frontend/src/store.ts:87:     .replace(/礼部/g, '文案专家')
-./edict/frontend/src/store.ts:88:     .replace(/户部/g, '数据专家')
-./edict/frontend/src/store.ts:89:     .replace(/兵部/g, '代码专家')
-./edict/frontend/src/store.ts:90:     .replace(/刑部/g, '合规专家')
-./edict/frontend/src/store.ts:91:     .replace(/工部/g, '部署专家')
-./edict/frontend/src/store.ts:92:     .replace(/吏部/g, 'Agent管理专家')
-./edict/scripts/kanban_update_edict.py:9:   python3 kanban_update.py create JJC-20260223-012 "任务标题" Zhongshu 中书省 中书令
-./edict/scripts/kanban_update_edict.py:10:   python3 kanban_update.py state JJC-20260223-012 Menxia "规划方案已提交门下省"
-./edict/scripts/kanban_update_edict.py:11:   python3 kanban_update.py flow JJC-20260223-012 "中书省" "门下省" "规划方案提交审核"
-./edict/scripts/kanban_update_edict.py:43:     'Taizi': '太子', 'Zhongshu': '中书省', 'Menxia': '门下省', 'Assigned': '尚书省',
-./edict/scripts/kanban_update_edict.py:44:     'Doing': '执行中', 'Review': '尚书省', 'Done': '完成', 'Blocked': '阻塞',
+./agentorchestrator/backend/app/models/task.py:74:     "户部": "hubu",
+./agentorchestrator/backend/app/models/task.py:75:     "礼部": "libu",
+./agentorchestrator/backend/app/models/task.py:76:     "兵部": "bingbu",
+./agentorchestrator/backend/app/models/task.py:77:     "刑部": "xingbu",
+./agentorchestrator/backend/app/models/task.py:78:     "工部": "gongbu",
+./agentorchestrator/backend/app/models/task.py:79:     "吏部": "libu_hr",
+./agentorchestrator/backend/app/workers/dispatch_worker.py:159:         reminders.append("门下省审核：通过则流转 Assigned，不通过则退回 Zhongshu 并说明原因。")
+./agentorchestrator/backend/app/workers/orchestrator_worker.py:54:     "Doing": TaskState.Assigned,   # 六部卡住 → 退回尚书省重新派发
+./agentorchestrator/backend/app/workers/orchestrator_worker.py:56:     "Assigned": TaskState.Menxia,  # 尚书省卡住 → 退回门下省复核
+./agentorchestrator/backend/app/workers/orchestrator_worker.py:57:     "Menxia": TaskState.Zhongshu,  # 门下省卡住 → 退回中书省重新规划
+./agentorchestrator/backend/app/workers/orchestrator_worker.py:58:     "Zhongshu": TaskState.Taizi,   # 中书省卡住 → 退回太子重新起草
+./agentorchestrator/backend/app/workers/orchestrator_worker.py:206:                 # 派发给尚书省让其决定分配
+./agentorchestrator/backend/app/workers/orchestrator_worker.py:237:         2. 重试耗尽：向上级升级（如六部→尚书省→门下省）
+./agentorchestrator/frontend/src/index.css:90: .dt-中书省 { border-color: #a07aff44; color: #a07aff; background: #1a0f38; }
+./agentorchestrator/frontend/src/index.css:91: .dt-门下省 { border-color: #6a9eff44; color: #6a9eff; background: #0f1a38; }
+./agentorchestrator/frontend/src/index.css:92: .dt-尚书省 { border-color: #6aef9a44; color: #6aef9a; background: #0a2018; }
+./agentorchestrator/frontend/src/index.css:93: .dt-礼部 { border-color: #f5c84244; color: #f5c842; background: #201a08; }
+./agentorchestrator/frontend/src/index.css:94: .dt-户部 { border-color: #ff9a6a44; color: #ff9a6a; background: #28100a; }
+./agentorchestrator/frontend/src/index.css:95: .dt-兵部 { border-color: #ff527044; color: #ff5270; background: #280a10; }
+./agentorchestrator/frontend/src/index.css:96: .dt-刑部 { border-color: #cc444444; color: #cc4444; background: #280808; }
+./agentorchestrator/frontend/src/index.css:97: .dt-工部 { border-color: #44aaff44; color: #44aaff; background: #081828; }
+./agentorchestrator/frontend/src/store.ts:42:   '太子': '#e8a040', '中书省': '#a07aff', '门下省': '#6a9eff', '尚书省': '#6aef9a',
+./agentorchestrator/frontend/src/store.ts:43:   '礼部': '#f5c842', '户部': '#ff9a6a', '兵部': '#ff5270', '刑部': '#cc4444',
+./agentorchestrator/frontend/src/store.ts:44:   '工部': '#44aaff', '吏部': '#9b59b6', '钦天监': '#36cfc9', '早朝官': '#36cfc9', '皇上': '#ffd700', '回奏': '#2ecc8a',
+./agentorchestrator/frontend/src/store.ts:56:   '中书省': '规划中心',
+./agentorchestrator/frontend/src/store.ts:57:   '门下省': '评审中心',
+./agentorchestrator/frontend/src/store.ts:58:   '尚书省': '调度中心',
+./agentorchestrator/frontend/src/store.ts:59:   '礼部': '文案专家',
+./agentorchestrator/frontend/src/store.ts:60:   '户部': '数据专家',
+./agentorchestrator/frontend/src/store.ts:61:   '兵部': '代码专家',
+./agentorchestrator/frontend/src/store.ts:62:   '刑部': '合规专家',
+./agentorchestrator/frontend/src/store.ts:63:   '工部': '部署专家',
+./agentorchestrator/frontend/src/store.ts:64:   '吏部': 'Agent管理专家',
+./agentorchestrator/frontend/src/store.ts:84:     .replace(/中书省/g, '规划中心')
+./agentorchestrator/frontend/src/store.ts:85:     .replace(/门下省/g, '评审中心')
+./agentorchestrator/frontend/src/store.ts:86:     .replace(/尚书省/g, '调度中心')
+./agentorchestrator/frontend/src/store.ts:87:     .replace(/礼部/g, '文案专家')
+./agentorchestrator/frontend/src/store.ts:88:     .replace(/户部/g, '数据专家')
+./agentorchestrator/frontend/src/store.ts:89:     .replace(/兵部/g, '代码专家')
+./agentorchestrator/frontend/src/store.ts:90:     .replace(/刑部/g, '合规专家')
+./agentorchestrator/frontend/src/store.ts:91:     .replace(/工部/g, '部署专家')
+./agentorchestrator/frontend/src/store.ts:92:     .replace(/吏部/g, 'Agent管理专家')
+./agentorchestrator/scripts/kanban_update_agentorchestrator.py:9:   python3 kanban_update.py create JJC-20260223-012 "任务标题" Zhongshu 中书省 中书令
+./agentorchestrator/scripts/kanban_update_agentorchestrator.py:10:   python3 kanban_update.py state JJC-20260223-012 Menxia "规划方案已提交门下省"
+./agentorchestrator/scripts/kanban_update_agentorchestrator.py:11:   python3 kanban_update.py flow JJC-20260223-012 "中书省" "门下省" "规划方案提交审核"
+./agentorchestrator/scripts/kanban_update_agentorchestrator.py:43:     'Taizi': '太子', 'Zhongshu': '中书省', 'Menxia': '门下省', 'Assigned': '尚书省',
+./agentorchestrator/scripts/kanban_update_agentorchestrator.py:44:     'Doing': '执行中', 'Review': '尚书省', 'Done': '完成', 'Blocked': '阻塞',
 ./examples/README.md:7: | 1 | [竞品分析](competitive-analysis.md) | "分析 CrewAI vs AutoGen vs LangGraph" | 中书→门下→户部+兵部+礼部 | ⭐⭐⭐ |
 ./examples/README.md:8: | 2 | [代码审查](code-review.md) | "审查 FastAPI 代码的安全性" | 中书→门下→兵部+刑部 | ⭐⭐ |
 ./examples/README.md:9: | 3 | [周报生成](weekly-report.md) | "生成本周工程团队周报" | 中书→门下→户部+礼部 | ⭐⭐ |

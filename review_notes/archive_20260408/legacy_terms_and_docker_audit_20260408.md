@@ -5,10 +5,10 @@
 | 类别 | 重点文件 | 主要问题 |
 | --- | --- | --- |
 | 正式文档 | `docs/remote-skills-guide.md`、`docs/remote-skills-quickstart.md`、`docs/getting-started.md`、`docs/wechat.md`、`docs/task-dispatch-architecture.md` | 仍存在“三省六部”表述、旧部门映射示例，以及 Docker 镜像/部署承诺 |
-| 代码与配置 | `edict/backend/app/__init__.py`、`edict/backend/app/models/task.py`、`edict/frontend/src/index.css`、`edict/docker-compose.yml`、`docker-compose.yml` | 注释、字符串映射、样式类名说明和 Compose 文件头部仍保留旧表述或 Docker 使用暗示 |
+| 代码与配置 | `agentorchestrator/backend/app/__init__.py`、`agentorchestrator/backend/app/models/task.py`、`agentorchestrator/frontend/src/index.css`、`agentorchestrator/docker-compose.yml`、`docker-compose.yml` | 注释、字符串映射、样式类名说明和 Compose 文件头部仍保留旧表述或 Docker 使用暗示 |
 | agents 文档 | `agents/groups/liubu.md`、`agents/*/SOUL.md` | 角色体系仍直接采用吏部、礼部、兵部、刑部、工部、户部等旧命名 |
 | tests/examples | `tests/test_kanban.py`、`tests/test_file_lock.py`、`examples/*.md` | 对外可见样例与演示文本仍包含旧术语 |
-| dashboard / frontend / scripts | `dashboard/dashboard.html`、`dashboard/court_discuss.py`、`edict/frontend/src/store.ts`、`scripts/sync_from_openclaw_runtime.py`、`scripts/kanban_update.py`、`dashboard/server.py` | 展示文案、状态名、兼容映射说明中仍残留旧体系词汇 |
+| dashboard / frontend / scripts | `dashboard/dashboard.html`、`dashboard/court_discuss.py`、`agentorchestrator/frontend/src/store.ts`、`scripts/sync_from_openclaw_runtime.py`、`scripts/kanban_update.py`、`dashboard/server.py` | 展示文案、状态名、兼容映射说明中仍残留旧体系词汇 |
 | docker 演示数据 | `docker/demo_data/*.json` | 大量旧角色命名、任务标题与 Docker Hub / Docker 镜像演示内容仍存在 |
 
 当前判断如下。
@@ -17,7 +17,7 @@
 
 第二，**Docker 内容不仅存在于 README**，还存在于 Compose 文件、入门文档、架构文档以及 docker 演示数据中。若遵循“项目不提供也不维护 Docker 支持”的新边界，则至少需要把正式文档中的支持承诺改写为“不维护/仅历史遗留”，并评估是否保留 `docker/` 目录作为历史样例。
 
-第三，`edict/backend/app/models/task.py` 中的中文部门名映射很可能承担历史兼容职责，后续修改前需要区分“用户可见旧术语”与“兼容性内部键值”。如保留兼容映射，应改为代码注释明确说明其为历史兼容字段，而不是当前官方架构术语。
+第三，`agentorchestrator/backend/app/models/task.py` 中的中文部门名映射很可能承担历史兼容职责，后续修改前需要区分“用户可见旧术语”与“兼容性内部键值”。如保留兼容映射，应改为代码注释明确说明其为历史兼容字段，而不是当前官方架构术语。
 
 建议下一步按以下顺序推进。
 

@@ -12,10 +12,10 @@
 | --- | --- | --- | --- |
 | 文档与治理层 | `README.md`、`docs/current_capability_boundary.md`、`docs/current_architecture_overview.md` | 说明系统边界、部署方式、能力范围与长期治理口径 | 是 |
 | 角色配置层 | `agents.json`、`agents/` | 定义中心与专家角色、分组说明、提示词与职责边界 | 间接 |
-| 看板与前端层 | `edict/frontend/`、`dashboard/` | 提供任务发布、监控、技能管理、会话、归档、搜索与协作讨论等界面 | 是 |
-| API 与应用层 | `edict/backend/app/main.py`、`edict/backend/app/api/*` | 提供任务、角色、事件、管理与实时连接接口 | 否 |
-| 任务领域层 | `edict/backend/app/models/task.py`、`services/task_service.py` | 定义任务状态机、持久化结构、状态流转与事件写出 | 否 |
-| 事件编排层 | `edict/backend/app/workers/orchestrator_worker.py`、event bus / outbox | 消费任务事件、自动推进状态、执行停滞恢复与调度派发 | 否 |
+| 看板与前端层 | `agentorchestrator/frontend/`、`dashboard/` | 提供任务发布、监控、技能管理、会话、归档、搜索与协作讨论等界面 | 是 |
+| API 与应用层 | `agentorchestrator/backend/app/main.py`、`agentorchestrator/backend/app/api/*` | 提供任务、角色、事件、管理与实时连接接口 | 否 |
+| 任务领域层 | `agentorchestrator/backend/app/models/task.py`、`services/task_service.py` | 定义任务状态机、持久化结构、状态流转与事件写出 | 否 |
+| 事件编排层 | `agentorchestrator/backend/app/workers/orchestrator_worker.py`、event bus / outbox | 消费任务事件、自动推进状态、执行停滞恢复与调度派发 | 否 |
 
 ## 二、总体架构
 
@@ -63,7 +63,7 @@ Orchestrator Worker
 
 ### 3.3 前端与看板层
 
-前端主入口位于 `edict/frontend/src/App.tsx`。从当前实现看，它已经不是单一任务面板，而是一个带有认证壳层的 React 应用容器，负责组织多个主面板，包括任务看板、运行监控、角色概览、模型配置、技能管理、会话视图、归档面板、模板面板、AI 搜索引擎、自动化面板、任务详情弹窗与协作讨论界面等。[5]
+前端主入口位于 `agentorchestrator/frontend/src/App.tsx`。从当前实现看，它已经不是单一任务面板，而是一个带有认证壳层的 React 应用容器，负责组织多个主面板，包括任务看板、运行监控、角色概览、模型配置、技能管理、会话视图、归档面板、模板面板、AI 搜索引擎、自动化面板、任务详情弹窗与协作讨论界面等。[5]
 
 前端状态适配的关键文件是 `store.ts`。这一层定义了可见流程阶段 `PIPE`、状态到阶段的映射、角色元数据目录 `AGENT_ARCHITECTURE`、角色标签归一化规则、部门颜色与文案规范，以及任务如何被转换为可视化节点、标签、时间、归档状态和动态流程。这意味着前端并不是简单原样展示后端字段，而是承担了**兼容映射与展示语义归一化**职责。[6]
 
@@ -76,7 +76,7 @@ Orchestrator Worker
 
 ### 3.4 后端 API 与应用装配层
 
-后端主入口在 `edict/backend/app/main.py`。当前应用基于 FastAPI 构建，并在生命周期启动时连接事件总线，在关闭时执行清理。它统一装配了任务、角色、事件、管理与 WebSocket 路由，同时暴露 `/health` 与 `/api` 这类轻量级健康与发现接口。[2]
+后端主入口在 `agentorchestrator/backend/app/main.py`。当前应用基于 FastAPI 构建，并在生命周期启动时连接事件总线，在关闭时执行清理。它统一装配了任务、角色、事件、管理与 WebSocket 路由，同时暴露 `/health` 与 `/api` 这类轻量级健康与发现接口。[2]
 
 这一层的职责是**把系统能力以服务接口方式组织起来**。从架构视角看，它本身不承载主要业务规则，而是作为传输与装配入口，把外部请求导向任务服务、角色服务、事件查询或实时连接层。
 
@@ -174,11 +174,11 @@ Orchestrator Worker
 | --- | --- | --- |
 | 1 | `README.md` | 先建立系统定位、公开口径与目录认知 |
 | 2 | `docs/current_capability_boundary.md` | 明确真实能力边界，防止误判 |
-| 3 | `edict/backend/app/models/task.py` | 先理解真实状态机与数据模型 |
-| 4 | `edict/backend/app/services/task_service.py` | 理解任务如何被创建、更新与写出事件 |
-| 5 | `edict/backend/app/workers/orchestrator_worker.py` | 理解系统如何自动推进与恢复 |
-| 6 | `edict/frontend/src/store.ts` | 理解后端任务如何被映射为前端可见流程 |
-| 7 | `edict/frontend/src/App.tsx` | 最后再看用户界面组合与交互入口 |
+| 3 | `agentorchestrator/backend/app/models/task.py` | 先理解真实状态机与数据模型 |
+| 4 | `agentorchestrator/backend/app/services/task_service.py` | 理解任务如何被创建、更新与写出事件 |
+| 5 | `agentorchestrator/backend/app/workers/orchestrator_worker.py` | 理解系统如何自动推进与恢复 |
+| 6 | `agentorchestrator/frontend/src/store.ts` | 理解后端任务如何被映射为前端可见流程 |
+| 7 | `agentorchestrator/frontend/src/App.tsx` | 最后再看用户界面组合与交互入口 |
 
 ## 九、结论
 
@@ -189,9 +189,9 @@ Orchestrator Worker
 ## 参考文件
 
 [1]: ../README.md
-[2]: ../edict/backend/app/main.py
-[3]: ../edict/backend/app/models/task.py
-[4]: ../edict/backend/app/services/task_service.py
-[5]: ../edict/backend/app/workers/orchestrator_worker.py
-[6]: ../edict/frontend/src/store.ts
+[2]: ../agentorchestrator/backend/app/main.py
+[3]: ../agentorchestrator/backend/app/models/task.py
+[4]: ../agentorchestrator/backend/app/services/task_service.py
+[5]: ../agentorchestrator/backend/app/workers/orchestrator_worker.py
+[6]: ../agentorchestrator/frontend/src/store.ts
 [7]: ../agents.json

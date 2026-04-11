@@ -1,0 +1,38 @@
+# ══════════════════════════════════════════════════════════════
+# AgentOrchestrator · systemd 服务模板
+# 部署说明: 复制到 /etc/systemd/system/agentorchestrator.service
+#   sudo cp agentorchestrator.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now agentorchestrator
+# ══════════════════════════════════════════════════════════════
+[Unit]
+Description=AgentOrchestrator Multi-Agent Orchestration Dashboard
+After=network.target
+
+[Service]
+Type=forking
+User=agentorchestrator
+Group=agentorchestrator
+WorkingDirectory=/opt/agentorchestrator
+ExecStart=/opt/agentorchestrator/agentorchestrator.sh start
+ExecStop=/opt/agentorchestrator/agentorchestrator.sh stop
+ExecReload=/opt/agentorchestrator/agentorchestrator.sh restart
+
+# PID 跟踪
+PIDFile=/opt/agentorchestrator/.pids/server.pid
+
+# 自动重启
+Restart=on-failure
+RestartSec=5
+
+# 环境变量（按需修改）
+Environment=AGENTORCHESTRATOR_DASHBOARD_HOST=0.0.0.0
+Environment=AGENTORCHESTRATOR_DASHBOARD_PORT=7891
+
+# 安全加固
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/agentorchestrator/data /opt/agentorchestrator/logs /opt/agentorchestrator/.pids
+
+[Install]
+WantedBy=multi-user.target
