@@ -42,7 +42,7 @@ CONSUMER = "orch-1"
 
 # 停滞恢复配置
 MAX_STALL_RETRIES = 2        # 最大重试次数
-MAX_ESCALATION_LEVEL = 3     # 最大升级层级
+MAX_ESCALATION_LEVEL = 4     # 最大升级层级（包含 ControlCenter 兜底层）
 STALL_RETRY_BACKOFF = [30, 60, 120]  # 重试退避时间（秒）
 
 # 停滞检测配置

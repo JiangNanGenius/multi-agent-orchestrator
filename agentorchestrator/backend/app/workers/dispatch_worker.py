@@ -683,12 +683,14 @@ class DispatchWorker:
         state = payload.get("state", "")
         heartbeat_task: asyncio.Task | None = None
 
-        # 去重：同一任务如果已在派发中，跳过并 ACK
-        if task_id in self._inflight:
-            log.warning(f"⚡ Skipping duplicate dispatch for task {task_id} (already in-flight)")
+        # 去重：同一任务 + 同一 agent + 同一状态 + 同一事件类型 才视为重复
+        # 仅用 task_id 去重会吞掉同任务的合法后续派发事件。
+        inflight_key = f"{task_id}|{agent}|{state}|{event.get('event_type', '')}"
+        if inflight_key in self._inflight:
+            log.warning(f"⚡ Skipping duplicate dispatch for key {inflight_key} (already in-flight)")
             await self.bus.ack(TOPIC_TASK_DISPATCH, GROUP, entry_id)
             return
-        self._inflight.add(task_id)
+        self._inflight.add(inflight_key)
 
         sem = self._get_bucket(agent)
         async with sem:
@@ -888,7 +890,7 @@ class DispatchWorker:
                         await heartbeat_task
                     except asyncio.CancelledError:
                         pass
-                self._inflight.discard(task_id)
+                self._inflight.discard(inflight_key)
 
     async def _heartbeat_loop(self, task_id: str, agent: str, trace_id: str):
         """长任务执行期间周期性刷新心跳，避免被停滞检测误杀。"""

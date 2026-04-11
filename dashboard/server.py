@@ -70,6 +70,16 @@ DATA = PROJECT_ROOT / "data"
 SCRIPTS = PROJECT_ROOT / 'scripts'
 _ACTIVE_TASK_DATA_DIR = None
 
+
+def _is_path_within_roots(target: pathlib.Path, roots: tuple[pathlib.Path, ...]) -> bool:
+    """检查目标路径是否位于允许根目录内（防止字符串前缀误判）。"""
+    resolved_target = target.resolve()
+    for root in roots:
+        resolved_root = root.resolve()
+        if resolved_target == resolved_root or resolved_root in resolved_target.parents:
+            return True
+    return False
+
 # 静态资源 MIME 类型
 _MIME_TYPES = {
     '.html': 'text/html; charset=utf-8',
@@ -362,7 +372,7 @@ def read_skill_content(agent_id, skill_name):
     skill_path = pathlib.Path(sk.get('path', '')).resolve()
     # 路径遍历保护：确保路径在 OCLAW_HOME 或项目目录下
     allowed_roots = (OCLAW_HOME.resolve(), BASE.parent.resolve())
-    if not any(str(skill_path).startswith(str(root)) for root in allowed_roots):
+    if not _is_path_within_roots(skill_path, allowed_roots):
         return {'ok': False, 'error': '路径不在允许的目录范围内'}
     if not skill_path.exists():
         return {'ok': True, 'name': skill_name, 'agent': agent_id, 'content': '(SKILL.md 文件不存在)', 'path': str(skill_path)}
@@ -456,7 +466,7 @@ def add_remote_skill(agent_id, skill_name, source_url, description=''):
                 return {'ok': False, 'error': f'本地文件不存在: {local_path}'}
             # 路径遍历防护：与本地路径分支一致，确保在允许范围内
             allowed_roots = (OCLAW_HOME.resolve(), BASE.parent.resolve())
-            if not any(str(local_path).startswith(str(root)) for root in allowed_roots):
+            if not _is_path_within_roots(local_path, allowed_roots):
                 return {'ok': False, 'error': '路径不在允许的目录范围内'}
             content = local_path.read_text()
         
@@ -467,7 +477,7 @@ def add_remote_skill(agent_id, skill_name, source_url, description=''):
                 return {'ok': False, 'error': f'本地文件不存在: {local_path}'}
             # 路径遍历防护
             allowed_roots = (OCLAW_HOME.resolve(), BASE.parent.resolve())
-            if not any(str(local_path).startswith(str(root)) for root in allowed_roots):
+            if not _is_path_within_roots(local_path, allowed_roots):
                 return {'ok': False, 'error': '路径不在允许的目录范围内'}
             content = local_path.read_text()
         

@@ -14,7 +14,7 @@
 | `docs/user-guide.md` | 使用者、协作者 | 任务如何进入、推进、交付与归档 |
 | `docs/technical-architecture.md` | 维护者、开发者、部署者 | 底层机制如何实现、模块如何分工 |
 | `TODO_task_workspace_ledger.md` | 改造执行者 | 本轮改造到底做了哪些事 |
-| `agentorchestrator/E2E_task_workspace_validation_result_2026-04-09.json` | 联调与回归验证者 | 主链路是否真实跑通 |
+| `agentorchestrator/scripts/e2e_task_workspace_validation.py` | 联调与回归验证者 | 提供主链路联调与回归验证脚本入口 |
 
 ## 二、总体架构：从“状态机 + 事件驱动”扩展到“工作区 + 账本 + 归档治理”
 
@@ -181,24 +181,24 @@ E2E 结果中可见，当前 `/new` 结构至少已经包括 `should_refresh`、
 
 ## 十三、统一联调：如何证明这些机制不是纸面设计
 
-本轮不是只写文档或改结构名，而是完成了统一 E2E 联调验证。联调覆盖至少十二项检查，包括任务创建、进度与 Todo 回写、状态流转、归档、回迁、看门狗、修复动作、`/new` 规则、工作区文件存在性、任务索引、归档索引、飞书汇报与索引一致性。当前结果 `all_passed = true`。[4]
+本轮不是只写文档或改结构名，而是已经提供统一 E2E 联调脚本入口。脚本覆盖至少十二项检查，包括任务创建、进度与 Todo 回写、状态流转、归档、回迁、看门狗、修复动作、`/new` 规则、工作区文件存在性、任务索引、归档索引、飞书汇报与索引一致性。公开仓库当前以脚本为准，结果快照需在本地执行后生成。[4]
 
-| 检查项 | 结果 |
+| 检查项 | 脚本覆盖 |
 | --- | --- |
-| `create_task` | 通过 [4] |
-| `progress_todos_transition` | 通过 [4] |
-| `archive_workspace` | 通过 [4] |
-| `reactivate_workspace` | 通过 [4] |
-| `watchdog` | 通过 [4] |
-| `watchdog_repair` | 通过 [4] |
-| `new_refresh_rule` | 通过 [4] |
-| `workspace_files` | 通过 [4] |
-| `task_index` | 通过 [4] |
-| `archive_index` | 通过 [4] |
-| `feishu_reporting` | 通过 [4] |
-| `index_consistency` | 通过 [4] |
+| `create_task` | 已覆盖 [4] |
+| `progress_todos_transition` | 已覆盖 [4] |
+| `archive_workspace` | 已覆盖 [4] |
+| `reactivate_workspace` | 已覆盖 [4] |
+| `watchdog` | 已覆盖 [4] |
+| `watchdog_repair` | 已覆盖 [4] |
+| `new_refresh_rule` | 已覆盖 [4] |
+| `workspace_files` | 已覆盖 [4] |
+| `task_index` | 已覆盖 [4] |
+| `archive_index` | 已覆盖 [4] |
+| `feishu_reporting` | 已覆盖 [4] |
+| `index_consistency` | 已覆盖 [4] |
 
-这一点非常重要，因为它意味着当前这些机制并不是“设计稿级能力”，而是已经在本地真实环境中形成了可验证闭环。[4] [5]
+这一点非常重要，因为它意味着当前这些机制并不是“设计稿级能力”，而是已经具备可执行、可复现的验证脚本闭环。[4] [5]
 
 ## 十四、当前维护建议
 
@@ -232,5 +232,5 @@ E2E 结果中可见，当前 `/new` 结构至少已经包括 `should_refresh`、
 [1]: ../README.md "项目首页 README"
 [2]: ../TODO_task_workspace_ledger.md "任务工作区与账本改造 Todo"
 [3]: ./current_architecture_overview.md "当前架构与处理逻辑总览"
-[4]: ../agentorchestrator/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"
-[5]: ../agentorchestrator/DELIVERY_task_workspace_final_2026-04-09.md "最终交付说明"
+[4]: ../agentorchestrator/scripts/e2e_task_workspace_validation.py "E2E 联调验证脚本"
+[5]: ../agentorchestrator/README.md "agentorchestrator 前端信息架构调整记录"
