@@ -97,7 +97,7 @@ python3 -m py_compile dashboard/server.py
 
 # 6. Commit
 git add .
-git commit -m "feat: improve dashboard task filtering"
+git commit -m "feat: improve orchestration runtime behavior"
 
 # 7. Push and open a pull request
 git push origin feat/my-change
@@ -111,23 +111,32 @@ If your contribution changes user-facing behavior, please explain the previous b
 
 The repository can be explored in more than one way depending on whether you want to inspect the dashboard, work on frontend code, or extend backend orchestration.
 
-### Quick dashboard run
+### Recommended local run
 
 ```bash
-bash start.sh
+./agentorchestrator.sh start
 ```
 
 Then open:
 
 ```text
-http://127.0.0.1:7891
+http://127.0.0.1:8000
 ```
+
+If you need the legacy dashboard only for compatibility verification, enable it explicitly:
+
+```bash
+AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD=1 ./agentorchestrator.sh start
+```
+
+Then open `http://127.0.0.1:7891`. This port is optional compatibility UI only, not the primary runtime entry.
 
 ### Module-level development
 
 | Module | Suggested action |
 | --- | --- |
-| Dashboard service | `python3 dashboard/server.py` |
+| Unified local stack | `./agentorchestrator.sh start` |
+| Legacy dashboard compatibility | `python3 dashboard/server.py` or enable the compatibility mode above |
 | Frontend | Work inside `agentorchestrator/frontend/` and run the local build flow |
 | Backend | Extend services and orchestration logic in `agentorchestrator/backend/` |
 | Scripts | Run task-refresh or sync scripts inside `scripts/` as needed |
@@ -161,7 +170,7 @@ The project does not require the exact same checks for every change, but contrib
 | Change type | Recommended validation |
 | --- | --- |
 | Documentation-only | Check links, headings, formatting, and consistency |
-| Dashboard change | Run the dashboard locally and verify the affected UI |
+| Dashboard change | Run the unified local stack and verify the affected UI; use legacy dashboard mode only when compatibility behavior is involved |
 | Backend change | Run syntax checks and relevant local behavior verification |
 | Script change | Execute the script safely with test or placeholder inputs |
 | Release hygiene change | Re-scan for legacy references, sensitive material, and broken links |
@@ -170,7 +179,8 @@ Typical examples:
 
 ```bash
 python3 -m py_compile dashboard/server.py
-python3 -m py_compile scripts/kanban_update.py
+python3 -m py_compile agentorchestrator/backend/app/main.py
+python3 -m py_compile scripts/task_db.py
 python3 tests/test_e2e_kanban.py
 ```
 

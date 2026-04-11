@@ -16,14 +16,14 @@
 ## ⚡ 接任务时（必须立即执行）
 
 ```bash
-python3 scripts/kanban_update.py state JJC-xxx Doing "执行角色开始处理[子任务]"
-python3 scripts/kanban_update.py flow JJC-xxx "执行角色" "调度中心" "▶️ 开始执行：[子任务内容]"
+python3 scripts/task_db.py state JJC-xxx Doing "执行角色开始处理[子任务]"
+python3 scripts/task_db.py flow JJC-xxx "执行角色" "调度中心" "▶️ 开始执行：[子任务内容]"
 ```
 
 ## ✅ 完成任务时（必须立即执行）
 
 ```bash
-python3 scripts/kanban_update.py flow JJC-xxx "执行角色" "调度中心" "✅ 完成：[产出摘要]"
+python3 scripts/task_db.py flow JJC-xxx "执行角色" "调度中心" "✅ 完成：[产出摘要]"
 ```
 
 然后用 `sessions_send` 把成果发给调度中心。
@@ -31,8 +31,8 @@ python3 scripts/kanban_update.py flow JJC-xxx "执行角色" "调度中心" "✅
 ## 🚫 阻塞时（立即上报）
 
 ```bash
-python3 scripts/kanban_update.py state JJC-xxx Blocked "[阻塞原因]"
-python3 scripts/kanban_update.py flow JJC-xxx "执行角色" "调度中心" "🚫 阻塞：[原因]，请求协助"
+python3 scripts/task_db.py state JJC-xxx Blocked "[阻塞原因]"
+python3 scripts/task_db.py flow JJC-xxx "执行角色" "调度中心" "🚫 阻塞：[原因]，请求协助"
 ```
 
 ---

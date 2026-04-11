@@ -2,13 +2,16 @@
 
 ## 5 分钟体验
 
-### 1. 启动服务器
+### 1. 启动官方服务栈
 
 ```bash
 # 确保你在项目根目录
-python3 dashboard/server.py
-# 输出: AgentOrchestrator 看板启动 → http://127.0.0.1:7891
+./agentorchestrator.sh start
+# 查看状态
+./agentorchestrator.sh status
 ```
+
+默认主入口会拉起后端 API 与 worker 栈。若需要联调 React 前端，可另开终端执行 `cd agentorchestrator/frontend && pnpm dev`，浏览器访问 `http://127.0.0.1:5173`。
 
 ### 2. 添加远程 Skill（CLI）
 
@@ -43,7 +46,7 @@ python3 scripts/skill_manager.py list-remote
 ### 4. 查看 API 响应
 
 ```bash
-curl http://localhost:7891/api/remote-skills-list | jq .
+curl http://localhost:8000/api/remote-skills-list | jq .
 
 # 输出:
 # {
@@ -111,13 +114,13 @@ python3 scripts/skill_manager.py remove-remote \
 
 ---
 
-## 看板 UI 操作
+## 前端界面操作
 
-### 在看板中添加 Remote Skill
+### 在前端中添加 Remote Skill
 
-1. 打开 http://localhost:7891
-2. 进入 🔧 **技能配置** 面板
-3. 点击 **➕ 添加远程 Skill** 按钮
+1. 若在开发模式下，打开 `http://localhost:5173`；若走后端同源托管，则打开对应部署地址
+2. 进入 **技能配置** 面板
+3. 点击 **添加远程 Skill** 按钮
 4. 填写表单：
    - **Agent**: 从下拉列表选择（如 plan_center）
    - **Skill 名称**: 输入内部 ID 如 `code_review`
@@ -128,7 +131,7 @@ python3 scripts/skill_manager.py remove-remote \
 
 ### 管理已添加的 Skills
 
-在看板 → 🔧 技能配置 → **远程 Skills** 标签页：
+在前端界面 → **技能配置** → **远程 Skills** 标签页：
 
 - **查看**: 点击 Skill 名称查看 SKILL.md 内容
 - **更新**: 点击 🔄 重新从源 URL 下载最新版本
@@ -205,11 +208,13 @@ python3 scripts/skill_manager.py add-remote \
 
 ### POST /api/add-remote-skill
 
+默认由统一服务栈对外暴露在 `http://localhost:8000`（或你的部署域名）。
+
 添加远程 skill。
 
 **请求：**
 ```bash
-curl -X POST http://localhost:7891/api/add-remote-skill \
+curl -X POST http://localhost:8000/api/add-remote-skill \
   -H "Content-Type: application/json" \
   -d '{
     "agentId": "plan_center",
@@ -238,7 +243,7 @@ curl -X POST http://localhost:7891/api/add-remote-skill \
 列出所有远程 skills。
 
 ```bash
-curl http://localhost:7891/api/remote-skills-list
+curl http://localhost:8000/api/remote-skills-list
 ```
 
 **响应:**
@@ -267,7 +272,7 @@ curl http://localhost:7891/api/remote-skills-list
 更新远程 skill 为最新版本。
 
 ```bash
-curl -X POST http://localhost:7891/api/update-remote-skill \
+curl -X POST http://localhost:8000/api/update-remote-skill \
   -H "Content-Type: application/json" \
   -d '{
     "agentId": "plan_center",
@@ -280,7 +285,7 @@ curl -X POST http://localhost:7891/api/update-remote-skill \
 移除远程 skill。
 
 ```bash
-curl -X POST http://localhost:7891/api/remove-remote-skill \
+curl -X POST http://localhost:8000/api/remove-remote-skill \
   -H "Content-Type: application/json" \
   -d '{
     "agentId": "plan_center",

@@ -97,10 +97,23 @@ bash run_loop.sh
 
 ```powershell
 cd C:\Users\<YOUR_USER>\.openclaw\workspace\skills\agentorchestrator
-python dashboard\server.py
+bash ./agentorchestrator.sh start
 ```
 
 然后浏览器打开：
+
+```text
+http://127.0.0.1:8000
+```
+
+如需仅为兼容核验额外启用旧看板，可执行：
+
+```powershell
+$env:AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD="1"
+bash ./agentorchestrator.sh start
+```
+
+此时兼容看板地址才是：
 
 ```text
 http://127.0.0.1:7891
@@ -145,7 +158,7 @@ http://127.0.0.1:7891
 
 ## 2. 为什么安装后还要核对 agent / subagent 配置
 
-在部分环境里，即使 AI 建议执行一次性初始化脚本，它也不会直接改写 `openclaw.json`，因此你仍可能需要依据建议清单手动补齐运行时 Agent 配置。
+在部分环境里，如果本地 OpenClaw 配置与仓库要求差异较大，安装流程会尝试自动补齐 `openclaw.json` 中所需的运行时 Agent 配置，并在重启与校验失败时直接报错中止。
 
 因此建议你安装后主动确认：
 
@@ -163,9 +176,9 @@ http://127.0.0.1:7891
 
 这些 agent 是否都存在，且 `subagents.allowAgents` 是否正确。
 
-如果安装后看板已能启动，但角色不完整、调度异常或消息不可达，优先检查 `data/openclaw_registry_suggestions.json` 与 Registry / SOUL 产物是否已正确生成，再手动同步到本地运行时配置。
+如果安装后服务已能启动，但角色不完整、调度异常或消息不可达，优先检查 `data/openclaw_registry_suggestions.json`、Registry 产物以及自动补齐后的本地运行时配置；该文件现在主要用于记录诊断与失败原因，而不是要求你先手工补录。
 
-如果缺失，可以直接参考本仓库附带的 `agents.json` 脱敏模板；使用前请先把 `<YOUR_USER>` 替换成你自己的系统用户名。
+如果仍需人工对照，可以参考本仓库附带的 `agents.json` 脱敏模板；使用前请先把 `<YOUR_USER>` 替换成你自己的系统用户名。
 
 ---
 
@@ -211,54 +224,36 @@ openclaw config set tools.sessions.visibility all
 
 ---
 
-## 5. 为什么还要跑 `run_loop.sh`
+## 5. 为什么现在不再单独强调 `run_loop.sh`
 
-dashboard 右上角虽然有一个 5 秒倒计时，但它只是：
+新的官方入口 `./agentorchestrator.sh start` 会直接拉起后端 API 与后台 worker 栈，因此默认不再要求你额外手动执行 `run_loop.sh` 才能看到核心数据更新。
 
-- 每 5 秒重新读取一次现有 API 数据
+只有在做旧版看板兼容排查、脚本级调试或对比历史行为时，才需要单独运行相关辅助脚本。
 
-它并不会自动帮你在后台持续生成数据。
+所以现在应优先理解为：
 
-真正负责后台数据刷新的是：
-
-```bash
-bash run_loop.sh
-```
-
-它会持续执行同步脚本，更新：
-
-- `live_status.json`
-- `officials_stats.json`
-- `agent_config.json`
-
-所以：
-
-- dashboard 倒计时 = **读数据**
-- `run_loop.sh` = **产数据 / 刷数据**
-
-Windows 下也建议正常运行 `run_loop.sh`。
+- `agentorchestrator.sh start` = **官方主入口，负责起服务与后台处理链路**
+- 兼容脚本 / 旧看板 = **仅用于排障、对比或过渡验证**
 
 ---
 
-## 6. 如果 dashboard 提示“请先启动服务器”怎么办
+## 6. 如果页面提示服务未就绪怎么办
 
-这句文案有时是误导性的。它不一定表示 `dashboard/server.py` 真没启动。
+这类提示不一定表示主服务真的没有启动，更常见的原因是：
 
-更常见的真实原因是：
+- 后端 API 尚未完全就绪
+- 读取到了旧仓库或旧工作区数据
+- 当前打开的是兼容看板而不是主入口
 
-- API 返回了空对象
-- 读取到了旧仓库的数据
-- 当前启动的不是你想要的那个 dashboard server
-
-排查时建议直接访问：
+排查时建议先直接访问主 API：
 
 ```text
-http://127.0.0.1:7891/api/agents-overview
-http://127.0.0.1:7891/api/agent-config
-http://127.0.0.1:7891/api/live-status
+http://127.0.0.1:8000/health
+http://127.0.0.1:8000/api/agents-overview
+http://127.0.0.1:8000/api/live-status
 ```
 
-如果这三个接口能正常返回 JSON，说明 server 没问题。
+如果这些接口能正常返回 JSON，说明主服务基本正常。只有在你明确启用了兼容看板时，才再检查 `http://127.0.0.1:7891` 下的兼容接口。
 
 ---
 

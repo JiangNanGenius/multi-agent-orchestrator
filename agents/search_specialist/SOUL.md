@@ -15,7 +15,7 @@
 1. 接收属于本角色职责范围内的任务。
 2. 先判断是否可直接处理，若可直接处理则立即进入执行并更新看板。
 3. 若超出边界、需要跨角色协作或需要回退把关，则按允许的协作关系转交下游。
-4. 在关键节点持续调用进展上报，保持状态与看板同步。
+4. 在关键节点持续调用进展上报，保持状态机、工作区与审计轨迹同步。
 5. 完成后输出结果摘要，并把结果回传给上游或调度节点。
 
 ### 可直接处理
@@ -44,7 +44,7 @@ python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
 - 收到任务开始分析时，立即上报当前判断。
 - 进入核心处理步骤时，上报当前动作与下一步计划。
 - 遇到阻塞、需要回退或准备交付时，立即同步状态。
-- `progress` 只更新进展，不替代 `state` 与 `flow`。
+- `progress` 只更新进展，不替代 `transition` 与 `flow`。
 
 ## 异常与阻塞处理
 - 若任务超出职责边界，必须及时转交，不得长期占用执行链路。
@@ -191,14 +191,14 @@ python3 scripts/task_db.py watchdog --task-id <task_id> --agent watchdog
 
 ### 示例
 ```bash
-python3 scripts/kanban_update.py progress <taskCode> "正在执行全网搜索，已完成关键词拆解与首轮检索" "明确搜索目标✅|执行首轮搜索✅|交叉核对🔄|整理摘要|输出结果"
+python3 scripts/task_db.py progress <task_id> "正在执行全网搜索，已完成关键词拆解与首轮检索；计划：明确搜索目标✅|执行首轮搜索✅|交叉核对🔄|整理摘要|输出结果" --agent search_specialist
 python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"已完成关键词拆解与首轮检索，正在交叉核对来源","search_summary":"交叉核对进行中"}' --agent search_specialist --summary "搜索专家更新阶段进展"
 ```
 
 当搜索结果已初步成型但还在补充来源时，也应继续更新：
 
 ```bash
-python3 scripts/kanban_update.py progress <taskCode> "已获得主要搜索结果，正在交叉核对来源并整理摘要" "明确搜索目标✅|执行首轮搜索✅|交叉核对🔄|整理摘要🔄|输出结果"
+python3 scripts/task_db.py progress <task_id> "已获得主要搜索结果，正在交叉核对来源并整理摘要；计划：明确搜索目标✅|执行首轮搜索✅|交叉核对🔄|整理摘要🔄|输出结果" --agent search_specialist
 python3 scripts/task_db.py patch-workspace <task_id> '{"latest_handoff":"已获得主要搜索结果，正在整理摘要并准备回传","search_summary":"摘要整理进行中"}' --agent search_specialist --summary "搜索专家补充阶段进展"
 ```
 

@@ -120,15 +120,28 @@ AGENTS_EOF
   done
 }
 
-# ── Step 2: 检查运行时 Agent 注册情况（只读） ─────────────────────
+# ── Step 2: 自动补齐运行时 Agent 注册并校验 ─────────────────────
 register_agents() {
-  info "检查 OpenClaw 运行时 Agent 注册情况（只读模式）..."
+  info "检查并补齐 OpenClaw 运行时 Agent 注册..."
+
+  local cfg_path="$HOME/.openclaw/openclaw.json"
+  if [ ! -f "$cfg_path" ]; then
+    warn "未找到 $cfg_path，跳过运行时 Agent 注册。"
+    warn "请先完成 OpenClaw 初始化后重新运行 install.sh。"
+    return
+  fi
 
   REPO_DIR="$REPO_DIR" python3 << 'PYEOF'
-import json, pathlib, os
+import json, pathlib, os, sys
+from datetime import datetime
 
 cfg_path = pathlib.Path.home() / '.openclaw' / 'openclaw.json'
-cfg = json.loads(cfg_path.read_text(encoding='utf-8'))
+try:
+    cfg = json.loads(cfg_path.read_text(encoding='utf-8'))
+except Exception as exc:
+    print(f'ERROR: 无法读取 openclaw.json: {exc}')
+    sys.exit(2)
+
 required = [
     {"id": "control_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-control_center'), "subagents": {"allowAgents": ["plan_center"]}},
     {"id": "plan_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-plan_center'), "subagents": {"allowAgents": ["review_center", "dispatch_center"]}},
@@ -143,34 +156,70 @@ required = [
     {"id": "expert_curator", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-expert_curator'), "subagents": {"allowAgents": ["dispatch_center"]}},
     {"id": "search_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-search_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
 ]
-existing = {item.get('id') for item in cfg.get('agents', {}).get('list', []) if item.get('id')}
-missing = [item for item in required if item['id'] not in existing]
 
-suggestions_path = pathlib.Path(os.environ['REPO_DIR']) / 'data' / 'openclaw_registry_suggestions.json'
-suggestions_path.parent.mkdir(parents=True, exist_ok=True)
-suggestions_path.write_text(json.dumps({
-    'generatedAt': __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-    'mode': 'readonly_reference',
-    'message': '本文件仅输出建议注册项，install.sh 不再直接改写 openclaw.json。',
+agents_cfg = cfg.setdefault('agents', {})
+agent_list = agents_cfg.setdefault('list', [])
+existing_by_id = {item.get('id'): item for item in agent_list if item.get('id')}
+added, updated, missing = [], [], []
+
+for spec in required:
+    current = existing_by_id.get(spec['id'])
+    if current is None:
+        agent_list.append(spec)
+        added.append(spec['id'])
+        continue
+    changed = False
+    if current.get('workspace') != spec['workspace']:
+        current['workspace'] = spec['workspace']
+        changed = True
+    subagents = current.setdefault('subagents', {})
+    allow_agents = subagents.setdefault('allowAgents', [])
+    desired = spec['subagents']['allowAgents']
+    if allow_agents != desired:
+        subagents['allowAgents'] = desired
+        changed = True
+    if changed:
+        updated.append(spec['id'])
+
+cfg_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+final_ids = {item.get('id') for item in cfg.get('agents', {}).get('list', []) if item.get('id')}
+for spec in required:
+    if spec['id'] not in final_ids:
+        missing.append(spec)
+
+report = {
+    'generatedAt': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    'mode': 'auto_register_and_verify',
+    'message': 'install.sh 已尝试自动补齐 openclaw.json 中缺失或漂移的 agent 注册项，并要求后续 gateway 校验通过。',
+    'addedAgents': added,
+    'updatedAgents': updated,
     'missingAgents': missing,
-}, ensure_ascii=False, indent=2), encoding='utf-8')
+}
+report_path = pathlib.Path(os.environ['REPO_DIR']) / 'data' / 'openclaw_registry_suggestions.json'
+report_path.parent.mkdir(parents=True, exist_ok=True)
+report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
-print(f'已注册 Agent: {len(existing)}')
+print(f'已注册 Agent: {len(final_ids)}')
+if added:
+    print('新增注册项: ' + ', '.join(added))
+if updated:
+    print('修正注册项: ' + ', '.join(updated))
 if missing:
-    print('缺少的 Agent 注册项（未自动写回 openclaw.json）:')
+    print('ERROR: 仍有缺失的 Agent 注册项:')
     for item in missing:
         print(f"  - {item['id']} -> {item['workspace']}")
-    print(f'建议清单已写入: {suggestions_path}')
-else:
-    print('运行时 Agent 注册已齐全，无需额外建议。')
+    sys.exit(3)
+print(f'注册结果报告已写入: {report_path}')
 PYEOF
 
-  if [ -f "$REPO_DIR/data/openclaw_registry_suggestions.json" ] && grep -q 'missingAgents' "$REPO_DIR/data/openclaw_registry_suggestions.json"; then
-    warn "install.sh 当前仅提供本地只读对接辅助：不会直接改写 openclaw.json。"
-    info "推荐优先使用 AI 部署；如需本地补齐运行时注册，请参考 data/openclaw_registry_suggestions.json 中的建议项手动处理。"
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo -e "${RED}❌ OpenClaw 运行时 Agent 注册校验失败，请检查 $REPO_DIR/data/openclaw_registry_suggestions.json${NC}"
+    exit 1
   fi
 
-  log "运行时 Agent 注册检查完成"
+  log "运行时 Agent 注册已补齐并通过本地校验"
 }
 
 # ── Step 3: 初始化 Data ─────────────────────────────────────
@@ -417,13 +466,15 @@ echo "  1. 推荐方案：优先使用 AI 部署完成环境接入与编排。"
 echo "  2. 如需本地补齐 API Key（可选）:"
 echo "     openclaw agents add control_center     # 按提示输入模型密钥"
 echo "     ./install.sh                           # 重新运行以同步到所有 Agent"
-echo "  3. 本地运行数据刷新循环:      bash scripts/run_loop.sh &"
-echo "  4. 推荐启动统一后端入口:      uvicorn agentorchestrator.backend.app.main:app --host 127.0.0.1 --port 8000"
-echo "  5. 前端开发模式（可选）:       cd agentorchestrator/frontend && pnpm dev"
+echo "  3. 官方本地启动入口:          ./agentorchestrator.sh start"
+echo "     - 状态查看:                ./agentorchestrator.sh status"
+echo "     - 日志查看:                ./agentorchestrator.sh logs all"
+echo "     - API 地址:                http://127.0.0.1:8000"
+echo "  4. 前端开发模式（可选）:       cd agentorchestrator/frontend && pnpm dev"
 echo "     - 浏览器访问:              http://127.0.0.1:5173  (默认代理到 8000)"
-echo "  6. 兼容模式（旧看板，可选）:   python3 \"\$REPO_DIR/dashboard/server.py\""
-echo "     - 浏览器访问:              http://127.0.0.1:7891"
+echo "  5. 兼容模式（旧看板，仅排障/验收时可选）: AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD=1 ./agentorchestrator.sh start"
+echo "     - 兼容看板地址:                         http://127.0.0.1:7891"
 echo ""
 warn "若采用本地脚本模式，首次运行前仍需先配置可用模型密钥"
-info "当前安装流程不会直接改写 openclaw.json；如需补齐运行时 Agent 注册，请查看 data/openclaw_registry_suggestions.json"
-info "文档口径已调整为优先推荐 AI 部署，详情见 docs/getting-started.md"
+info "安装流程已尝试自动补齐 openclaw.json 中所需的运行时 Agent 注册，并在继续前完成本地校验；详情记录见 data/openclaw_registry_suggestions.json"
+info "文档口径已调整为优先推荐 AI 部署；本地脚本模式的官方入口为 ./agentorchestrator.sh start，详情见 docs/getting-started.md"
