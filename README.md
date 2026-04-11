@@ -1,180 +1,105 @@
 # Multi-Agent Orchestrator
 
-> **中文简介：** 一套面向复杂任务治理的多智能体编排系统，强调**任务有入口、过程可见、结果可交付、历史可追溯、归档可回迁**。[1] [2] [3] [4]
+> **中文简介：** 一套面向复杂任务协作的多智能体编排系统，重点不是“多几个 Agent 一起聊天”，而是把任务放进一条**可提交、可分派、可追踪、可交付、可回看**的工作流程中。[1] [2] [3] [5]
 >
-> **English Summary:** A production-oriented multi-agent orchestration system for complex task governance, emphasizing **structured intake, visible progress, traceable delivery, recoverable context, and reversible archival**.[1] [2] [3] [4]
+> **English Summary:** A multi-agent orchestration system designed for complex task delivery, with emphasis on **structured intake, visible execution, clear handoff, and recoverable history** rather than a simple multi-bot chat demo.[1] [2] [3] [5]
 
-当前仓库的重点，不是把多个 Agent 简单堆成一个聊天窗口，而是把任务放进一条**用户能理解、团队能治理、系统能恢复、历史能沉淀**的执行链路中。[1] [2] [3] 经过本轮现代化改造，项目已经补齐任务工作区、文件化账本、冷热分层、冷归档与回迁、`/new` 刷新规则、看门狗巡检修复、飞书汇报回写、风险操作确认链路、看板通知入口以及前端治理操作面，使其更接近一套可持续演进的公开工程底座，而不是一次性的演示页面。[2] [3] [4]
+如果你想找的是一套能长期推进任务、而不是一次性对话结束就散掉的 Agent 系统，那么这个项目更接近你真正需要的形态。它把任务处理拆成用户能理解的几个阶段：先接收需求，再整理目标，然后分配合适的角色或能力继续执行，过程中持续回显状态，最后沉淀结果与历史，方便后续追踪、复盘和继续处理。[1] [2] [3]
 
-## Table of Contents / 目录
+当前公开版已经提供任务看板、运行监控、任务详情、模型配置、技能配置、Agent 管理工作台、协作会话、记忆中心、模板中心、AI 搜索引擎与协同讨论等可视化入口，重点是让用户能从界面上直接看懂“任务现在到哪一步、谁在处理、结果放在哪里、之后还能不能继续接着做”。[1] [4] [5]
 
-- [Project Overview / 项目概述](#project-overview--项目概述)
-- [Why This Project / 这个项目解决什么问题](#why-this-project--这个项目解决什么问题)
-- [User-Facing Lifecycle / 用户视角的任务主线](#user-facing-lifecycle--用户视角的任务主线)
-- [Key Modernization Highlights / 本轮现代化改造重点](#key-modernization-highlights--本轮现代化改造重点)
-- [Workspace and Ledger Model / 任务工作区与账本模型](#workspace-and-ledger-model--任务工作区与账本模型)
-- [Archival and Reactivation / 归档与回迁机制](#archival-and-reactivation--归档与回迁机制)
-- [Context Refresh and Recovery / 上下文刷新与恢复链](#context-refresh-and-recovery--上下文刷新与恢复链)
-- [Governance, Watchdog, and Reporting / 治理、巡检与汇报闭环](#governance-watchdog-and-reporting--治理巡检与汇报闭环)
-- [Documentation Map / 文档阅读入口](#documentation-map--文档阅读入口)
-- [Public Interface Notes / 公开界面说明](#public-interface-notes--公开界面说明)
-- [Repository Structure / 目录速览](#repository-structure--目录速览)
-- [Attribution / 来源与致谢](#attribution--来源与致谢)
-- [Version Log / 版本日志](#version-log--版本日志)
-- [References](#references)
+## 这套系统适合解决什么问题
 
+很多团队在使用 Agent 时真正遇到的问题，并不是“模型不够多”，而是任务一旦变复杂，就容易出现入口分散、过程不可见、责任不清、结果难追、历史难续的问题。这个项目的意义，在于把这些问题收束到同一条任务主线里，让协作更像一个稳定运转的工作系统，而不是临时性的聊天实验。[1] [2] [3]
 
-## Project Overview / 项目概述
-
-**Multi-Agent Orchestrator** can be understood as a governed operating system for complex AI work. Instead of allowing multiple agents to talk freely without lifecycle control, it introduces a stable chain that covers intake, planning, review, dispatch, execution, delivery, archival, and reactivation.[1] [2] [3]
-
-**Multi-Agent Orchestrator** 可以理解为一套面向复杂 AI 工作流的治理型操作系统。它不是让多个角色自由对话后直接给结果，而是把任务纳入一条稳定主线：**接单、整理、评审、派发、执行、交付、归档、必要时再回迁继续处理**。[1] [2] [3]
-
-| Dimension / 维度 | Current Positioning / 当前定位 |
-| --- | --- |
-| Product Form / 产品形态 | A governed multi-agent orchestration platform with dashboard-based operations / 带看板操作面的多智能体治理型编排平台 |
-| Core Strength / 核心能力 | Workspace-backed execution, ledger-based traceability, governed archival and reactivation / 以任务工作区、账本、归档回迁为核心的可追溯治理 |
-| Main Audience / 主要读者 | Visitors, deployers, collaborators, and secondary developers / 公开访客、部署者、协作者、二次开发者 |
-| Public Reading Strategy / 公开阅读策略 | README for overview, user guide for operation logic, technical doc for implementation details / 首页看概览，用户文档看使用逻辑，技术文档看底层实现 |
-| Current State / 当前状态 | Core modernization completed and end-to-end validated in local environment / 主线机制已现代化改造并完成本地 E2E 联调 |
-
-## Why This Project / 这个项目解决什么问题
-
-In many multi-agent demos, the system looks powerful at first glance but becomes difficult to govern once tasks become longer, heavier, or collaborative. The usual failures are clear: context gets lost, progress becomes opaque, handoff is fragile, and finished work is hard to revisit. This repository addresses those gaps by introducing a task-centered lifecycle with explicit governance nodes, persistent workspace files, append-only ledgers, and archival controls.[2] [3] [4]
-
-在许多多智能体演示系统里，最常见的问题并不是“不能聊天”，而是**任务一旦变长、变复杂、需要协作，就很难治理**。上下文会丢，过程会黑盒，交接会脆弱，历史结果也难以复用。当前仓库正是围绕这些问题进行改造：它通过任务中心化生命周期、文件化工作区、追加式账本和可逆归档机制，把复杂任务重新组织为可治理、可观察、可恢复的执行体系。[2] [3] [4]
-
-## User-Facing Lifecycle / 用户视角的任务主线
-
-From a user perspective, the system should be understood as a lifecycle rather than a chat session. A task enters through a unified intake point, gets organized and reviewed, is dispatched to the right role, returns progress back to the dashboard, and eventually becomes a deliverable with archival history.[1] [2]
-
-从用户视角出发，这个系统最适合被理解成一条**任务生命周期**，而不是一次聊天会话。任务从统一入口进入系统，先被整理和评审，再分派给合适的角色执行，过程持续回写到前端，最终沉淀为结果与归档历史。[1] [2]
-
-![用户任务生命周期图](docs/diagrams/user-governance-lifecycle.png)
-
-| Stage / 阶段 | What Users Usually See / 用户通常看到什么 | What the System Actually Does / 系统实际在做什么 |
+| 使用场景 | 用户通常遇到的问题 | 这套系统提供的帮助 |
 | --- | --- | --- |
-| Intake / 提交任务 | A title, description, or template-based request is submitted / 用户提交标题、描述或模板任务 | A task object is created and a dedicated workspace is initialized / 创建任务对象并初始化独立工作区 [2] [4] |
-| Planning / 规划整理 | The task enters processing and may gain a clearer structure / 任务进入处理中并被结构化 | Goals, todos, resume files, and task strategy are prepared / 准备目标、Todo、续接文件与任务策略 [2] [3] |
-| Review / 审核把关 | The task may pause briefly or be returned for revision / 任务可能短暂停留或退回 | Feasibility, risk, and delivery readiness are checked / 检查可行性、风险与交付准备度 [3] |
-| Dispatch / 调度派发 | Progress begins to change continuously / 进度开始动态变化 | The task is routed to suitable specialists or centers / 按角色职责继续派发 [3] |
-| Delivery / 结果交付 | Users receive output, summary, and next-step hints / 用户看到结果、摘要与下一步建议 | Results are consolidated and written back into task context / 汇总结果并回写任务上下文 [1] [4] |
-| Archival / 归档沉淀 | The task can leave the hot path but remain queryable / 任务离开热路径但仍可查询 | Workspace state is archived and kept ready for future reactivation / 工作区状态被归档且保留后续回迁能力 [2] [4] |
+| 复杂任务协作 | 事情涉及多步骤、多角色，单一聊天窗口很难持续推进 | 通过统一任务入口与分工机制，把任务拆开并持续推进 [1] [2] |
+| 需要过程透明 | 任务发出去之后不知道谁在做、做到哪一步 | 可以在看板、监控和详情中看到状态与进展 [1] [4] |
+| 需要复盘与追溯 | 任务完成后难以回看处理路径和关键结果 | 系统会保留任务历史、过程记录与后续续接基础 [2] [5] |
+| 需要长期沉淀 | 历史任务越来越多，当前工作容易被打断 | 通过记忆、归档与恢复机制把当前处理和历史沉淀分开 [2] [5] |
 
-## Key Modernization Highlights / 本轮现代化改造重点
+## 你可以把它理解成什么
 
-The current public version already includes the major foundational upgrades completed in this round. These upgrades are not just naming cleanups or documentation polishing; they reshape how tasks are stored, resumed, displayed, and governed across the whole stack.[2] [3] [4]
+从用户角度看，这不是一个“功能很多”的后台页面，而是一套**围绕任务生命周期设计的协作系统**。它更像是把项目经理、调度员、执行角色、复核者和知识沉淀区放进同一个界面里，让你既能发起任务，也能看清楚任务如何一步步走向结果。[1] [2] [3]
 
-当前公开版本已经纳入本轮主线改造完成项，而且这些改造并不只是命名清理或文档润色，而是直接重构了任务在**存储、续接、展示与治理**上的工作方式。[2] [3] [4]
+| 你在界面里看到的内容 | 对应的用户意义 |
+| --- | --- |
+| 任务看板与监控 | 快速判断当前有哪些任务、哪些正在推进、哪些需要关注 [1] [4] |
+| 任务详情与过程记录 | 了解任务背景、当前状态、处理建议与结果线索 [1] [2] |
+| Agent 管理工作台 | 看见不同角色的职责、分组与协作关系 [4] |
+| 模型配置与技能配置 | 调整不同角色背后的能力组合，适配不同任务类型 [1] [4] |
+| 协作会话与快速任务 | 处理需要临时沟通、快速推进或短链路执行的事项 [1] [4] |
+| 记忆中心与模板中心 | 复用经验、保留知识、沉淀标准做法 [1] [4] [5] |
+| AI 搜索与协同讨论 | 为复杂任务补充外部信息与讨论视角 [1] [4] |
 
-| Capability / 能力 | What It Means / 含义 | Current Status / 当前状态 |
+## 一条任务是怎么跑起来的
+
+这套系统最核心的基础逻辑，可以概括成一句话：**接收任务，整理目标，分派执行，持续回显，交付结果，沉淀历史**。[1] [2] [3] [5] 这也是首页最应该让用户先理解的部分。
+
+| 阶段 | 用户会感受到什么 | 系统在背后完成什么 |
 | --- | --- | --- |
-| Task Workspace / 任务工作区 | Each task gets its own file-based workspace with README, TODO, HANDOFF, TASK_RECORD, STATUS, context, and ledgers / 每个任务自动生成独立文件工作区 [2] [4] | Completed / 已完成 |
-| File Ledger / 文件化账本 | Progress, handoff, reporting, and repair events are appended into structured ledgers / 进度、交接、汇报、修复通过账本长期沉淀 [2] [4] | Completed / 已完成 |
-| Cold/Hot Tiering / 冷热分层 | Active work stays hot; inactive or finished work can move cold without losing history / 活跃任务留在热区，封存任务进入冷区 [2] [4] | Completed / 已完成 |
-| Archive Reactivation / 归档回迁 | Cold tasks can be reactivated back to hot storage and continue processing / 冷归档任务可重新激活回热区继续处理 [2] [4] | Completed / 已完成 |
-| `/new` Refresh Rule / 上下文刷新规则 | The system can explicitly recommend refresh and resume order when context pressure rises / 上下文压力升高时可给出刷新建议与标准恢复顺序 [2] [4] | Completed / 已完成 |
-| Watchdog / 看门狗巡检 | Stalled or inconsistent tasks can be inspected, annotated, and partially repaired / 对停滞或不一致任务进行巡检、标记与修复 [2] [4] | Completed / 已完成 |
-| Feishu Reporting / 飞书汇报 | Key task events can be written back into reporting metadata and report ledgers / 关键任务事件可回写汇报元数据与 reports 账本 [2] [4] | Completed / 已完成 |
-| Frontend Entry Completion / 前端入口补齐 | Dashboard now exposes workspace paths, file entries, archive actions, refresh hints, and watchdog fields / 前端已补齐工作区、归档回迁、刷新建议与巡检状态入口 [2] [4] | Completed / 已完成 |
-| Risk Confirmation and Notifications / 风险确认与通知 | High-risk operations can be escalated to the control layer or dashboard for user confirmation, while board notifications surface watchdog and approval signals / 高风险操作可升级到总控层或看板询问用户，看板通知则用于集中暴露巡检与审批提醒 [2] [4] | Completed / 已完成 |
+| 提交任务 | 把需求、目标或问题送进系统 | 建立任务入口并形成统一处理对象 [1] [2] |
+| 整理任务 | 任务开始被结构化，不再只是零散描述 | 梳理目标、步骤、优先级和后续处理方向 [2] [3] |
+| 分派执行 | 不同角色开始接手不同部分 | 把任务交给更合适的角色、模型或能力模块 [1] [3] [4] |
+| 过程回显 | 你能看到任务状态、过程摘要和关键变化 | 持续更新任务看板、详情与监控信息 [1] [4] |
+| 结果交付 | 获得结果、摘要和后续动作建议 | 汇总产出并准备交付或进入下一轮处理 [2] [5] |
+| 历史沉淀 | 任务做完后仍然可以回看、复用或继续推进 | 保留记忆、归档信息与恢复入口 [2] [5] |
 
-## Workspace and Ledger Model / 任务工作区与账本模型
+对于短平快的小事，系统也并不要求所有任务都走最重的流程。公开版已经区分标准任务与更轻量的任务处理方式，目标是让治理强度与任务复杂度相匹配，而不是为了“流程完整”牺牲使用体验。[2] [5]
 
-One of the most important architectural changes is the introduction of a dedicated workspace per task. This turns every task into a persistent, inspectable, resumable unit instead of leaving recovery dependent on short-term conversation memory alone.[2] [4]
+## 核心功能应该怎么理解
 
-本轮最重要的底层变化之一，是为每个任务建立独立工作区。这样一来，任务不再只是数据库里的一条状态记录，而是变成一个**可检查、可恢复、可交接**的持久化工作单元，不再过度依赖短期对话记忆。[2] [4]
+如果只从“功能列表”去看这个项目，容易觉得它模块很多；但从用户体验去看，这些模块其实服务的是同一件事：**让任务更容易被发起，更稳定地推进，更清楚地回看，更自然地延续**。[1] [2] [4]
 
-![任务工作区与账本结构图](docs/diagrams/user-workspace-ledger-map.png)
+| 功能模块 | 作用说明 | 为什么对用户有价值 |
+| --- | --- | --- |
+| 任务看板 | 集中展示任务总览与状态变化 | 不必翻聊天记录，也能快速判断全局 [1] [4] |
+| 运行监控 | 观察处理节奏、异常和关键动态 | 更早发现卡点，避免任务悄悄失控 [1] [4] [5] |
+| 任务详情 | 查看任务背景、状态、建议与结果线索 | 进入单个任务时不需要重新猜上下文 [1] [2] |
+| Agent 管理工作台 | 管理角色分组、职责和协作关系 | 让分工逻辑清晰，而不是黑盒执行 [4] |
+| 模型与技能配置 | 为不同角色配置更合适的能力组合 | 同一系统能适配不同任务难度与风格 [1] [4] |
+| 记忆中心 | 沉淀长期信息与历史结果 | 有助于后续复用、延续与知识积累 [1] [4] [5] |
+| 模板中心 | 复用常见任务模板与标准输入 | 提高发起任务的效率与一致性 [1] [4] |
+| AI 搜索引擎 | 为任务补充外部资料与信息线索 | 适合研究型、对比型和资料型工作 [1] [4] |
+| 协同讨论视图 | 用于展示多角色协作与讨论过程 | 让团队更容易理解协同关系与决策路径 [1] [4] |
 
-| File or Directory / 文件或目录 | Purpose / 用途 |
+## 为什么首页要先讲这些，而不是先讲技术实现
+
+对大多数第一次接触这个仓库的人来说，最重要的问题通常不是“后端怎么组织”或“状态怎么落盘”，而是三件更直接的事情：**它到底能帮我做什么、我该怎么理解它、我应该从哪里开始使用**。因此，首页更适合先站在用户视角说明价值和使用逻辑，而把更细的实现机制留给专门的文档去展开。[1] [2] [3]
+
+如果你关心的是使用逻辑，建议先阅读用户文档；如果你想快速看界面效果，可以直接看截图目录说明；如果你后续需要研究底层结构、任务治理与实现方式，再进入技术文档会更顺手。[1] [3] [4]
+
+| 阅读目标 | 建议先看哪里 | 适合谁 |
+| --- | --- | --- |
+| 先判断这套系统是不是自己需要的 | [用户文档](./docs/user-guide.md) | 使用者、产品负责人、协作者 [1] |
+| 先快速看当前界面与模块分布 | [截图说明](./docs/screenshots/README.md) | 第一次浏览仓库的人 [4] |
+| 了解当前架构和任务处理逻辑 | [当前架构总览](./docs/current_architecture_overview.md) | 需要理解整体设计的人 [3] |
+| 深入研究实现方式 | [技术文档](./docs/technical-architecture.md) | 开发者、维护者 [2] |
+
+## 一个更简单的结论
+
+如果要用一句更接近用户语言的话来概括这个项目，那么它可以被理解为：**一套让复杂任务真正“有人接、有人分、有人做、有人看、做完还能继续接着做”的多智能体协作系统**。[1] [2] [3] [5]
+
+它的价值不在于把多少模型放在一起，而在于把“任务”本身变成一个可管理、可观察、可交付、可延续的对象。这也是首页现在更应该讲清楚的基础逻辑。[1] [2] [3]
+
+## 开源来源与致谢
+
+当前公开版基于已有开源工作继续整理与扩展，并在公开发布过程中完成命名收口、文档重写、工作流治理补强与界面梳理。这里保留对上游项目的简要致谢，方便读者理解公开版的来源关系。[6] [7]
+
+| 项目 | 说明 |
 | --- | --- |
-| `README.md` | Quick task overview and reading entry / 任务总览与进入入口 [2] |
-| `TODO.md` | Pending items and execution checklist / 待办清单与执行检查项 [2] |
-| `HANDOFF.md` | Handoff and continuation summary / 交接与续接摘要 [2] |
-| `TASK_RECORD.json` | Structured task metadata / 结构化任务元数据 [2] |
-| `STATUS.json` | Script-friendly status snapshot / 便于脚本读取的状态快照 [2] |
-| `context/latest_context.json` | Latest context snapshot for resume / 最新上下文恢复快照 [4] |
-| `ledger/*.jsonl` | Append-only records for progress, reports, and repairs / 进度、汇报、修复等追加式账本 [2] [4] |
-
-## Archival and Reactivation / 归档与回迁机制
-
-Archival in this project does not mean a task is permanently dead. Instead, it means the task leaves the active processing path while keeping enough metadata and workspace continuity to be reactivated later. This is particularly important for large or long-running projects that should not permanently occupy hot storage.[2] [4]
-
-本项目中的“归档”并不等于任务生命周期彻底结束，而是指任务暂时退出活跃处理路径，但仍保留足够的元数据和工作区连续性，以便后续重新激活。对于体量较大或历史沉淀较多的项目，这一点尤其关键，因为它避免了热区长期被历史任务占满。[2] [4]
-
-![冷热分层与归档回迁流程图](docs/diagrams/user-cold-hot-archive-flow.png)
-
-## Context Refresh and Recovery / 上下文刷新与恢复链
-
-Long tasks eventually face context pressure. Instead of hiding this problem, the project makes it explicit through the `/new` recommendation structure. When context becomes critical or watchdog signals attention, the system can mark that refresh is recommended and provide a recovery order for the next session.[2] [4]
-
-长链路任务最终一定会遇到上下文压力。本项目不是把这个问题隐藏起来，而是通过 `/new` 建议结构把它显式化。当上下文窗口变得紧张，或者看门狗提示需要注意时，系统会明确给出是否建议刷新，以及下一轮应该按照什么顺序恢复任务。[2] [4]
-
-![上下文刷新与续接恢复图](docs/diagrams/user-new-refresh-flow.png)
-
-> Recommended resume order / 推荐恢复顺序：`README.md → HANDOFF.md → TODO.md → TASK_RECORD.json → context/latest_context.json`.[4]
-
-## Governance, Watchdog, and Reporting / 治理、巡检与汇报闭环
-
-The system is not only designed to move tasks forward; it is also designed to detect when something is drifting, stalled, or incomplete. The watchdog layer provides health status, repair records, and recommended next actions, while reporting metadata helps trace what has been communicated externally.[2] [4]
-
-系统不只是负责把任务往前推进，也负责在任务**漂移、停滞或不完整**时主动发出信号。看门狗层会提供健康状态、修复动作和推荐下一步；汇报回写则用来保留任务对外同步的结构化记录。[2] [4] 在最新一轮治理调整中，看门狗还承担了总控中心上下文刷新监督、风险操作前置校验与通知生成职责，而真正执行高风险确认和 `/new` 刷新的权限仍被收束在总控中心或显式用户确认链路上。[2] [4]
-
-![任务工作区治理联动图](docs/diagrams/technical-workspace-governance-flow.png)
-
-## Documentation Map / 文档阅读入口
-
-To avoid turning the homepage into a mixed document of product copy, technical internals, stage notes, and temporary audits, the repository now uses a layered reading strategy. Start with the homepage, continue with the user guide if you want the operational logic, and then move into the technical architecture if you want implementation details.[1] [2] [3]
-
-为了避免首页再次变成产品说明、技术设计、阶段记录和临时审计的混合体，当前仓库采用分层阅读策略。先看首页，再根据需求进入用户文档和技术文档，会比直接扎进零散实现文件更稳妥。[1] [2] [3]
-
-| If You Want To Know / 如果你想了解 | Read This / 推荐阅读 |
-| --- | --- |
-| What the project is and what changed publicly / 项目是什么、公开口径怎么理解 | [`README.md`](README.md) |
-| How a task is used, resumed, archived, and reactivated / 任务如何使用、续接、归档与回迁 | [`docs/user-guide.md`](docs/user-guide.md) |
-| How the workspace, ledger, watchdog, and frontend fields are implemented / 工作区、账本、看门狗与前端字段如何落地 | [`docs/technical-architecture.md`](docs/technical-architecture.md) |
-| What the current architecture looks like in more traditional terms / 更传统的架构分层与处理链路说明 | [`docs/current_architecture_overview.md`](docs/current_architecture_overview.md) |
-| What was completed in this modernization round / 本轮改造到底做了哪些事 | [`TODO_task_workspace_ledger.md`](TODO_task_workspace_ledger.md) |
-| What the end-to-end validation covered / E2E 验证覆盖了什么 | [`edict/E2E_task_workspace_validation_result_2026-04-09.json`](edict/E2E_task_workspace_validation_result_2026-04-09.json) |
-
-## Public Interface Notes / 公开界面说明
-
-The public repository no longer embeds runtime dashboard preview images in the main README. This keeps the documentation lighter, avoids stale visual residues from earlier interface phases, and reduces the chance that cached screenshots will misrepresent the current product state.[1]
-
-公开仓库不再在首页 README 中内嵌运行态界面预览图。这样做可以避免旧阶段界面残留、减少截图缓存导致的认知偏差，并把首页重点重新放回到能力边界、目录结构与使用方式说明上。[1]
-
-If you need to understand the current operating surface, please rely on the user guide, architecture notes, and the actual authenticated product environment instead of static preview snapshots.
-
-如果需要了解当前工作界面，请优先参考用户文档、技术架构说明以及实际登录后的产品环境，而不是静态截图。
-
-## Repository Structure / 目录速览
-
-| Path / 路径 | Purpose / 作用 |
-| --- | --- |
-| `dashboard/` | Dashboard shell and runtime-facing UI entry / 看板壳层与运行期交互入口 |
-| `edict/backend/` | Backend services, task domain logic, workspace integration / 后端服务、任务领域逻辑与工作区集成 |
-| `edict/frontend/` | Frontend application and governed operation panels / 前端应用与治理型操作面板 |
-| `agents/` | Role prompts, responsibility boundaries, and collaboration semantics / 角色提示词、职责边界与协作语义 |
-| `docs/` | Public guides, technical documents, diagrams, previews, and archived notes / 用户文档、技术文档、流程图与预览素材 |
-| `task_workspaces/` | Task workspace metadata and active/cached task directories / 任务工作区元数据与活跃任务目录 |
-| `cold_task_archives/` | Cold archival storage for reactivatable tasks / 支持回迁的冷归档目录 |
-
-## Attribution / 来源与致谢
-
-This project is maintained and modernized by **江南奇才** under the public name **Multi-Agent Orchestrator**. During its public-release cleanup and modernization, the repository drew reference from existing open-source projects and repository organization approaches. Those references have now been substantially absorbed and reworked into the current architecture.[1] [2]
-
-本项目由 **江南奇才** 持续整理与改造，对外主名称统一为 **Multi-Agent Orchestrator**。在公开版整理与现代化重构过程中，仓库参考过既有开源实现和仓库组织方式；相关内容现已基本完成吸收、改写与重构，因此 README 仅保留必要范围内的简短致谢说明，并继续遵循 MIT License 的相关要求。[1] [2]
-
-在公开来源说明层面，当前仓库至少明确保留对以下上游公开仓库的简短引用：[`cft0808/edict`](https://github.com/cft0808/edict) 与 [`wanikua/danghuangshang`](https://github.com/wanikua/danghuangshang)。它们主要作为公开演进来源与仓库组织参考被提及，并不表示当前代码结构仍与上游保持逐文件对应关系；但在 MIT License 语境下，保留简洁、可见且不喧宾夺主的致谢说明是必要的。[5] [6]
+| [cft0808/edict](https://github.com/cft0808/edict) | 当前公开版整理所参考的上游之一 [6] |
+| [wanikua/danghuangshang](https://github.com/wanikua/danghuangshang) | 当前公开版整理所参考的上游之一 [7] |
 
 ## Version Log / 版本日志
 
 | Date / 日期 | Change / 变更 |
 | --- | --- |
-| 2026-04-09 | Rewrote the homepage README into a bilingual Chinese-English entry, updated project positioning, added user and technical documentation links, and integrated new governance flow diagrams / 将首页 README 重写为中英文双语入口，更新项目简介，加入用户文档与技术文档入口，并整合新的治理流程图 [1] [2] [3] [4] |
-| 2026-04-09 | Documented task workspace, file ledger, cold/hot tiering, archive reactivation, `/new` rule, watchdog, Feishu reporting, and frontend governance entries / 同步纳入任务工作区、文件化账本、冷热分层、归档回迁、`/new` 规则、看门狗、飞书汇报与前端治理入口 [2] [3] [4] |
-| 2026-04-10 | Added README table of contents, clarified watchdog-supervised `/new` and risk confirmation governance, and restored concise upstream attribution references required by the public MIT release / 补充首页目录，明确看门狗监督式 `/new` 与风险确认治理，并恢复公开版 MIT 所需的简短上游来源引用 [2] [4] [5] [6] |
+| 2026-04-11 | Rewrote the homepage README into a more user-oriented entry, reduced implementation-heavy wording, and clarified product positioning, feature value, and the basic task flow logic / 将首页 README 改写为更用户导向的版本，弱化实现细节，强化产品定位、功能价值与任务基础逻辑说明 [1] [2] [3] [4] [5] |
+| 2026-04-09 | Rewrote the homepage README into a bilingual Chinese-English entry, updated project positioning, added user and technical documentation links, and integrated new governance flow diagrams / 将首页 README 重写为中英文双语入口，更新项目定位，加入用户文档与技术文档入口，并整合新的治理流程图 [1] [2] [3] [4] |
+| 2026-04-09 | Documented task workspace, file ledger, cold/hot tiering, archive reactivation, `/new` rule, watchdog, Feishu reporting, and frontend governance entries / 同步纳入任务工作区、文件化账本、冷热分层、归档回迁、`/new` 规则、看门狗、飞书汇报与前端治理入口 [2] [3] [5] |
+| 2026-04-10 | Added README table of contents, clarified watchdog-supervised `/new` and risk confirmation governance, and restored concise upstream attribution references required by the public MIT release / 补充首页目录，明确看门狗监督式 `/new` 与风险确认治理，并恢复公开版 MIT 所需的简短上游来源引用 [2] [6] [7] |
 | 2026-04-08 | Completed major public-release cleanup, naming convergence, and dashboard preview consolidation / 完成公开版主线脱敏、命名收口与界面预览整理 [1] [3] |
 
 ## References
@@ -182,6 +107,7 @@ This project is maintained and modernized by **江南奇才** under the public n
 [1]: ./docs/user-guide.md "用户文档"
 [2]: ./docs/technical-architecture.md "技术文档"
 [3]: ./docs/current_architecture_overview.md "当前架构与处理逻辑总览"
-[4]: ./edict/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"
-[5]: https://github.com/cft0808/edict "cft0808/edict"
-[6]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
+[4]: ./docs/screenshots/README.md "截图说明"
+[5]: ./edict/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"
+[6]: https://github.com/cft0808/edict "cft0808/edict"
+[7]: https://github.com/wanikua/danghuangshang "wanikua/danghuangshang"
