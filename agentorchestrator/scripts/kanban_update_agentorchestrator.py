@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-看板任务更新工具 - AgentOrchestrator 兼容层
+看板任务更新工具 - AgentOrchestrator legacy 兼容层
 
-保持与旧版完全相同的 CLI 接口，内部改为调用 AgentOrchestrator REST API。
-如果 API 不可用，降级回写 JSON 文件（过渡期保障）。
+该文件仅保留给旧 CLI / 历史自动化脚本兼容调用，默认任务状态写回主链应优先使用 `scripts/task_db.py`。
+内部继续兼容旧命令结构，并转发到 AgentOrchestrator REST API；如果 API 不可用，则降级回写 JSON 文件（过渡期保障）。
 
-用法（保留原命令结构）:
+用法（legacy 命令结构示例）:
   python3 kanban_update.py create JJC-20260223-012 "任务标题" PlanCenter 规划中心 规划负责人
   python3 kanban_update.py state JJC-20260223-012 ReviewCenter "规划方案已提交评审中心"
   python3 kanban_update.py flow JJC-20260223-012 "规划中心" "评审中心" "规划方案提交审核"

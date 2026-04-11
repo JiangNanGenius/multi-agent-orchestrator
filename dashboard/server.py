@@ -2497,14 +2497,14 @@ def dispatch_for_state(task_id, task, new_state, trigger='state-transition'):
             f'📥 新任务需要总控中心处理\n'
             f'任务ID: {task_id}\n'
             f'任务标题: {title}\n'
-            f'⚠️ 看板已有此任务，请勿重复创建。直接用 kanban_update.py 更新状态。\n'
+            f'⚠️ 看板已有此任务，请勿重复创建。默认请用 task_db.py 更新状态；仅在兼容旧流程时使用 legacy kanban_update.py。\n'
             f'请先判断是否可直接快速处理；若不适合直办，请立即转交规划中心。'
         ),
         'plan_center': (
             f'🧭 任务已到规划中心，请完成方案拆解\n'
             f'任务ID: {task_id}\n'
             f'任务标题: {title}\n'
-            f'⚠️ 看板已有此任务记录，请勿重复创建。直接用 kanban_update.py state 更新状态。\n'
+            f'⚠️ 看板已有此任务记录，请勿重复创建。默认请用 task_db.py 更新状态；仅在兼容旧流程时使用 legacy kanban_update.py。\n'
             f'请立即输出执行方案，并推动后续进入评审与调度流程。'
         ),
         'review_center': (
@@ -2527,7 +2527,7 @@ def dispatch_for_state(task_id, task, new_state, trigger='state-transition'):
         f'📌 请处理任务\n'
         f'任务ID: {task_id}\n'
         f'任务标题: {title}\n'
-        f'⚠️ 看板已有此任务，请勿重复创建。直接用 kanban_update.py 更新状态。'
+        f'⚠️ 看板已有此任务，请勿重复创建。默认请用 task_db.py 更新状态；仅在兼容旧流程时使用 legacy kanban_update.py。'
     ))
 
     def _do_dispatch():

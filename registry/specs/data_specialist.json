@@ -14,7 +14,7 @@
     "positioning": "作为专家执行组下的数据专家，负责对应专业域的具体执行。",
     "coreResponsibilities": [
       "承担数据分析、成本评估与资源测算",
-      "在关键节点更新看板状态与进展",
+      "在关键节点通过 task_db 更新任务状态、进展与流转记录",
       "按允许的协作关系进行转交、回退或汇报"
     ],
     "directHandleScope": [
@@ -76,12 +76,12 @@
       "语气"
     ],
     "commandReferences": [
-      "python3 scripts/kanban_update.py create <id> \"<标题>\" <state> <org> <owner>",
-      "python3 scripts/kanban_update.py state <id> <state> \"<说明>\"",
-      "python3 scripts/kanban_update.py flow <id> \"<from>\" \"<to>\" \"<remark>\"",
-      "python3 scripts/kanban_update.py done <id> \"<output>\" \"<summary>\"",
-      "python3 scripts/kanban_update.py progress <id> \"<当前在做什么>\" \"<计划1✅|计划2🔄|计划3>\"",
-      "python3 scripts/kanban_update.py todo <id> <todo_id> \"<title>\" <status> --detail \"<产出详情>\""
+      "python3 scripts/task_db.py transition --task-id <id> --state <state> --note \"<说明>\"",
+      "python3 scripts/task_db.py progress --task-id <id> --summary \"<当前在做什么>\" --next \"<下一步1|下一步2>\"",
+      "python3 scripts/task_db.py todo upsert --task-id <id> --todo-id <todo_id> --title \"<title>\" --status <status> --detail \"<产出详情>\"",
+      "python3 scripts/task_db.py flow append --task-id <id> --from \"<from>\" --to \"<from_role>\" --remark \"<remark>\"",
+      "python3 scripts/task_db.py deliver --task-id <id> --summary \"<summary>\" --output \"<output>\"",
+      "# legacy 看板兼容模式下如需同步展示，可额外调用 python3 scripts/kanban_update.py ...，但不得替代 task_db 主链写回"
     ],
     "styleGuide": {
       "tone": "中文、直接、清晰、便于Agent执行",
@@ -109,8 +109,8 @@
   },
   "metadata": {
     "generatedBy": "scripts/sync_agent_config.py",
-    "updatedAt": "2026-04-11 19:49:55",
-    "workspace": "/root/.openclaw/workspace-data_specialist",
-    "model": "unknown"
+    "updatedAt": "2026-04-11 18:24:13",
+    "workspace": "/home/ubuntu/.openclaw/workspace-data_specialist",
+    "model": "openai/gpt-4o"
   }
 }
