@@ -132,6 +132,7 @@
 
 | Date / 日期 | Change / 变更 |
 | --- | --- |
+| 2026-04-11 | Bumped project version to `2.0.1`, aligned frontend/backend runtime version markers, and documented this release increment in the homepage changelog / 版本号提升至 `2.0.1`，统一前后端运行时版本标识，并在首页变更日志中记录此次发布增量 [1] [2] |
 | 2026-04-11 | Added a homepage interface showcase and a simplified task flow diagram so first-time visitors can understand the product from screens and flow before reading implementation details / 为首页补充界面展示区与简化任务流程图，让初次访问者先从界面和流程理解产品，再进入实现细节 [1] [2] [3] [4] [5] |
 | 2026-04-11 | Rewrote the homepage README into a more user-oriented entry, reduced implementation-heavy wording, and clarified product positioning, feature value, and the basic task flow logic / 将首页 README 改写为更用户导向的版本，弱化实现细节，强化产品定位、功能价值与任务基础逻辑说明 [1] [2] [3] [4] [5] |
 | 2026-04-09 | Rewrote the homepage README into a bilingual Chinese-English entry, updated project positioning, added user and technical documentation links, and integrated new governance flow diagrams / 将首页 README 重写为中英文双语入口，更新项目定位，加入用户文档与技术文档入口，并整合新的治理流程图 [1] [2] [3] [4] |
