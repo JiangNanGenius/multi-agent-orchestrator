@@ -32,12 +32,27 @@ if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 from file_lock import atomic_json_read, atomic_json_write, atomic_json_update
 from utils import validate_url, read_json, now_iso
-from app.services.task_workspace import (
-    archive_task_workspace,
-    build_workspace_meta,
-    initialize_task_workspace,
-    sync_workspace_for_task,
-)
+try:
+    from app.services.task_workspace import (
+        archive_task_workspace,
+        build_workspace_meta,
+        initialize_task_workspace,
+        sync_workspace_for_task,
+    )
+except ModuleNotFoundError:  # optional backend deps (e.g. sqlalchemy) may be unavailable in dashboard-only tests
+    def build_workspace_meta(*, task_id: str = '', task_code: str = '', **kwargs):
+        return {'enabled': False, 'reason': 'backend_unavailable', 'task_id': task_id, 'taskCode': task_code}
+
+    def initialize_task_workspace(task: dict, **kwargs):
+        return build_workspace_meta(task_id=task.get('task_id') or task.get('id') or '', task_code=task.get('taskCode') or task.get('id') or '')
+
+    def sync_workspace_for_task(task: dict, **kwargs):
+        return initialize_task_workspace(task)
+
+    def archive_task_workspace(task: dict, **kwargs):
+        meta = initialize_task_workspace(task)
+        meta['archived'] = False
+        return meta
 from court_discuss import (
     create_session as cd_create, advance_discussion as cd_advance,
     get_session as cd_get, conclude_session as cd_conclude,

@@ -93,7 +93,7 @@
   },
   "deployment": {
     "projectSourcePath": "agents/plan_center/SOUL.md",
-    "workspaceTargetPath": "/home/ubuntu/.openclaw/workspace-plan_center/soul.md",
+    "workspaceTargetPath": "/home/ubuntu/.openclaw/workspace-plan_center/SOUL.md",
     "legacyTargets": [],
     "deployOnSync": true,
     "writeSpecSidecar": true,
@@ -111,8 +111,8 @@
   },
   "metadata": {
     "generatedBy": "scripts/sync_agent_config.py",
-    "updatedAt": "2026-04-11 08:13:48",
-    "workspace": "/home/ubuntu/.openclaw/workspace-plan_center",
+    "updatedAt": "2026-04-11 19:49:55",
+    "workspace": "/root/.openclaw/workspace-plan_center",
     "model": "unknown"
   }
 }
