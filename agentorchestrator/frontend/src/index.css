@@ -5,6 +5,15 @@
 /* ══ Agent协同管理系统 · 双主题令牌 ══ */
 :root,
 :root[data-theme='dark'] {
+  --motion-fast: 140ms;
+  --motion-base: 180ms;
+  --motion-slow: 240ms;
+  --motion-enter: 220ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --lift-1: translateY(-1px);
+  --lift-2: translateY(-2px);
+  --press-scale: scale(0.98);
   --bg: #07090f;
   --bg-soft: #0a0f1d;
   --bg-elevated: #0d1424;
@@ -85,6 +94,15 @@ body::before {
   background-size: 64px 64px;
   mask-image: radial-gradient(circle at center, rgba(0,0,0,.9), transparent 85%);
   opacity: .24;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .app-shell {
@@ -6659,4 +6677,204 @@ code { font-size: 11px; background: var(--panel2); padding: 2px 6px; border-radi
   .search-panel-submit-btn {
     width: 100%;
   }
+}
+
+/* ===== unified micro-motion overrides (2026-04-12) ===== */
+.page-stage,
+.page-stage--enter {
+  animation: pageEnter var(--motion-enter) var(--ease-soft);
+  will-change: opacity, transform;
+}
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.995); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+.workspace-nav__item,
+.tab,
+.icon-button,
+.hero-action,
+.agentorchestrator-card,
+.agent-chat-mobile-tabs__item,
+.agent-chat-panel__toggle,
+.agent-chat-panel__collapsed-tab,
+.floating-control-chat__launcher,
+.floating-control-chat__send,
+.workspace-file-manager__toolbar-button,
+.workspace-file-manager__entry {
+  transition:
+    transform var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    opacity var(--motion-base) var(--ease-standard);
+}
+
+.workspace-nav__item:hover,
+.tab:hover,
+.icon-button:hover,
+.hero-action:hover,
+.agentorchestrator-card:hover,
+.agent-chat-mobile-tabs__item:hover,
+.workspace-file-manager__entry:hover,
+.workspace-file-manager__toolbar-button:hover {
+  transform: var(--lift-1);
+}
+
+.workspace-nav__item:active,
+.tab:active,
+.icon-button:active,
+.hero-action:active,
+.agent-chat-mobile-tabs__item:active,
+.workspace-file-manager__entry:active,
+.workspace-file-manager__toolbar-button:active {
+  transform: translateY(0) var(--press-scale);
+}
+
+.workspace-nav__item:focus-visible,
+.tab:focus-visible,
+.icon-button:focus-visible,
+.hero-action:focus-visible,
+.agent-chat-mobile-tabs__item:focus-visible,
+.agent-chat-panel__toggle:focus-visible,
+.agent-chat-panel__collapsed-tab:focus-visible,
+.workspace-file-manager__entry:focus-visible,
+.workspace-file-manager__toolbar-button:focus-visible,
+.floating-control-chat__launcher:focus-visible,
+.floating-control-chat__send:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 56%, transparent);
+}
+
+.workspace-overlay {
+  transition: opacity var(--motion-base) var(--ease-standard), visibility var(--motion-base) var(--ease-standard);
+}
+
+.workspace-sidebar {
+  transition: transform var(--motion-slow) var(--ease-soft), opacity var(--motion-slow) var(--ease-soft);
+}
+
+.modal-bg,
+.modal-bg--enter {
+  animation: modalFadeIn var(--motion-enter) var(--ease-standard);
+}
+
+.modal,
+.modal--enter,
+.floating-control-chat__panel {
+  animation: panelEnter var(--motion-enter) var(--ease-soft);
+  transform-origin: center top;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes panelEnter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.985); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+.toast,
+.toast--enter {
+  animation: toastEnter var(--motion-enter) var(--ease-soft);
+}
+
+@keyframes toastEnter {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.workspace-file-manager {
+  animation: panelEnter var(--motion-enter) var(--ease-soft);
+}
+
+.workspace-file-manager__title {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.workspace-file-manager__meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.workspace-file-manager__toolbar-button {
+  padding: 6px 10px;
+}
+
+.workspace-file-manager__panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 280px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+}
+
+.workspace-file-manager__panel-head {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.workspace-file-manager__panel-head--editor {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-file-manager__panel-title {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.workspace-file-manager__list {
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.workspace-file-manager__entry {
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.workspace-file-manager__entry--active {
+  border-color: color-mix(in srgb, var(--acc) 55%, var(--line));
+  background: color-mix(in srgb, var(--acc) 10%, transparent);
+  box-shadow: 0 10px 24px rgba(42, 86, 190, 0.18);
+}
+
+.workspace-file-manager__entry-title {
+  font-weight: 700;
+}
+
+.workspace-file-manager__entry-path,
+.workspace-file-manager__entry-meta,
+.workspace-file-manager__hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+.workspace-file-manager__editor-wrap {
+  padding: 10px;
+}
+
+.workspace-file-manager__hint--status {
+  margin-bottom: 8px;
 }

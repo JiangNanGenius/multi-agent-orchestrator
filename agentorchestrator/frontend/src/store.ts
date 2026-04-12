@@ -317,7 +317,7 @@ export const STATE_LABEL_EN: Record<string, string> = {
 };
 
 export function isAgentOrchestrator(t: Task): boolean {
-  return /^JJC-/i.test(t.taskCode || t.task_id || t.id || '');
+  return /^JJC-/i.test(t.taskCode || t.id || '');
 }
 
 export function isSession(t: Task): boolean {
@@ -1344,9 +1344,15 @@ export const useStore = create<AppStore>((set, get) => ({
     try {
       const cfg = await api.agentConfig();
       const log = await api.modelChangeLog().catch(() => []);
+      const normalizedAgents = Array.isArray(cfg?.agents)
+        ? cfg.agents.map((agent) => ({
+          ...agent,
+          emoji: typeof agent?.emoji === 'string' && agent.emoji.trim() ? agent.emoji : '🤖',
+        }))
+        : [];
       set({
         agentConfig: {
-          agents: Array.isArray(cfg?.agents) ? cfg.agents : [],
+          agents: normalizedAgents,
           knownModels: Array.isArray(cfg?.knownModels) ? cfg.knownModels : [],
           dispatchChannel: typeof cfg?.dispatchChannel === 'string' ? cfg.dispatchChannel : '',
         },

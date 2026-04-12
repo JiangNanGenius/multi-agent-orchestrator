@@ -37,7 +37,15 @@
     ],
     "upstream": [],
     "downstream": [
-      "plan_center"
+      "plan_center",
+      "dispatch_center",
+      "data_specialist",
+      "docs_specialist",
+      "code_specialist",
+      "audit_specialist",
+      "deploy_specialist",
+      "admin_specialist",
+      "search_specialist"
     ],
     "handoffRule": "默认按允许协作关系进行转交；阻塞或超边界任务必须及时回退或升级。",
     "tone": "直接、稳定、清晰，避免封建化措辞。"
@@ -50,7 +58,15 @@
     "rejectTaskTypes": [],
     "preferredSources": [],
     "allowedTargets": [
-      "plan_center"
+      "plan_center",
+      "dispatch_center",
+      "data_specialist",
+      "docs_specialist",
+      "code_specialist",
+      "audit_specialist",
+      "deploy_specialist",
+      "admin_specialist",
+      "search_specialist"
     ],
     "fallbackTargets": [
       "plan_center"
@@ -129,8 +145,8 @@
   },
   "metadata": {
     "generatedBy": "scripts/sync_agent_config.py",
-    "updatedAt": "2026-04-11 18:24:13",
-    "workspace": "/tmp/pytest-of-ubuntu/pytest-11/test_sync_agent_config_accepts0/ws-control-center",
-    "model": "openai/gpt-4o"
+    "updatedAt": "2026-04-12 07:38:29",
+    "workspace": "/root/.openclaw/workspace-control_center",
+    "model": "unknown"
   }
 }

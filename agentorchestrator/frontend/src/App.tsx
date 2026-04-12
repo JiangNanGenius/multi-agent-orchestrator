@@ -767,7 +767,7 @@ export default function App() {
           </header>
 
           <main ref={mainContentRef} className="workspace-content">
-            <section key={activeTab} className="workspace-panel-shell page-stage">
+            <section key={activeTab} className="workspace-panel-shell page-stage page-stage--enter">
               {renderActivePanel()}
             </section>
           </main>

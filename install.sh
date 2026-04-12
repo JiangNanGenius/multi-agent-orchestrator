@@ -91,8 +91,32 @@ backup_existing() {
 # ── Step 1: 创建 Workspace ──────────────────────────────────
 create_workspaces() {
   info "创建 Agent Workspace..."
-  
-  AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist)
+
+  mapfile -t AGENTS < <(REPO_DIR="$REPO_DIR" python3 << 'PYEOF'
+import json, pathlib
+import os
+repo = pathlib.Path(os.environ["REPO_DIR"])
+specs = repo / "registry" / "specs"
+agents_dir = repo / "agents"
+ids = []
+for path in sorted(specs.glob("*.json")):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        continue
+    aid = data.get("agentId") or path.stem
+    if aid and aid not in ids:
+        ids.append(aid)
+if not ids and agents_dir.is_dir():
+    for entry in sorted(agents_dir.iterdir()):
+        if entry.is_dir() and (entry / "SOUL.md").exists():
+            ids.append(entry.name)
+print("\\n".join(ids))
+PYEOF
+  )
+  if [ ${#AGENTS[@]} -eq 0 ]; then
+    AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist)
+  fi
   for agent in "${AGENTS[@]}"; do
     ws="$OC_HOME/workspace-$agent"
     mkdir -p "$ws/skills"

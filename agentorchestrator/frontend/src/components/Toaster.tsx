@@ -7,7 +7,7 @@ export default function Toaster() {
   return (
     <div className="toaster">
       {toasts.map((t) => (
-        <div key={t.id} className={`toast ${t.type}`}>
+        <div key={t.id} className={`toast toast--enter ${t.type}`}>
           {t.msg}
         </div>
       ))}

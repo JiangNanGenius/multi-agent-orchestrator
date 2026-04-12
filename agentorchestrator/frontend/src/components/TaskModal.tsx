@@ -512,8 +512,8 @@ export default function TaskModal() {
   const stalledSec = schedData?.stalledSec || 0;
 
   return (
-    <div className="modal-bg open" onClick={close}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-bg modal-bg--enter open" onClick={close}>
+      <div className="modal modal--enter" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={close}>✕</button>
         <div className="modal-body">
           <div className="modal-id">{task.id}</div>
@@ -1007,8 +1007,8 @@ export default function TaskModal() {
         </div>
 
         {showDeleteDialog && (
-          <div className="modal-bg open" style={{ zIndex: 260 }} onClick={() => !deleteSubmitting && setShowDeleteDialog(false)}>
-            <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-bg modal-bg--enter open" style={{ zIndex: 260 }} onClick={() => !deleteSubmitting && setShowDeleteDialog(false)}>
+            <div className="modal modal--enter" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-body" style={{ paddingTop: 20 }}>
                 <div className="modal-id" style={{ color: 'var(--danger)' }}>危险操作</div>
                 <div className="modal-title" style={{ fontSize: 24, marginBottom: 12 }}>删除任务并同步删除工作区</div>

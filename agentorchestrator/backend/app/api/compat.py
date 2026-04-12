@@ -1,7 +1,9 @@
 """Compatibility API endpoints for dashboard-era frontend contracts."""
 from __future__ import annotations
 
+import json
 import uuid
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -61,12 +63,15 @@ async def auth_status_compat():
 @router.get("/api/agent-config")
 async def agent_config_compat():
     """Provide a minimal legacy payload so frontend can boot in backend-only mode."""
-    return {
-        "agents": [],
-        "knownModels": [],
-        "dispatchChannel": "openclaw",
-        "ok": True,
-    }
+    cfg_path = Path(__file__).parents[4] / "data" / "agent_config.json"
+    if cfg_path.exists():
+        try:
+            payload = json.loads(cfg_path.read_text(encoding="utf-8"))
+            payload["ok"] = True
+            return payload
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {"agents": [], "knownModels": [], "dispatchChannel": "openclaw", "ok": True}
 
 
 class CompatCreateTask(BaseModel):
