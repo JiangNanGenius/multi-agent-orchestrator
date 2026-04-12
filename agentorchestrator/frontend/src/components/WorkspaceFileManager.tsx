@@ -142,26 +142,25 @@ export function WorkspaceFileManager({ taskId, taskState, workspacePath, quickPa
   };
 
   return (
-    <div style={{ border: '1px solid var(--line)', borderRadius: 14, padding: '12px 14px', background: 'var(--panel)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+    <div className="workspace-file-manager">
+      <div className="workspace-file-manager__toolbar workspace-file-manager__hero">
         <div>
-          <div style={{ fontSize: 12, fontWeight: 800 }}>工作区文件面板</div>
-          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+          <div className="workspace-file-manager__title">工作区文件面板</div>
+          <div className="workspace-file-manager__meta">
             当前任务状态：{taskState || 'unknown'}；根路径：{workspacePath || '未返回'}
           </div>
         </div>
-        <button className="sched-btn" style={{ padding: '6px 10px' }} onClick={() => loadDirectory(currentPath)}>
+        <button className="sched-btn workspace-file-manager__toolbar-button" onClick={() => loadDirectory(currentPath)}>
           刷新目录
         </button>
       </div>
 
       {normalizedQuickPaths.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+        <div className="workspace-file-manager__quickpaths">
           {normalizedQuickPaths.map((item) => (
             <button
               key={`${item.label}-${item.path}`}
-              className="sched-btn"
-              style={{ padding: '6px 10px' }}
+              className="sched-btn workspace-file-manager__toolbar-button"
               onClick={() => openQuickPath(item.path)}
             >
               打开 {item.label}
@@ -170,36 +169,28 @@ export function WorkspaceFileManager({ taskId, taskState, workspacePath, quickPa
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 340px) minmax(0, 1fr)', gap: 12 }}>
-        <div style={{ border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden', minHeight: 280 }}>
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)', fontSize: 12, fontWeight: 700 }}>
+      <div className="workspace-file-manager__grid">
+        <div className="workspace-file-manager__panel workspace-file-manager__panel--list">
+          <div className="workspace-file-manager__panel-head">
             目录：<code>{currentPath || '/'}</code>
           </div>
-          <div style={{ padding: 10, display: 'grid', gap: 8, maxHeight: 420, overflow: 'auto' }}>
+          <div className="workspace-file-manager__list">
             {currentPath && (
-              <button className="sched-btn" style={{ padding: '6px 10px', justifySelf: 'start' }} onClick={() => loadDirectory(dirname(currentPath))}>
+              <button className="sched-btn workspace-file-manager__toolbar-button workspace-file-manager__back-button" onClick={() => loadDirectory(dirname(currentPath))}>
                 返回上级
               </button>
             )}
-            {loadingList && <div style={{ fontSize: 12, color: 'var(--muted)' }}>目录读取中…</div>}
-            {!loadingList && entries.length === 0 && <div style={{ fontSize: 12, color: 'var(--muted)' }}>当前目录为空或暂不可访问。</div>}
+            {loadingList && <div className="workspace-file-manager__hint">目录读取中…</div>}
+            {!loadingList && entries.length === 0 && <div className="workspace-file-manager__hint">当前目录为空或暂不可访问。</div>}
             {!loadingList && entries.map((entry) => (
               <button
                 key={`${entry.kind}-${entry.path}`}
                 onClick={() => openEntry(entry)}
-                style={{
-                  textAlign: 'left',
-                  border: '1px solid var(--line)',
-                  borderRadius: 10,
-                  background: selectedPath === entry.path ? 'rgba(124,92,252,0.12)' : 'transparent',
-                  color: 'inherit',
-                  padding: '10px 12px',
-                  cursor: 'pointer',
-                }}
+                className={`workspace-file-manager__entry ${selectedPath === entry.path ? 'workspace-file-manager__entry--active' : ''}`}
               >
-                <div style={{ fontWeight: 700 }}>{entry.kind === 'directory' ? '📁' : '📄'} {entry.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, wordBreak: 'break-all' }}>{entry.path}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                <div className="workspace-file-manager__entry-title">{entry.kind === 'directory' ? '📁' : '📄'} {entry.name}</div>
+                <div className="workspace-file-manager__entry-path">{entry.path}</div>
+                <div className="workspace-file-manager__entry-meta">
                   大小：{formatSize(entry.size)} · {entry.modified_at || '时间未知'}
                 </div>
               </button>
@@ -207,18 +198,17 @@ export function WorkspaceFileManager({ taskId, taskState, workspacePath, quickPa
           </div>
         </div>
 
-        <div style={{ border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden', minHeight: 280 }}>
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+        <div className="workspace-file-manager__panel workspace-file-manager__panel--editor">
+          <div className="workspace-file-manager__panel-head workspace-file-manager__panel-head--editor">
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700 }}>文件内容</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, wordBreak: 'break-all' }}>{selectedPath || '尚未选择文件'}</div>
+              <div className="workspace-file-manager__panel-title">文件内容</div>
+              <div className="workspace-file-manager__entry-path">{selectedPath || '尚未选择文件'}</div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="sched-btn" style={{ padding: '6px 10px' }} onClick={copyCurrentPath} disabled={!selectedPath}>复制路径</button>
-              <button className="sched-btn" style={{ padding: '6px 10px' }} onClick={downloadCurrentFile} disabled={!selectedPath}>下载</button>
+            <div className="workspace-file-manager__toolbar">
+              <button className="sched-btn workspace-file-manager__toolbar-button" onClick={copyCurrentPath} disabled={!selectedPath}>复制路径</button>
+              <button className="sched-btn workspace-file-manager__toolbar-button" onClick={downloadCurrentFile} disabled={!selectedPath}>下载</button>
               <button
-                className="sched-btn"
-                style={{ padding: '6px 10px' }}
+                className="sched-btn workspace-file-manager__toolbar-button"
                 onClick={saveCurrentFile}
                 disabled={!selectedPath || !selectedEditable || selectedReadonly || saving}
               >
@@ -226,31 +216,19 @@ export function WorkspaceFileManager({ taskId, taskState, workspacePath, quickPa
               </button>
             </div>
           </div>
-          <div style={{ padding: 10 }}>
-            {loadingFile && <div style={{ fontSize: 12, color: 'var(--muted)' }}>文件读取中…</div>}
-            {!loadingFile && !selectedPath && <div style={{ fontSize: 12, color: 'var(--muted)' }}>请选择左侧文件后查看内容。</div>}
+          <div className="workspace-file-manager__editor-wrap">
+            {loadingFile && <div className="workspace-file-manager__hint">文件读取中…</div>}
+            {!loadingFile && !selectedPath && <div className="workspace-file-manager__hint">请选择左侧文件后查看内容。</div>}
             {!loadingFile && selectedPath && (
               <>
-                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
+                <div className="workspace-file-manager__hint workspace-file-manager__hint--status">
                   {selectedReadonly ? '当前文件为只读模式。' : selectedEditable ? '当前文件可直接编辑保存。' : '当前文件暂不支持在线编辑，但可下载后处理。'}
                 </div>
                 <textarea
                   value={selectedContent}
                   onChange={(e) => setSelectedContent(e.target.value)}
                   readOnly={!selectedEditable || selectedReadonly}
-                  style={{
-                    width: '100%',
-                    minHeight: 340,
-                    resize: 'vertical',
-                    borderRadius: 12,
-                    border: '1px solid var(--line)',
-                    background: 'var(--bg)',
-                    color: 'inherit',
-                    padding: 12,
-                    fontSize: 12,
-                    lineHeight: 1.6,
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                  }}
+                  className="workspace-file-manager__editor"
                 />
               </>
             )}

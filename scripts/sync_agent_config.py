@@ -4,7 +4,7 @@
 支持自动发现 agent workspace 下的 Skills 目录
 输出多Agent智作中枢所需的现代中文节点标签与职责元数据
 """
-import json, os, pathlib, datetime, logging, sys
+import json, os, pathlib, datetime, logging, sys, re
 
 if __package__ in (None, ''):
     scripts_dir = pathlib.Path(__file__).resolve().parent
@@ -40,6 +40,19 @@ DEFAULT_AGENT_META = {
     'expert_curator':    {'label': '专家编组官', 'role': '专家编组官', 'duty': '专家新增、非预置专家删除与专家名册治理', 'emoji': '🧩'},
     'search_specialist': {'label': '搜索专家', 'role': '搜索专家', 'duty': '全网检索、资料汇总、线索筛选与搜索结果整理', 'emoji': '📰'},
 }
+
+EMOJI_RULES: list[tuple[tuple[str, ...], str]] = [
+    (('control', 'center', 'orchestrator', '总控', '中枢'), '🎛️'),
+    (('plan', 'architect', 'design', '规划', '方案'), '🧭'),
+    (('review', 'audit', 'check', '评审', '核验', '审计'), '🔍'),
+    (('dispatch', 'coord', '调度', '协调', '派发'), '📮'),
+    (('code', 'dev', 'engineer', '开发', '代码', '工程'), '💻'),
+    (('deploy', 'ops', 'infra', '运维', '部署', '基础设施'), '🧰'),
+    (('docs', 'writer', 'content', '文档', '写作', '内容'), '📝'),
+    (('data', 'analysis', '数据', '分析', '统计'), '💰'),
+    (('search', 'research', '检索', '搜索', '情报'), '🌐'),
+    (('admin', 'manage', '管理', '运营'), '🗂️'),
+]
 
 MODERN_AGENT_ID_ORDER = [
     'control_center',
@@ -475,6 +488,22 @@ def discover_project_agent_ids() -> list[str]:
     )
 
 
+def read_agent_soul_text(agent_id: str) -> str:
+    soul_path = BASE / 'agents' / agent_id / 'SOUL.md'
+    if not soul_path.exists():
+        return ''
+    return soul_path.read_text(encoding='utf-8', errors='ignore')
+
+
+def infer_agent_emoji(agent_id: str, role: str = '', summary: str = '', soul_text: str = '') -> str:
+    haystack = ' '.join([agent_id, role, summary, soul_text[:800]]).lower()
+    haystack = re.sub(r'[_\\-]+', ' ', haystack)
+    for keywords, emoji in EMOJI_RULES:
+        if any(keyword in haystack for keyword in keywords):
+            return emoji
+    return '🤖'
+
+
 def load_existing_registry_spec(agent_id: str) -> dict:
     spec_path = REGISTRY_SPECS / f'{agent_id}.json'
     if not spec_path.exists():
@@ -488,13 +517,16 @@ def load_existing_registry_spec(agent_id: str) -> dict:
 
 def infer_agent_meta(agent_id: str, existing_spec: dict | None = None) -> dict:
     if agent_id in DEFAULT_AGENT_META:
-        return DEFAULT_AGENT_META[agent_id].copy()
+        base = DEFAULT_AGENT_META[agent_id].copy()
+    else:
+        base = {'label': '', 'role': '', 'duty': '', 'emoji': ''}
     existing_spec = existing_spec or {}
     display = existing_spec.get('display') or {}
-    label = display.get('label')
-    role = display.get('roleName')
-    duty = display.get('summary')
-    emoji = display.get('icon') or '🤖'
+    label = display.get('label') or base.get('label')
+    role = display.get('roleName') or base.get('role')
+    duty = display.get('summary') or base.get('duty')
+    soul_text = read_agent_soul_text(agent_id)
+    emoji = display.get('icon') or base.get('emoji') or infer_agent_emoji(agent_id, role or '', duty or '', soul_text)
     base_name = _titleize_agent_token(agent_id.removesuffix('_specialist').removesuffix('_center'))
     if not label:
         if is_specialist_agent(agent_id):
@@ -575,10 +607,18 @@ def collect_candidate_agent_ids(agents_list: list[dict]) -> list[str]:
         for item in agents_list
         if isinstance(item, dict) and str(item.get('id', '')).strip()
     }
-    unknown_runtime_ids = sorted(agent_id for agent_id in runtime_ids if agent_id not in MODERN_AGENT_ID_SET)
-    if unknown_runtime_ids:
-        log.warning('ignore legacy or unknown runtime agent ids: %s', ', '.join(unknown_runtime_ids))
-    return MODERN_AGENT_ID_ORDER[:]
+    spec_ids = {
+        item.stem
+        for item in REGISTRY_SPECS.glob('*.json')
+        if item.is_file()
+    }
+    project_ids = set(discover_project_agent_ids())
+    all_ids = runtime_ids | spec_ids | project_ids
+    ordered = [agent_id for agent_id in MODERN_AGENT_ID_ORDER if agent_id in all_ids]
+    extra = sorted(agent_id for agent_id in all_ids if agent_id not in MODERN_AGENT_ID_SET)
+    if extra:
+        log.info('discovered extra agent ids: %s', ', '.join(extra))
+    return ordered + extra
 
 
 def resolve_runtime_workspace(agent_id: str, runtime_agent: dict, existing_spec: dict | None = None) -> str:
@@ -625,7 +665,18 @@ def build_agent_entry(agent_id: str, runtime_agent: dict, default_model: str, ca
 
 
 def get_sync_target_ids(agents=None) -> list[str]:
-    return MODERN_AGENT_ID_ORDER[:]
+    if agents:
+        ordered: list[str] = []
+        for item in agents:
+            agent_id = str((item or {}).get('id', '')).strip()
+            if agent_id and agent_id not in ordered:
+                ordered.append(agent_id)
+        if ordered:
+            return ordered
+    # fallback: dynamic discovery from runtime/spec/project
+    _, agents_list = load_runtime_agent_sources()
+    discovered = collect_candidate_agent_ids(agents_list)
+    return discovered or MODERN_AGENT_ID_ORDER[:]
 
 
 def load_runtime_agent_sources() -> tuple[dict, list]:

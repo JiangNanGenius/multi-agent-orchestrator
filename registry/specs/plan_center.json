@@ -111,8 +111,8 @@
   },
   "metadata": {
     "generatedBy": "scripts/sync_agent_config.py",
-    "updatedAt": "2026-04-11 18:24:13",
-    "workspace": "/home/ubuntu/.openclaw/workspace-plan_center",
+    "updatedAt": "2026-04-12 08:18:25",
+    "workspace": "/root/.openclaw/workspace-plan_center",
     "model": "openai/gpt-4o"
   }
 }
