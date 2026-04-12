@@ -1,4 +1,4 @@
-"""Compatibility API endpoints for dashboard-era frontend contracts."""
+"""Compatibility API endpoints for historical frontend contracts."""
 from __future__ import annotations
 
 import json
@@ -39,7 +39,7 @@ async def get_task_service(
 
 @router.get("/api/live-status")
 async def live_status_compat(svc: TaskService = Depends(get_task_service)):
-    """Provide `/api/live-status` for legacy dashboard consumers.
+    """Provide `/api/live-status` for historical clients expecting the old payload.
 
     Backend canonical endpoint is `/api/tasks/live-status` and returns task maps.
     This compatibility view converts maps to arrays and includes `syncStatus`.
@@ -62,7 +62,7 @@ async def live_status_compat(svc: TaskService = Depends(get_task_service)):
 
 @router.get("/api/auth/status")
 async def auth_status_compat():
-    """Backend-only mode auth compatibility (no dashboard session required)."""
+    """Backend-only mode auth compatibility (no UI session dependency required)."""
     return {
         "authenticated": True,
         "mustChangePassword": False,
@@ -74,7 +74,7 @@ async def auth_status_compat():
 
 @router.get("/api/agent-config")
 async def agent_config_compat():
-    """Provide a minimal legacy payload so frontend can boot in backend-only mode."""
+    """Provide a minimal compatibility payload so the official frontend can boot in backend-only mode."""
     cfg_path = Path(__file__).parents[4] / "data" / "agent_config.json"
     if cfg_path.exists():
         try:

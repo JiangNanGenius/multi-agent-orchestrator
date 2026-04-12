@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Take dashboard screenshots for the public README.
+"""Take official frontend screenshots for the public README.
 
 This script targets the current workspace navigation:
 - 任务中枢
@@ -11,8 +11,8 @@ This script targets the current workspace navigation:
 - 记忆中心
 - 全网搜索
 
-The output filenames intentionally keep the legacy names already referenced by
-README/docs so downstream documentation can be updated incrementally.
+The output filenames intentionally keep the historical names already referenced by
+README/docs so downstream documentation can stay stable.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError, sy
 
 ROOT = Path(__file__).resolve().parent.parent
 SHOTS = ROOT / 'docs' / 'screenshots'
-URL = os.environ.get('SCREENSHOT_URL', 'http://localhost:7891/index.html')
+URL = os.environ.get('SCREENSHOT_URL', 'http://localhost:5173/')
 USERNAME = os.environ.get('SCREENSHOT_USERNAME', 'admin')
 PASSWORD = os.environ.get('SCREENSHOT_PASSWORD', 'admin')
 NEW_PASSWORD = os.environ.get('SCREENSHOT_NEW_PASSWORD', 'admin1234')

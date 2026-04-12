@@ -4,13 +4,13 @@
 >
 > **English Description: A public, deployment-ready multi-agent orchestration repository with Chinese as the default operating language and English as an available companion language.**
 >
-> This repository is designed for governed task execution rather than loose multi-agent chatting. It emphasizes **observable workflow stages, role-based coordination, dashboard visibility, reusable agent templates, and clean public-release boundaries**. In Chinese, this can also be summarized as **一个强调任务分阶段治理、执行可观测、结果可归档、角色模板可替换、看板可持续扩展的公开协作编排仓库**.
+> This repository is designed for governed task execution rather than loose multi-agent chatting. It emphasizes **observable workflow stages, role-based coordination, official UI visibility, reusable agent templates, and clean public-release boundaries**. In Chinese, this can also be summarized as **一个强调任务分阶段治理、执行可观测、结果可归档、角色模板可替换、正式版界面可持续扩展的公开协作编排仓库**.
 
 ## Project Overview
 
 **Multi-Agent Orchestrator** is a production-oriented orchestration framework for complex tasks. Its Chinese counterpart can be summarized as **一个把复杂任务纳入可治理、可观测、可审查、可归档执行链路的多智能体协作编排框架**. Instead of placing multiple agents into a single undifferentiated conversation, it routes work through a structured pipeline that includes **task intake, central preprocessing, planning, review, dispatch, specialist execution, and result archiving**. This makes the system easier to monitor, intervene in, audit, and extend.
 
-This public repository has been prepared as a **sanitized release**. It keeps the dashboard, backend, frontend, agent templates, and deployment-facing documentation, while removing private environment material, local runtime traces, sensitive review artifacts, and other content that should not be exposed in a public repository.
+This public repository has been prepared as a **sanitized release**. It keeps the official frontend, backend, agent templates, and deployment-facing documentation, while removing private environment material, local runtime traces, sensitive review artifacts, and other content that should not be exposed in a public repository.
 
 ## Deepened Description (2026-04-11)
 
@@ -24,14 +24,14 @@ To reduce onboarding ambiguity, this README now emphasizes three practical inter
 | --- | --- |
 | Public repository name | **multi-agent-orchestrator** |
 | Default deployment language | **Chinese** |
-| Dashboard language | Chinese by default, English available |
+| Official UI language | Chinese by default, English available |
 | Agent template strategy | Chinese-first templates, English deployment guide available |
 | Public release requirement | Keep the MIT License and attribution notes; never commit sensitive data |
 | Docker support policy | **Docker images, container orchestration, and related maintenance are not provided** |
 
 ## Project Workflow Diagrams
 
-Because a single long workflow image becomes **too thin, too tall, and difficult to read** once it is embedded into a GitHub README, and because even a partially split diagram can still feel crowded if governance, review loops, dispatch fan-out, and archive convergence are all forced into one frame, this repository now uses **five shorter workflow diagrams**. The reading order is intentionally progressive: readers first understand the governed intake path, then the review loop, then execution convergence, then deployment, and finally the dashboard runtime loop.
+Because a single long workflow image becomes **too thin, too tall, and difficult to read** once it is embedded into a GitHub README, and because even a partially split diagram can still feel crowded if governance, review loops, dispatch fan-out, and archive convergence are all forced into one frame, this repository now uses **five shorter workflow diagrams**. The reading order is intentionally progressive: readers first understand the governed intake path, then the review loop, then execution convergence, then deployment, and finally the official UI runtime loop.
 
 ### 1. Governed Intake Path
 
@@ -63,13 +63,13 @@ This diagram explains the recommended public deployment path. The key idea is th
 
 ![Multi-Agent Orchestrator Deployment and Verification Flow](docs/readme-deployment-flow.png)
 
-> The recommended sequence is **Read the documentation → Inspect the environment → Decide between incremental integration and new setup → Let AI propose the minimal commands → Use scripts only when justified → Validate services and dashboard → Enter the governed workflow**.
+> The recommended sequence is **Read the documentation → Inspect the environment → Decide between incremental integration and new setup → Let AI propose the minimal commands → Use scripts only when justified → Validate backend services and the official UI → Enter the governed workflow**.
 
-### 5. Dashboard Runtime and Feedback Flow
+### 5. Official UI Runtime and Feedback Flow
 
-This diagram explains what happens after deployment. It focuses on how operators use the dashboard to observe system status, track tasks, adjust dispatching, inspect sessions and logs, and turn outputs into reports and archived results. In other words, it represents the system’s **runtime observability and operational feedback loop**.
+This diagram explains what happens after deployment. It focuses on how operators use the official UI to observe system status, track tasks, adjust dispatching, inspect sessions and logs, and turn outputs into reports and archived results. In other words, it represents the system’s **runtime observability and operational feedback loop**.
 
-![Multi-Agent Orchestrator Dashboard Runtime and Feedback Flow](docs/readme-dashboard-flow.png)
+![Multi-Agent Orchestrator Official UI Runtime and Feedback Flow](docs/readme-official-ui-flow.png)
 
 > The runtime loop centers on **monitoring status, tracking tasks, adjusting dispatch, supporting specialist execution, collecting outputs, archiving results, and feeding visibility back to operators**, with logs, session views, and reports providing supporting context.
 
@@ -81,7 +81,7 @@ The table below summarizes why the README now uses five separate diagrams.
 | Review Loop and Release Decision | How plans are reviewed, revised, and approved before dispatch | Architecture reviewers, process designers |
 | Dispatch, Specialist Execution, and Result Convergence | How specialist branches are dispatched and gathered back into one final output path | Specialist designers, secondary developers |
 | Deployment and Verification Flow | Why deployment should start with AI-assisted environment inspection instead of blind script execution | Deployers, operators |
-| Dashboard Runtime and Feedback Flow | How the dashboard supports monitoring, dispatch, observability, and archival after deployment | Daily operators, secondary developers |
+| Official UI Runtime and Feedback Flow | How the official UI supports monitoring, dispatch, observability, and archival after deployment | Daily operators, secondary developers |
 
 > Together, these five diagrams form the public repository’s intended reading path: **understand the governed intake path first, then the review loop and execution convergence, then the deployment path, and finally the runtime operating loop**.[1]
 
@@ -99,7 +99,7 @@ The English README is provided to help external readers, collaborators, and inte
 | Public UI must use the formal center / specialist naming system | Legacy role names and historic labels must not appear in the default interface |
 | AI-assisted deployment comes first | Let deployment-stage AI inspect the environment, plan commands, and flag risks before choosing an execution path |
 | Installation scripts are execution tools, not the primary narrative | Keep `install.sh` and `install.ps1`, but present them as callable entry points after the AI has assessed the environment |
-| Dashboard verification comes first | Deployment should validate the dashboard, task flow, state visibility, and archive views before claiming success |
+| Official UI verification comes first | Deployment should validate the official frontend, task flow, state visibility, and archive views before claiming success |
 | Docker is out of scope | Do not treat Dockerfiles, container manifests, or legacy image notes as a supported deployment path |
 | English support is additive | English is an optional companion layer, not a replacement for the default Chinese deployment |
 | Agent templates stay Chinese-first | If English prompts are needed, generate them as deployment supplements instead of replacing the Chinese originals |
@@ -123,7 +123,7 @@ To help public visitors, deployment-stage AI, and future contributors keep the s
 | --- | --- |
 | Repository name | `multi-agent-orchestrator` |
 | Display title | **Multi-Agent Orchestrator** |
-| Short repository description | A production-style multi-agent orchestration system for governed task execution, dispatch, execution visibility, and dashboard-based operations |
+| Short repository description | A production-style multi-agent orchestration system for governed task execution, dispatch, execution visibility, and official frontend operations |
 | Default public language | Chinese-first, with English as a switchable companion layer |
 | Author | **JiangNanGenius** |
 | License | **MIT License** |
@@ -175,7 +175,6 @@ multi-agent-orchestrator/
 ├── SECURITY.md
 ├── PUBLIC_REPO_METADATA.md
 ├── agents/
-├── dashboard/
 ├── docs/
 └── agentorchestrator/
 ```
@@ -184,15 +183,14 @@ The source tree keeps several historical directory names for engineering continu
 
 | Path | Purpose | Current expectation |
 | --- | --- | --- |
-| `dashboard/` | Public dashboard entry, archive view, and runtime surfaces | Chinese default, English support available |
 | `agentorchestrator/backend/` | Backend services, task models, orchestration logic | Deployment-oriented backend code |
-| `agentorchestrator/frontend/` | Frontend source and build project | Source of the dashboard UI and static build |
+| `agentorchestrator/frontend/` | Frontend source and build project | Source of the official UI and static build |
 | `agents/` | Agent templates and role instructions | Chinese-first semantic layer |
 | `docs/` | Supplementary deployment and architecture documents | Public-facing support materials |
 
 ## Deployment Guide
 
-This section assumes that **your OpenClaw environment is already basically usable**. In other words, OpenClaw can already start, model credentials can already be configured, and your environment already has the minimum capability required to run agents. Under that assumption, this repository is not primarily about installing OpenClaw from scratch. The real deployment task is to connect this project’s **dashboard, backend, frontend, SOUL assets, and synchronization scripts** to an existing OpenClaw runtime.
+This section assumes that **your OpenClaw environment is already basically usable**. In other words, OpenClaw can already start, model credentials can already be configured, and your environment already has the minimum capability required to run agents. Under that assumption, this repository is not primarily about installing OpenClaw from scratch. The real deployment task is to connect this project’s **official frontend, backend, SOUL assets, and synchronization scripts** to an existing OpenClaw runtime.
 
 > **Current boundary:** this project **does not provide or maintain Docker images, `docker-compose` workflows, or containerized deployment support**. If Docker-related files still exist in the repository, treat them as historical leftovers rather than the recommended deployment path.
 
@@ -208,7 +206,6 @@ cd multi-agent-orchestrator
 Before continuing, it is worth confirming that the public release includes all expected top-level directories. This reduces the chance of discovering missing build artifacts or incomplete role materials only after the installation process has already started.
 
 ```bash
-ls dashboard
 ls agentorchestrator
 ls agents
 ls docs
@@ -216,9 +213,8 @@ ls docs
 
 | Directory | Purpose | What to verify during deployment |
 | --- | --- | --- |
-| `dashboard/` | Main public-facing entry after deployment | Whether it serves the latest built frontend assets |
 | `agentorchestrator/backend/` | Backend services and task APIs | Whether task, scheduler, and agent data can be loaded correctly |
-| `agentorchestrator/frontend/` | React frontend source | Whether the UI can be built successfully |
+| `agentorchestrator/frontend/` | React frontend source | Whether the UI can be built successfully and published to the official static target |
 | `agents/` | SOUL files, GLOBAL content, and group rules | Whether they can be synchronized into the OpenClaw workspaces |
 | `docs/` | Supplemental notes and progress records | Whether any public-facing documentation still needs cleanup |
 
@@ -243,16 +239,16 @@ When the AI explicitly recommends a one-shot initialization, `install.sh` or `in
 | --- | --- |
 | Create or complete workspaces | Prepares runtime directories for each agent |
 | Register agents | Makes the repository roles visible to the current OpenClaw environment |
-| Initialize data | Prepares the baseline files required by the dashboard and runtime views |
+| Initialize data | Prepares the baseline files required by the official UI and runtime views |
 | Create shared links | Connects shared resources such as `data/` and `scripts/` into workspaces |
 | Synchronize credentials | Copies already configured model credentials to other agents |
 | Build the frontend | Installs frontend dependencies and builds the UI inside `agentorchestrator/frontend/` |
-| Run initial synchronization | Generates agent configuration, statistics, and dashboard data |
+| Run initial synchronization | Generates agent configuration, statistics, and official UI runtime data |
 | Restart the gateway | Reloads the runtime so the new configuration can take effect |
 
 ### 4. If the AI recommends an incremental deployment update
 
-If your OpenClaw workspaces and agents already exist, and you only want to update the current repository’s frontend, SOUL assets, or dashboard data, you do not need to treat every update like a fresh installation. In that case, and when the AI confirms that a full initialization is unnecessary, an incremental deployment path is usually enough.
+If your OpenClaw workspaces and agents already exist, and you only want to update the current repository’s frontend, SOUL assets, or official UI runtime data, you do not need to treat every update like a fresh installation. In that case, and when the AI confirms that a full initialization is unnecessary, an incremental deployment path is usually enough.
 
 #### 4.1 Build the frontend
 
@@ -263,7 +259,7 @@ npm run build
 cd ../..
 ```
 
-After the build finishes, confirm that the static assets used by deployment have been refreshed. The direct deployment entry should prioritize the contents under `dashboard/dist/`.
+After the build finishes, confirm that the static assets used by deployment have been refreshed and published to the official serving target used by the backend.
 
 #### 4.2 Synchronize agent configuration and SOUL assets
 
@@ -273,14 +269,14 @@ python3 scripts/sync_agent_config.py
 
 This step is especially important after you modify anything under `agents/`, adjust prompt structure, or change agent-to-workspace mappings.
 
-#### 4.3 Refresh statistics and dashboard live data
+#### 4.3 Refresh statistics and live runtime data
 
 ```bash
 python3 scripts/sync_agents_overview.py
 python3 scripts/refresh_live_data.py
 ```
 
-This keeps the dashboard closer to the current runtime state instead of leaving it on top of stale snapshots.
+This keeps the official UI closer to the current runtime state instead of leaving it on top of stale snapshots.
 
 #### 4.4 Restart the gateway
 
@@ -306,8 +302,8 @@ After deployment, do not begin by renaming everything, changing the default lang
 
 | Verification item | Expected result |
 | --- | --- |
-| The home page opens correctly | The root path serves the latest dashboard instead of an outdated fallback page |
-| Dashboard login and first-password-change flow work | The default `admin/admin` login works, and the first login forces a password change |
+| The home page opens correctly | The root path serves the latest official frontend instead of an outdated fallback page |
+| Login and first-password-change flow work | The default `admin/admin` login works, and the first login forces a password change |
 | Task lists and task details work | Frontend and backend APIs are connected correctly |
 | The automation configuration panel is visible and saveable | Task-level automation management is active |
 | Automation action logs are visible | Log and status-summary flows are functioning |
@@ -316,7 +312,7 @@ After deployment, do not begin by renaming everything, changing the default lang
 
 ### 7. Recommended first go-live strategy
 
-For the first production-like deployment, it is safer to keep the **default Chinese interface**, the **Chinese-first SOUL semantics**, and the **current public repository naming** unchanged. Once the dashboard, task flow, automation panel, SOUL assembly, and result archiving all run stably, you can then move on to branding changes, domain-specific terminology replacement, English adaptation, or deeper productization.
+For the first production-like deployment, it is safer to keep the **default Chinese interface**, the **Chinese-first SOUL semantics**, and the **current public repository naming** unchanged. Once the official frontend, task flow, automation panel, SOUL assembly, and result archiving all run stably, you can then move on to branding changes, domain-specific terminology replacement, English adaptation, or deeper productization.
 
 ### Common customization paths
 
@@ -324,10 +320,10 @@ If you plan to evolve this repository further, it is usually safer to proceed in
 
 | Goal | Recommended starting point | Minimum safe first move |
 | --- | --- | --- |
-| Replace visible branding or UI wording | `agentorchestrator/frontend/`, `dashboard/` | Keep APIs and state transitions unchanged first; only update visible text and static assets |
+| Replace visible branding or UI wording | `agentorchestrator/frontend/` | Keep APIs and state transitions unchanged first; only update visible text and static assets |
 | Expand role sets or industry terminology | `agents/`, `scripts/sync_agent_config.py` | Add mappings and prompt material first, then synchronize; avoid replacing all historical templates at once |
 | Add new automation rules or external notification channels | `agentorchestrator/backend/`, automation panels | Introduce data structures and fallback paths before exposing the feature in the UI |
-| Build stronger English business support | `agentorchestrator/frontend/src/i18n.ts` and dashboard panels | Finish a switchable bilingual layer first, then decide whether separate English SOUL support is necessary |
+| Build stronger English business support | `agentorchestrator/frontend/src/i18n.ts` and official UI panels | Finish a switchable bilingual layer first, then decide whether separate English SOUL support is necessary |
 | Turn recurring work into reusable system capability | related `skills/`, `docs/`, and scripts | Treat it as a system-capability task, with validation and traceable updates |
 
 ### Public documentation that should stay aligned
@@ -367,13 +363,12 @@ openclaw gateway restart
 
 ## Quick Start
 
-If you are already familiar with the repository structure, you can jump straight into the deployment guide above. If you only want to browse the project quickly, start with `dashboard/`, `agentorchestrator/backend/`, `agentorchestrator/frontend/`, and `agents/`. For a first deployment, it is still safer to make the default Chinese version work first and customize later.
+If you are already familiar with the repository structure, you can jump straight into the deployment guide above. If you only want to browse the project quickly, start with `agentorchestrator/backend/`, `agentorchestrator/frontend/`, and `agents/`. For a first deployment, it is still safer to make the default Chinese version work first and customize later.
 
 ### Continue module-by-module if needed
 
 | Module | Suggested next step |
 | --- | --- |
-| Dashboard | Inspect `dashboard/` and verify visible text, workflow stages, and archive panels |
 | Frontend source | Work inside `agentorchestrator/frontend/`, install dependencies, and build the UI |
 | Backend | Inspect `agentorchestrator/backend/` for task models and orchestration logic |
 | Agent templates | Review `agents/` only when customizing responsibilities or prompts |
@@ -383,24 +378,24 @@ If you are already familiar with the repository structure, you can jump straight
 
 | Version | Date | Notes |
 | --- | --- | --- |
-| `public-cleanup-v4` | 2026-04-08 | Added dashboard authentication notes, first-login password-change verification guidance, and documented the Feishu group-reply observability enhancement |
+| `public-cleanup-v4` | 2026-04-08 | Added official UI authentication notes, first-login password-change verification guidance, and documented the Feishu group-reply observability enhancement |
 | `public-cleanup-v3` | 2026-04-07 | Added an English deployment guide for environments where OpenClaw is already available, and aligned the deployment path with the Chinese README |
 | `public-cleanup-v2` | 2026-04-07 | Rewritten English README for the public repository, removed outdated public entry references, and aligned with the Chinese-default bilingual strategy |
 
 ## Dashboard Language Strategy
 
 
-The dashboard is the most visible public surface of this project, so it is also the place where naming consistency matters most. The current language policy is intentionally simple: **Chinese is the default**, and **English is available as a switchable interface layer**.
+The official UI is the most visible public surface of this project, so it is also the place where naming consistency matters most. The current language policy is intentionally simple: **Chinese is the default**, and **English is available as a switchable interface layer**.
 
 | Requirement | Current policy |
 | --- | --- |
-| Default dashboard language | Chinese |
+| Default official UI language | Chinese |
 | English support | Available as a switchable companion language |
 | Internal compatibility aliases | Allowed in data or mapping layers only |
 | Public UI wording | Must use the modern naming system |
 | Public links | Must point to the current repository |
 
-If you keep extending dashboard bilingual support, use a centralized text-mapping layer for titles, filters, buttons, empty states, and modal content rather than scattering literal strings throughout the UI.
+If you keep extending official UI bilingual support, use a centralized text-mapping layer for titles, filters, buttons, empty states, and modal content rather than scattering literal strings throughout the UI.
 
 ## Agent Templates and English Deployment Support
 
@@ -464,7 +459,7 @@ If you plan to connect this repository to an existing environment, or continue e
 
 ## Recommended Public Maintenance Cadence
 
-If you intend to maintain this repository publicly over time, treat documentation, UI, scripts, and repository metadata as one release chain rather than updating only one piece in isolation. This helps prevent the README, repository landing page, dashboard presentation, and actual execution path from drifting apart again.
+If you intend to maintain this repository publicly over time, treat documentation, UI, scripts, and repository metadata as one release chain rather than updating only one piece in isolation. This helps prevent the README, repository landing page, official UI presentation, and actual execution path from drifting apart again.
 
 | Maintenance action | Recommended cadence | Purpose |
 | --- | --- | --- |
@@ -492,7 +487,7 @@ This repository is released under the **MIT License**. See [`LICENSE`](./LICENSE
 
 | Version | Date | Notes |
 | --- | --- | --- |
-| `public-cleanup-v4` | 2026-04-08 | Added dashboard authentication notes, first-login password-change verification guidance, and documented the Feishu group-reply observability enhancement |
+| `public-cleanup-v4` | 2026-04-08 | Added official UI authentication notes, first-login password-change verification guidance, and documented the Feishu group-reply observability enhancement |
 | `public-cleanup-v2` | 2026-04-07 | Rewritten English README for the public repository, removed outdated public entry references, and aligned with the Chinese-default bilingual strategy |
 
 ## References

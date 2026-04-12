@@ -1,7 +1,7 @@
 """Thought 模型 — Agent 思考流持久化。
 
 遵循 AgentOrchestrator Architecture §4 Thought JSON Schema。
-支持 streaming partial thoughts 和 dashboard 实时展示。
+支持 streaming partial thoughts 和正式版前端实时展示。
 """
 
 import uuid

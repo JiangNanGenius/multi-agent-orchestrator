@@ -468,12 +468,7 @@ build_frontend() {
     fi
 
     if [ -d "$REPO_DIR/agentorchestrator/frontend/dist" ]; then
-      rm -rf "$REPO_DIR/dashboard/dist"
-      mkdir -p "$REPO_DIR/dashboard"
-      cp -R "$REPO_DIR/agentorchestrator/frontend/dist" "$REPO_DIR/dashboard/dist"
-      log "前端构建并同步完成: dashboard/dist/"
-    elif [ -f "$REPO_DIR/dashboard/dist/index.html" ]; then
-      warn "未检测到 agentorchestrator/frontend/dist，继续使用现有 dashboard/dist"
+      log "前端构建完成: agentorchestrator/frontend/dist/"
     else
       warn "前端构建失败：未找到可部署的 dist 产物，请手动检查"
     fi
@@ -533,12 +528,10 @@ echo "  3. 官方本地启动入口:          ./agentorchestrator.sh start"
 echo "     - 状态查看:                ./agentorchestrator.sh status"
 echo "     - 日志查看:                ./agentorchestrator.sh logs all"
 echo "     - API 地址:                http://127.0.0.1:8000"
-echo "     - 说明:                    默认仅启动官方后端栈；旧看板仅作为兼容层保留"
+echo "     - 说明:                    默认仅保留官方后端栈与正式前端开发入口"
 echo "  4. 前端开发模式（可选）:       cd agentorchestrator/frontend && pnpm dev"
 echo "     - 浏览器访问:              http://127.0.0.1:5173  (默认代理到 8000)"
-echo "  5. 兼容模式（旧看板，仅排障/验收时可选）: AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD=1 ./agentorchestrator.sh start"
-echo "     - 兼容看板地址:                         http://127.0.0.1:7891"
 echo ""
 warn "若采用本地脚本模式，首次运行前仍需先配置可用模型密钥"
 info "安装流程已尝试自动补齐 openclaw.json 中所需的运行时 Agent 注册，并在继续前完成本地校验；详情记录见 data/openclaw_registry_suggestions.json"
-info "文档口径已调整为优先推荐 AI 部署；本地脚本模式的官方入口为 ./agentorchestrator.sh start，详情见 docs/getting-started.md"
+info "文档口径已调整为优先推荐 AI 部署；仓库仅保留正式版入口 ./agentorchestrator.sh start，详情见 docs/getting-started.md"

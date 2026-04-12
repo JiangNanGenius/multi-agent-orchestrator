@@ -3,7 +3,6 @@
 # Multi-Agent Orchestrator · 统一服务管理脚本
 # 用法: ./agentorchestrator.sh {start|stop|status|restart|logs}
 # 默认启动：Backend API + Orchestrator Worker + Dispatch Worker + Outbox Relay
-# 兼容模式：通过 AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD=1 额外启动旧看板
 # ══════════════════════════════════════════════════════════════
 
 set -euo pipefail
@@ -16,20 +15,15 @@ API_PIDFILE="$PIDDIR/api.pid"
 ORCH_PIDFILE="$PIDDIR/orchestrator.pid"
 DISPATCH_PIDFILE="$PIDDIR/dispatch.pid"
 OUTBOX_PIDFILE="$PIDDIR/outbox.pid"
-DASHBOARD_PIDFILE="$PIDDIR/dashboard.pid"
 
 API_LOG="$LOGDIR/api.log"
 ORCH_LOG="$LOGDIR/orchestrator.log"
 DISPATCH_LOG="$LOGDIR/dispatch.log"
 OUTBOX_LOG="$LOGDIR/outbox.log"
-DASHBOARD_LOG="$LOGDIR/dashboard.log"
 
 # 可通过环境变量覆盖的配置
 API_HOST="${AGENTORCHESTRATOR_API_HOST:-127.0.0.1}"
 API_PORT="${AGENTORCHESTRATOR_API_PORT:-8000}"
-LEGACY_DASHBOARD_HOST="${AGENTORCHESTRATOR_DASHBOARD_HOST:-127.0.0.1}"
-LEGACY_DASHBOARD_PORT="${AGENTORCHESTRATOR_DASHBOARD_PORT:-7891}"
-ENABLE_LEGACY_DASHBOARD="${AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD:-0}"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 
@@ -132,18 +126,11 @@ do_start() {
   _start_proc "Dispatch Worker" "$DISPATCH_PIDFILE" "$DISPATCH_LOG" python3 -m agentorchestrator.backend.app.workers.dispatch_worker
   _start_proc "Outbox Relay" "$OUTBOX_PIDFILE" "$OUTBOX_LOG" python3 -m agentorchestrator.backend.app.workers.outbox_relay
 
-  if [[ "$ENABLE_LEGACY_DASHBOARD" == "1" ]]; then
-    _start_proc "兼容看板" "$DASHBOARD_PIDFILE" "$DASHBOARD_LOG" python3 "$REPO_DIR/dashboard/server.py" --host "$LEGACY_DASHBOARD_HOST" --port "$LEGACY_DASHBOARD_PORT"
-  fi
-
   echo ""
   if _is_running "$API_PIDFILE"; then
     echo -e "${GREEN}✅ 后端栈已启动${NC}"
     echo -e "   API 地址: ${BLUE}http://${API_HOST}:${API_PORT}${NC}"
     echo -e "   健康检查: ${BLUE}http://${API_HOST}:${API_PORT}/health${NC}"
-    if [[ "$ENABLE_LEGACY_DASHBOARD" == "1" ]] && _is_running "$DASHBOARD_PIDFILE"; then
-      echo -e "   兼容看板: ${BLUE}http://${LEGACY_DASHBOARD_HOST}:${LEGACY_DASHBOARD_PORT}${NC}"
-    fi
   else
     echo -e "${RED}❌ Backend API 未成功启动，请查看日志: $API_LOG${NC}"
     exit 1
@@ -155,7 +142,6 @@ do_stop() {
   local stopped=0
 
   for item in \
-    "兼容看板:$DASHBOARD_PIDFILE" \
     "Outbox Relay:$OUTBOX_PIDFILE" \
     "Dispatch Worker:$DISPATCH_PIDFILE" \
     "Orchestrator Worker:$ORCH_PIDFILE" \
@@ -182,8 +168,7 @@ do_status() {
     "Backend API:$API_PIDFILE" \
     "Orchestrator Worker:$ORCH_PIDFILE" \
     "Dispatch Worker:$DISPATCH_PIDFILE" \
-    "Outbox Relay:$OUTBOX_PIDFILE" \
-    "兼容看板:$DASHBOARD_PIDFILE"; do
+    "Outbox Relay:$OUTBOX_PIDFILE"; do
     local label="${item%%:*}"
     local pidfile="${item#*:}"
     if _is_running "$pidfile"; then
@@ -216,10 +201,6 @@ PYEOF
     fi
     echo -e "  API 地址: ${BLUE}http://${API_HOST}:${API_PORT}${NC}"
   fi
-
-  if _is_running "$DASHBOARD_PIDFILE"; then
-    echo -e "  兼容看板: ${BLUE}http://${LEGACY_DASHBOARD_HOST}:${LEGACY_DASHBOARD_PORT}${NC}"
-  fi
 }
 
 do_logs() {
@@ -229,10 +210,9 @@ do_logs() {
     orchestrator) tail -f "$ORCH_LOG" ;;
     dispatch) tail -f "$DISPATCH_LOG" ;;
     outbox) tail -f "$OUTBOX_LOG" ;;
-    dashboard) tail -f "$DASHBOARD_LOG" ;;
     all) tail -f "$API_LOG" "$ORCH_LOG" "$DISPATCH_LOG" "$OUTBOX_LOG" ;;
     *)
-      echo "用法: $0 logs [api|orchestrator|dispatch|outbox|dashboard|all]"
+      echo "用法: $0 logs [api|orchestrator|dispatch|outbox|all]"
       exit 1
       ;;
   esac
@@ -252,14 +232,11 @@ case "${1:-}" in
     echo "  stop     停止所有服务"
     echo "  restart  重启所有服务"
     echo "  status   查看运行状态"
-    echo "  logs     查看日志 (logs [api|orchestrator|dispatch|outbox|dashboard|all])"
+    echo "  logs     查看日志 (logs [api|orchestrator|dispatch|outbox|all])"
     echo ""
     echo "环境变量:"
-    echo "  AGENTORCHESTRATOR_API_HOST               API 监听地址 (默认: 127.0.0.1)"
-    echo "  AGENTORCHESTRATOR_API_PORT               API 监听端口 (默认: 8000)"
-    echo "  AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD 1=额外启动旧看板兼容层"
-    echo "  AGENTORCHESTRATOR_DASHBOARD_HOST         兼容看板监听地址 (默认: 127.0.0.1)"
-    echo "  AGENTORCHESTRATOR_DASHBOARD_PORT         兼容看板监听端口 (默认: 7891)"
+    echo "  AGENTORCHESTRATOR_API_HOST  API 监听地址 (默认: 127.0.0.1)"
+    echo "  AGENTORCHESTRATOR_API_PORT  API 监听端口 (默认: 8000)"
     exit 1
     ;;
 esac

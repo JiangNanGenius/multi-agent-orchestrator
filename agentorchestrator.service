@@ -1,18 +1,14 @@
 # ══════════════════════════════════════════════════════════════
-# AgentOrchestrator · systemd 服务模板
+# Multi-Agent Orchestrator · systemd 服务模板
 # 部署说明: 复制到 /etc/systemd/system/agentorchestrator.service
 #   sudo cp agentorchestrator.service /etc/systemd/system/
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now agentorchestrator
 #
 # 默认启动官方后端栈（API + orchestrator + dispatch + outbox）。
-# 如确需排障时启用旧看板兼容层，可额外设置：
-#   Environment=AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD=1
-#   Environment=AGENTORCHESTRATOR_DASHBOARD_HOST=127.0.0.1
-#   Environment=AGENTORCHESTRATOR_DASHBOARD_PORT=7891
 # ══════════════════════════════════════════════════════════════
 [Unit]
-Description=AgentOrchestrator Official Backend Stack
+Description=Multi-Agent Orchestrator Backend Stack
 After=network.target
 
 [Service]
@@ -25,17 +21,14 @@ ExecStart=/opt/agentorchestrator/agentorchestrator.sh start
 ExecStop=/opt/agentorchestrator/agentorchestrator.sh stop
 ExecReload=/opt/agentorchestrator/agentorchestrator.sh restart
 
-# 默认对外提供官方 API；旧看板仅作为可选兼容层启用。
 Environment=AGENTORCHESTRATOR_API_HOST=0.0.0.0
 Environment=AGENTORCHESTRATOR_API_PORT=8000
 
-# 自动重启失败后由 systemd 重新拉起一次启动脚本。
 Restart=on-failure
 RestartSec=5
 TimeoutStartSec=120
 TimeoutStopSec=60
 
-# 安全加固
 NoNewPrivileges=true
 ProtectSystem=strict
 ReadWritePaths=/opt/agentorchestrator/data /opt/agentorchestrator/logs /opt/agentorchestrator/.pids

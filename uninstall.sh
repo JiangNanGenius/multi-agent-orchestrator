@@ -48,10 +48,6 @@ stop_services() {
     log "已尝试停止 run_loop.sh"
   fi
 
-  if pgrep -f "python.*dashboard/server.py" > /dev/null 2>&1; then
-    pkill -f "python.*dashboard/server.py" || warn "无法自动停止 dashboard/server.py"
-    log "已尝试停止 dashboard/server.py"
-  fi
 }
 
 # ── Step 2: 清理 OpenClaw 注册配置 ──────────────────────────────

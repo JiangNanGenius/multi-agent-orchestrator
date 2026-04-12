@@ -1,11 +1,10 @@
 # AGENTORCHESTRATOR · Python 依赖
 # 安装: pip install -r requirements.txt
 
-# 核心依赖（看板 + 数据同步，无需额外依赖，均为 Python 标准库）
-# dashboard/server.py - http.server, json, pathlib, etc.
+# 核心依赖说明（后端工具链与数据同步脚本可复用标准库能力）
 # scripts/*.py - json, pathlib, subprocess, datetime, etc.
 
 # 可选依赖（按需安装）
 numpy             # scripts/linucb_router.py - AgentRec 模型推荐
-pydantic-settings>=2.6.0  # backend 配置依赖（dashboard/server.py 间接导入）
+pydantic-settings>=2.6.0  # backend 配置依赖
 # playwright      # scripts/take_screenshots.py - 自动截图（需要额外安装浏览器: playwright install chromium）

@@ -1,7 +1,7 @@
 """Service package exports.
 
 避免在包导入阶段触发重量级依赖（如 redis / sqlalchemy），
-降低 dashboard 等轻量链路的导入耦合风险。
+降低正式版前端等轻量调用链路的导入耦合风险。
 """
 
 __all__ = ["TaskService", "EventBus", "get_event_bus"]

@@ -350,17 +350,9 @@ function Build-Frontend {
         Pop-Location
 
         $frontendDist = Join-Path $REPO_DIR "agentorchestrator\frontend\dist"
-        $dashboardDist = Join-Path $REPO_DIR "dashboard\dist"
-        $indexHtml = Join-Path $dashboardDist "index.html"
-        if (Test-Path $frontendDist) {
-            if (Test-Path $dashboardDist) {
-                Remove-Item $dashboardDist -Recurse -Force
-            }
-            New-Item -ItemType Directory -Path (Join-Path $REPO_DIR "dashboard") -Force | Out-Null
-            Copy-Item $frontendDist $dashboardDist -Recurse
-            Log "前端构建并同步完成: dashboard\dist\"
-        } elseif (Test-Path $indexHtml) {
-            Warn "未检测到 agentorchestrator\frontend\dist，继续使用现有 dashboard\dist"
+        $indexHtml = Join-Path $frontendDist "index.html"
+        if (Test-Path $indexHtml) {
+            Log "前端构建完成: agentorchestrator\frontend\dist\"
         } else {
             Warn "前端构建失败：未找到可部署的 dist 产物，请手动检查"
         }
@@ -414,8 +406,8 @@ Write-Host "  2. 如需本地补齐 API Key（可选）:"
 Write-Host "     openclaw agents add control_center     # 按提示输入模型密钥"
 Write-Host "     .\install.ps1                          # 重新运行以同步到所有 Agent"
 Write-Host "  3. 本地运行数据刷新循环:  bash scripts/run_loop.sh"
-Write-Host "  4. 本地启动看板服务器:    python dashboard/server.py"
-Write-Host "  5. 打开看板:              http://127.0.0.1:7891"
+Write-Host "  4. 本地启动正式版:        bash ./agentorchestrator.sh start"
+Write-Host "  5. 打开正式版:            http://127.0.0.1:8000"
 Write-Host ""
 Warn "若采用本地脚本模式，首次运行前仍需先配置可用模型密钥"
 Info "当前安装流程不会直接改写 openclaw.json；如需补齐运行时 Agent 注册，请查看 data/openclaw_registry_suggestions.json"

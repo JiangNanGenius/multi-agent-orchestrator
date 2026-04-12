@@ -41,7 +41,7 @@ Because this is a **public sanitized repository**, contributors must not commit 
 
 ## Reporting Bugs
 
-If you find a bug, please open an issue with enough context to reproduce it. Clear bug reports help maintainers verify whether the problem belongs to frontend behavior, dashboard services, backend orchestration, data assumptions, or local environment differences.
+If you find a bug, please open an issue with enough context to reproduce it. Clear bug reports help maintainers verify whether the problem belongs to official frontend behavior, backend services, orchestration logic, data assumptions, or local environment differences.
 
 A strong bug report should include the following information.
 
@@ -93,7 +93,7 @@ git checkout -b feat/my-change
 # 4. Make your changes
 
 # 5. Run the relevant checks
-python3 -m py_compile dashboard/server.py
+python3 -m py_compile agentorchestrator/backend/app/main.py
 
 # 6. Commit
 git add .
@@ -109,7 +109,7 @@ If your contribution changes user-facing behavior, please explain the previous b
 
 ## Local Development
 
-The repository can be explored in more than one way depending on whether you want to inspect the dashboard, work on frontend code, or extend backend orchestration.
+The repository can be explored depending on whether you want to verify the official stack, work on frontend code, or extend backend orchestration.
 
 ### Recommended local run
 
@@ -123,20 +123,12 @@ Then open:
 http://127.0.0.1:8000
 ```
 
-If you need the legacy dashboard only for compatibility verification, enable it explicitly:
-
-```bash
-AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD=1 ./agentorchestrator.sh start
-```
-
-Then open `http://127.0.0.1:7891`. This port is optional compatibility UI only, not the primary runtime entry.
 
 ### Module-level development
 
 | Module | Suggested action |
 | --- | --- |
 | Unified local stack | `./agentorchestrator.sh start` |
-| Legacy dashboard compatibility | `python3 dashboard/server.py` or enable the compatibility mode above |
 | Frontend | Work inside `agentorchestrator/frontend/` and run the local build flow |
 | Backend | Extend services and orchestration logic in `agentorchestrator/backend/` |
 | Scripts | Run task-refresh or sync scripts inside `scripts/` as needed |
@@ -170,7 +162,7 @@ The project does not require the exact same checks for every change, but contrib
 | Change type | Recommended validation |
 | --- | --- |
 | Documentation-only | Check links, headings, formatting, and consistency |
-| Dashboard change | Run the unified local stack and verify the affected UI; use legacy dashboard mode only when compatibility behavior is involved |
+| Frontend or runtime UI change | Run the unified local stack and verify the affected UI through the official entry |
 | Backend change | Run syntax checks and relevant local behavior verification |
 | Script change | Execute the script safely with test or placeholder inputs |
 | Release hygiene change | Re-scan for legacy references, sensitive material, and broken links |
@@ -178,7 +170,6 @@ The project does not require the exact same checks for every change, but contrib
 Typical examples:
 
 ```bash
-python3 -m py_compile dashboard/server.py
 python3 -m py_compile agentorchestrator/backend/app/main.py
 python3 -m py_compile scripts/task_db.py
 python3 tests/test_e2e_kanban.py
@@ -206,7 +197,7 @@ Examples:
 
 ```text
 feat: add archive view filters
-fix: correct task status normalization in dashboard
+fix: correct task status normalization in official frontend
 /docs: rewrite public attribution section
 refactor: simplify dispatch role mapping
 ```

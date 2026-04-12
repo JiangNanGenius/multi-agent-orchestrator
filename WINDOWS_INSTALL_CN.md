@@ -92,7 +92,7 @@ bash run_loop.sh
 
 ---
 
-## 6. 启动 dashboard
+## 6. 启动正式版
 在 PowerShell 里运行：
 
 ```powershell
@@ -104,19 +104,6 @@ bash ./agentorchestrator.sh start
 
 ```text
 http://127.0.0.1:8000
-```
-
-如需仅为兼容核验额外启用旧看板，可执行：
-
-```powershell
-$env:AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD="1"
-bash ./agentorchestrator.sh start
-```
-
-此时兼容看板地址才是：
-
-```text
-http://127.0.0.1:7891
 ```
 
 ---
@@ -228,12 +215,10 @@ openclaw config set tools.sessions.visibility all
 
 新的官方入口 `./agentorchestrator.sh start` 会直接拉起后端 API 与后台 worker 栈，因此默认不再要求你额外手动执行 `run_loop.sh` 才能看到核心数据更新。
 
-只有在做旧版看板兼容排查、脚本级调试或对比历史行为时，才需要单独运行相关辅助脚本。
-
-所以现在应优先理解为：
+现在应优先理解为：
 
 - `agentorchestrator.sh start` = **官方主入口，负责起服务与后台处理链路**
-- 兼容脚本 / 旧看板 = **仅用于排障、对比或过渡验证**
+- 其他辅助脚本 = **仅用于数据刷新、排障或开发调试，不提供独立界面入口**
 
 ---
 
@@ -243,7 +228,6 @@ openclaw config set tools.sessions.visibility all
 
 - 后端 API 尚未完全就绪
 - 读取到了旧仓库或旧工作区数据
-- 当前打开的是兼容看板而不是主入口
 
 排查时建议先直接访问主 API：
 
@@ -253,20 +237,20 @@ http://127.0.0.1:8000/api/agents-overview
 http://127.0.0.1:8000/api/live-status
 ```
 
-如果这些接口能正常返回 JSON，说明主服务基本正常。只有在你明确启用了兼容看板时，才再检查 `http://127.0.0.1:7891` 下的兼容接口。
+如果这些接口能正常返回 JSON，说明主服务基本正常，可继续回到正式版前端页面排查渲染或静态资源问题。
 
 ---
 
-## 7. 如果 dashboard 提示 Gateway 没启动怎么办
+## 7. 如果正式版页面提示 Gateway 没启动怎么办
 
 如果你使用的是本修复版，这个问题应该已经被修好。
 
-之前在 Windows 上误报的原因是 dashboard 的 Gateway 检测逻辑偏 Linux。修复后已改为优先使用端口 / probe 检测。
+之前在 Windows 上常见误报，多数来自旧链路残留或后端尚未完全就绪。现在应优先直接检查正式后端端口与健康探针。
 
 所以如果你仍然看到 Gateway 未启动：
 
-- 先确认自己现在运行的是修复后的 `dashboard/server.py`
-- 再确认浏览器访问的不是旧的本地 server 进程
+- 先确认 `agentorchestrator.sh start` 已正常启动官方后端栈
+- 再确认浏览器访问的不是旧的本地缓存页面或过期进程
 
 ---
 
@@ -303,10 +287,10 @@ bash run_loop.sh
 ```
 
 ## 第五步
-启动 dashboard：
+启动正式版：
 
 ```powershell
-python dashboard\server.py
+bash ./agentorchestrator.sh start
 ```
 
 ---
@@ -314,6 +298,6 @@ python dashboard\server.py
 # 五、一句话总结
 
 ## Windows 用户最稳的做法就是：
-先清旧链接，再让 AI 检查当前 OpenClaw 环境与 workspace 状态，并判断应执行一次性初始化还是增量更新路径；安装后根据只读建议核对 `openclaw.json`、确认 `tools.sessions.visibility = all`；如有需要可参考 `agents.json` 脱敏模板并替换 `<YOUR_USER>`；最后启动 `run_loop.sh` 和 `dashboard/server.py`。如果长任务出现上下文接近上限，请在看板任务详情中查看“上下文窗口管理”面板，按归档与续写提示继续执行。
+先清旧链接，再让 AI 检查当前 OpenClaw 环境与 workspace 状态，并判断应执行一次性初始化还是增量更新路径；安装后根据只读建议核对 `openclaw.json`、确认 `tools.sessions.visibility = all`；如有需要可参考 `agents.json` 脱敏模板并替换 `<YOUR_USER>`；最后启动 `run_loop.sh` 和 `agentorchestrator.sh start`。如果长任务出现上下文接近上限，请在正式版任务详情中查看“上下文窗口管理”面板，按归档与续写提示继续执行。
 
 
