@@ -665,7 +665,18 @@ def build_agent_entry(agent_id: str, runtime_agent: dict, default_model: str, ca
 
 
 def get_sync_target_ids(agents=None) -> list[str]:
-    return MODERN_AGENT_ID_ORDER[:]
+    if agents:
+        ordered: list[str] = []
+        for item in agents:
+            agent_id = str((item or {}).get('id', '')).strip()
+            if agent_id and agent_id not in ordered:
+                ordered.append(agent_id)
+        if ordered:
+            return ordered
+    # fallback: dynamic discovery from runtime/spec/project
+    _, agents_list = load_runtime_agent_sources()
+    discovered = collect_candidate_agent_ids(agents_list)
+    return discovered or MODERN_AGENT_ID_ORDER[:]
 
 
 def load_runtime_agent_sources() -> tuple[dict, list]:

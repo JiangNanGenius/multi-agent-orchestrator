@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -16,6 +17,17 @@ from ..services.task_service import TaskService
 from ..services.event_bus import get_event_bus
 
 router = APIRouter()
+DATA_DIR = Path(__file__).parents[4] / "data"
+
+
+def _read_json_file(name: str, default: Any):
+    path = DATA_DIR / name
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return default
 
 
 async def get_task_service(
@@ -72,6 +84,67 @@ async def agent_config_compat():
         except (json.JSONDecodeError, OSError):
             pass
     return {"agents": [], "knownModels": [], "dispatchChannel": "openclaw", "ok": True}
+
+
+@router.get("/api/model-change-log")
+async def model_change_log_compat():
+    payload = _read_json_file("model_change_log.json", [])
+    return payload if isinstance(payload, list) else []
+
+
+@router.get("/api/agents-overview")
+async def agents_overview_compat():
+    payload = _read_json_file("agents_overview.json", {})
+    if isinstance(payload, dict) and isinstance(payload.get("agents"), list):
+        return payload
+    return {"agents": [], "totals": {"tasks_done": 0, "cost_cny": 0}, "top_agent": ""}
+
+
+@router.get("/api/agents-status")
+async def agents_status_compat():
+    payload = _read_json_file("agents_status.json", {})
+    if isinstance(payload, dict) and isinstance(payload.get("agents"), list):
+        return payload
+    return {
+        "ok": True,
+        "gateway": {"alive": False, "probe": False, "status": "unknown"},
+        "agents": [],
+        "checkedAt": "",
+    }
+
+
+@router.get("/api/search-brief")
+async def search_brief_compat():
+    payload = _read_json_file("search_brief.json", {})
+    return payload if isinstance(payload, dict) else {}
+
+
+@router.get("/api/search-config")
+async def search_config_compat():
+    payload = _read_json_file("search_config.json", {})
+    return payload if isinstance(payload, dict) else {}
+
+
+@router.post("/api/search-config")
+async def save_search_config_compat(body: dict[str, Any]):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    path = DATA_DIR / "search_config.json"
+    path.write_text(json.dumps(body or {}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {"ok": True}
+
+
+@router.get("/api/system-settings")
+async def system_settings_compat():
+    payload = _read_json_file("system_settings.json", {})
+    return payload if isinstance(payload, dict) else {}
+
+
+@router.post("/api/system-settings")
+async def save_system_settings_compat(body: dict[str, Any]):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    path = DATA_DIR / "system_settings.json"
+    path.write_text(json.dumps(body or {}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {"ok": True, "settings": body or {}}
 
 
 class CompatCreateTask(BaseModel):

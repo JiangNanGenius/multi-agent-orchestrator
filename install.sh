@@ -24,6 +24,33 @@ warn()  { echo -e "${YELLOW}⚠️  $1${NC}"; }
 error() { echo -e "${RED}❌ $1${NC}"; }
 info()  { echo -e "${BLUE}ℹ️  $1${NC}"; }
 
+load_agents_from_specs() {
+  mapfile -t AGENTS < <(REPO_DIR="$REPO_DIR" python3 << 'PYEOF'
+import json, os, pathlib
+repo = pathlib.Path(os.environ["REPO_DIR"])
+specs = repo / "registry" / "specs"
+agents_dir = repo / "agents"
+ids = []
+for path in sorted(specs.glob("*.json")):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        continue
+    aid = data.get("agentId") or path.stem
+    if aid and aid not in ids:
+        ids.append(aid)
+if not ids and agents_dir.is_dir():
+    for entry in sorted(agents_dir.iterdir()):
+        if entry.is_dir() and (entry / "SOUL.md").exists():
+            ids.append(entry.name)
+print("\\n".join(ids))
+PYEOF
+  )
+  if [ ${#AGENTS[@]} -eq 0 ]; then
+    AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist)
+  fi
+}
+
 # ── Step 0: 依赖检查 ──────────────────────────────────────────
 check_deps() {
   info "检查依赖..."
@@ -91,32 +118,7 @@ backup_existing() {
 # ── Step 1: 创建 Workspace ──────────────────────────────────
 create_workspaces() {
   info "创建 Agent Workspace..."
-
-  mapfile -t AGENTS < <(REPO_DIR="$REPO_DIR" python3 << 'PYEOF'
-import json, pathlib
-import os
-repo = pathlib.Path(os.environ["REPO_DIR"])
-specs = repo / "registry" / "specs"
-agents_dir = repo / "agents"
-ids = []
-for path in sorted(specs.glob("*.json")):
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        continue
-    aid = data.get("agentId") or path.stem
-    if aid and aid not in ids:
-        ids.append(aid)
-if not ids and agents_dir.is_dir():
-    for entry in sorted(agents_dir.iterdir()):
-        if entry.is_dir() and (entry / "SOUL.md").exists():
-            ids.append(entry.name)
-print("\\n".join(ids))
-PYEOF
-  )
-  if [ ${#AGENTS[@]} -eq 0 ]; then
-    AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist)
-  fi
+  load_agents_from_specs
   for agent in "${AGENTS[@]}"; do
     ws="$OC_HOME/workspace-$agent"
     mkdir -p "$ws/skills"
@@ -166,20 +168,52 @@ except Exception as exc:
     print(f'ERROR: 无法读取 openclaw.json: {exc}')
     sys.exit(2)
 
-required = [
-    {"id": "control_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-control_center'), "subagents": {"allowAgents": ["plan_center"]}},
-    {"id": "plan_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-plan_center'), "subagents": {"allowAgents": ["review_center", "dispatch_center"]}},
-    {"id": "review_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-review_center'), "subagents": {"allowAgents": ["dispatch_center", "plan_center"]}},
-    {"id": "dispatch_center", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-dispatch_center'), "subagents": {"allowAgents": ["plan_center", "review_center", "data_specialist", "docs_specialist", "code_specialist", "audit_specialist", "deploy_specialist", "admin_specialist", "expert_curator", "search_specialist"]}},
-    {"id": "data_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-data_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
-    {"id": "docs_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-docs_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
-    {"id": "code_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-code_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
-    {"id": "audit_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-audit_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
-    {"id": "deploy_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-deploy_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
-    {"id": "admin_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-admin_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
-    {"id": "expert_curator", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-expert_curator'), "subagents": {"allowAgents": ["dispatch_center"]}},
-    {"id": "search_specialist", "workspace": str(pathlib.Path.home() / '.openclaw/workspace-search_specialist'), "subagents": {"allowAgents": ["dispatch_center"]}},
-]
+repo = pathlib.Path(os.environ['REPO_DIR'])
+specs_dir = repo / 'registry' / 'specs'
+spec_ids = []
+icon_map = {}
+for path in sorted(specs_dir.glob('*.json')):
+    try:
+        spec = json.loads(path.read_text(encoding='utf-8'))
+    except Exception:
+        continue
+    aid = spec.get('agentId') or path.stem
+    if aid and aid not in spec_ids:
+        spec_ids.append(aid)
+    if aid:
+        icon = ((spec.get('display') or {}).get('icon') or '').strip()
+        if icon:
+            icon_map[aid] = icon
+if not spec_ids:
+    agents_dir = repo / 'agents'
+    for item in sorted(agents_dir.iterdir()):
+        if item.is_dir() and (item / 'SOUL.md').exists():
+            spec_ids.append(item.name)
+
+specialists = [item for item in spec_ids if item.endswith('_specialist')]
+required = []
+for agent_id in spec_ids:
+    if agent_id == 'control_center':
+        allow_agents = [x for x in ['plan_center'] if x in spec_ids]
+    elif agent_id == 'plan_center':
+        allow_agents = [x for x in ['review_center', 'dispatch_center'] if x in spec_ids]
+    elif agent_id == 'review_center':
+        allow_agents = [x for x in ['dispatch_center', 'plan_center'] if x in spec_ids]
+    elif agent_id == 'dispatch_center':
+        allow_agents = [x for x in ['plan_center', 'review_center', *specialists] if x in spec_ids and x != agent_id]
+    elif agent_id.endswith('_specialist'):
+        allow_agents = [x for x in ['dispatch_center'] if x in spec_ids]
+    elif agent_id.endswith('_center'):
+        allow_agents = [x for x in ['dispatch_center'] if x in spec_ids and x != agent_id]
+    else:
+        allow_agents = []
+
+    required.append({
+        "id": agent_id,
+        "workspace": str(pathlib.Path.home() / f'.openclaw/workspace-{agent_id}'),
+        "identity": {"emoji": icon_map.get(agent_id, "🤖")},
+        "subagents": {"allowAgents": allow_agents},
+    })
 
 agents_cfg = cfg.setdefault('agents', {})
 agent_list = agents_cfg.setdefault('list', [])
@@ -201,6 +235,11 @@ for spec in required:
     desired = spec['subagents']['allowAgents']
     if allow_agents != desired:
         subagents['allowAgents'] = desired
+        changed = True
+    identity = current.setdefault('identity', {})
+    desired_emoji = ((spec.get('identity') or {}).get('emoji') or '').strip()
+    if desired_emoji and identity.get('emoji') != desired_emoji:
+        identity['emoji'] = desired_emoji
         changed = True
     if changed:
         updated.append(spec['id'])
@@ -299,8 +338,7 @@ PYEOF
 # ── Step 3.3: 创建 data 软链接确保数据一致 (Fix #88) ─────────
 link_resources() {
   info "创建 data/scripts 软链接以确保 Agent 数据一致..."
-  
-  AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist)
+  load_agents_from_specs
   LINKED=0
   for agent in "${AGENTS[@]}"; do
     ws="$OC_HOME/workspace-$agent"
@@ -394,7 +432,7 @@ sync_auth() {
     return
   fi
 
-  AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist)
+  load_agents_from_specs
   SYNCED=0
   for agent in "${AGENTS[@]}"; do
     AGENT_DIR="$OC_HOME/agents/$agent/agent"
