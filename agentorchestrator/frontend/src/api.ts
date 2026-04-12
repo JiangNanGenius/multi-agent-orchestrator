@@ -1,6 +1,7 @@
 /**
- * API 层 — 对接 dashboard/server.py
- * 生产环境从同源 (port 7891) 请求，开发环境可通过 VITE_API_URL 指定
+ * API 层 — 对接官方后端兼容接口。
+ * 正式部署默认请求官方 API（通常为 :8000），开发环境可通过 VITE_API_URL 指定。
+ * 如需排障时继续使用旧看板兼容层，可显式将 VITE_API_URL 指向对应地址。
  */
 
 const API_BASE = import.meta.env.VITE_API_URL || '';

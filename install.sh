@@ -47,6 +47,7 @@ print("\\n".join(ids))
 PYEOF
   )
   if [ ${#AGENTS[@]} -eq 0 ]; then
+    warn "未从 registry/specs 或 agents/ 发现角色，回退到内置最小角色集。"
     AGENTS=(control_center plan_center review_center dispatch_center data_specialist docs_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist)
   fi
 }
@@ -532,6 +533,7 @@ echo "  3. 官方本地启动入口:          ./agentorchestrator.sh start"
 echo "     - 状态查看:                ./agentorchestrator.sh status"
 echo "     - 日志查看:                ./agentorchestrator.sh logs all"
 echo "     - API 地址:                http://127.0.0.1:8000"
+echo "     - 说明:                    默认仅启动官方后端栈；旧看板仅作为兼容层保留"
 echo "  4. 前端开发模式（可选）:       cd agentorchestrator/frontend && pnpm dev"
 echo "     - 浏览器访问:              http://127.0.0.1:5173  (默认代理到 8000)"
 echo "  5. 兼容模式（旧看板，仅排障/验收时可选）: AGENTORCHESTRATOR_ENABLE_LEGACY_DASHBOARD=1 ./agentorchestrator.sh start"
