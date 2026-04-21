@@ -17,8 +17,13 @@ class Settings(BaseSettings):
     postgres_password: str = "agentorchestrator_secret_change_me"
     database_url_override: str | None = Field(default=None, alias="DATABASE_URL")
 
-    # ── Redis ──
-    redis_url: str = "redis://localhost:6379/0"
+    # ── MySQL Event Bus ──
+    mysql_host: str = "localhost"
+    mysql_port: int = 3306
+    mysql_db: str = "agentorchestrator"
+    mysql_user: str = "agentorchestrator"
+    mysql_password: str = "agentorchestrator_secret_change_me"
+    mysql_url_override: str | None = Field(default=None, alias="MYSQL_URL")
 
     # ── Server ──
     backend_host: str = "0.0.0.0"
@@ -97,6 +102,15 @@ class Settings(BaseSettings):
         return (
             f"postgresql://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
+
+    @property
+    def mysql_url(self) -> str:
+        if self.mysql_url_override:
+            return self.mysql_url_override
+        return (
+            f"mysql+aiomysql://{self.mysql_user}:{self.mysql_password}"
+            f"@{self.mysql_host}:{self.mysql_port}/{self.mysql_db}"
         )
 
     model_config = {
