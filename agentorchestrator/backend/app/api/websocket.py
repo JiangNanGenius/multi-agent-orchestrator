@@ -1,19 +1,11 @@
-"""WebSocket 端点 — 实时推送事件到前端。
-
-取代旧架构的 5 秒 HTTP 轮询，改为：
-- 客户端 WebSocket 连接
-- 服务端订阅 Redis Pub/Sub 频道
-- 实时推送事件（状态变更、Agent 思考流、心跳等）
-"""
+"""WebSocket 端点 — 实时推送事件到前端。"""
 
 import asyncio
 import json
 import logging
 
-import redis.asyncio as aioredis
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from ..config import get_settings
 from ..services.event_bus import get_event_bus
 
 log = logging.getLogger("agentorchestrator.ws")
@@ -30,18 +22,12 @@ async def websocket_endpoint(ws: WebSocket):
     _connections.add(ws)
     log.info(f"WebSocket connected. Total: {len(_connections)}")
 
-    # 创建独立的 Redis Pub/Sub 连接
-    settings = get_settings()
-    pubsub_redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    pubsub = pubsub_redis.pubsub()
-
-    # 订阅所有 agentorchestrator 频道
-    await pubsub.psubscribe("agentorchestrator:pubsub:*")
+    bus = await get_event_bus()
 
     try:
-        # 并发：监听 Redis Pub/Sub + 客户端消息
+        # 并发：监听事件总线 + 客户端消息
         await asyncio.gather(
-            _relay_events(pubsub, ws),
+            _relay_events(bus, ws),
             _handle_client_messages(ws),
         )
     except WebSocketDisconnect:
@@ -50,31 +36,30 @@ async def websocket_endpoint(ws: WebSocket):
         log.error(f"WebSocket error: {e}")
     finally:
         _connections.discard(ws)
-        await pubsub.punsubscribe("agentorchestrator:pubsub:*")
-        await pubsub_redis.aclose()
         log.info(f"WebSocket cleaned up. Remaining: {len(_connections)}")
 
 
-async def _relay_events(pubsub, ws: WebSocket):
-    """从 Redis Pub/Sub 接收事件，推送到 WebSocket。"""
-    async for message in pubsub.listen():
-        if message["type"] == "pmessage":
-            channel = message["channel"]
-            data = message["data"]
-
-            # 提取 topic 名
-            topic = channel.replace("agentorchestrator:pubsub:", "") if channel.startswith("agentorchestrator:pubsub:") else channel
-
-            try:
-                event_data = json.loads(data) if isinstance(data, str) else data
-                await ws.send_json({
-                    "type": "event",
-                    "topic": topic,
-                    "data": event_data,
-                })
-            except Exception as e:
-                log.warning(f"Failed to relay event: {e}")
-                break
+async def _relay_events(bus, ws: WebSocket):
+    """从 EventBus 轮询事件并推送到 WebSocket。"""
+    last_id = 0
+    while True:
+        try:
+            events = await bus.poll_since(last_id, limit=200)
+            for entry_id, event_data in events:
+                last_id = max(last_id, int(str(entry_id).split("-", 1)[0]))
+                await ws.send_json(
+                    {
+                        "type": "event",
+                        "topic": event_data.get("topic", ""),
+                        "data": event_data,
+                    }
+                )
+            await asyncio.sleep(0.5)
+        except WebSocketDisconnect:
+            raise
+        except Exception as e:
+            log.warning(f"Failed to relay event: {e}")
+            await asyncio.sleep(1)
 
 
 async def _handle_client_messages(ws: WebSocket):
@@ -106,24 +91,22 @@ async def task_websocket(ws: WebSocket, task_id: str):
     await ws.accept()
     _connections.add(ws)
 
-    settings = get_settings()
-    pubsub_redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    pubsub = pubsub_redis.pubsub()
-    await pubsub.psubscribe("agentorchestrator:pubsub:*")
+    bus = await get_event_bus()
+    last_id = 0
 
     try:
-        async for message in pubsub.listen():
-            if message["type"] == "pmessage":
-                data = message["data"]
+        while True:
+            events = await bus.poll_since(last_id, limit=200)
+            for entry_id, event_data in events:
+                last_id = max(last_id, int(str(entry_id).split("-", 1)[0]))
                 try:
-                    event_data = json.loads(data) if isinstance(data, str) else data
                     payload = event_data.get("payload", {})
                     if isinstance(payload, str):
                         payload = json.loads(payload)
 
                     # 只转发与此任务相关的事件
                     if payload.get("task_id") == task_id:
-                        topic = message["channel"].replace("agentorchestrator:pubsub:", "")
+                        topic = event_data.get("topic", "")
                         await ws.send_json({
                             "type": "event",
                             "topic": topic,
@@ -131,12 +114,11 @@ async def task_websocket(ws: WebSocket, task_id: str):
                         })
                 except Exception:
                     continue
+            await asyncio.sleep(0.5)
     except WebSocketDisconnect:
         pass
     finally:
         _connections.discard(ws)
-        await pubsub.punsubscribe("agentorchestrator:pubsub:*")
-        await pubsub_redis.aclose()
 
 
 async def broadcast(event: dict):

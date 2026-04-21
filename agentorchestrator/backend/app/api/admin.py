@@ -17,8 +17,8 @@ router = APIRouter()
 
 @router.get("/health/deep")
 async def deep_health(db: AsyncSession = Depends(get_db)):
-    """深度健康检查：Postgres + Redis 连通性。"""
-    checks = {"postgres": False, "redis": False}
+    """深度健康检查：Postgres + MySQL(EventBus) 连通性。"""
+    checks = {"postgres": False, "mysql": False}
 
     # Postgres
     try:
@@ -27,15 +27,16 @@ async def deep_health(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         checks["postgres_error"] = str(e)
 
-    # Redis
+    # MySQL EventBus
     try:
         bus = await get_event_bus()
-        pong = await bus.redis.ping()
-        checks["redis"] = pong is True
+        async with bus.engine.begin() as conn:
+            result = await conn.execute(text("SELECT 1"))
+            checks["mysql"] = result.scalar() == 1
     except Exception as e:
-        checks["redis_error"] = str(e)
+        checks["mysql_error"] = str(e)
 
-    status = "ok" if all(checks.get(k) for k in ["postgres", "redis"]) else "degraded"
+    status = "ok" if all(checks.get(k) for k in ["postgres", "mysql"]) else "degraded"
     return {"status": status, "checks": checks}
 
 
@@ -85,6 +86,6 @@ async def get_config():
         "port": settings.port,
         "debug": settings.debug,
         "database": settings.database_url.split("@")[-1] if "@" in settings.database_url else "***",
-        "redis": settings.redis_url.split("@")[-1] if "@" in settings.redis_url else settings.redis_url,
+        "mysql": settings.mysql_url.split("@")[-1] if "@" in settings.mysql_url else settings.mysql_url,
         "scheduler_scan_interval": settings.scheduler_scan_interval_seconds,
     }
