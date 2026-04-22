@@ -7,8 +7,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, Column, DateTime, Index, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import BigInteger, Column, DateTime, Index, JSON, String, Text
 
 from ..db import Base
 
@@ -28,10 +27,10 @@ class AuditLog(Base):
     trace_id = Column(String(64), nullable=True, comment="追踪链路 ID")
     agent_id = Column(String(50), nullable=True, comment="执行操作的 Agent")
     action = Column(String(50), nullable=False, comment="操作类型: state/flow/todo/confirm/memory/permission_denied")
-    old_value = Column(JSONB, nullable=True, comment="变更前状态")
-    new_value = Column(JSONB, nullable=True, comment="变更后状态")
+    old_value = Column(JSON, nullable=True, comment="变更前状态")
+    new_value = Column(JSON, nullable=True, comment="变更后状态")
     reason = Column(Text, default="", comment="操作原因/备注")
-    meta = Column(JSONB, default=dict, comment="扩展元数据 (tokens, cost, duration)")
+    meta = Column(JSON, default=dict, comment="扩展元数据 (tokens, cost, duration)")
 
     __table_args__ = (
         Index("ix_audit_timestamp", "timestamp"),

@@ -7,8 +7,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Float, Index, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Column, DateTime, Float, Index, JSON, String, Text, Uuid
 
 from ..db import Base
 
@@ -17,9 +16,9 @@ class Todo(Base):
     """结构化子任务表。"""
     __tablename__ = "todos"
 
-    todo_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    todo_id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     trace_id = Column(String(32), nullable=False, index=True, comment="关联任务ID")
-    parent_id = Column(UUID(as_uuid=True), nullable=True, comment="父级 todo_id（树状结构）")
+    parent_id = Column(Uuid(as_uuid=True), nullable=True, comment="父级 todo_id（树状结构）")
 
     title = Column(String(256), nullable=False, comment="子任务标题")
     description = Column(Text, default="", comment="详细描述")
@@ -32,8 +31,8 @@ class Todo(Base):
     estimated_cost = Column(Float, default=0.0, comment="预估 token 耗费")
 
     created_by = Column(String(64), default="", comment="创建者")
-    checkpoints = Column(JSONB, default=list, comment="检查点 [{name, status}]")
-    metadata_ = Column("metadata", JSONB, default=dict, comment="扩展元数据")
+    checkpoints = Column(JSON, default=list, comment="检查点 [{name, status}]")
+    metadata_ = Column("metadata", JSON, default=dict, comment="扩展元数据")
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(

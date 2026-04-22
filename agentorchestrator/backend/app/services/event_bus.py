@@ -1,8 +1,13 @@
-"""MySQL 事件总线。
+"""事件总线实现。
 
-以 MySQL 表模拟 stream + consumer group：
-- publish: INSERT 到 event_bus_messages
-- consume: 基于 group offset 拉取新消息
+默认策略：
+1. 本地默认使用 SQLite，保证 freshly synced 仓库无需额外数据库即可启动。
+2. 仅当用户显式提供 MYSQL_URL 时，才启用 MySQL 作为事件总线后端。
+3. SQLite 模式用于本地单机联调；MySQL 模式保留给显式配置的正式环境。
+
+能力语义保持与旧接口一致：
+- publish: 写入 event_bus_messages
+- consume: 按 consumer group offset 拉取消息
 - ack: 更新 group ack offset
 """
 
@@ -10,6 +15,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import pathlib
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -40,64 +47,172 @@ TOPIC_AGENT_TODO_UPDATE = "agent.todo.update"
 TOPIC_AGENT_HEARTBEAT = "agent.heartbeat"
 
 
+def _resolve_project_root() -> pathlib.Path:
+    settings = get_settings()
+    if settings.openclaw_project_dir:
+        return pathlib.Path(settings.openclaw_project_dir)
+    return pathlib.Path(__file__).resolve().parents[4]
+
+
+def _sqlite_url() -> str:
+    settings = get_settings()
+    db_path = pathlib.Path(settings.sqlite_event_bus_path)
+    if not db_path.is_absolute():
+        db_path = settings.project_root / db_path
+    db_path = db_path.resolve()
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    return settings.sqlite_event_bus_url
+
+
+def _timestamp_now_for_backend(kind: str) -> Any:
+    now = datetime.now(timezone.utc)
+    if kind == "sqlite":
+        return now.isoformat()
+    return now.replace(tzinfo=None)
+
+
+def _normalize_timestamp(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.isoformat()
+    if isinstance(value, str):
+        text_value = value.strip()
+        if not text_value:
+            return None
+        try:
+            parsed = datetime.fromisoformat(text_value.replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            return parsed.isoformat()
+        except ValueError:
+            return text_value
+    return str(value)
+
+
 class EventBus:
-    """MySQL 事件总线实现。"""
+    """SQLite 默认、MySQL 可选的事件总线实现。"""
 
     def __init__(self, mysql_url: str | None = None):
-        self._mysql_url = mysql_url or get_settings().mysql_url
+        settings = get_settings()
+        self._settings = settings
+        self._mysql_url = mysql_url or settings.mysql_url
+        self._explicit_mysql = bool(mysql_url or settings.mysql_url_override or os.getenv("MYSQL_URL"))
         self._engine: AsyncEngine | None = None
         self._session_factory: async_sessionmaker | None = None
+        self._backend_kind: str | None = None
+        self._backend_url: str | None = None
 
     async def connect(self):
         if self._engine is not None:
             return
-        self._engine = create_async_engine(self._mysql_url, pool_pre_ping=True)
-        self._session_factory = async_sessionmaker(self._engine, expire_on_commit=False)
-        await self._ensure_tables()
-        log.info(f"EventBus connected to MySQL: {self._mysql_url}")
+
+        if self._explicit_mysql:
+            await self._connect_with_backend(self._mysql_url, "mysql")
+            return
+
+        await self._connect_with_backend(_sqlite_url(), "sqlite")
+
+    async def _connect_with_backend(self, url: str, kind: str):
+        engine = create_async_engine(url, pool_pre_ping=(kind == "mysql"))
+        try:
+            self._engine = engine
+            self._session_factory = async_sessionmaker(engine, expire_on_commit=False)
+            self._backend_kind = kind
+            self._backend_url = url
+            await self._ensure_tables()
+            log.info("EventBus connected to %s: %s", kind, url)
+        except Exception:
+            await engine.dispose()
+            self._engine = None
+            self._session_factory = None
+            self._backend_kind = None
+            self._backend_url = None
+            raise
 
     async def close(self):
         if self._engine:
             await self._engine.dispose()
             self._engine = None
             self._session_factory = None
+            self._backend_kind = None
+            self._backend_url = None
 
     @property
     def engine(self) -> AsyncEngine:
         assert self._engine is not None, "EventBus not connected. Call connect() first."
         return self._engine
 
+    @property
+    def backend_kind(self) -> str:
+        assert self._backend_kind is not None, "EventBus backend unavailable. Call connect() first."
+        return self._backend_kind
+
     async def _ensure_tables(self):
-        ddl_messages = """
-        CREATE TABLE IF NOT EXISTS event_bus_messages (
-            id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            event_id VARCHAR(64) NOT NULL,
-            trace_id VARCHAR(128) NOT NULL,
-            topic VARCHAR(128) NOT NULL,
-            event_type VARCHAR(128) NOT NULL,
-            producer VARCHAR(128) NOT NULL,
-            payload_json JSON NOT NULL,
-            meta_json JSON NOT NULL,
-            created_at DATETIME(6) NOT NULL,
-            INDEX idx_event_bus_topic_id (topic, id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        """
-        ddl_offsets = """
-        CREATE TABLE IF NOT EXISTS event_bus_offsets (
-            topic VARCHAR(128) NOT NULL,
-            consumer_group VARCHAR(128) NOT NULL,
-            last_delivered_id BIGINT NOT NULL DEFAULT 0,
-            last_acked_id BIGINT NOT NULL DEFAULT 0,
-            updated_at DATETIME(6) NOT NULL,
-            PRIMARY KEY (topic, consumer_group)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        """
+        if self.backend_kind == "sqlite":
+            ddl_messages = """
+            CREATE TABLE IF NOT EXISTS event_bus_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_id TEXT NOT NULL,
+                trace_id TEXT NOT NULL,
+                topic TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                producer TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                meta_json TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            """
+            ddl_messages_index = """
+            CREATE INDEX IF NOT EXISTS idx_event_bus_topic_id
+            ON event_bus_messages(topic, id);
+            """
+            ddl_offsets = """
+            CREATE TABLE IF NOT EXISTS event_bus_offsets (
+                topic TEXT NOT NULL,
+                consumer_group TEXT NOT NULL,
+                last_delivered_id INTEGER NOT NULL DEFAULT 0,
+                last_acked_id INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (topic, consumer_group)
+            );
+            """
+        else:
+            ddl_messages = """
+            CREATE TABLE IF NOT EXISTS event_bus_messages (
+                id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                event_id VARCHAR(64) NOT NULL,
+                trace_id VARCHAR(128) NOT NULL,
+                topic VARCHAR(128) NOT NULL,
+                event_type VARCHAR(128) NOT NULL,
+                producer VARCHAR(128) NOT NULL,
+                payload_json JSON NOT NULL,
+                meta_json JSON NOT NULL,
+                created_at DATETIME(6) NOT NULL,
+                INDEX idx_event_bus_topic_id (topic, id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """
+            ddl_messages_index = None
+            ddl_offsets = """
+            CREATE TABLE IF NOT EXISTS event_bus_offsets (
+                topic VARCHAR(128) NOT NULL,
+                consumer_group VARCHAR(128) NOT NULL,
+                last_delivered_id BIGINT NOT NULL DEFAULT 0,
+                last_acked_id BIGINT NOT NULL DEFAULT 0,
+                updated_at DATETIME(6) NOT NULL,
+                PRIMARY KEY (topic, consumer_group)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            """
+
         async with self.engine.begin() as conn:
             await conn.execute(text(ddl_messages))
+            if ddl_messages_index:
+                await conn.execute(text(ddl_messages_index))
             await conn.execute(text(ddl_offsets))
 
     def _normalize_entry_id(self, entry_id: str) -> int:
-        # 兼容 Redis 风格 id（如 12345-0）
         id_text = str(entry_id).split("-", 1)[0]
         return int(id_text)
 
@@ -121,17 +236,31 @@ class EventBus:
             "meta": meta or {},
         }
 
-        stmt = text(
-            """
-            INSERT INTO event_bus_messages(
-                event_id, trace_id, topic, event_type, producer,
-                payload_json, meta_json, created_at
-            ) VALUES (
-                :event_id, :trace_id, :topic, :event_type, :producer,
-                CAST(:payload_json AS JSON), CAST(:meta_json AS JSON), :created_at
+        if self.backend_kind == "sqlite":
+            stmt = text(
+                """
+                INSERT INTO event_bus_messages(
+                    event_id, trace_id, topic, event_type, producer,
+                    payload_json, meta_json, created_at
+                ) VALUES (
+                    :event_id, :trace_id, :topic, :event_type, :producer,
+                    :payload_json, :meta_json, :created_at
+                )
+                """
             )
-            """
-        )
+        else:
+            stmt = text(
+                """
+                INSERT INTO event_bus_messages(
+                    event_id, trace_id, topic, event_type, producer,
+                    payload_json, meta_json, created_at
+                ) VALUES (
+                    :event_id, :trace_id, :topic, :event_type, :producer,
+                    CAST(:payload_json AS JSON), CAST(:meta_json AS JSON), :created_at
+                )
+                """
+            )
+
         async with self.engine.begin() as conn:
             result = await conn.execute(
                 stmt,
@@ -143,29 +272,40 @@ class EventBus:
                     "producer": producer,
                     "payload_json": json.dumps(event["payload"], ensure_ascii=False),
                     "meta_json": json.dumps(event["meta"], ensure_ascii=False),
-                    "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
+                    "created_at": _timestamp_now_for_backend(self.backend_kind),
                 },
             )
             entry_id = str(result.lastrowid)
 
-        log.debug(f"📤 Published {topic}/{event_type} [{entry_id}] trace={trace_id}")
+        log.debug("📤 Published %s/%s [%s] trace=%s", topic, event_type, entry_id, trace_id)
         return entry_id
 
     async def ensure_consumer_group(self, topic: str, group: str):
-        stmt = text(
-            """
-            INSERT INTO event_bus_offsets(topic, consumer_group, last_delivered_id, last_acked_id, updated_at)
-            VALUES(:topic, :consumer_group, 0, 0, :updated_at)
-            ON DUPLICATE KEY UPDATE updated_at = VALUES(updated_at)
-            """
-        )
+        if self.backend_kind == "sqlite":
+            stmt = text(
+                """
+                INSERT INTO event_bus_offsets(topic, consumer_group, last_delivered_id, last_acked_id, updated_at)
+                VALUES(:topic, :consumer_group, 0, 0, :updated_at)
+                ON CONFLICT(topic, consumer_group)
+                DO UPDATE SET updated_at = excluded.updated_at
+                """
+            )
+        else:
+            stmt = text(
+                """
+                INSERT INTO event_bus_offsets(topic, consumer_group, last_delivered_id, last_acked_id, updated_at)
+                VALUES(:topic, :consumer_group, 0, 0, :updated_at)
+                ON DUPLICATE KEY UPDATE updated_at = VALUES(updated_at)
+                """
+            )
+
         async with self.engine.begin() as conn:
             await conn.execute(
                 stmt,
                 {
                     "topic": topic,
                     "consumer_group": group,
-                    "updated_at": datetime.now(timezone.utc).replace(tzinfo=None),
+                    "updated_at": _timestamp_now_for_backend(self.backend_kind),
                 },
             )
 
@@ -216,7 +356,7 @@ class EventBus:
                     update_offset,
                     {
                         "last_id": newest,
-                        "updated_at": datetime.now(timezone.utc).replace(tzinfo=None),
+                        "updated_at": _timestamp_now_for_backend(self.backend_kind),
                         "topic": topic,
                         "consumer_group": group,
                     },
@@ -230,9 +370,7 @@ class EventBus:
                     {
                         "event_id": row["event_id"],
                         "trace_id": row["trace_id"],
-                        "timestamp": row["created_at"].replace(tzinfo=timezone.utc).isoformat()
-                        if row["created_at"]
-                        else None,
+                        "timestamp": _normalize_timestamp(row["created_at"]),
                         "topic": row["topic"],
                         "event_type": row["event_type"],
                         "producer": row["producer"],
@@ -243,7 +381,6 @@ class EventBus:
             )
 
         if not rows and block_ms > 0:
-            # 为兼容旧接口，简单 sleep 模拟 block
             import asyncio
 
             await asyncio.sleep(min(block_ms / 1000.0, 2.0))
@@ -254,7 +391,7 @@ class EventBus:
         stmt = text(
             """
             UPDATE event_bus_offsets
-            SET last_acked_id = GREATEST(last_acked_id, :ack_id), updated_at=:updated_at
+            SET last_acked_id = MAX(last_acked_id, :ack_id), updated_at=:updated_at
             WHERE topic=:topic AND consumer_group=:consumer_group
             """
         )
@@ -263,7 +400,7 @@ class EventBus:
                 stmt,
                 {
                     "ack_id": ack_id,
-                    "updated_at": datetime.now(timezone.utc).replace(tzinfo=None),
+                    "updated_at": _timestamp_now_for_backend(self.backend_kind),
                     "topic": topic,
                     "consumer_group": group,
                 },
@@ -303,7 +440,6 @@ class EventBus:
         min_idle_ms: int = 60000,
         count: int = 10,
     ) -> list[tuple[str, dict]]:
-        # MySQL 轮询实现下，pending 的认领与重新消费等价
         return await self.consume(topic, group, consumer, count=count, block_ms=0)
 
     async def stream_info(self, topic: str) -> dict:
@@ -394,7 +530,7 @@ class EventBus:
                 {
                     "event_id": r["event_id"],
                     "trace_id": r["trace_id"],
-                    "timestamp": r["created_at"].replace(tzinfo=timezone.utc).isoformat() if r["created_at"] else None,
+                    "timestamp": _normalize_timestamp(r["created_at"]),
                     "topic": r["topic"],
                     "event_type": r["event_type"],
                     "producer": r["producer"],

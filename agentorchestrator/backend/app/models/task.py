@@ -5,8 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, Index, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Boolean, Column, DateTime, Enum, Index, JSON, String, Text, Uuid
 
 from ..db import Base
 
@@ -93,7 +92,7 @@ class Task(Base):
 
     __tablename__ = "tasks"
 
-    task_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     trace_id = Column(String(64), nullable=False, default=lambda: str(uuid.uuid4()), comment="追踪链路 ID")
     title = Column(String(200), nullable=False, comment="任务标题")
     description = Column(Text, default="", comment="任务描述")
@@ -106,8 +105,8 @@ class Task(Base):
     )
     assignee_org = Column(String(50), nullable=True, comment="目标执行中心 / 专家")
     creator = Column(String(50), default="system", comment="创建者")
-    tags = Column(JSONB, default=list, comment="标签")
-    meta = Column(JSONB, default=dict, comment="扩展元数据")
+    tags = Column(JSON, default=list, comment="标签")
+    meta = Column(JSON, default=dict, comment="扩展元数据")
 
     # 看板与前端通用字段
     org = Column(String(32), nullable=False, default="总控中心", comment="当前执行组织")
@@ -118,12 +117,12 @@ class Task(Base):
     output = Column(Text, default="", comment="最终产出")
     archived = Column(Boolean, default=False, comment="是否归档")
 
-    flow_log = Column(JSONB, default=list, comment="流转日志 [{at, from, to, remark}]")
-    progress_log = Column(JSONB, default=list, comment="进展日志 [{at, agent, text, todos}]")
-    todos = Column(JSONB, default=list, comment="子任务 [{id, title, status, detail}]")
-    scheduler = Column(JSONB, default=dict, comment="调度器元数据")
+    flow_log = Column(JSON, default=list, comment="流转日志 [{at, from, to, remark}]")
+    progress_log = Column(JSON, default=list, comment="进展日志 [{at, agent, text, todos}]")
+    todos = Column(JSON, default=list, comment="子任务 [{id, title, status, detail}]")
+    scheduler = Column(JSON, default=dict, comment="调度器元数据")
     template_id = Column(String(64), default="", comment="模板ID")
-    template_params = Column(JSONB, default=dict, comment="模板参数")
+    template_params = Column(JSON, default=dict, comment="模板参数")
     ac = Column(Text, default="", comment="验收标准")
     target_dept = Column(String(64), default="", comment="目标组织 / 专家")
 

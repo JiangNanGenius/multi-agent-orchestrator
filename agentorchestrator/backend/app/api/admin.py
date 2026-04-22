@@ -17,26 +17,25 @@ router = APIRouter()
 
 @router.get("/health/deep")
 async def deep_health(db: AsyncSession = Depends(get_db)):
-    """深度健康检查：Postgres + MySQL(EventBus) 连通性。"""
-    checks = {"postgres": False, "mysql": False}
+    """深度健康检查：主数据库 + EventBus 连通性。"""
+    checks = {"database": False, "event_bus": False, "event_bus_backend": "unknown"}
 
-    # Postgres
     try:
         result = await db.execute(text("SELECT 1"))
-        checks["postgres"] = result.scalar() == 1
+        checks["database"] = result.scalar() == 1
     except Exception as e:
-        checks["postgres_error"] = str(e)
+        checks["database_error"] = str(e)
 
-    # MySQL EventBus
     try:
         bus = await get_event_bus()
         async with bus.engine.begin() as conn:
             result = await conn.execute(text("SELECT 1"))
-            checks["mysql"] = result.scalar() == 1
+            checks["event_bus"] = result.scalar() == 1
+            checks["event_bus_backend"] = bus.backend_kind
     except Exception as e:
-        checks["mysql_error"] = str(e)
+        checks["event_bus_error"] = str(e)
 
-    status = "ok" if all(checks.get(k) for k in ["postgres", "mysql"]) else "degraded"
+    status = "ok" if checks.get("database") and checks.get("event_bus") else "degraded"
     return {"status": status, "checks": checks}
 
 
@@ -85,7 +84,7 @@ async def get_config():
     return {
         "port": settings.port,
         "debug": settings.debug,
-        "database": settings.database_url.split("@")[-1] if "@" in settings.database_url else "***",
-        "mysql": settings.mysql_url.split("@")[-1] if "@" in settings.mysql_url else settings.mysql_url,
+        "database": settings.database_url,
+        "event_bus": settings.mysql_url if settings.mysql_url_override else settings.sqlite_event_bus_url,
         "scheduler_scan_interval": settings.scheduler_scan_interval_seconds,
     }

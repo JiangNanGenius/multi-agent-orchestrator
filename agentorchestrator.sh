@@ -30,13 +30,25 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC
 _ensure_dirs() {
   mkdir -p "$PIDDIR" "$LOGDIR" "$REPO_DIR/data"
   for f in live_status.json agent_config.json model_change_log.json sync_status.json; do
-    [ ! -f "$REPO_DIR/data/$f" ] && echo '{}' > "$REPO_DIR/data/$f"
+    if [[ ! -f "$REPO_DIR/data/$f" ]]; then
+      echo '{}' > "$REPO_DIR/data/$f"
+    fi
   done
-  [ ! -f "$REPO_DIR/data/pending_model_changes.json" ] && echo '[]' > "$REPO_DIR/data/pending_model_changes.json"
-  [ ! -f "$REPO_DIR/data/tasks_source.json" ] && echo '[]' > "$REPO_DIR/data/tasks_source.json"
-  [ ! -f "$REPO_DIR/data/tasks.json" ] && echo '[]' > "$REPO_DIR/data/tasks.json"
-  [ ! -f "$REPO_DIR/data/agents.json" ] && echo '[]' > "$REPO_DIR/data/agents.json"
-  [ ! -f "$REPO_DIR/data/agents_overview.json" ] && echo '{}' > "$REPO_DIR/data/agents_overview.json"
+  if [[ ! -f "$REPO_DIR/data/pending_model_changes.json" ]]; then
+    echo '[]' > "$REPO_DIR/data/pending_model_changes.json"
+  fi
+  if [[ ! -f "$REPO_DIR/data/tasks_source.json" ]]; then
+    echo '[]' > "$REPO_DIR/data/tasks_source.json"
+  fi
+  if [[ ! -f "$REPO_DIR/data/tasks.json" ]]; then
+    echo '[]' > "$REPO_DIR/data/tasks.json"
+  fi
+  if [[ ! -f "$REPO_DIR/data/agents.json" ]]; then
+    echo '[]' > "$REPO_DIR/data/agents.json"
+  fi
+  if [[ ! -f "$REPO_DIR/data/agents_overview.json" ]]; then
+    echo '{}' > "$REPO_DIR/data/agents_overview.json"
+  fi
 }
 
 _is_running() {
@@ -57,6 +69,41 @@ _get_pid() {
   if [[ -f "$pidfile" ]]; then
     cat "$pidfile" 2>/dev/null
   fi
+}
+
+_check_backend_python_deps() {
+  local req_file="$REPO_DIR/agentorchestrator/backend/requirements.txt"
+  python3 - <<'PYEOF' >/tmp/agentorchestrator_backend_dep_check.txt 2>&1
+import importlib.util
+modules = [
+    'fastapi',
+    'uvicorn',
+    'sqlalchemy',
+    'asyncpg',
+    'aiosqlite',
+    'alembic',
+    'pydantic',
+    'pydantic_settings',
+    'dotenv',
+    'httpx',
+]
+missing = [name for name in modules if importlib.util.find_spec(name) is None]
+if missing:
+    print(', '.join(missing))
+    raise SystemExit(1)
+PYEOF
+  local status=$?
+  if [[ $status -ne 0 ]]; then
+    local missing
+    missing=$(cat /tmp/agentorchestrator_backend_dep_check.txt 2>/dev/null || true)
+    echo -e "${RED}❌ 官方后端依赖不完整${NC}"
+    if [[ -n "$missing" ]]; then
+      echo -e "   缺失模块: ${YELLOW}$missing${NC}"
+    fi
+    echo -e "   请先执行: ${BLUE}python3 -m pip install --user -r $req_file${NC}"
+    return 1
+  fi
+  return 0
 }
 
 _start_proc() {
@@ -120,6 +167,10 @@ do_start() {
   echo -e "${BLUE}║  Multi-Agent Orchestrator 后端栈启动中            ║${NC}"
   echo -e "${BLUE}╚════════════════════════════════════════════════════╝${NC}"
   echo ""
+
+  if ! _check_backend_python_deps; then
+    exit 1
+  fi
 
   _start_proc "Backend API" "$API_PIDFILE" "$API_LOG" python3 -m uvicorn agentorchestrator.backend.app.main:app --host "$API_HOST" --port "$API_PORT"
   _start_proc "Orchestrator Worker" "$ORCH_PIDFILE" "$ORCH_LOG" python3 -m agentorchestrator.backend.app.workers.orchestrator_worker

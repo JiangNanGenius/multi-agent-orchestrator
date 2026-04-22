@@ -7,8 +7,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Float, Index, Integer, String, Text, Boolean
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, Column, DateTime, Float, Index, Integer, String, Text, Uuid
 
 from ..db import Base
 
@@ -17,7 +16,7 @@ class Thought(Base):
     """Agent 思考记录。"""
     __tablename__ = "thoughts"
 
-    thought_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    thought_id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     trace_id = Column(String(32), nullable=False, index=True, comment="关联任务ID")
     agent = Column(String(32), nullable=False, index=True, comment="Agent 标识")
     step = Column(Integer, nullable=False, default=0, comment="思考步骤序号")

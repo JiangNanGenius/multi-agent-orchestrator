@@ -9,8 +9,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Index, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Index, Integer, JSON, String, Text, text
 
 from ..db import Base
 
@@ -20,7 +19,11 @@ class OutboxEvent(Base):
 
     __tablename__ = "outbox_events"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(
+        BigInteger().with_variant(Integer(), "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -36,14 +39,21 @@ class OutboxEvent(Base):
     trace_id = Column(String(64), nullable=False)
     event_type = Column(String(100), nullable=False)
     producer = Column(String(100), nullable=False)
-    payload = Column(JSONB, default=dict)
-    meta = Column(JSONB, default=dict)
+    payload = Column(JSON, default=dict)
+    meta = Column(JSON, default=dict)
     published = Column(Boolean, default=False, index=True)
     published_at = Column(DateTime(timezone=True), nullable=True)
     attempts = Column(Integer, default=0)
     last_error = Column(Text, nullable=True)
 
     __table_args__ = (
-        Index("ix_outbox_unpublished", "published", "id", postgresql_where="published = false"),
+        Index(
+            "ix_outbox_unpublished",
+            "published",
+            "id",
+            postgresql_where=text("published = false"),
+            sqlite_where=text("published = 0"),
+        ),
         Index("ix_outbox_created_at", "created_at"),
+        {"sqlite_autoincrement": True},
     )

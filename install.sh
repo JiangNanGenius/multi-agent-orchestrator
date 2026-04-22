@@ -75,6 +75,66 @@ check_deps() {
   log "openclaw.json: $OC_CFG"
 }
 
+ensure_backend_deps() {
+  info "检查官方后端 Python 依赖..."
+
+  local req_file="$REPO_DIR/agentorchestrator/backend/requirements.txt"
+  if [ ! -f "$req_file" ]; then
+    warn "未找到后端依赖清单：$req_file，跳过自动安装。"
+    return
+  fi
+
+  if ! python3 - <<'PYEOF' >/dev/null 2>&1
+import importlib.util
+modules = [
+    'fastapi',
+    'uvicorn',
+    'sqlalchemy',
+    'asyncpg',
+    'aiosqlite',
+    'alembic',
+    'pydantic',
+    'pydantic_settings',
+    'dotenv',
+    'httpx',
+]
+missing = [name for name in modules if importlib.util.find_spec(name) is None]
+raise SystemExit(0 if not missing else 1)
+PYEOF
+  then
+    warn "检测到官方后端依赖缺失，开始自动安装 requirements.txt ..."
+    if ! python3 -m pip --version >/dev/null 2>&1; then
+      error "当前 Python 未提供 pip，请先安装 pip 后重试。"
+      exit 1
+    fi
+    python3 -m pip install --user --disable-pip-version-check -r "$req_file"
+  fi
+
+  if ! python3 - <<'PYEOF' >/dev/null 2>&1
+import importlib.util
+modules = [
+    'fastapi',
+    'uvicorn',
+    'sqlalchemy',
+    'asyncpg',
+    'aiosqlite',
+    'alembic',
+    'pydantic',
+    'pydantic_settings',
+    'dotenv',
+    'httpx',
+]
+missing = [name for name in modules if importlib.util.find_spec(name) is None]
+raise SystemExit(0 if not missing else 1)
+PYEOF
+  then
+    error "官方后端依赖仍不完整，请手动执行：python3 -m pip install --user -r agentorchestrator/backend/requirements.txt"
+    exit 1
+  fi
+
+  log "官方后端依赖已就绪"
+}
+
 # ── Step 0.5: 备份已有 Agent 数据 ──────────────────────────────
 backup_existing() {
   AGENTS_DIR="$OC_HOME"
@@ -503,6 +563,7 @@ restart_gateway() {
 # ── Main ────────────────────────────────────────────────────
 banner
 check_deps
+ensure_backend_deps
 backup_existing
 create_workspaces
 register_agents
@@ -530,7 +591,7 @@ echo "     - 日志查看:                ./agentorchestrator.sh logs all"
 echo "     - API 地址:                http://127.0.0.1:8000"
 echo "     - 说明:                    默认仅保留官方后端栈与正式前端开发入口"
 echo "  4. 前端开发模式（可选）:       cd agentorchestrator/frontend && pnpm dev"
-echo "     - 浏览器访问:              http://127.0.0.1:5173  (默认代理到 8000)"
+echo "     - 浏览器访问:              http://127.0.0.1:35173  (默认代理到 8000)"
 echo ""
 warn "若采用本地脚本模式，首次运行前仍需先配置可用模型密钥"
 info "安装流程已尝试自动补齐 openclaw.json 中所需的运行时 Agent 注册，并在继续前完成本地校验；详情记录见 data/openclaw_registry_suggestions.json"

@@ -19,6 +19,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
+from .db import init_db
 from .services.event_bus import get_event_bus
 from .api import tasks, agents, events, admin, websocket, compat
 from .api import legacy
@@ -35,6 +36,9 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理。"""
     settings = get_settings()
     log.info(f"🏛️ Multi-Agent Orchestrator Backend starting on port {settings.port}...")
+
+    await init_db()
+    log.info("✅ Database schema ready")
 
     # 连接 Event Bus
     bus = await get_event_bus()

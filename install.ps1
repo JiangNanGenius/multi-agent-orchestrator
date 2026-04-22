@@ -64,6 +64,52 @@ function Check-Deps {
     Log "openclaw.json: $OC_CFG"
 }
 
+function Ensure-BackendDeps {
+    Info "检查官方后端 Python 依赖..."
+
+    $reqFile = Join-Path $REPO_DIR "agentorchestrator\backend\requirements.txt"
+    if (-not (Test-Path $reqFile)) {
+        Warn "未找到后端依赖清单：$reqFile，跳过自动安装。"
+        return
+    }
+
+    $checkScript = @"
+import importlib.util
+modules = [
+    'fastapi',
+    'uvicorn',
+    'sqlalchemy',
+    'asyncpg',
+    'aiosqlite',
+    'alembic',
+    'pydantic',
+    'pydantic_settings',
+    'dotenv',
+    'httpx',
+]
+missing = [name for name in modules if importlib.util.find_spec(name) is None]
+raise SystemExit(0 if not missing else 1)
+"@
+
+    & $global:PYTHON -c $checkScript 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Warn "检测到官方后端依赖缺失，开始自动安装 requirements.txt ..."
+        & $global:PYTHON -m pip install --disable-pip-version-check -r $reqFile
+        if ($LASTEXITCODE -ne 0) {
+            Error "自动安装官方后端依赖失败，请手动执行：python -m pip install -r agentorchestrator/backend/requirements.txt"
+            exit 1
+        }
+    }
+
+    & $global:PYTHON -c $checkScript 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Error "官方后端依赖仍不完整，请手动执行：python -m pip install -r agentorchestrator/backend/requirements.txt"
+        exit 1
+    }
+
+    Log "官方后端依赖已就绪"
+}
+
 function Backup-Existing {
     $hasExisting = Get-ChildItem -Path $OC_HOME -Directory -Filter "workspace-*" -ErrorAction SilentlyContinue
     if ($hasExisting) {
@@ -384,6 +430,7 @@ function Restart-Gateway {
 
 Write-Banner
 Check-Deps
+Ensure-BackendDeps
 Backup-Existing
 Create-Workspaces
 Register-Agents

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -17,13 +18,15 @@ class Settings(BaseSettings):
     postgres_password: str = "agentorchestrator_secret_change_me"
     database_url_override: str | None = Field(default=None, alias="DATABASE_URL")
 
-    # ── MySQL Event Bus ──
+    # ── Event Bus / 可选 MySQL ──
     mysql_host: str = "localhost"
     mysql_port: int = 3306
     mysql_db: str = "agentorchestrator"
     mysql_user: str = "agentorchestrator"
     mysql_password: str = "agentorchestrator_secret_change_me"
     mysql_url_override: str | None = Field(default=None, alias="MYSQL_URL")
+    sqlite_db_path: str = "data/agentorchestrator.sqlite3"
+    sqlite_event_bus_path: str = "data/event_bus.sqlite3"
 
     # ── Server ──
     backend_host: str = "0.0.0.0"
@@ -84,13 +87,30 @@ class Settings(BaseSettings):
     feishu_report_max_content_chars: int = 1200
 
     @property
+    def project_root(self) -> Path:
+        return Path(__file__).resolve().parents[3]
+
+    @property
+    def sqlite_database_path(self) -> Path:
+        return (self.project_root / self.sqlite_db_path).resolve()
+
+    @property
+    def sqlite_database_url(self) -> str:
+        return f"sqlite+aiosqlite:///{self.sqlite_database_path}"
+
+    @property
+    def sqlite_database_url_sync(self) -> str:
+        return f"sqlite:///{self.sqlite_database_path}"
+
+    @property
+    def sqlite_event_bus_url(self) -> str:
+        return f"sqlite+aiosqlite:///{(self.project_root / self.sqlite_event_bus_path).resolve()}"
+
+    @property
     def database_url(self) -> str:
         if self.database_url_override:
             return self.database_url_override
-        return (
-            f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
-            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
-        )
+        return self.sqlite_database_url
 
     @property
     def database_url_sync(self) -> str:
@@ -99,10 +119,7 @@ class Settings(BaseSettings):
             url = make_url(self.database_url_override)
             drivername = url.drivername.split("+", 1)[0]
             return str(url.set(drivername=drivername))
-        return (
-            f"postgresql://{self.postgres_user}:{self.postgres_password}"
-            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
-        )
+        return self.sqlite_database_url_sync
 
     @property
     def mysql_url(self) -> str:

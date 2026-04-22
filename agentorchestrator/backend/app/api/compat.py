@@ -62,12 +62,18 @@ async def live_status_compat(svc: TaskService = Depends(get_task_service)):
 
 @router.get("/api/auth/status")
 async def auth_status_compat():
-    """Backend-only mode auth compatibility (no UI session dependency required)."""
+    """Return unauthenticated status by default so the official frontend shows the password login flow."""
+    auth_cfg = _read_json_file("auth.json", {})
+    username = "admin"
+    must_change_password = False
+    if isinstance(auth_cfg, dict):
+        username = str(auth_cfg.get("username") or "admin")
+        must_change_password = bool(auth_cfg.get("must_change_password", False))
     return {
-        "authenticated": True,
-        "mustChangePassword": False,
-        "currentUser": "backend",
-        "username": "backend",
+        "authenticated": False,
+        "mustChangePassword": must_change_password,
+        "currentUser": "",
+        "username": username,
         "ok": True,
     }
 

@@ -26,7 +26,7 @@
 | `docs/automation-task-management-design.md` | 用于描述历史演进与设计背景，保留“已移除旧实现”的上下文说明 |
 | `docs/project-progress-log.md` | 用于记录项目演进日志，保留“已替代旧服务”的追溯性描述 |
 
-结论上，仓库的**活跃运行链路**已经收口为正式版-only：官方服务入口为 `./agentorchestrator.sh start`，官方后端 API 默认地址为 `http://127.0.0.1:8000`，正式前端开发入口默认为 `http://127.0.0.1:5173`。
+结论上，仓库的**活跃运行链路**已经收口为正式版-only：官方服务入口为 `./agentorchestrator.sh start`，官方后端 API 默认地址为 `http://127.0.0.1:8000`，正式前端开发入口默认为 `http://127.0.0.1:35173`。
 
 如需下一步继续推进，可直接执行以下后续动作之一：
 
