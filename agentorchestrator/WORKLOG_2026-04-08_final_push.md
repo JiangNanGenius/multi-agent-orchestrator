@@ -35,7 +35,7 @@
 
 - 已复核 `agents.json`，当前全部 agent ID、工作区路径与允许调用链均已切换为 `control_center`、`plan_center`、`review_center`、`dispatch_center` 与各 specialist 体系。
 - 已将 `agents/groups/sansheng.md`、`agents/groups/liubu.md` 分别重命名为 `agents/groups/centers.md`、`agents/groups/specialists.md`，并手工清理组级文档内仍直接暴露的旧组织称呼。
-- 已将统计同步脚本入口从 `scripts/sync_officials_stats.py` 重命名为 `scripts/sync_agents_overview.py`，并同步修正 `run_loop.sh`、`install.sh`、`install.ps1`、`README.md`、`README_EN.md` 与后续公开复盘文档中的调用。
+- 已将统计同步脚本入口从 `scripts/sync_officials_stats.py` 重命名为 `scripts/sync_agents_overview.py`，并同步修正 `run_loop.sh`、安装脚本、`README.md`、`README_EN.md` 与后续公开复盘文档中的调用。
 - 已移除仅作为旧入口兼容包装的 `scripts/fetch_morning_news.py`。
 - 已对 `agents/`、`scripts/`、`agentorchestrator/scripts/`、`tests/`、`install.*` 与 `agents.json` 做二次扫描；当前源码/测试主链范围内，旧 agent ID、旧组织名与旧文件名引用已基本清零。
 - 仍保留旧术语的位置主要在历史审计、差异分析与阶段性交付文档中，这些文件仅用于追溯，不作为当前公开默认实现口径。

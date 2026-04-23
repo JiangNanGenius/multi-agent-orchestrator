@@ -69,7 +69,12 @@ check_deps() {
   log "Python3: $(python3 --version)"
 
   if [ ! -f "$OC_CFG" ]; then
-    error "未找到 openclaw.json。请先运行 openclaw 完成初始化。"
+    error "未找到 OpenClaw 运行时配置 openclaw.json。"
+    echo ""
+    echo "请先完成 OpenClaw 初始化，再重新运行 ./install.sh："
+    echo "  1. openclaw init"
+    echo "  2. 确认生成 ~/.openclaw/openclaw.json"
+    echo "  3. ./install.sh"
     exit 1
   fi
   log "openclaw.json: $OC_CFG"
@@ -481,8 +486,7 @@ sync_auth() {
     warn "未找到已有的 models.json 或 auth-profiles.json"
     warn "请先为任意 Agent 配置 API Key:"
     echo "    openclaw agents add control_center"
-    echo "  然后重新运行 install.sh，或手动执行:"
-    echo "    bash install.sh --sync-auth"
+    echo "  然后直接重新运行 ./install.sh 以同步到所有 Agent。"
     return
   fi
 

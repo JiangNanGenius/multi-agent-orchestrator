@@ -14,7 +14,7 @@
 | 文件 | 修复内容 | 影响 |
 | :--- | :--- | :--- |
 | `install.sh` | 补齐 `expert_curator` 在硬编码 Agent 列表与工作区初始化链路中的覆盖；补上 `agentorchestrator/frontend/dist` 同步到 `dashboard/dist` 的部署步骤 | 避免 Linux 安装后角色缺失、看板继续使用旧前端 |
-| `install.ps1` | 与 Linux 安装链路保持一致，补齐 `expert_curator` 覆盖与 `dashboard\\dist` 同步步骤 | 避免 Windows 部署结果与 Linux 不一致 |
+| Windows 安装链路（历史） | 当时曾补齐与 Linux 安装链路一致的 `expert_curator` 覆盖与 `dashboard\\dist` 同步步骤；该脚本现已从仓库移除 | 避免旧记录与当前仓库状态混淆 |
 | `agentorchestrator/backend/app/api/agents.py` | 补齐并统一 `expert_curator` 的运行时元信息 | 避免接口层无法完整识别新角色 |
 | `dashboard/dashboard.html` | 修复 legacy 看板中的 `expert_curator` 识别、名称映射、展示与相关硬编码遗漏 | 避免部署后旧看板界面显示不完整 |
 

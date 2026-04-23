@@ -287,7 +287,7 @@ case "${1:-}" in
     echo ""
     echo "环境变量:"
     echo "  AGENTORCHESTRATOR_API_HOST  API 监听地址 (默认: 127.0.0.1)"
-    echo "  AGENTORCHESTRATOR_API_PORT  API 监听端口 (默认: 8000)"
+    echo "  AGENTORCHESTRATOR_API_PORT  API 监听端口 (默认: 38000)"
     exit 1
     ;;
 esac

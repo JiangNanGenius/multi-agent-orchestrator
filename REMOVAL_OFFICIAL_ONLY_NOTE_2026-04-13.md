@@ -6,7 +6,7 @@
 |---|---|
 | 启动与服务 | 已将 `agentorchestrator.sh`、`agentorchestrator.service`、`install.sh`、`uninstall.sh` 收口为正式版-only 口径 |
 | 辅助脚本 | 已将 `scripts/run_loop.sh`、`scripts/take_screenshots.py`、`scripts/record_demo.py` 默认入口统一到正式后端 / 正式前端链路 |
-| 文档 | 已持续清理 `README_EN.md`、`README_JA.md`、`CONTRIBUTING.md`、`WINDOWS_INSTALL_CN.md`、`docs/getting-started.md`、`docs/current_architecture_overview.md`、`docs/technical-architecture.md`、`docs/screenshots/README.md` 等活跃文档中的旧入口措辞 |
+| 文档 | 已持续清理 `README_EN.md`、`README_JA.md`、`CONTRIBUTING.md`、Windows 安装说明文档、`docs/getting-started.md`、`docs/current_architecture_overview.md`、`docs/technical-architecture.md`、`docs/screenshots/README.md` 等活跃文档中的旧入口措辞 |
 | 目录与测试 | 已删除兼容看板目录及其专属测试，并清理依赖已删除 `dashboard/server.py` 的失效测试 |
 | 资源命名 | 已将 README 中仍带旧命名的流程图资源改为 `docs/readme-official-ui-flow.png` |
 

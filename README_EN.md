@@ -98,7 +98,7 @@ The English README is provided to help external readers, collaborators, and inte
 | Chinese remains the default | Do not switch the whole public system to English unless the deployer explicitly requests it |
 | Public UI must use the formal center / specialist naming system | Legacy role names and historic labels must not appear in the default interface |
 | AI-assisted deployment comes first | Let deployment-stage AI inspect the environment, plan commands, and flag risks before choosing an execution path |
-| Installation scripts are execution tools, not the primary narrative | Keep `install.sh` and `install.ps1`, but present them as callable entry points after the AI has assessed the environment |
+| Installation scripts are execution tools, not the primary narrative | Keep `install.sh` as the callable helper entry point after the AI has assessed the environment |
 | Official UI verification comes first | Deployment should validate the official frontend, task flow, state visibility, and archive views before claiming success |
 | Docker is out of scope | Do not treat Dockerfiles, container manifests, or legacy image notes as a supported deployment path |
 | English support is additive | English is an optional companion layer, not a replacement for the default Chinese deployment |
@@ -233,7 +233,7 @@ Before any command is executed, the AI should evaluate the following points:
 
 After that assessment is complete, only run a repository-level initialization script when the AI concludes that a one-shot setup is the right path for the current environment. In all other cases, prefer the incremental deployment path and avoid treating repository scripts as either the default entry or the primary deployment story.
 
-When the AI explicitly recommends a one-shot initialization, `install.sh` or `install.ps1` can be used as conditional execution tools for that environment. They are retained for first-time attachment scenarios and similar clean-slate setups, not presented as the standard starting point for routine deployment or updates.
+When the AI explicitly recommends a one-shot initialization, `install.sh` can be used as the conditional execution tool for that environment. It is retained for first-time attachment scenarios and similar clean-slate setups, not presented as the standard starting point for routine deployment or updates.
 
 | Step | Effect |
 | --- | --- |

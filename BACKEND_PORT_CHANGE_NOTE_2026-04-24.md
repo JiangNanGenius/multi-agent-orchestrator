@@ -11,11 +11,11 @@
 | `agentorchestrator/backend/app/config.py` | 将 `backend_port` 与 `port` 默认值由 `8000` 调整为 `38000` |
 | `agentorchestrator.sh` | 将 `AGENTORCHESTRATOR_API_PORT` 的默认值由 `8000` 调整为 `38000` |
 | `agentorchestrator.service` | 将 systemd 环境变量 `AGENTORCHESTRATOR_API_PORT` 调整为 `38000` |
-| `install.sh` / `install.ps1` | 将默认 API 地址说明与联调提示更新为 `38000` |
+| `install.sh` | 将默认 API 地址说明与联调提示更新为 `38000` |
 | `docs/getting-started.md` | 将默认 API 地址、健康检查示例和前端代理说明更新为 `38000` |
 | `docs/remote-skills-quickstart.md` | 将示例接口地址更新为 `localhost:38000` |
 | `docs/screenshots/README.md` | 将官方默认 API 地址说明更新为 `38000` |
-| `CONTRIBUTING.md` / `WINDOWS_INSTALL_CN.md` | 将默认后端访问地址与健康检查示例更新为 `38000` |
+| `CONTRIBUTING.md` | 将默认后端访问地址与健康检查示例更新为 `38000` |
 | `REMOVAL_OFFICIAL_ONLY_NOTE_2026-04-13.md` | 将当前正式版活跃运行链路说明中的默认 API 地址更新为 `38000` |
 | `AUTH_LOGIN_RESTORE_NOTE_2026-04-12.md` | 将当前活跃接口核验地址更新为 `38000` |
 

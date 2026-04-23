@@ -11,7 +11,7 @@ flowchart TB
     C1 --> S{Need script? / 是否需要脚本}
     C2 --> S
 
-    S -->|Only when justified / 仅在明确需要时| SH[install.sh / install.ps1]
+    S -->|Only when justified / 仅在明确需要时| SH[install.sh]
     S -->|No / 否| CM[Run minimal commands / 执行最小命令集]
 
     SH --> V[Validate services and dashboard / 验证服务与看板]

@@ -22,6 +22,8 @@ brew install openclaw
 openclaw init
 ```
 
+> `openclaw init` 是 `./install.sh` 的前置步骤。只有在 `~/.openclaw/openclaw.json` 已生成后，安装脚本才能继续补齐运行时 Agent 注册、工作区与本地数据链路。
+
 ## 第二步：克隆并安装多Agent智作中枢
 
 ```bash
@@ -33,9 +35,9 @@ chmod +x install.sh && ./install.sh
 安装脚本会自动完成：
 - ✅ 创建 12 个 Agent Workspace（`~/.openclaw/workspace-*`）
 - ✅ 写入各角色 SOUL.md 人格文件
-- ✅ 安装官方后端 Python 依赖（含 MySQL 事件总线驱动）
+- ✅ 安装官方后端 Python 依赖（默认使用 SQLite 本地链路）
 - ✅ 生成 Registry 规格、SOUL 快照与工作区 sidecar
-- ✅ 输出 `openclaw.json` 只读参考下的 Agent 注册建议清单
+- ✅ 自动补齐 `openclaw.json` 中所需的运行时 Agent 注册项，并输出校验报告
 - ✅ 基于 `agents/` 目录与现有 Registry 自动发现角色并同步最新配置
 - ✅ 配置任务数据清洗规则
 - ✅ 初始化上下文窗口管理目录、压缩归档落点与续写衔接所需元数据
@@ -191,13 +193,14 @@ python3 -m pip install --user -r agentorchestrator/backend/requirements.txt
 ```bash
 # 方法一：为任意 Agent 配置后重新运行 install.sh（推荐）
 openclaw agents add control_center   # 按提示输入 Anthropic API Key
-cd agentorchestrator && ./install.sh             # 自动同步到所有 Agent，并生成只读建议清单
+./install.sh                         # 自动同步到所有 Agent，并重新校验运行时注册
 
-# 方法二：手动复制 auth 文件
-MAIN_AUTH=$(find ~/.openclaw/agents -name auth-profiles.json | head -1)
-for agent in control_center plan_center review_center dispatch_center docs_specialist data_specialist code_specialist audit_specialist deploy_specialist admin_specialist search_specialist; do
+# 方法二：手动复制模型认证文件
+MAIN_AUTH=$(find ~/.openclaw/agents -maxdepth 3 \( -name models.json -o -name auth-profiles.json \) | head -1)
+AUTH_NAME=$(basename "$MAIN_AUTH")
+for agent in control_center plan_center review_center dispatch_center docs_specialist data_specialist code_specialist audit_specialist deploy_specialist admin_specialist expert_curator search_specialist; do
   mkdir -p ~/.openclaw/agents/$agent/agent
-  cp "$MAIN_AUTH" ~/.openclaw/agents/$agent/agent/auth-profiles.json
+  cp "$MAIN_AUTH" ~/.openclaw/agents/$agent/agent/$AUTH_NAME
 done
 
 # 方法三：逐个配置
