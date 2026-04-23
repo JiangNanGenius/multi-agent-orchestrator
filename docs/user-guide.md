@@ -119,7 +119,7 @@
 | 1 | `README.md` | 先理解项目定位、界面入口与文档导航 [1] |
 | 2 | `docs/user-guide.md` | 站在用户角度理解任务主线与新机制 [1] [2] |
 | 3 | `docs/technical-architecture.md` | 理解工作区、账本、编排与巡检实现 [2] [3] [4] |
-| 4 | `TODO_task_workspace_ledger.md` | 回看本轮改造范围与落地清单 [2] |
+| 4 | `docs/project-notes/todos/TODO_task_workspace_ledger.md` | 回看本轮改造范围与落地清单 [2] |
 
 ## 十、版本日志
 
@@ -134,6 +134,6 @@
 ## References
 
 [1]: ../README.md "项目首页 README"
-[2]: ../TODO_task_workspace_ledger.md "任务工作区与账本改造 Todo"
+[2]: ./project-notes/todos/TODO_task_workspace_ledger.md "任务工作区与账本改造 Todo"
 [3]: ./current_architecture_overview.md "当前架构与处理逻辑总览"
 [4]: ../agentorchestrator/E2E_task_workspace_validation_result_2026-04-09.json "E2E 联调验证结果"

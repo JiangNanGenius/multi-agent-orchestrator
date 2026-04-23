@@ -230,7 +230,7 @@ E2E 结果中可见，当前 `/new` 结构至少已经包括 `should_refresh`、
 ## References
 
 [1]: ../README.md "项目首页 README"
-[2]: ../TODO_task_workspace_ledger.md "任务工作区与账本改造 Todo"
+[2]: ./project-notes/todos/TODO_task_workspace_ledger.md "任务工作区与账本改造 Todo"
 [3]: ./current_architecture_overview.md "当前架构与处理逻辑总览"
 [4]: ../agentorchestrator/scripts/e2e_task_workspace_validation.py "E2E 联调验证脚本"
 [5]: ../agentorchestrator/README.md "agentorchestrator 前端信息架构调整记录"

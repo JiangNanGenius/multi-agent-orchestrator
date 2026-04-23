@@ -62,7 +62,7 @@
 
 | 产物 | 说明 |
 | --- | --- |
-| `TODO_SQLITE_OPENCLAW_INTEGRITY_2026-04-22.md` | 本轮待办及完成情况 |
+| `docs/project-notes/todos/TODO_SQLITE_OPENCLAW_INTEGRITY_2026-04-22.md` | 本轮待办及完成情况 |
 | `review_notes/sqlite_integrity_check.py` | 可复用的本地完整性检查脚本 |
 | 本文件 | 修复与验证收口记录 |
 

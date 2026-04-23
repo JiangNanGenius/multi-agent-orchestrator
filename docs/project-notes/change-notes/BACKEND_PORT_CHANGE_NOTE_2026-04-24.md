@@ -16,8 +16,8 @@
 | `docs/remote-skills-quickstart.md` | 将示例接口地址更新为 `localhost:38000` |
 | `docs/screenshots/README.md` | 将官方默认 API 地址说明更新为 `38000` |
 | `CONTRIBUTING.md` | 将默认后端访问地址与健康检查示例更新为 `38000` |
-| `REMOVAL_OFFICIAL_ONLY_NOTE_2026-04-13.md` | 将当前正式版活跃运行链路说明中的默认 API 地址更新为 `38000` |
-| `AUTH_LOGIN_RESTORE_NOTE_2026-04-12.md` | 将当前活跃接口核验地址更新为 `38000` |
+| `docs/project-notes/change-notes/REMOVAL_OFFICIAL_ONLY_NOTE_2026-04-13.md` | 将当前正式版活跃运行链路说明中的默认 API 地址更新为 `38000` |
+| `docs/project-notes/change-notes/AUTH_LOGIN_RESTORE_NOTE_2026-04-12.md` | 将当前活跃接口核验地址更新为 `38000` |
 
 ## 验证结论
 

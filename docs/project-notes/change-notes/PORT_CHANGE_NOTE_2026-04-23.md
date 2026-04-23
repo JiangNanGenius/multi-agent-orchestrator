@@ -13,8 +13,8 @@
 | `docs/getting-started.md` | 更新开发联调默认访问地址 |
 | `docs/remote-skills-quickstart.md` | 更新前端联调访问地址 |
 | `docs/screenshots/README.md` | 更新截图与演示验证默认地址 |
-| `REMOVAL_OFFICIAL_ONLY_NOTE_2026-04-13.md` | 更新当前官方链路说明中的默认前端开发端口 |
-| `SQLITE_INTEGRATION_FIX_NOTE_2026-04-22.md` | 更新当前 SQLite 联调记录中的登录页访问地址 |
+| `docs/project-notes/change-notes/REMOVAL_OFFICIAL_ONLY_NOTE_2026-04-13.md` | 更新当前官方链路说明中的默认前端开发端口 |
+| `docs/project-notes/change-notes/SQLITE_INTEGRATION_FIX_NOTE_2026-04-22.md` | 更新当前 SQLite 联调记录中的登录页访问地址 |
 
 ## 验证结果
 
@@ -28,4 +28,4 @@
 
 ## 说明
 
-`AUTH_LOGIN_RESTORE_NOTE_2026-04-12.md` 中仍保留 `5173` 表述，是因为该文件属于当日历史核验记录，用于保留当时问题定位与修复背景，不作为当前默认端口说明。
+`docs/project-notes/change-notes/AUTH_LOGIN_RESTORE_NOTE_2026-04-12.md` 中仍保留 `5173` 表述，是因为该文件属于当日历史核验记录，用于保留当时问题定位与修复背景，不作为当前默认端口说明。
