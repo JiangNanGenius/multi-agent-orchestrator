@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, update
 
 from ..db import async_session
+from ..logging_utils import configure_process_logging
 from ..models.outbox import OutboxEvent
 from ..services.event_bus import EventBus
 
@@ -116,10 +117,7 @@ class OutboxRelay:
 
 async def run_outbox_relay():
     """入口函数 — 用于直接运行 worker。"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-    )
+    configure_process_logging("outbox")
     relay = OutboxRelay()
 
     loop = asyncio.get_event_loop()

@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 
 from ..config import get_settings
 from ..db import async_session
+from ..logging_utils import configure_process_logging
 from ..models.task import Task
 from ..services.event_bus import (
     EventBus,
@@ -1001,10 +1002,7 @@ class DispatchWorker:
 
 async def run_dispatcher():
     """入口函数 — 用于直接运行 worker。"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-    )
+    configure_process_logging("dispatch")
     worker = DispatchWorker()
 
     loop = asyncio.get_event_loop()

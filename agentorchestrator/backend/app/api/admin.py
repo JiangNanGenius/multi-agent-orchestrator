@@ -4,11 +4,12 @@ import json
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from ..db import get_db
+from ..logging_utils import LOG_TARGETS, log_runtime_metadata, read_recent_log_lines
 from ..services.event_bus import get_event_bus
 
 log = logging.getLogger("agentorchestrator.api.admin")
@@ -87,4 +88,23 @@ async def get_config():
         "database": settings.database_url,
         "event_bus": settings.mysql_url if settings.mysql_url_override else settings.sqlite_event_bus_url,
         "scheduler_scan_interval": settings.scheduler_scan_interval_seconds,
+    }
+
+
+@router.get("/logs")
+async def agent_runtime_logs(
+    target: str = Query("dispatch"),
+    limit: int = Query(160, ge=20, le=400),
+):
+    """读取面向 Agent 排错的最近滚动日志。"""
+    if target not in LOG_TARGETS:
+        raise HTTPException(status_code=404, detail=f"unknown log target: {target}")
+    lines = read_recent_log_lines(target, limit)
+    return {
+        "target": target,
+        "targets": sorted(LOG_TARGETS),
+        "limit": limit,
+        "lines": lines,
+        "log": "\n".join(lines),
+        "meta": log_runtime_metadata(target),
     }

@@ -160,6 +160,8 @@ export const api = {
   searchConfig: () => fetchJ<SubConfig>(`${API_BASE}/api/search-config`),
   agentsStatus: () => fetchJ<AgentsStatusData>(`${API_BASE}/api/agents-status`),
   globalAgentBusy: () => fetchJ<CollabAgentBusyResult>(`${API_BASE}/api/global-agent-busy`),
+  agentRuntimeLogs: (target = 'dispatch', limit = 160) =>
+    fetchJ<AgentRuntimeLogsResult>(withQuery(buildApiUrl(`/api/admin/logs`), { target, limit })),
 
   // 任务实时动态
   taskActivity: (id: string) =>
@@ -360,6 +362,25 @@ export interface AuthStatus {
   authenticated: boolean;
   currentUser?: string | null;
 }
+
+export interface AgentRuntimeLogMeta {
+  target: string;
+  path: string;
+  max_bytes: number;
+  backup_count: number;
+  exists: boolean;
+  size_bytes: number;
+}
+
+export interface AgentRuntimeLogsResult {
+  target: string;
+  targets: string[];
+  limit: number;
+  lines: string[];
+  log: string;
+  meta: AgentRuntimeLogMeta;
+}
+
 export interface AuthLoginResult extends ActionResult {
   token?: string;
   username?: string;

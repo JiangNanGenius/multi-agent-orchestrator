@@ -23,6 +23,7 @@ from datetime import datetime, timezone, timedelta
 
 from ..config import get_settings
 from ..db import async_session
+from ..logging_utils import configure_process_logging
 from ..models.task import Task, TaskState, STATE_AGENT_MAP, ORG_AGENT_MAP
 from ..services.event_bus import (
     EventBus,
@@ -454,10 +455,7 @@ class OrchestratorWorker:
 
 async def run_orchestrator():
     """入口函数 — 用于直接运行 worker。"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-    )
+    configure_process_logging("orchestrator")
     worker = OrchestratorWorker()
 
     loop = asyncio.get_event_loop()

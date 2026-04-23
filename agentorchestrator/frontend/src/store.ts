@@ -747,7 +747,7 @@ interface AppStore {
   refreshThemeFromSystem: () => void;
 
   // Toast
-  toasts: { id: number; msg: string; type: 'ok' | 'err' }[];
+  toasts: UiToast[];
 
   // Actions
   setActiveTab: (tab: TabKey) => void;
@@ -756,7 +756,9 @@ interface AppStore {
   setSelectedAgent: (id: string | null) => void;
   setModalTaskId: (id: string | null) => void;
   setCountdown: (n: number) => void;
-  toast: (msg: string, type?: 'ok' | 'err') => void;
+  toast: (msg: string, type?: ToastInputType, options?: ToastOptions) => number;
+  dismissToast: (id: number) => void;
+  clearToasts: () => void;
 
   // Data fetching
   loadLive: () => Promise<void>;
@@ -767,6 +769,43 @@ interface AppStore {
   loadWebSearch: () => Promise<void>;
   loadSubConfig: () => Promise<void>;
   loadAll: () => Promise<void>;
+}
+
+type ToastType = 'success' | 'error' | 'warning' | 'info' | 'loading';
+type ToastInputType = ToastType | 'ok' | 'err';
+
+type ToastOptions = {
+  durationMs?: number;
+  sticky?: boolean;
+  title?: string;
+};
+
+type UiToast = {
+  id: number;
+  msg: string;
+  type: ToastType;
+  title?: string;
+  sticky: boolean;
+  createdAt: number;
+};
+
+const TOAST_LIMIT = 6;
+
+function normalizeToastType(type: ToastInputType = 'success'): ToastType {
+  if (type === 'ok') return 'success';
+  if (type === 'err') return 'error';
+  return type;
+}
+
+function resolveToastDuration(type: ToastType, options?: ToastOptions): number | null {
+  if (options?.sticky) return null;
+  if (typeof options?.durationMs === 'number') {
+    return options.durationMs <= 0 ? null : options.durationMs;
+  }
+  if (type === 'loading') return null;
+  if (type === 'error') return 5200;
+  if (type === 'warning') return 4200;
+  return 3200;
 }
 
 let _toastId = 0;
@@ -1309,13 +1348,34 @@ export const useStore = create<AppStore>((set, get) => ({
     set({ resolvedTheme: applyTheme(mode) });
   },
 
-  toast: (msg, type = 'ok') => {
+  toast: (msg, type = 'success', options) => {
     const id = ++_toastId;
-    set((s) => ({ toasts: [...s.toasts, { id, msg, type }] }));
-    setTimeout(() => {
-      set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
-    }, 3000);
+    const normalizedType = normalizeToastType(type);
+    const duration = resolveToastDuration(normalizedType, options);
+    set((s) => ({
+      toasts: [
+        ...s.toasts,
+        {
+          id,
+          msg,
+          type: normalizedType,
+          title: options?.title,
+          sticky: duration === null,
+          createdAt: Date.now(),
+        },
+      ].slice(-TOAST_LIMIT),
+    }));
+    if (duration !== null) {
+      setTimeout(() => {
+        set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
+      }, duration);
+    }
+    return id;
   },
+  dismissToast: (id) => {
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
+  },
+  clearToasts: () => set({ toasts: [] }),
 
   loadLive: async () => {
     try {

@@ -21,6 +21,7 @@ import {
   Menu,
   MessageSquareMore,
   RefreshCcw,
+  ScrollText,
   Sparkles,
   SunMoon,
   UserCircle2,
@@ -36,6 +37,7 @@ import WebSearchPanel from './components/WebSearchPanel';
 import AutomationPanel from './components/AutomationPanel';
 import TaskModal from './components/TaskModal';
 import Toaster from './components/Toaster';
+import AgentLogModal from './components/AgentLogModal';
 import StartupTransition from './components/CourtCeremony';
 import CollaborationDiscussion from './components/CourtDiscussion';
 import SystemSettingsPanel from './components/SystemSettingsPanel';
@@ -370,6 +372,7 @@ export default function App() {
   const setActiveTab = useStore((s) => s.setActiveTab);
   const setModalTaskId = useStore((s) => s.setModalTaskId);
   const toast = useStore((s) => s.toast);
+  const dismissToast = useStore((s) => s.dismissToast);
   const liveStatus = useStore((s) => s.liveStatus);
   const loadAll = useStore((s) => s.loadAll);
   const locale = useStore((s) => s.locale);
@@ -386,6 +389,7 @@ export default function App() {
   const [firstChangePending, setFirstChangePending] = useState(false);
   const [firstChangeError, setFirstChangeError] = useState('');
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showAgentLogModal, setShowAgentLogModal] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileTopbarHidden, setMobileTopbarHidden] = useState(false);
   const [controlCenterChatOpen, setControlCenterChatOpen] = useState(false);
@@ -412,6 +416,30 @@ export default function App() {
     });
     setBootState('ready');
     return res;
+  };
+
+  const handleManualRefresh = async () => {
+    const loadingToastId = toast(
+      pickLocaleText(locale, '正在同步最新任务、状态与配置…', 'Syncing the latest tasks, status and configuration…'),
+      'loading',
+      { title: pickLocaleText(locale, '刷新中', 'Refreshing') },
+    );
+    try {
+      await loadAll();
+      dismissToast(loadingToastId);
+      toast(
+        pickLocaleText(locale, '数据已刷新到最新状态。', 'Data has been refreshed to the latest state.'),
+        'success',
+        { title: pickLocaleText(locale, '刷新完成', 'Refresh complete') },
+      );
+    } catch {
+      dismissToast(loadingToastId);
+      toast(
+        pickLocaleText(locale, '刷新失败，请稍后重试或查看 Agent 排错日志。', 'Refresh failed. Please retry later or inspect the Agent diagnostic logs.'),
+        'warning',
+        { title: pickLocaleText(locale, '刷新未完成', 'Refresh incomplete') },
+      );
+    }
   };
 
   const submitControlCenterMessage = async () => {
@@ -761,7 +789,8 @@ export default function App() {
               </div>
             </div>
             <div className="workspace-topbar__right">
-              <button className="icon-button" onClick={() => loadAll()} title={pickLocaleText(locale, '刷新数据', 'Refresh data')}><RefreshCcw size={16} /></button>
+              <button className="icon-button" onClick={() => void handleManualRefresh()} title={pickLocaleText(locale, '刷新数据', 'Refresh data')}><RefreshCcw size={16} /></button>
+              <button className="icon-button" onClick={() => setShowAgentLogModal(true)} title={pickLocaleText(locale, '打开 Agent 排错日志', 'Open Agent diagnostic logs')}><ScrollText size={17} /></button>
               <button className="icon-button" onClick={() => setShowAccountModal(true)} title={pickLocaleText(locale, '打开账号与系统设置', 'Open account and system settings')}><UserCircle2 size={18} /></button>
             </div>
           </header>
@@ -778,6 +807,7 @@ export default function App() {
 
       <TaskModal />
       <Toaster />
+      <AgentLogModal open={showAgentLogModal} locale={locale} onClose={() => setShowAgentLogModal(false)} />
       <StartupTransition />
 
       {showAccountModal ? (

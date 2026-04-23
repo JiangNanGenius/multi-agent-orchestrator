@@ -20,14 +20,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .db import init_db
+from .logging_utils import configure_process_logging
 from .services.event_bus import get_event_bus
 from .api import tasks, agents, events, admin, websocket, compat
 from .api import legacy
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-)
+configure_process_logging("api")
 log = logging.getLogger("multi_agent_orchestrator")
 
 
