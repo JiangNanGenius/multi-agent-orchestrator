@@ -88,7 +88,7 @@ python3 -m pip install --user -r agentorchestrator/backend/requirements.txt
 ./agentorchestrator.sh start
 ```
 
-默认 API 地址：`http://127.0.0.1:8000`
+默认 API 地址：`http://127.0.0.1:38000`
 
 如果你在做前端联调，可另开一个终端进入开发模式：
 
@@ -97,7 +97,7 @@ cd agentorchestrator/frontend
 pnpm dev
 ```
 
-> 默认开发地址：`http://127.0.0.1:35173`，并代理到 `http://127.0.0.1:8000`。
+> 默认开发地址：`http://127.0.0.1:35173`，并代理到 `http://127.0.0.1:38000`。
 
 
 ## 第五步：发送第一条任务
@@ -118,7 +118,7 @@ pnpm dev
 
 ```bash
 ./agentorchestrator.sh status
-curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:38000/health
 ```
 
 如果你正在联调前端，可打开开发界面 `http://127.0.0.1:35173`；正式部署与联调均以统一后端 API 和正式前端入口为准。

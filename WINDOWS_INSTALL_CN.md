@@ -103,7 +103,7 @@ bash ./agentorchestrator.sh start
 然后浏览器打开：
 
 ```text
-http://127.0.0.1:8000
+http://127.0.0.1:38000
 ```
 
 ---
@@ -232,9 +232,9 @@ openclaw config set tools.sessions.visibility all
 排查时建议先直接访问主 API：
 
 ```text
-http://127.0.0.1:8000/health
-http://127.0.0.1:8000/api/agents-overview
-http://127.0.0.1:8000/api/live-status
+http://127.0.0.1:38000/health
+http://127.0.0.1:38000/api/agents-overview
+http://127.0.0.1:38000/api/live-status
 ```
 
 如果这些接口能正常返回 JSON，说明主服务基本正常，可继续回到正式版前端页面排查渲染或静态资源问题。

@@ -22,7 +22,7 @@ ExecStop=/opt/agentorchestrator/agentorchestrator.sh stop
 ExecReload=/opt/agentorchestrator/agentorchestrator.sh restart
 
 Environment=AGENTORCHESTRATOR_API_HOST=0.0.0.0
-Environment=AGENTORCHESTRATOR_API_PORT=8000
+Environment=AGENTORCHESTRATOR_API_PORT=38000
 
 Restart=on-failure
 RestartSec=5

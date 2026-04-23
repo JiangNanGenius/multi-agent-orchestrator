@@ -30,8 +30,8 @@ class Settings(BaseSettings):
 
     # ── Server ──
     backend_host: str = "0.0.0.0"
-    backend_port: int = 8000
-    port: int = 8000
+    backend_port: int = 38000
+    port: int = 38000
     secret_key: str = "change-me-in-production"
     debug: bool = False
 

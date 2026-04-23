@@ -120,7 +120,7 @@ The repository can be explored depending on whether you want to verify the offic
 Then open:
 
 ```text
-http://127.0.0.1:8000
+http://127.0.0.1:38000
 ```
 
 

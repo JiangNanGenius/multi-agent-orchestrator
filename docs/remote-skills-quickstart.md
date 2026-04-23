@@ -46,7 +46,7 @@ python3 scripts/skill_manager.py list-remote
 ### 4. 查看 API 响应
 
 ```bash
-curl http://localhost:8000/api/remote-skills-list | jq .
+curl http://localhost:38000/api/remote-skills-list | jq .
 
 # 输出:
 # {
@@ -208,13 +208,13 @@ python3 scripts/skill_manager.py add-remote \
 
 ### POST /api/add-remote-skill
 
-默认由统一服务栈对外暴露在 `http://localhost:8000`（或你的部署域名）。
+默认由统一服务栈对外暴露在 `http://localhost:38000`（或你的部署域名）。
 
 添加远程 skill。
 
 **请求：**
 ```bash
-curl -X POST http://localhost:8000/api/add-remote-skill \
+curl -X POST http://localhost:38000/api/add-remote-skill \
   -H "Content-Type: application/json" \
   -d '{
     "agentId": "plan_center",
@@ -243,7 +243,7 @@ curl -X POST http://localhost:8000/api/add-remote-skill \
 列出所有远程 skills。
 
 ```bash
-curl http://localhost:8000/api/remote-skills-list
+curl http://localhost:38000/api/remote-skills-list
 ```
 
 **响应:**
@@ -272,7 +272,7 @@ curl http://localhost:8000/api/remote-skills-list
 更新远程 skill 为最新版本。
 
 ```bash
-curl -X POST http://localhost:8000/api/update-remote-skill \
+curl -X POST http://localhost:38000/api/update-remote-skill \
   -H "Content-Type: application/json" \
   -d '{
     "agentId": "plan_center",
@@ -285,7 +285,7 @@ curl -X POST http://localhost:8000/api/update-remote-skill \
 移除远程 skill。
 
 ```bash
-curl -X POST http://localhost:8000/api/remove-remote-skill \
+curl -X POST http://localhost:38000/api/remove-remote-skill \
   -H "Content-Type: application/json" \
   -d '{
     "agentId": "plan_center",
