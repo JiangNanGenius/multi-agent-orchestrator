@@ -365,11 +365,11 @@ export default function SkillsConfig() {
         <div style={{ display: 'grid', gap: 8, maxWidth: 760 }}>
           <div className="ec-id">{pickLocaleText(locale, '会话', 'Conversation')}</div>
           <div style={{ fontSize: 20, fontWeight: 850, lineHeight: 1.18 }}>{pickLocaleText(locale, 'Skill 管理', 'Skill Management')}</div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.72 }}>
-            {governancePanelOpen
-              ? pickLocaleText(locale, '桌面端会话区已展开，可直接发起 Skill 新增、来源巡检与治理收口请求。', 'The desktop conversation area is open, so you can directly start skill additions, source reviews, and governance cleanup requests.')
-              : pickLocaleText(locale, '这里用于统一发起 Skill 管理请求。展开后会进入更清晰的桌面工作台结构，便于同时查看会话、记录与快捷入口。', 'Use this area to launch centralized skill-management requests. When expanded, it opens a clearer desktop workbench structure for sessions, records, and quick entries.')}
-          </div>
+          {governancePanelOpen ? (
+            <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.72 }}>
+              {pickLocaleText(locale, '桌面端会话区已展开，可直接发起 Skill 新增、来源巡检与治理收口请求。', 'The desktop conversation area is open, so you can directly start skill additions, source reviews, and governance cleanup requests.')}
+            </div>
+          ) : null}
         </div>
         <div className="skills-governance-card__meta" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', marginLeft: 'auto' }}>
           <span className="chip">{skillManagerTarget ? `${skillManagerTarget.emoji} ${skillManagerTarget.agentLabel}` : pickLocaleText(locale, '未配置负责人', 'No owner configured')}</span>
@@ -470,11 +470,7 @@ export default function SkillsConfig() {
             renderSidebar={() => null}
           />
         </>
-      ) : (
-        <div className="skills-governance-card__collapsed-note" style={{ borderRadius: 16, border: '1px dashed rgba(122,162,255,0.24)', background: 'rgba(122,162,255,0.05)', padding: 14, color: 'var(--muted)', fontSize: 12, lineHeight: 1.7 }}>
-          {pickLocaleText(locale, 'Skill 管理面板默认收起，点击右上角“展开面板”即可打开完整会话区。', 'The skill management panel is collapsed by default. Click “Expand Panel” in the top-right corner to open the full conversation area.')}
-        </div>
-      )}
+      ) : null}
     </section>
   );
 

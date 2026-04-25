@@ -800,7 +800,10 @@ export default function AgentOrchestratorBoard() {
 
   const runningCount = activeTasks.filter((t) => ['Doing', 'Review', 'Assigned', 'ControlCenter', 'ReviewCenter', 'PlanCenter'].includes(t.state)).length;
   const blockedCount = activeTasks.filter((t) => t.state === 'Blocked').length;
-  const attentionTasks = activeTasks.filter((t) => ['Blocked', 'Review', 'ReviewCenter'].includes(t.state) || !!String(t.block || '').trim());
+  const attentionTasks = activeTasks.filter((t) =>
+    !['Done', 'Cancelled'].includes(t.state) &&
+    (['Blocked', 'Review', 'ReviewCenter'].includes(t.state) || !!String(t.block || '').trim())
+  );
   const attentionCount = attentionTasks.length;
   const completedCount = allTasks.filter((t) => ['Done', 'Cancelled'].includes(t.state)).length;
   const completionRate = allTasks.length ? Math.round((completedCount / allTasks.length) * 100) : 0;
@@ -994,12 +997,12 @@ export default function AgentOrchestratorBoard() {
             <div className="mission-board__hero-brand">
               <div className="mission-board__hero-logo mission-board__hero-logo--section" aria-hidden="true"><LayoutDashboard size={20} /></div>
               <div>
-                <div className="ec-id">{pickLocaleText(locale, singleTaskMode ? '任务详情' : '今日态势', singleTaskMode ? 'Task Detail' : 'Today Overview')}</div>
+                <div className="ec-id">{pickLocaleText(locale, singleTaskMode ? '任务详情' : '今日状态', singleTaskMode ? 'Task Detail' : 'Today Status')}</div>
                 <div className="mission-board__hero-title">
                   {pickLocaleText(
                     locale,
-                    singleTaskMode ? '当前任务' : '当前任务态势',
-                    singleTaskMode ? 'Current Task' : 'Current Mission Snapshot',
+                    singleTaskMode ? '当前任务' : '当前任务状态',
+                    singleTaskMode ? 'Current Task' : 'Current Task Status',
                   )}
                 </div>
               </div>
@@ -1107,7 +1110,7 @@ export default function AgentOrchestratorBoard() {
             {singleTaskMode ? (
               <button className="ab-btn" onClick={unArchivedDone.length > 0 ? handleArchiveAll : () => setTaskFilter(taskFilter === 'all' ? 'active' : 'all')}>
                 {unArchivedDone.length > 0
-                  ? pickLocaleText(locale, '处置已完成项', 'Handle Completed Items')
+                  ? pickLocaleText(locale, '归档已完成任务', 'Archive Completed Tasks')
                   : singleTaskActionLabel}
               </button>
             ) : (
@@ -1314,10 +1317,6 @@ export default function AgentOrchestratorBoard() {
             </button>
             {taskFilter !== 'active' ? <button className="ab-btn" onClick={() => setTaskFilter('active')}>{pickLocaleText(locale, '回到活跃任务', 'Back to Active')}</button> : null}
           </div>
-        </div>
-
-        <div style={{ color: 'var(--muted)', fontSize: 13, lineHeight: 1.8, marginBottom: 14 }}>
-          {pickLocaleText(locale, '这里聚合已归档、已完成或已取消的历史任务，方便回看结果、恢复上下文和继续复盘，而不会破坏上方详细任务卡在单任务模式下的紧凑高度。', 'This section gathers archived, completed, or cancelled work for review, context recovery, and retrospective follow-up without disturbing the compact card height used above in single-task mode.')}
         </div>
 
         <div className={`mission-board__workspace-list${singleTaskMode ? ' mission-board__workspace-list--single' : ''}`}>

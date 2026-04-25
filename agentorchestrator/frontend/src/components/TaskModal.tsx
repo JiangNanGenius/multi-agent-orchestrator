@@ -192,7 +192,14 @@ export default function TaskModal() {
 
   const stages = getPipeStatus(task);
   const activeStage = stages.find((s) => s.status === 'active');
-  const hb = task.heartbeat || { status: 'unknown' as const, label: '⚪ 无数据' };
+  const hbLabelMap: Record<string, string> = { running: '🟢 运行中', completed: '✅ 已完成', failed: '❌ 失败', error: '❌ 错误', stalled: '🟡 停滞', idle: '⚪ 空闲', unknown: '⚪ 未知' };
+  const hb = task.heartbeat
+    ? { status: task.heartbeat.status || 'unknown', label: task.heartbeat.label || hbLabelMap[task.heartbeat.status] || '⚪ 未知' }
+    : task.state === 'Done' ? { status: 'completed', label: '✅ 已完成' }
+    : task.state === 'Cancelled' ? { status: 'failed', label: '❌ 已取消' }
+    : task.state === 'Blocked' ? { status: 'stalled', label: '🟡 已阻塞' }
+    : task.state === 'Doing' ? { status: 'running', label: '🟢 执行中' }
+    : { status: 'idle', label: '⚪ ' + (task.state || '待处理') };
   const flowLog = task.flow_log || [];
   const automationFlow = flowLog.filter((fl) => isAutomationFlowRemark(fl.remark || '')).slice().reverse();
   const todos = task.todos || [];
@@ -709,11 +716,11 @@ export default function TaskModal() {
                     <span style={{ fontSize: 11, color: toneColor(watchdog.status), fontWeight: 700 }}>{watchdog.status || 'unknown'}</span>
                   </div>
                   <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
-                    上次巡检：{fmtDateTime(watchdog.last_scan_at)}
+                    上次巡检：{fmtDateTime(watchdog.checked_at || watchdog.last_scan_at)}
                     <br />
-                    建议动作：{watchdog.recommended_action || '—'}
+                    建议动作：{watchdog.recommended_action || watchdog.recommendedAction || '—'}
                     <br />
-                    原因：{watchdog.reason || watchdog.note || '—'}
+                    原因：{watchdog.reason || watchdog.note || watchdog.last_error || '—'}
                   </div>
                 </div>
                 <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
@@ -1023,13 +1030,17 @@ export default function TaskModal() {
                 <div className="m-section" style={{ marginBottom: 12 }}>
                   <div className="m-sec-label">二次确认</div>
                   <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>请输入当前任务 ID 以确认删除：</div>
-                  <input className="confirm-input" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder={task.id} />
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>删除原因（会记录到审计日志，可留空）：</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="confirm-input" style={{ flex: 1 }} value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder={task.id} />
+                    <button className="sched-btn" style={{ whiteSpace: 'nowrap', minWidth: 80 }} onClick={() => setDeleteConfirmText(task.id)} title="自动填入任务 ID">自动填入</button>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>任务代号：{task.taskCode || '—'}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8, marginTop: 8 }}>删除原因（会记录到审计日志，可留空）：</div>
                   <textarea className="confirm-reason" value={deleteReason} onChange={(e) => setDeleteReason(e.target.value)} placeholder="请输入删除原因或操作背景" />
                 </div>
                 <div className="confirm-btns">
                   <button className="sched-btn" disabled={deleteSubmitting} onClick={() => setShowDeleteDialog(false)}>取消</button>
-                  <button className="sched-btn danger" disabled={deleteSubmitting || deleteConfirmText.trim() !== task.id} onClick={() => void handleDeleteTask()}>
+                  <button className="sched-btn danger" disabled={deleteSubmitting || deleteConfirmText.trim().toLowerCase() !== task.id.toLowerCase()} onClick={() => void handleDeleteTask()}>
                     {deleteSubmitting ? '删除中…' : '确认删除任务与工作区'}
                   </button>
                 </div>

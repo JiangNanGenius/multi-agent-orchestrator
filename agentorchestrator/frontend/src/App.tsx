@@ -38,8 +38,8 @@ import AutomationPanel from './components/AutomationPanel';
 import TaskModal from './components/TaskModal';
 import Toaster from './components/Toaster';
 import AgentLogModal from './components/AgentLogModal';
-import StartupTransition from './components/CourtCeremony';
-import CollaborationDiscussion from './components/CourtDiscussion';
+import StartupTransition from './components/MeetingCeremony';
+import CollaborationDiscussion from './components/MeetingDiscussion';
 import SystemSettingsPanel from './components/SystemSettingsPanel';
 
 type AuthBootState = 'loading' | 'ready';
@@ -119,7 +119,7 @@ const PAGE_META: Record<TabKey, PageMeta> = {
     eyebrowEn: 'Task Overview',
     title: '统一查看状态与待办',
     titleEn: 'Review status and pending work in one place',
-    description: '进入处理前先确认任务态势、同步状态与关键入口。',
+    description: '进入处理前先确认任务状态、同步状态与关键入口。',
     descriptionEn: 'Check task status, sync health, and key entry points before taking action.',
   },
   collaboration: {
@@ -135,8 +135,8 @@ const PAGE_META: Record<TabKey, PageMeta> = {
   monitor: {
     navLabel: '实时动态',
     navLabelEn: 'Live Updates',
-    eyebrow: '系统态势',
-    eyebrowEn: 'System Pulse',
+    eyebrow: '系统状态',
+    eyebrowEn: 'System Status',
     title: '统一查看系统动态与异常提醒',
     titleEn: 'Track live system updates and exceptions together',
     description: '集中查看活跃任务、同步状态与异常提示。',
@@ -735,7 +735,7 @@ export default function App() {
                   <div className="workspace-brand__title">{pickLocaleText(locale, 'Agent协同管理系统', 'Agent Helm')}</div>
                   <span className="workspace-brand__status">{pickLocaleText(locale, '在线', 'Online')}</span>
                 </div>
-                <div className="workspace-brand__subtitle">{pickLocaleText(locale, '统一调度、协作与执行入口', 'Unified hub for control, collaboration, and execution')}</div>
+                <div className="workspace-brand__subtitle"></div>
               </div>
             </div>
           </div>

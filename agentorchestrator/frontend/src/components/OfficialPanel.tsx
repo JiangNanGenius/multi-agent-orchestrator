@@ -107,11 +107,15 @@ export default function AgentOverviewPanel() {
   }, [loadAgentsOverview]);
 
   const agents = agentsOverviewData?.agents || [];
+  const collabAgents = useMemo(
+    () => agents.filter((o) => normalizeAgentId(o.id) !== 'main'),
+    [agents],
+  );
   const totals = agentsOverviewData?.totals || { tasks_done: 0, cost_cny: 0 };
-  const maxTk = Math.max(...agents.map((o) => o.tokens_in + o.tokens_out + o.cache_read + o.cache_write), 1);
-  const alive = agents.filter((o) => o.heartbeat?.status === 'active');
-  const sel = agents.find((o) => o.id === (selectedAgent || agents[0]?.id));
-  const selId = sel?.id || agents[0]?.id;
+  const maxTk = Math.max(...collabAgents.map((o) => o.tokens_in + o.tokens_out + o.cache_read + o.cache_write), 1);
+  const alive = collabAgents.filter((o) => o.heartbeat?.status === 'active');
+  const sel = collabAgents.find((o) => o.id === (selectedAgent || collabAgents[0]?.id));
+  const selId = sel?.id || collabAgents[0]?.id;
 
   const removableExperts = useMemo(
     () => agents.filter((agent) => !PRESET_EXPERT_IDS.has(normalizeAgentId(agent.id))),
@@ -202,7 +206,7 @@ export default function AgentOverviewPanel() {
       <div className="off-layout">
         <div className="off-ranklist">
           <div className="orl-hdr">{pickLocaleText(locale, '贡献排行', 'Contribution Ranking')}</div>
-          {agents.map((o) => {
+          {collabAgents.map((o) => {
             const hb = o.heartbeat || { status: 'idle' };
             const meta = officialMeta(o.id, locale, o.role, o.label, o.rank);
             return (
@@ -255,11 +259,11 @@ export default function AgentOverviewPanel() {
             <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.18 }}>
               {pickLocaleText(locale, '通过管理对话发起角色调整与配置请求', 'Start roster and configuration requests through a dedicated management chat')}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.66 }}>
-              {chatPanelOpen
-                ? pickLocaleText(locale, '对话区已恢复，支持直接创建 Agent 管理任务并在原任务上继续追问。', 'The conversation area is back so you can create agent-management tasks and continue follow-ups on the same task.')
-                : pickLocaleText(locale, '桌面端会话区已改为更清晰的工作台结构。需要调整编组、角色职责或配置同步时，可直接从这里进入。', 'The desktop conversation area now uses a clearer workbench layout. Open it here whenever you need to adjust roster setup, role responsibilities, or configuration sync.')}
-            </div>
+              {chatPanelOpen ? (
+                <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.66 }}>
+                  {pickLocaleText(locale, '对话区已恢复，支持直接创建 Agent 管理任务并在原任务上继续追问。', 'The conversation area is back so you can create agent-management tasks and continue follow-ups on the same task.')}
+                </div>
+              ) : null}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
             <span className="chip ok">{managerLabel}</span>
@@ -323,11 +327,7 @@ export default function AgentOverviewPanel() {
             appendTaskMessage={(taskId, text) => api.taskAppendMessage(taskId, 'admin_specialist', text)}
             renderSidebar={() => null}
           />
-        ) : (
-          <div style={{ borderRadius: 16, border: '1px dashed rgba(123,224,255,0.24)', background: 'linear-gradient(180deg, rgba(123,224,255,0.08), rgba(123,224,255,0.03))', padding: 14, color: 'var(--muted)', fontSize: 12, lineHeight: 1.72 }}>
-            {pickLocaleText(locale, '管理面板默认收起。点击右上角“展开面板”即可打开完整桌面工作台，并在左侧会话索引、中部记录区和右侧快捷入口之间联动操作。', 'The management panel is collapsed by default. Click “Expand Panel” in the top-right corner to open the full desktop workbench and work across the session rail, central record area, and right-side quick entries.')}
-          </div>
-        )}
+        ) : null}
       </div>
 
       {rosterOpen && (

@@ -14,9 +14,12 @@ Lifespan 管理：
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
 from .db import init_db
@@ -74,6 +77,14 @@ app.include_router(websocket.router, tags=["websocket"])
 app.include_router(legacy.router, prefix="/api/tasks", tags=["legacy"])
 app.include_router(compat.router, tags=["compat"])
 
+# 挂载前端静态文件
+FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if FRONTEND_DIST.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="assets")
+    log.info(f"📦 Frontend assets mounted ({FRONTEND_DIST})")
+else:
+    log.warning(f"⚠️  Frontend dist not found at {FRONTEND_DIST}")
+
 
 @app.get("/health")
 async def health():
@@ -94,3 +105,10 @@ async def api_root():
             "health": "/health",
         },
     }
+
+
+@app.get("/")
+async def serve_frontend():
+    if FRONTEND_DIST.is_dir():
+        return FileResponse(str(FRONTEND_DIST / "index.html"))
+    return {"message": "Frontend not built. Run: cd agentorchestrator/frontend && npm run build"}

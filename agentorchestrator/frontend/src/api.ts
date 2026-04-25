@@ -235,6 +235,14 @@ export const api = {
     putJ<ActionResult & WorkspaceFileContentResult>(buildApiUrl(`/api/tasks/${encodeURIComponent(taskId)}/workspace/file`), { path: encodeTaskPath(path), content }),
   workspaceFileDownloadUrl: (taskId: string, path: string) =>
     withQuery(buildApiUrl(`/api/tasks/${encodeURIComponent(taskId)}/workspace/download`), { path: encodeTaskPath(path) }),
+
+  // 记忆中心 —— 直接读 OpenClaw 工作区
+  memoryFiles: () =>
+    fetchJ<{ ok: boolean; files: { path: string; name: string; label: string; kind: string; size: number; updated_at: string }[] }>(
+      `${API_BASE}/api/memory-files`
+    ),
+  memoryFile: (path: string) =>
+    fetchJ<WorkspaceFileContentResult>(withQuery(`${API_BASE}/api/memory-file`, { path })),
   workspaceArchiveDownloadUrl: (taskId: string, paths: string[] = []) => {
     const validPaths = paths.map((item) => item.trim()).filter(Boolean);
     if (!validPaths.length) {
@@ -287,6 +295,23 @@ export const api = {
     postJ<ActionResult>(`${API_BASE}/api/update-remote-skill`, { agentId, skillName }),
   removeRemoteSkill: (agentId: string, skillName: string) =>
     postJ<ActionResult>(`${API_BASE}/api/remove-remote-skill`, { agentId, skillName }),
+
+  // 直接搜索（不创建任务）
+  agentSearch: (params: {
+    query: string;
+    topic_scope?: string;
+    keywords?: string;
+    freshness_days?: number;
+    search_depth?: string;
+    result_limit?: number;
+  }) =>
+    postJ<{ ok: boolean; status?: string; query?: string; error?: string }>(
+      `${API_BASE}/api/agent-search`, params
+    ),
+  agentSearchStatus: () =>
+    fetchJ<{ ok: boolean; status: string; query: string; results?: string; resultCount?: number; error?: string }>(
+      `${API_BASE}/api/agent-search`
+    ),
 
   createTask: (data: CreateTaskPayload) =>
     postJ<ActionResult & { taskId?: string }>(`${API_BASE}/api/create-task`, data),
@@ -471,12 +496,17 @@ export interface WatchdogState {
   enabled?: boolean;
   status?: string;
   last_scan_at?: string;
+  checked_at?: string;
   last_event_at?: string;
   stale_seconds?: number;
   threshold_seconds?: number;
   recommended_action?: string;
+  recommendedAction?: string;
   reason?: string;
   note?: string;
+  last_error?: string;
+  issues?: unknown[];
+  repairs?: unknown[];
 }
 
 export interface FeishuReportingState {
@@ -1047,6 +1077,10 @@ export interface CollabRunStatus {
   conflicted_agents?: string[];
   yielded_agents?: string[];
   busy_snapshot?: CollabAgentBusyEntry[];
+  messages?: Record<string, unknown>[];
+  stage?: string;
+  round?: number;
+  speaker_queue?: string[];
   error?: string;
 }
 

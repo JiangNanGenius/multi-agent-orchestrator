@@ -144,9 +144,6 @@ export default function MonitorPanel() {
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6, lineHeight: 1.15 }}>
               {pickLocaleText(locale, '当前处理情况', 'Current Progress')}
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.7, maxWidth: 760 }}>
-              {pickLocaleText(locale, '这里会显示当前事项相关的处理情况。你可以看到谁正在处理、谁暂时空闲、哪里卡住了，也可以在需要时提醒继续处理。', 'This page shows the current progress of your work. You can see what is in progress, what is idle, what is stuck, and send a reminder when needed.')}
-            </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn-refresh" onClick={() => { loadAgentsStatus(); loadCollabBusy(); }}>
@@ -365,7 +362,7 @@ export default function MonitorPanel() {
                 )}
               </div>
               <div className="dc-footer">
-                <span className="dc-model">{pickLocaleText(locale, '当前能力：', 'Current capability: ')}{off?.model_short || pickLocaleText(locale, '尚未准备好', 'Not ready')}</span>
+                <span className="dc-model">{pickLocaleText(locale, '当前模型：', 'Current model: ')}{off?.model_short || pickLocaleText(locale, '尚未准备好', 'Not ready')}</span>
                 {off?.last_active && <span className="dc-la">⏰ {off.last_active}</span>}
               </div>
             </div>

@@ -76,8 +76,11 @@ openclaw channels add --type feishu --agent control_center
 ## 第四步：启动服务
 
 ```bash
-# 官方本地启动入口（默认拉起 API + orchestrator + dispatch + outbox）
+# 官方本地启动入口（默认拉起 API + orchestrator + dispatch）
 ./agentorchestrator.sh start
+
+# 如需额外启动 outbox relay（仅高级场景）
+AGENTORCHESTRATOR_ENABLE_OUTBOX=1 ./agentorchestrator.sh start
 
 # 查看状态
 ./agentorchestrator.sh status
@@ -86,9 +89,11 @@ openclaw channels add --type feishu --agent control_center
 如果你没有先运行 `install.sh`，而是直接从仓库手动启动正式后端栈，请先补齐后端依赖：
 
 ```bash
-python3 -m pip install --user -r agentorchestrator/backend/requirements.txt
+./install.sh
 ./agentorchestrator.sh start
 ```
+
+默认正式访问地址：`http://127.0.0.1:38000/`
 
 默认 API 地址：`http://127.0.0.1:38000`
 
@@ -123,10 +128,10 @@ pnpm dev
 curl http://127.0.0.1:38000/health
 ```
 
-如果你正在联调前端，可打开开发界面 `http://127.0.0.1:35173`；正式部署与联调均以统一后端 API 和正式前端入口为准。
+如果你正在联调前端，可打开开发界面 `http://127.0.0.1:35173`；如果是正式部署，请直接打开 `http://127.0.0.1:38000/`，此时前端由后端同源托管。
 
 1. **任务入口** — 通过统一 API 提交任务，确认任务已进入主链状态流转
-2. **运行调度** — 观察 orchestrator、dispatch 与 outbox 三条后台链路是否全部在线
+2. **运行调度** — 观察 API、orchestrator 与 dispatch 三条默认链路是否在线；只有在显式启用时才检查 outbox
 3. **结果归档** — 任务完成后检查结果写回、状态归档与最终交付是否一致
 
 任务流转路径：

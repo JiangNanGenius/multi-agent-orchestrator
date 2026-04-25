@@ -526,7 +526,7 @@ async def delete_task(
             reason=body.reason,
             delete_workspace=body.delete_workspace,
         )
-        return {"message": "ok", **payload}
+        return {"ok": True, "message": "ok", **payload}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

@@ -93,12 +93,13 @@ async def get_config():
 
 @router.get("/logs")
 async def agent_runtime_logs(
-    target: str = Query("dispatch"),
-    limit: int = Query(160, ge=20, le=400),
+    target: str = Query(default="dispatch"),
+    limit: int = Query(default=160),
 ):
     """读取面向 Agent 排错的最近滚动日志。"""
     if target not in LOG_TARGETS:
         raise HTTPException(status_code=404, detail=f"unknown log target: {target}")
+    limit = max(20, min(limit, 400))
     lines = read_recent_log_lines(target, limit)
     return {
         "target": target,

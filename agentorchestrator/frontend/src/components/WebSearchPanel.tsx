@@ -1,4 +1,5 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState, useCallback } from 'react';
+import { marked } from 'marked';
 import { api, type CollabAgentBusyEntry, type SearchResultItem, type SubConfig } from '../api';
 import { pickLocaleText, formatCount, type Locale } from '../i18n';
 import { deptMeta, normalizeAgentId, useStore } from '../store';
@@ -225,11 +226,19 @@ export default function WebSearchPanel() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [submittingTask, setSubmittingTask] = useState(false);
   const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [searchResults, setSearchResults] = useState<string>('');
+  const [searchStatus, setSearchStatus] = useState<string>('idle'); // idle | searching | done | error
+  const [searchError, setSearchError] = useState('');
+  const [searchPollTimer, setSearchPollTimer] = useState<ReturnType<typeof setInterval> | null>(null);
   const [isCompactViewport, setIsCompactViewport] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 900 : false));
 
   useEffect(() => {
     loadWebSearch();
     loadCollabBusy();
+    checkExistingSearch();
+    return () => {
+      if (searchPollTimer) clearInterval(searchPollTimer);
+    };
   }, [loadWebSearch, loadCollabBusy]);
 
   useEffect(() => {
@@ -419,7 +428,12 @@ export default function WebSearchPanel() {
     () => (collabAgentBusyData?.busy || []).filter((entry) => normalizeAgentId(entry.agent_id) === 'search_specialist'),
     [collabAgentBusyData],
   );
-  const searchSpecialistBusy = searchSpecialistEntries[0] || null;
+  const searchSpecialistBusy = useMemo(
+    () => searchSpecialistEntries[0] || null,
+    [searchSpecialistEntries],
+  );
+  const searchSpecialistIsSearching = searchStatus === 'searching';
+  const searchSpecialistOverallBusy = searchSpecialistBusy || searchSpecialistIsSearching;
   const searchSpecialistMeta = deptMeta('search_specialist', locale);
   const allTopicScopes = uniqueStrings([
     ...DEFAULT_CATS,
@@ -484,41 +498,108 @@ export default function WebSearchPanel() {
     }
     rememberSearch(trimmedQuery);
     setSubmittingTask(true);
+    setSearchError('');
+
     try {
-      const payload = {
-        title: buildSearchTaskTitle(locale, trimmedQuery),
-        org: searchSpecialistMeta.label,
-        owner: pickLocaleText(locale, SEARCH_OWNER_ZH, SEARCH_OWNER_EN),
-        priority: 'low',
-        templateId: 'web_search',
-        params: {
-          query: trimmedQuery,
-          topic_scope: activeCategory === 'all' ? Array.from(enabledSet).join('、') : activeCategory,
-          keywords: userKeywords.join('、'),
-          freshness_days: String(freshnessDays),
-          ranking_mode: String(rankingMode),
-          search_depth: String(localConfig.search_depth || 'standard'),
-          result_limit: String(resultLimit),
-        },
-        targetDept: 'search_specialist',
-        targetDepts: ['search_specialist'],
-      };
-      const result = await api.createTask(payload);
+      const result = await api.agentSearch({
+        query: trimmedQuery,
+        topic_scope: activeCategory === 'all' ? '' : activeCategory,
+        keywords: userKeywords.join('、'),
+        freshness_days: freshnessDays,
+        search_depth: localConfig.search_depth || 'standard',
+        result_limit: resultLimit,
+      });
+
       if (!result.ok) {
-        toast(result.error || pickLocaleText(locale, '搜索任务创建失败', 'Failed to create search task'), 'err');
+        toast(result.error || pickLocaleText(locale, '搜索启动失败', 'Search failed to start'), 'err');
+        setSearchStatus('error');
+        setSearchError(result.error || '');
         return;
       }
-      toast(
-        result.message || pickLocaleText(locale, `已提交新的搜索请求 ${result.taskId || ''}`.trim(), `New search request submitted ${result.taskId || ''}`.trim()),
-        'ok',
-      );
-      loadCollabBusy();
+
+      setSearchStatus('searching');
+      setSearchResults('');
+
+      // 开始轮询
+      if (searchPollTimer) clearInterval(searchPollTimer);
+      const timer = setInterval(async () => {
+        try {
+          const status = await api.agentSearchStatus();
+          if (status.status === 'done') {
+            clearInterval(timer);
+            setSearchStatus('done');
+            if (status.results) {
+              setSearchResults(status.results);
+            }
+            toast(
+              pickLocaleText(locale, `搜索完成，找到 ${status.resultCount || 0} 条结果`, `Search completed, found ${status.resultCount || 0} results`),
+              'ok',
+            );
+          } else if (status.status === 'error') {
+            clearInterval(timer);
+            setSearchStatus('error');
+            setSearchError(status.error || '');
+            toast(status.error || pickLocaleText(locale, '搜索失败', 'Search failed'), 'err');
+          }
+        } catch {
+          // 轮询失败，继续重试
+        }
+      }, 3000);
+      setSearchPollTimer(timer);
+
     } catch {
       toast(pickLocaleText(locale, '当前连接失败，请稍后再试', 'Connection failed. Please try again later.'), 'err');
     } finally {
       setSubmittingTask(false);
     }
   };
+
+  // 检查是否已有搜索缓存
+  const checkExistingSearch = async () => {
+    try {
+      const status = await api.agentSearchStatus();
+      if (status.status === 'done' && status.results) {
+        setSearchStatus('done');
+        setSearchResults(status.results);
+      } else if (status.status === 'searching') {
+        setSearchStatus('searching');
+        setSearchResults('');
+        // 恢复轮询
+        if (searchPollTimer) clearInterval(searchPollTimer);
+        const timer = setInterval(async () => {
+          try {
+            const status = await api.agentSearchStatus();
+            if (status.status === 'done') {
+              clearInterval(timer);
+              setSearchStatus('done');
+              if (status.results) setSearchResults(status.results);
+              toast(
+                pickLocaleText(locale, `搜索完成，找到 ${status.resultCount || 0} 条结果`, `Search completed, found ${status.resultCount || 0} results`),
+                'ok',
+              );
+            } else if (status.status === 'error') {
+              clearInterval(timer);
+              setSearchStatus('error');
+              setSearchError(status.error || '');
+            }
+          } catch { /* retry */ }
+        }, 3000);
+        setSearchPollTimer(timer);
+      }
+    } catch { /* ignore */ }
+  };
+
+  // 将搜索结果 markdown 渲染为 HTML，支持图片
+  const renderSearchHtml = useCallback((md: string): string => {
+    if (!md) return '';
+    const html = marked.parse(md, { async: false }) as string;
+    return html
+      .replace(/<img\s/g, '<img style="max-width:100%;border-radius:8px;margin:8px 0" loading="lazy" ')
+      .replace(/<table/g, '<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13px"')
+      .replace(/<th/g, '<th style="border:1px solid var(--line);padding:6px 10px;background:var(--panel);text-align:left;font-weight:700"')
+      .replace(/<td/g, '<td style="border:1px solid var(--line);padding:6px 10px"')
+      .replace(/<a\s/g, '<a target="_blank" rel="noopener noreferrer" style="color:var(--acc)" ');
+  }, []);
 
   return (
     <div className="search-panel-shell" style={{ gap: isCompactViewport ? 10 : 18 }}>
@@ -530,13 +611,6 @@ export default function WebSearchPanel() {
             ) : null}
             <div className="search-panel-hero__title" style={{ fontSize: isCompactViewport ? 18 : 30 }}>
               {pickLocaleText(locale, '搜索', 'Search')}
-            </div>
-            <div className="search-panel-hero__summary">
-              {pickLocaleText(
-                locale,
-                '将查询、筛选与状态信息压缩到同一工作台，减少空白与跳视，让桌面端更聚焦。',
-                'Compress query, filters, and status into one workbench so the desktop view feels tighter and easier to scan.',
-              )}
             </div>
           </div>
           <div className="search-panel-hero__actions" style={{ justifyItems: isCompactViewport ? 'stretch' : 'end' }}>
@@ -633,17 +707,17 @@ export default function WebSearchPanel() {
                 <span
                   className="chip"
                   style={{
-                    borderColor: searchSpecialistBusy ? 'rgba(255,120,120,0.5)' : 'rgba(76,195,138,0.5)',
-                    color: searchSpecialistBusy ? '#ff9a9a' : '#7ff0a8',
-                    background: searchSpecialistBusy ? 'rgba(255,120,120,0.12)' : 'rgba(76,195,138,0.12)',
+                    borderColor: searchSpecialistOverallBusy ? 'rgba(255,120,120,0.5)' : 'rgba(76,195,138,0.5)',
+                    color: searchSpecialistOverallBusy ? '#ff9a9a' : '#7ff0a8',
+                    background: searchSpecialistOverallBusy ? 'rgba(255,120,120,0.12)' : 'rgba(76,195,138,0.12)',
                   }}
                 >
-                  {searchSpecialistBusy ? pickLocaleText(locale, '忙碌中', 'Busy') : pickLocaleText(locale, '空闲', 'Idle')}
+                  {searchSpecialistOverallBusy ? pickLocaleText(locale, '忙碌中', 'Busy') : pickLocaleText(locale, '空闲', 'Idle')}
                 </span>
               </div>
 
               <div className="search-panel-status-copy">
-                {searchSpecialistBusy
+                {searchSpecialistOverallBusy
                   ? pickLocaleText(locale, '正在处理检索任务，可稍后刷新状态。', 'A search task is in progress. Refresh the status in a moment.')
                   : pickLocaleText(locale, '可发起新搜索', 'Ready for a new search')}
               </div>
@@ -652,7 +726,7 @@ export default function WebSearchPanel() {
 
           <div className="search-panel-topic-row">
             <button className={`chip ${activeCategory === 'all' ? 'ok' : ''}`} onClick={() => setActiveCategory('all')} style={{ cursor: 'pointer' }}>
-              {pickLocaleText(locale, '全部主题', 'All Topics')}
+              {pickLocaleText(locale, '自动', 'Auto')}
             </button>
             {Array.from(enabledSet).map((cat) => {
               const meta = CAT_META[cat] || { icon: '📰', color: 'var(--acc)', descZh: cat, descEn: cat };
@@ -718,19 +792,54 @@ export default function WebSearchPanel() {
         />
       </div>
 
-      {!totalResults ? (
-        <div className="mb-empty">
-          {pickLocaleText(
-            locale,
-            query
-              ? '当前查询没有命中结果。'
-              : '暂无搜索结果。',
-            query
-              ? 'No results match the current query.'
-              : 'No search results yet.',
-          )}
+      {searchStatus === 'searching' ? (
+        <div className="web-search-agent-results" style={{ padding: isCompactViewport ? 12 : 20, background: 'var(--panel)', borderRadius: isCompactViewport ? 14 : 16, border: '1px solid var(--line)', marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{pickLocaleText(locale, '🔍 搜索中…', '🔍 Searching...')}</span>
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
+            {pickLocaleText(locale, '搜索专家正在为您检索信息，请稍候…', 'The search expert is retrieving information, please wait...')}
+          </div>
+        </div>
+      ) : null}
+
+      {searchStatus === 'error' ? (
+        <div className="web-search-agent-results" style={{ padding: isCompactViewport ? 12 : 20, background: 'var(--panel)', borderRadius: isCompactViewport ? 14 : 16, border: '1px solid var(--err)', marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: 'var(--err)' }}>{pickLocaleText(locale, '搜索失败', 'Search Failed')}</div>
+          <div style={{ fontSize: 13, color: 'var(--muted)' }}>{searchError || pickLocaleText(locale, '未知错误', 'Unknown error')}</div>
+        </div>
+      ) : null}
+
+      {searchResults ? (
+        <div className="web-search-agent-results" style={{ padding: isCompactViewport ? 12 : 20, background: 'var(--panel)', borderRadius: isCompactViewport ? 14 : 16, border: '1px solid var(--line)', marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{pickLocaleText(locale, '🔍 搜索专家返回结果', '🔍 Search Expert Results')}</span>
+            <button className="sched-btn" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => { setSearchResults(''); setSearchStatus('idle'); }}>{pickLocaleText(locale, '清除', 'Clear')}</button>
+          </div>
+          <div
+            className="agent-search-results-content"
+            style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--text)' }}
+            dangerouslySetInnerHTML={{ __html: renderSearchHtml(searchResults) }}
+          />
+        </div>
+      ) : null}
+
+      {!totalResults && !searchResults ? (
+        <div className="mb-card" style={{ padding: isCompactViewport ? 16 : 24, background: 'var(--panel)', borderRadius: isCompactViewport ? 14 : 16, border: '1px solid var(--line)', textAlign: 'center' }}>
+          <div className="mb-empty">
+            {pickLocaleText(
+              locale,
+              query
+                ? '当前查询没有命中结果。'
+                : '暂无搜索结果。',
+              query
+                ? 'No results match the current query.'
+                : 'No search results yet.',
+            )}
+          </div>
         </div>
       ) : (
+        <div className="mb-card" style={{ padding: isCompactViewport ? 12 : 16, background: 'var(--panel)', borderRadius: isCompactViewport ? 14 : 16, border: '1px solid var(--line)' }}>
         <div className="web-search-results-layout" style={{ display: 'grid', gridTemplateColumns: isCompactViewport ? '1fr' : 'minmax(0, 1.4fr) minmax(280px, 0.8fr)', gap: isCompactViewport ? 12 : 16, alignItems: 'start' }}>
           <div className="web-search-results-list" style={{ display: 'grid', gap: 12 }}>
             {filteredResults.map((item, idx) => {
@@ -856,6 +965,7 @@ export default function WebSearchPanel() {
               </div>
             </InsightPanel>
           </div>
+        </div>
         </div>
       )}
 

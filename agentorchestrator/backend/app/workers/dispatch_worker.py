@@ -37,8 +37,115 @@ from ..services.event_bus import (
     TOPIC_AGENT_THOUGHTS,
     TOPIC_AGENT_HEARTBEAT,
 )
+from ..models.task import TaskState, STATE_TRANSITIONS
 
 log = logging.getLogger("agentorchestrator.dispatcher")
+
+# 默认自动流转映射：agent 完成后若状态未变，按此推进
+# 注意：必须与 STATE_TRANSITIONS 中的合法流转一致
+_AUTO_ADVANCE_MAP = {
+    "control_center": TaskState.PlanCenter,
+    "plan_center": TaskState.ReviewCenter,
+    "review_center": TaskState.Assigned,
+    "dispatch_center": TaskState.Doing,
+    "code_specialist": TaskState.Review,
+    "data_specialist": TaskState.Review,
+    "docs_specialist": TaskState.Review,
+    "audit_specialist": TaskState.Review,
+    "deploy_specialist": TaskState.Review,
+    "admin_specialist": TaskState.Review,
+    "search_specialist": TaskState.Review,
+}
+
+
+async def _auto_advance_state(task_id: str, agent: str, trace_id: str, original_state: str) -> None:
+    """Agent 完成后检查状态是否变更；若未变则自动推进到下一环节。"""
+    if not task_id:
+        return
+    try:
+        task_uuid = uuid.UUID(str(task_id))
+    except (ValueError, TypeError):
+        return
+
+    next_state = _AUTO_ADVANCE_MAP.get(agent)
+    if not next_state:
+        return
+
+    try:
+        async with async_session() as session:
+            task = await session.get(Task, task_uuid)
+            if not task:
+                return
+
+            current_state = task.state if isinstance(task.state, TaskState) else TaskState(str(task.state))
+
+            # 只有状态仍停留在派发时的状态，才自动推进
+            if current_state.value != original_state:
+                log.info(f"⏭️ Task {task_id} state already changed ({original_state} → {current_state.value}), skipping auto-advance")
+                return
+
+            allowed = STATE_TRANSITIONS.get(current_state, set())
+            if next_state not in allowed:
+                log.warning(f"Auto-advance blocked: {current_state.value} → {next_state.value} not allowed for {agent}")
+                return
+
+            task.state = next_state
+            task.org = Task.org_for_state(next_state, task.assignee_org)
+            task.updated_at = datetime.now(timezone.utc)
+            flow_entry = {
+                "from": current_state.value,
+                "to": next_state.value,
+                "agent": "auto_advance",
+                "reason": f"{agent} 处理完成，自动流转到 {next_state.value}",
+                "remark": f"{agent} 处理完成，自动流转",
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "at": datetime.now(timezone.utc).isoformat(),
+            }
+            task.flow_log = [*task.flow_log, flow_entry] if task.flow_log else [flow_entry]
+
+            # dispatch_center 完成后若无 specialist 可派，直接标记 Done
+            if agent == "dispatch_center" and next_state == TaskState.Doing:
+                doing_allowed = STATE_TRANSITIONS.get(TaskState.Doing, set())
+                if TaskState.Done in doing_allowed:
+                    task.state = TaskState.Done
+                    task.org = Task.org_for_state(TaskState.Done, task.assignee_org)
+                    task.updated_at = datetime.now(timezone.utc)
+                    flow_entry2 = {
+                        "from": TaskState.Doing.value,
+                        "to": TaskState.Done.value,
+                        "agent": "auto_advance",
+                        "reason": "调度中心已完成且无 specialist 可派，自动标记完成",
+                        "remark": "调度完成，自动标记 Done",
+                        "ts": datetime.now(timezone.utc).isoformat(),
+                        "at": datetime.now(timezone.utc).isoformat(),
+                    }
+                    task.flow_log = [*task.flow_log, flow_entry2]
+                    log.info(f"🔄 Auto-advanced task {task_id}: {current_state.value} → Doing → Done")
+                else:
+                    log.info(f"🔄 Auto-advanced task {task_id}: {current_state.value} → {next_state.value}")
+            else:
+                log.info(f"🔄 Auto-advanced task {task_id}: {current_state.value} → {next_state.value}")
+
+            await session.commit()
+
+            # 发布状态变更事件，让 orchestrator 继续派发
+            bus = EventBus()
+            await bus.connect()
+            await bus.publish(
+                topic=TOPIC_TASK_STATUS,
+                trace_id=trace_id,
+                event_type="task.state.changed",
+                producer="auto_advance",
+                payload={
+                    "task_id": task_id,
+                    "from": current_state.value,
+                    "to": next_state.value,
+                    "reason": f"{agent} 处理完成，自动流转",
+                },
+            )
+            await bus.close()
+    except Exception as exc:
+        log.warning(f"Failed to auto-advance state for {task_id}/{agent}: {exc}")
 
 GROUP = "dispatcher"
 CONSUMER = "disp-1"
@@ -77,25 +184,19 @@ def _resolve_agents_dir() -> pathlib.Path:
 
 
 def _build_soul_context(agent_id: str) -> str:
-    """拼装三层 prompt 层级：GLOBAL.md → group/*.md → {agent}/SOUL.md。"""
+    """返回 Agent 角色提示的简要引用，而非全文注入。
+    
+    OpenClaw Agent 启动时会自动读取工作区中的 SOUL.md、GLOBAL.md 等文件，
+    不需要在消息里重复注入完整内容。这里只保留简短的身份提示。
+    """
     agents_dir = _resolve_agents_dir()
-    parts = []
-
-    global_md = agents_dir / "GLOBAL.md"
-    if global_md.exists():
-        parts.append(global_md.read_text(encoding="utf-8"))
-
-    group = _GROUP_MAP.get(agent_id)
-    if group:
-        group_md = agents_dir / "groups" / f"{group}.md"
-        if group_md.exists():
-            parts.append(group_md.read_text(encoding="utf-8"))
-
     soul_md = agents_dir / agent_id / "SOUL.md"
     if soul_md.exists():
-        parts.append(soul_md.read_text(encoding="utf-8"))
-
-    return "\n---\n".join(parts) if parts else ""
+        content = soul_md.read_text(encoding="utf-8")
+        # 只取前 200 字符作为身份提示
+        first_line = content.split("\n")[0].strip()
+        return f"你是 {agent_id}。{first_line}"
+    return f"你是 {agent_id}。请按照工作区中的 SOUL.md 执行任务。"
 
 
 def _build_task_context(payload: dict) -> str:
@@ -805,6 +906,10 @@ class DispatchWorker:
                     )
                     await _record_agent_heartbeat(task_id, agent, trace_id, status="completed")
                     log.info(f"✅ Agent '{agent}' completed task {task_id}")
+
+                    # 检查任务状态是否被 Agent 主动改变；若未改变，自动推进到下一环节
+                    await _auto_advance_state(task_id, agent, trace_id, state)
+
                     await self.bus.ack(TOPIC_TASK_DISPATCH, GROUP, entry_id)
                     return
 

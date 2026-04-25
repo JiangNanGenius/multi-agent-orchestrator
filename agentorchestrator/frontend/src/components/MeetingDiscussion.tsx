@@ -107,6 +107,12 @@ interface CollabSession {
 const SESSION_CACHE_KEY = 'agentorchestrator:collab:session-cache';
 const DEMO_SESSION_PREFIX = 'demo-collab-';
 
+// 全局空闲追踪（跨标签页生效）
+let _collabLastActivity = Date.now();
+let _collabIdlePaused = false;
+let _collabIdleTimer: ReturnType<typeof setInterval> | null = null;
+let _collabIdleCheck: (() => void) | null = null;
+
 function isDemoSessionId(sessionId?: string | null) {
   return Boolean(sessionId && sessionId.startsWith(DEMO_SESSION_PREFIX));
 }
@@ -457,9 +463,49 @@ export default function CollaborationDiscussion() {
   const [emotions, setEmotions] = useState<Record<string, string>>({});
   const [speakerSelection, setSpeakerSelection] = useState<Set<string>>(new Set());
   const [restorableSession, setRestorableSession] = useState<CollabSession | null>(null);
+  const [discussionMode, setDiscussionMode] = useState<'auto' | 'meeting' | 'chat'>('auto');
   const [syncingRunState, setSyncingRunState] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 自动暂停：5 分钟无操作则暂停会议（全局级别，切换标签页也生效）
+  useEffect(() => {
+    const IDLE_TIMEOUT = 5 * 60 * 1000;
+    _collabLastActivity = Date.now();
+    _collabIdlePaused = false;
+
+    const updateActivity = () => {
+      _collabLastActivity = Date.now();
+      _collabIdlePaused = false;
+    };
+
+    _collabIdleCheck = () => {
+      if (!session || session.phase === 'concluded' || session.run_state === 'paused') return;
+      if (Date.now() - _collabLastActivity >= IDLE_TIMEOUT && !_collabIdlePaused) {
+        _collabIdlePaused = true;
+        api.collabDiscussPause(session.session_id).then((res) => {
+          if (res.ok) {
+            setSession((prev) => prev ? { ...prev, run_state: 'paused' } : prev);
+            loadCollabBusy().catch(() => {});
+          }
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener('mousemove', updateActivity, { passive: true });
+    window.addEventListener('keydown', updateActivity, { passive: true });
+    window.addEventListener('click', updateActivity, { passive: true });
+    window.addEventListener('scroll', updateActivity, { passive: true });
+    window.addEventListener('touchstart', updateActivity, { passive: true });
+
+    if (_collabIdleTimer) clearInterval(_collabIdleTimer);
+    _collabIdleTimer = setInterval(_collabIdleCheck, 5000);
+
+    return () => {
+      // 不清理事件监听器和定时器 —— 跨标签页仍需追踪
+      // 只在组件完全销毁且无 session 时由下一次 useEffect 重置
+    };
+  }, [session, loadCollabBusy]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -501,7 +547,16 @@ export default function CollaborationDiscussion() {
   }, [session]);
 
   const allAgentIds = useMemo(() => DEPTS.map((d) => d.id), []);
-  const sessionAgents = session?.agents || [];
+  const sessionAgents: CollabAgent[] = useMemo(() => {
+    const raw = session?.agents || [];
+    return raw.map((a: any) => {
+      if (typeof a === 'string') {
+        const meta = deptMeta(a, locale);
+        return { id: a, name: meta.label, emoji: meta.emoji, role: meta.role };
+      }
+      return a as CollabAgent;
+    });
+  }, [session?.agents, locale]);
   const currentModeratorId = session?.moderator_id || moderatorId;
   const moderatorSelectable = Array.from(selectedIds);
   const currentMode = session?.mode || 'meeting';
@@ -645,7 +700,7 @@ export default function CollaborationDiscussion() {
         topic,
         Array.from(selectedIds),
         undefined,
-        'auto',
+        discussionMode,
         moderatorId,
         selectedIds.size === allAgentIds.length,
       );
@@ -655,7 +710,33 @@ export default function CollaborationDiscussion() {
       setPhase('session');
       loadCollabBusy().catch(() => {});
       setSpeakerSelection(new Set(normalized.speaker_queue || []));
-      animateMessages(normalized.messages.slice(-3));
+
+      // 轮询等待开场消息（异步执行）
+      const sid = normalized.session_id;
+      const pollTimer = setInterval(async () => {
+        try {
+          const status = await api.collabDiscussRunStatus(sid);
+          if (status.ok && status.messages?.length) {
+            clearInterval(pollTimer);
+            setSession((prev) => prev ? {
+              ...prev,
+              messages: status.messages as unknown as CollabMessage[],
+              stage: (status.stage || 'discussion') as string,
+              round: status.round || 0,
+              run_state: (status.run_state || 'running') as string,
+            } : prev);
+            const msgs = status.messages as unknown as CollabMessage[];
+            animateMessages(msgs.slice(-3));
+            loadCollabBusy().catch(() => {});
+          }
+          if (status.stage === 'completed' || status.phase === 'concluded') {
+            clearInterval(pollTimer);
+          }
+        } catch { /* retry */ }
+      }, 2000);
+
+      // 超时停止轮询（60秒）
+      setTimeout(() => clearInterval(pollTimer), 60000);
     } catch (e: unknown) {
       const demoSession = buildDemoSession({
         topic,
@@ -696,6 +777,32 @@ export default function CollaborationDiscussion() {
     stageAction?: string;
   }) => {
     if (!session || loading) return;
+    
+    // 演示模式下不调用后端
+    if (isDemoSessionId(session.session_id)) {
+      setLoading(true);
+      // 模拟演示推进
+      setTimeout(() => {
+        setSession((prev) => {
+          if (!prev) return prev;
+          const newMsg = {
+            type: 'agent' as const,
+            agent_id: speakerIds[0] || Array.from(selectedIds)[0] || 'plan_center',
+            agent_name: deptMeta(speakerIds[0] || Array.from(selectedIds)[0] || 'plan_center', locale).label,
+            content: userMessage || constraint || pickLocaleText(locale, '我已收到，正在思考中。', 'Received, thinking...'),
+            emotion: 'thinking',
+          };
+          return {
+            ...prev,
+            messages: [...(prev.messages || []), newMsg].slice(-6),
+            round: (prev.round || 0) + 1,
+          };
+        });
+        setLoading(false);
+      }, 800);
+      return;
+    }
+    
     setLoading(true);
     try {
       const res = await api.collabDiscussAdvance(
@@ -707,15 +814,33 @@ export default function CollaborationDiscussion() {
         stageAction,
       );
       if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '推进失败', 'Failed to advance discussion'));
-      setSession((prev) => (prev ? mergeAdvanceResult(prev, res) : prev));
-      loadCollabBusy().catch(() => {});
-      animateMessages((res.new_messages || []).map((m) => ({
-        type: m.type || 'agent',
-        content: m.content,
-        agent_id: m.agent_id,
-        agent_name: m.agent_name || m.name,
-        emotion: m.emotion,
-      })));
+      
+      // 异步：后台在生成，前端轮询
+      const sid = session.session_id;
+      const currentRound = session.round || 0;
+      setSession((prev) => prev ? { ...prev, stage: 'thinking' } : prev);
+      
+      const pollTimer = setInterval(async () => {
+        try {
+          const status = await api.collabDiscussRunStatus(sid);
+          if (status.ok && (status.messages?.length || 0) > currentRound) {
+            clearInterval(pollTimer);
+            setSession((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                messages: status.messages as unknown as CollabMessage[],
+                stage: (status.stage || 'discussion') as string,
+                round: status.round || prev.round,
+              };
+            });
+            const msgs = status.messages as unknown as CollabMessage[];
+            animateMessages(msgs.slice(-3));
+            loadCollabBusy().catch(() => {});
+          }
+        } catch { /* retry */ }
+      }, 2000);
+      setTimeout(() => clearInterval(pollTimer), 60000);
     } catch (e: unknown) {
       toast((e as Error).message || pickLocaleText(locale, '推进失败', 'Failed to advance discussion'), 'err');
     } finally {
@@ -856,12 +981,35 @@ export default function CollaborationDiscussion() {
     setSpeakerSelection(new Set());
   };
 
-  const presetTopics = [
+  const allPresetTopics = useMemo(() => [
     { text: pickLocaleText(locale, '一起看看当前方案和可能风险', 'Review the current plan and possible risks together'), icon: '🏗️' },
-    { text: pickLocaleText(locale, '讨论下周安排和分工', 'Discuss next week’s plan and responsibilities'), icon: '📋' },
+    { text: pickLocaleText(locale, '讨论下周安排和分工', 'Discuss next week\'s plan and responsibilities'), icon: '📋' },
     { text: pickLocaleText(locale, '你们先陪我聊聊最近项目推进感受', 'Let us just chat about the recent project mood'), icon: '💬' },
     { text: pickLocaleText(locale, '讨论突发问题的处理方案与备用安排', 'Discuss the response plan and fallback option for an incident'), icon: '🚨' },
-  ];
+    { text: pickLocaleText(locale, '讨论技术选型和架构演进方向', 'Discuss technology choices and architecture evolution'), icon: '🏛️' },
+    { text: pickLocaleText(locale, '聊聊近期的用户反馈和体验问题', 'Chat about recent user feedback and UX issues'), icon: '🎯' },
+    { text: pickLocaleText(locale, '讨论 Q3 目标和关键里程碑', 'Discuss Q3 goals and key milestones'), icon: '🎯' },
+    { text: pickLocaleText(locale, '复盘最近一次事故的教训和改进', 'Review lessons and improvements from the latest incident'), icon: '🔍' },
+    { text: pickLocaleText(locale, '讨论团队资源分配和优先级调整', 'Discuss team resource allocation and priority adjustment'), icon: '⚖️' },
+    { text: pickLocaleText(locale, '头脑风暴新功能设计和创新点', 'Brainstorm new feature designs and innovations'), icon: '💡' },
+    { text: pickLocaleText(locale, '讨论竞品分析和市场定位', 'Discuss competitive analysis and market positioning'), icon: '📊' },
+    { text: pickLocaleText(locale, '聊聊团队协作流程的痛点', 'Chat about pain points in team collaboration'), icon: '🔗' },
+    { text: pickLocaleText(locale, '讨论 AI 如何帮助我们提升效率', 'Discuss how AI can help improve productivity'), icon: '🤖' },
+    { text: pickLocaleText(locale, '分享最近学到的新技术或工具', 'Share recent learnings about new tech or tools'), icon: '📚' },
+    { text: pickLocaleText(locale, '讨论数据安全和合规问题', 'Discuss data security and compliance issues'), icon: '🔒' },
+    { text: pickLocaleText(locale, '聊聊团队文化和远程协作', 'Chat about team culture and remote collaboration'), icon: '🌍' },
+    { text: pickLocaleText(locale, '没有什么特别的，随便聊聊', 'Nothing specific, let\'s just chat casually'), icon: '☕' },
+  ], [locale]);
+
+  // 每次显示随机子集，支持轮转
+  const presetTopics = useMemo(() => {
+    const idx = Math.floor(Date.now() / (30 * 60 * 1000)) % allPresetTopics.length;
+    const result: typeof allPresetTopics = [];
+    for (let i = 0; i < Math.min(7, allPresetTopics.length); i++) {
+      result.push(allPresetTopics[(idx + i) % allPresetTopics.length]);
+    }
+    return result;
+  }, [allPresetTopics]);
 
   const stageText = STAGE_LABEL[currentStage] || { zh: currentStage, en: currentStage };
   const minutes = session?.minutes || [];
@@ -900,13 +1048,6 @@ export default function CollaborationDiscussion() {
           <h2 className="text-xl font-bold bg-gradient-to-r from-amber-400 to-purple-400 bg-clip-text text-transparent">
             {pickLocaleText(locale, '👥 协作交流区', '👥 Collaboration Space')}
           </h2>
-          <p className="text-xs text-[var(--muted)] mt-1">
-            {pickLocaleText(
-              locale,
-              '系统会自动识别你是想进行正式协作还是轻松聊天；正式协作会启用引导说明、轮流表达、分步推进与结果记录。',
-              'The system can tell whether you want a structured collaboration or a casual chat. Structured collaboration includes guided opening, turn-taking, step-by-step progress, and result notes.',
-            )}
-          </p>
         </div>
 
         {restorableSession?.session_id && (
@@ -955,7 +1096,7 @@ export default function CollaborationDiscussion() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_.8fr] gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_.8fr] gap-4 items-start">
           <div className="space-y-4">
             <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)]">
               <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
@@ -1076,13 +1217,15 @@ export default function CollaborationDiscussion() {
 
             <div className="bg-[var(--panel)] rounded-xl p-4 border border-[var(--line)] space-y-2">
               <div className="text-sm font-semibold">{pickLocaleText(locale, '讨论模式', 'Discussion Mode')}</div>
-              <div className="text-xs text-[var(--muted)] leading-relaxed">
-                {pickLocaleText(
-                  locale,
-                  '系统会自动识别讨论方式，并按当前议题推进节奏。',
-                  'The system automatically detects the discussion mode and advances according to the current topic.',
-                )}
-              </div>
+              <select
+                value={discussionMode}
+                onChange={(e) => setDiscussionMode(e.target.value as 'auto' | 'meeting' | 'chat')}
+                className="w-full bg-[var(--bg2)] border border-[var(--line)] rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="auto">{pickLocaleText(locale, '🤖 自动', '🤖 Auto')}</option>
+                <option value="meeting">{pickLocaleText(locale, '📋 正式协作', '📋 Formal')}</option>
+                <option value="chat">{pickLocaleText(locale, '💬 轻松聊天', '💬 Casual Chat')}</option>
+              </select>
             </div>
           </div>
         </div>
@@ -1110,16 +1253,18 @@ export default function CollaborationDiscussion() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="bg-[var(--panel)] rounded-xl px-4 py-3 border border-[var(--line)]">
+    <div className="space-y-4 flex flex-col flex-1 min-h-0">
+      <div className="bg-[var(--panel)] rounded-xl px-4 py-3 border border-[var(--line)] flex-shrink-0">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-bold">{pickLocaleText(locale, '👥 讨论空间', '👥 Discussion Space')}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${currentMode === 'meeting' ? 'bg-amber-900/30 text-amber-300 border-amber-700/40' : 'bg-sky-900/30 text-sky-300 border-sky-700/40'}`}>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${currentMode === 'meeting' ? 'bg-amber-900/30 text-amber-300 border-amber-700/40' : currentMode === 'chat' ? 'bg-sky-900/30 text-sky-300 border-sky-700/40' : 'bg-emerald-900/30 text-emerald-300 border-emerald-700/40'}`}>
                 {currentMode === 'meeting'
                   ? pickLocaleText(locale, '结构化讨论', 'Structured Discussion')
-                  : pickLocaleText(locale, '轻松聊天', 'Casual Chat')}
+                  : currentMode === 'chat'
+                    ? pickLocaleText(locale, '轻松聊天', 'Casual Chat')
+                    : pickLocaleText(locale, '自动模式', 'Auto Mode')}
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--acc)]20 text-[var(--acc)] border border-[var(--acc)]30">
                 {locale === 'en' ? `Round ${session?.round || 0}` : `第${session?.round || 0}轮`}
@@ -1241,36 +1386,8 @@ export default function CollaborationDiscussion() {
         />
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1.18fr)_320px] gap-4 items-start">
-        <div className="space-y-4 min-w-0">
-          <div className="rounded-xl border border-[var(--line)] bg-[var(--panel)] p-4 space-y-3 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-            <div>
-              <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--muted)] mb-2">
-                {pickLocaleText(locale, '关键设置入口', 'Essential Settings Entry Points')}
-              </div>
-              <div className="text-xs text-[var(--muted)] leading-relaxed">
-                {pickLocaleText(locale, 'Agent 与 Skills 设置已恢复为可达入口；在会议室里也保留快捷跳转，避免巡检时来回寻找。', 'Agent and Skills settings are restored as reachable entry points. The room also keeps quick links so you do not need to hunt for them during review.')}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveTab('agents')}
-                className="rounded-xl border border-[var(--line)] bg-[var(--panel2)] px-3 py-2.5 text-left transition hover:border-sky-500/40 hover:bg-sky-500/10"
-              >
-                <div className="text-xs font-semibold">{pickLocaleText(locale, 'Agent 设置', 'Agent Settings')}</div>
-                <div className="text-[11px] text-[var(--muted)] mt-1">{pickLocaleText(locale, '查看成员清单、角色职责与启用状态。', 'Review members, roles, responsibilities, and enabled state.')}</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('skills')}
-                className="rounded-xl border border-[var(--line)] bg-[var(--panel2)] px-3 py-2.5 text-left transition hover:border-violet-500/40 hover:bg-violet-500/10"
-              >
-                <div className="text-xs font-semibold">{pickLocaleText(locale, 'Skills 设置', 'Skills Settings')}</div>
-                <div className="text-[11px] text-[var(--muted)] mt-1">{pickLocaleText(locale, '核对技能编组、可用能力与默认配置。', 'Check skill groups, available capabilities, and default configuration.')}</div>
-              </button>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1.18fr)_320px] gap-4 items-stretch flex-1 min-h-0">
+        <div className="space-y-4 min-w-0 flex flex-col xl:overflow-y-auto">
 
           <div className="bg-[var(--panel)] rounded-2xl border border-[var(--line)] p-4 space-y-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
             <div>
@@ -1283,15 +1400,23 @@ export default function CollaborationDiscussion() {
               <div className="text-xs text-[var(--muted)] mt-2 leading-relaxed">
                 {currentMode === 'meeting'
                   ? pickLocaleText(locale, '当前为结构化讨论。', 'Structured discussion is active.')
-                  : pickLocaleText(locale, '当前为轻松聊天模式。', 'Casual chat mode is active.')}
+                  : currentMode === 'chat'
+                    ? pickLocaleText(locale, '当前为轻松聊天模式。', 'Casual chat mode is active.')
+                    : pickLocaleText(locale, '当前为自动模式，系统会根据对话内容动态切换。', 'Auto mode active, the system will switch dynamically based on conversation.')}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <MetricCard
                 title={pickLocaleText(locale, '当前模式', 'Current Mode')}
-                value={currentMode === 'meeting' ? pickLocaleText(locale, '正式讨论', 'Formal Discussion') : pickLocaleText(locale, '轻松聊天', 'Chat')}
-                accent={currentMode === 'meeting' ? '#e8a040' : '#6a9eff'}
+                value={
+                  currentMode === 'meeting'
+                    ? pickLocaleText(locale, '正式讨论', 'Formal Discussion')
+                    : currentMode === 'chat'
+                      ? pickLocaleText(locale, '轻松聊天', 'Chat')
+                      : pickLocaleText(locale, '自动', 'Auto')
+                }
+                accent={currentMode === 'meeting' ? '#e8a040' : currentMode === 'chat' ? '#6a9eff' : '#5eaa7a'}
               />
               <MetricCard
                 title={pickLocaleText(locale, '会议主持人', 'Meeting Moderator')}
@@ -1347,66 +1472,6 @@ export default function CollaborationDiscussion() {
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="bg-[var(--panel)] rounded-2xl border border-[var(--line)] p-4 space-y-3 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div className="text-sm font-semibold">{pickLocaleText(locale, '👥 参会成员', '👥 Participants')}</div>
-                <div className="text-xs text-[var(--muted)] mt-1">
-                  {pickLocaleText(locale, '成员与占用状态', 'Participants and occupancy status')}
-                </div>
-              </div>
-              <span className="text-[10px] px-2 py-1 rounded-full border border-[var(--line)] text-[var(--muted)]">
-                {sessionAgents.length}
-              </span>
-            </div>
-            <div className="grid gap-2 max-h-[420px] overflow-y-auto pr-1">
-              {sessionAgents.map((agent) => {
-                const meta = deptMeta(agent.id, locale);
-                const busy = sessionBusySnapshot.find((entry) => entry.agent_id === agent.id) || busyByAgent.get(agent.id);
-                const isSpeaking = speakingId === agent.id;
-                const isQueued = (session?.speaker_queue || []).includes(agent.id);
-                const isModerator = currentModeratorId === agent.id;
-                return (
-                  <div
-                    key={`session-agent-${agent.id}`}
-                    className="rounded-xl border p-3"
-                    style={{
-                      borderColor: isSpeaking ? `${meta.color}80` : 'var(--line)',
-                      background: isSpeaking ? `${meta.color}18` : 'var(--panel2)',
-                      boxShadow: isSpeaking ? `0 10px 28px ${meta.color}18` : 'none',
-                    }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg border"
-                        style={{ borderColor: `${meta.color}60`, background: `${meta.color}18` }}
-                      >
-                        {agent.emoji}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-semibold">{agent.name}</span>
-                          {isModerator ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">{pickLocaleText(locale, '主持', 'Moderator')}</span> : null}
-                          {isSpeaking ? <span className="text-[10px] px-1.5 py-0.5 rounded-full border" style={{ borderColor: `${meta.color}80`, color: meta.color }}>{pickLocaleText(locale, '发言中', 'Speaking')}</span> : null}
-                          {isQueued && currentMode === 'meeting' ? <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-emerald-700/30 text-emerald-300 bg-emerald-950/20">{pickLocaleText(locale, '本轮已排队', 'Queued This Round')}</span> : null}
-                        </div>
-                        <div className="text-[11px] text-[var(--muted)] mt-1 truncate">{agent.role}</div>
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {busy ? (
-                            <span className={`px-2 py-1 rounded-lg border text-[10px] ${busyAccent(busy.state)}`}>{renderBusySummary(busy, locale)}</span>
-                          ) : (
-                            <span className="px-2 py-1 rounded-lg border text-[10px] border-emerald-700/30 bg-emerald-950/10 text-emerald-300">{pickLocaleText(locale, '可参与', 'Available')}</span>
-                          )}
-                          {emotions[agent.id] ? <span className="px-2 py-1 rounded-lg border border-[var(--line)] text-[10px]">{pickLocaleText(locale, '状态', 'Mood')} {EMOTION_EMOJI[emotions[agent.id]] || ''}</span> : null}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
 
           <div className="bg-[var(--panel)] rounded-2xl border border-[var(--line)] p-4 space-y-3 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
@@ -1522,15 +1587,15 @@ export default function CollaborationDiscussion() {
           )}
         </div>
 
-        <div className="space-y-4 min-w-0">
-          <div className="bg-[var(--panel)] rounded-2xl border border-[var(--line)] p-4 space-y-4 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
+        <div className="space-y-4 min-w-0 flex flex-col">
+          <div className="bg-[var(--panel)] rounded-2xl border border-[var(--line)] shadow-[0_16px_40px_rgba(0,0,0,0.18)] flex-shrink-0 p-4 space-y-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--muted)] mb-2">
-                  {pickLocaleText(locale, '会商主舞台', 'Main Discussion Stage')}
+                  {pickLocaleText(locale, '会议室状态', 'Meeting Room Status')}
                 </div>
                 <div className="text-sm font-semibold">
-                  {pickLocaleText(locale, '讨论舞台与消息流', 'Discussion stage and message flow')}
+                  {pickLocaleText(locale, '讨论实况', 'Discussion Live')}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 text-[10px]">
@@ -1549,8 +1614,14 @@ export default function CollaborationDiscussion() {
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 text-xs">
               <MetricCard
                 title={pickLocaleText(locale, '当前模式', 'Current Mode')}
-                value={currentMode === 'meeting' ? pickLocaleText(locale, '正式讨论', 'Formal Discussion') : pickLocaleText(locale, '轻松聊天', 'Chat')}
-                accent={currentMode === 'meeting' ? '#e8a040' : '#6a9eff'}
+                value={
+                  currentMode === 'meeting'
+                    ? pickLocaleText(locale, '正式讨论', 'Formal Discussion')
+                    : currentMode === 'chat'
+                      ? pickLocaleText(locale, '轻松聊天', 'Chat')
+                      : pickLocaleText(locale, '自动', 'Auto')
+                }
+                accent={currentMode === 'meeting' ? '#e8a040' : currentMode === 'chat' ? '#6a9eff' : '#5eaa7a'}
               />
               <MetricCard
                 title={pickLocaleText(locale, '会议主持人', 'Meeting Moderator')}
@@ -1580,14 +1651,13 @@ export default function CollaborationDiscussion() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[390px_minmax(0,1fr)] gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[390px_minmax(0,1fr)] gap-4 flex-1 min-h-0">
             <div className="bg-[var(--panel)] rounded-2xl p-4 border border-[var(--line)] relative overflow-hidden min-h-[460px] shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div>
                   <div className="text-sm font-semibold">{pickLocaleText(locale, '会议室实况', 'Meeting Room Live View')}</div>
-                  <div className="text-[11px] text-[var(--muted)] mt-1">
-                    {pickLocaleText(locale, '用稳定席位卡查看主持、发言与占用状态，成员再多也不会破版。', 'Track moderator, speakers, and busy members with stable seat cards even when more participants join.')}
-                  </div>
+                    <div className="text-[11px] text-[var(--muted)] mt-1">
+                    </div>
                 </div>
                 <div className="text-[10px] text-[var(--muted)]">{sessionAgents.length}</div>
               </div>
@@ -1597,7 +1667,7 @@ export default function CollaborationDiscussion() {
                 <span>{pickLocaleText(locale, '实时状态', 'Live status')}</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-2 max-h-[420px] overflow-y-auto pr-1">
                 {sessionAgents.map((agent) => {
                   const meta = deptMeta(agent.id, locale);
                   const color = meta.color;
@@ -1611,45 +1681,26 @@ export default function CollaborationDiscussion() {
                   return (
                     <div
                       key={agent.id}
-                      className="rounded-2xl border p-3 min-h-[148px] flex flex-col gap-3 transition-all"
+                      className="rounded-xl border p-2.5 flex flex-col gap-1.5 transition-all"
                       style={{
                         borderColor: isSpeaking ? `${color}80` : `${color}30`,
                         background: isSpeaking ? `linear-gradient(180deg, ${color}20, rgba(15,23,42,0.42))` : `linear-gradient(180deg, ${color}10, rgba(15,23,42,0.24))`,
-                        boxShadow: isSpeaking ? `0 12px 28px ${color}20` : 'none',
                       }}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div
-                            className="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl border"
-                            style={{ borderColor: `${color}50`, background: `${color}16` }}
-                          >
-                            {agent.emoji}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-xs font-semibold truncate" style={{ color: isSpeaking ? color : 'var(--text)' }}>{agent.name}</div>
-                            <div className="text-[10px] text-[var(--muted)] leading-relaxed">{agent.role}</div>
-                          </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg flex-shrink-0">{agent.emoji}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] font-semibold truncate" style={{ color: isSpeaking ? color : 'var(--text)' }}>{agent.name}</div>
+                          <div className="text-[10px] text-[var(--muted)] truncate">{agent.role}</div>
                         </div>
-                        {EMOTION_EMOJI[emotion] ? <span className="text-sm">{EMOTION_EMOJI[emotion]}</span> : null}
+                        {EMOTION_EMOJI[emotion] && <span className="text-xs flex-shrink-0">{EMOTION_EMOJI[emotion]}</span>}
                       </div>
-
-                      <div className="flex flex-wrap gap-1.5">
-                        {isModerator ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">{pickLocaleText(locale, '主持席', 'Moderator')}</span> : null}
-                        {isSpeaking ? <span className="text-[10px] px-1.5 py-0.5 rounded-full border" style={{ borderColor: `${color}80`, color }}>{pickLocaleText(locale, '发言中', 'Speaking')}</span> : null}
-                        {isQueued && currentMode === 'meeting' ? <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-emerald-700/30 text-emerald-300 bg-emerald-950/20">{pickLocaleText(locale, '本轮参与', 'Active This Round')}</span> : null}
-                      </div>
-
-                      <div className="mt-auto flex flex-wrap gap-1.5">
-                        {busy ? (
-                          <span className={`px-2 py-1 rounded-lg border text-[10px] ${busyAccent(busy.state)}`}>
-                            {isConflicted ? pickLocaleText(locale, '正在参与其他讨论', 'Busy in Another Discussion') : renderBusySummary(busy, locale)}
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 rounded-lg border text-[10px] border-emerald-700/30 bg-emerald-950/10 text-emerald-300">
-                            {pickLocaleText(locale, '当前可参与', 'Available Now')}
-                          </span>
-                        )}
+                      <div className="flex flex-wrap gap-1">
+                        {isModerator && <span className="text-[9px] px-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">{pickLocaleText(locale, '主持席', 'Mod')}</span>}
+                        {isSpeaking && <span className="text-[9px] px-1 rounded-full border" style={{ borderColor: `${color}80`, color }}>{pickLocaleText(locale, '发言中', 'Speaking')}</span>}
+                        {isQueued && currentMode === 'meeting' && <span className="text-[9px] px-1 rounded-full border border-emerald-700/30 text-emerald-300 bg-emerald-950/20">{pickLocaleText(locale, '本轮参与', 'In Round')}</span>}
+                        {busy && <span className={`text-[9px] px-1 rounded-full border ${busyAccent(busy.state)}`}>{isConflicted ? pickLocaleText(locale, '其他讨论中', 'Other talk') : renderBusySummary(busy, locale)}</span>}
+                        {!busy && <span className="text-[9px] px-1 rounded-full border border-emerald-700/30 bg-emerald-950/10 text-emerald-300">{pickLocaleText(locale, '可参与', 'Available')}</span>}
                       </div>
                     </div>
                   );
@@ -1661,11 +1712,10 @@ export default function CollaborationDiscussion() {
               <div className="border-b border-[var(--line)] p-4">
                 <div className="text-sm font-semibold">{pickLocaleText(locale, '消息与主持控制', 'Conversation and Controls')}</div>
                 <div className="text-[11px] text-[var(--muted)] mt-1 leading-relaxed">
-                  {pickLocaleText(locale, '消息流与输入控制', 'Message flow and input controls')}
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ minHeight: 280, maxHeight: 620 }}>
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
                 {(session?.messages || []).map((msg, i) => (
                   <MessageBubble key={i} msg={msg} agents={sessionAgents} locale={locale} moderatorId={currentModeratorId} />
                 ))}
@@ -1925,8 +1975,9 @@ function MessageBubble({
   moderatorId: string;
 }) {
   const speakerId = msg.agent_id || '';
-  const speakerName = msg.agent_name || pickLocaleText(locale, '成员', 'Member');
-  const meta = deptMeta(speakerId, locale);
+  const rawName = msg.agent_name || '';
+  const meta = deptMeta(speakerId || rawName, locale);
+  const speakerName = (rawName && rawName !== speakerId) ? rawName : (meta.label || rawName || pickLocaleText(locale, '成员', 'Member'));
   const color = meta.color;
   const agent = agents.find((o) => o.id === speakerId);
   const isModerator = speakerId === moderatorId || msg.type === 'moderator';

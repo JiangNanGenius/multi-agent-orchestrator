@@ -255,9 +255,23 @@ class OrchestratorWorker:
             )
 
     async def _on_task_completed(self, payload: dict, trace_id: str):
-        """任务完成 → 记录日志。"""
+        """任务完成 → 通知总控中心汇报给用户。"""
         task_id = payload.get("task_id")
         log.info(f"🎉 Task {task_id} completed. trace={trace_id}")
+
+        # 派发回总控中心，由总控中心向用户汇报结果
+        await self.bus.publish(
+            topic=TOPIC_TASK_DISPATCH,
+            trace_id=trace_id,
+            event_type="task.dispatch.complete_report",
+            producer="orchestrator",
+            payload={
+                "task_id": task_id,
+                "agent": "control_center",
+                "state": TaskState.Done.value,
+                "message": f"任务 {task_id} 已完成，请向用户汇报结果",
+            },
+        )
 
     async def _on_task_stalled(self, payload: dict, trace_id: str):
         """任务停滞 → 自动重试或升级。

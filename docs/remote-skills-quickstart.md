@@ -11,7 +11,7 @@
 ./agentorchestrator.sh status
 ```
 
-默认主入口会拉起后端 API 与 worker 栈。若需要联调 React 前端，可另开终端执行 `cd agentorchestrator/frontend && pnpm dev`，浏览器访问 `http://127.0.0.1:35173`。
+默认主入口会拉起后端 API、orchestrator 与 dispatch 三条正式链路，并由后端同源托管正式前端，因此可直接打开 `http://127.0.0.1:38000/`。若需要联调 React 前端，可另开终端执行 `cd agentorchestrator/frontend && pnpm dev`，浏览器访问 `http://127.0.0.1:35173`。
 
 ### 2. 添加远程 Skill（CLI）
 
@@ -118,7 +118,7 @@ python3 scripts/skill_manager.py remove-remote \
 
 ### 在前端中添加 Remote Skill
 
-1. 若在开发模式下，打开 `http://localhost:35173`；若走后端同源托管，则打开对应部署地址
+1. 若在开发模式下，打开 `http://localhost:35173`；若走后端同源托管，则优先打开 `http://localhost:38000/` 或对应部署域名
 2. 进入 **技能配置** 面板
 3. 点击 **添加远程 Skill** 按钮
 4. 填写表单：
@@ -208,7 +208,7 @@ python3 scripts/skill_manager.py add-remote \
 
 ### POST /api/add-remote-skill
 
-默认由统一服务栈对外暴露在 `http://localhost:38000`（或你的部署域名）。
+默认由统一服务栈对外暴露在 `http://localhost:38000/`（或你的部署域名）；正式页面与 API 共用同一入口。
 
 添加远程 skill。
 
