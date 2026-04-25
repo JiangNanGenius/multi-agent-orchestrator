@@ -1351,80 +1351,90 @@ async def collab_discuss_resume(body: dict):
     return {"ok": True, "run_state": "running", "session_id": session_id}
 
 
+def _collect_collab_discuss_agent_ids(session_id: str) -> tuple[list[str], Path | None]:
+    if not session_id:
+        return [], None
+    session_dir = Path(__file__).parents[4] / "data" / "collab_sessions"
+    session_file = session_dir / f"{session_id}.json"
+    if not session_file.exists():
+        return [], session_file
+    try:
+        session = json.loads(session_file.read_text())
+    except (json.JSONDecodeError, OSError):
+        return [], session_file
+    agent_ids = session.get("agent_ids", []) + [session.get("moderator_id", "")]
+    agent_ids = list(dict.fromkeys(aid for aid in agent_ids if aid))
+    return agent_ids, session_file
+
+
+def _clear_collab_sessions_async(agent_ids: list[str], message: str) -> None:
+    if not agent_ids:
+        return
+
+    def _worker() -> None:
+        import subprocess
+        from ..config import get_settings
+
+        settings = get_settings()
+        for aid in agent_ids:
+            try:
+                subprocess.run(
+                    [settings.openclaw_bin, "agent", "--agent", aid, "-m", message, "--json"],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    cwd=settings.openclaw_project_dir or None,
+                )
+            except Exception:
+                logger.exception("清理协作讨论会话失败: %s", aid)
+
+    threading.Thread(target=_worker, daemon=True).start()
+
+
 @router.post("/api/collab-discuss/conclude")
 async def collab_discuss_conclude(body: dict):
-    import subprocess
-    from ..config import get_settings
-    
-    settings = get_settings()
     session_id = body.get("session_id", body.get("sessionId", ""))
-    agent_ids: list[str] = []
-    
-    if session_id:
-        session_dir = Path(__file__).parents[4] / "data" / "collab_sessions"
-        session_file = session_dir / f"{session_id}.json"
-        if session_file.exists():
+    agent_ids, session_file = _collect_collab_discuss_agent_ids(session_id)
+
+    if session_file and session_file.exists():
+        try:
             session = json.loads(session_file.read_text())
             session["stage"] = "completed"
             session_file.write_text(json.dumps(session, ensure_ascii=False, default=str))
-            agent_ids = session.get("agent_ids", []) + [session.get("moderator_id", "")]
-            agent_ids = list(set(agent_ids))
-    
-    # 清除参会 Agent 的会话上下文，告知不要记录会议内容
-    cleared: list[str] = []
-    for aid in agent_ids:
-        if not aid:
-            continue
-        try:
-            subprocess.run(
-                [settings.openclaw_bin, "agent", "--agent", aid, "-m", "/new 会议已结束。除非用户明确要求，不要将本次会议的任何内容写入MEMORY.md或memory目录。", "--json"],
-                capture_output=True, text=True, timeout=30,
-                cwd=settings.openclaw_project_dir or None,
-            )
-            cleared.append(aid)
-        except Exception:
-            pass
-    
+        except (json.JSONDecodeError, OSError):
+            logger.exception("写入协作讨论完成状态失败: %s", session_id)
+
+    _clear_collab_sessions_async(
+        agent_ids,
+        "/new 会议已结束。除非用户明确要求，不要将本次会议的任何内容写入MEMORY.md或memory目录。",
+    )
+
     return {
         "ok": True,
         "summary": "讨论已结束",
         "stage": "completed",
-        "cleared_agents": cleared,
+        "cleared_agents": agent_ids,
+        "clear_mode": "background",
     }
 
 
 @router.post("/api/collab-discuss/destroy")
 async def collab_discuss_destroy(body: dict):
-    import subprocess
-    from ..config import get_settings
-    
-    settings = get_settings()
     session_id = body.get("session_id", body.get("sessionId", ""))
-    agent_ids: list[str] = []
-    
-    if session_id:
-        session_dir = Path(__file__).parents[4] / "data" / "collab_sessions"
-        session_file = session_dir / f"{session_id}.json"
-        if session_file.exists():
-            session = json.loads(session_file.read_text())
-            agent_ids = session.get("agent_ids", []) + [session.get("moderator_id", "")]
-            agent_ids = list(set(agent_ids))
-            session_file.unlink()
-    
-    # 清除参会 Agent 的会话上下文
-    for aid in agent_ids:
-        if not aid:
-            continue
+    agent_ids, session_file = _collect_collab_discuss_agent_ids(session_id)
+
+    if session_file and session_file.exists():
         try:
-            subprocess.run(
-                [settings.openclaw_bin, "agent", "--agent", aid, "-m", "/new", "--json"],
-                capture_output=True, text=True, timeout=30,
-                cwd=settings.openclaw_project_dir or None,
-            )
-        except Exception:
-            pass
-    
-    return {"ok": True}
+            session_file.unlink()
+        except OSError:
+            logger.exception("删除协作讨论会话文件失败: %s", session_id)
+
+    _clear_collab_sessions_async(
+        agent_ids,
+        "/new 会议已结束。除非用户明确要求，不要将本次会议的任何内容写入MEMORY.md或memory目录。",
+    )
+
+    return {"ok": True, "cleared_agents": agent_ids, "clear_mode": "background"}
 
 
 @router.get("/api/memory-files")
