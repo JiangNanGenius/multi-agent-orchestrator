@@ -24,19 +24,14 @@
 # 1) 启动正式后端服务栈（会同源托管正式前端）
 ./agentorchestrator.sh start
 
-# 2) 如需联调开发前端，可另开终端启动 Vite
-cd agentorchestrator/frontend
-pnpm dev
-
-# 3) 回到仓库根目录后自动截取全部 11 张截图
-cd ../..
+# 2) 在正式页面环境下自动截取全部 11 张截图
 python3 scripts/take_screenshots.py
 
-# 4) 录制演示 GIF（默认输出 `docs/official-ui-tour.gif`，需要 ffmpeg）
+# 3) 录制演示 GIF（默认输出 `docs/official-ui-tour.gif`，需要 ffmpeg）
 python3 scripts/record_demo.py
 ```
 
-> 默认正式访问地址为 `http://127.0.0.1:38000/`，开发联调地址为 `http://127.0.0.1:35173`。截图与演示脚本应优先面向后端同源托管的正式前端页面进行验证。
+> 默认正式访问地址为 `http://127.0.0.1:38000/`。截图与演示脚本应统一面向后端同源托管的正式前端页面进行验证。
 
 ## 建议
 
