@@ -12,7 +12,7 @@
 
 ## 根目录保留原则
 
-仓库根目录目前只保留**公开入口或长期有效的核心文档**，例如 `README.md`、多语言 README、`CONTRIBUTING.md`、`SECURITY.md`、`ROADMAP.md`、`PUBLIC_REPO_METADATA.md` 与主 `todo.md`。
+仓库根目录目前只保留**公开入口或长期有效的核心文档**，例如 `README.md`、多语言 README、`CONTRIBUTING.md`、`SECURITY.md`、`ROADMAP.md`、`PUBLIC_REPO_METADATA.md` 与主 `todo.md`；而当前给 AI / opencode 使用的正式部署执行说明，则放在 `docs/opencode-ai-deployment-runbook.md`。
 
 > 如果某份 Markdown 主要用于说明某次修复、某轮排障或某个临时设计决策，而不是项目长期入口文档，应优先放入 `docs/project-notes/`，而不是继续堆在仓库根目录。
 

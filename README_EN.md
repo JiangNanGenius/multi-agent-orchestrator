@@ -87,9 +87,9 @@ The table below summarizes why the README now uses five separate diagrams.
 
 ## Main Guidance for Deployment-Stage AI
 
-If this repository is being deployed with the help of an AI system, **treat `README.md` as the highest-priority deployment document**. The Chinese README is the authoritative operational entry point because this repository is intentionally deployed and run in Chinese by default.
+If this repository is being deployed with the help of an AI system, **treat `docs/opencode-ai-deployment-runbook.md` as the highest-priority execution document** and then use `README.md` as the Chinese authoritative context document. The repository is intentionally deployed and operated in Chinese by default, so the dedicated runbook should drive command execution while the Chinese README explains the product-facing context.
 
-The English README is provided to help external readers, collaborators, and international reviewers understand the repository boundaries. It should not override the Chinese-first deployment policy.
+The English README is provided to help external readers, collaborators, and international reviewers understand the repository boundaries. It should not override the Chinese-first deployment policy, and it should not replace the dedicated opencode/AI deployment runbook.
 
 ### Core deployment rules
 
@@ -97,8 +97,8 @@ The English README is provided to help external readers, collaborators, and inte
 | --- | --- |
 | Chinese remains the default | Do not switch the whole public system to English unless the deployer explicitly requests it |
 | Public UI must use the formal center / specialist naming system | Legacy role names and historic labels must not appear in the default interface |
-| AI-assisted deployment comes first | Let deployment-stage AI inspect the environment, plan commands, and flag risks before choosing an execution path |
-| Installation scripts are execution tools, not the primary narrative | Keep `install.sh` as the callable helper entry point after the AI has assessed the environment |
+| AI-assisted deployment comes first | Let deployment-stage AI inspect the environment, follow `docs/opencode-ai-deployment-runbook.md`, and flag risks before choosing an execution path |
+| Installation scripts are execution tools, not the primary narrative | Keep `install.sh` as the callable helper entry point after the AI has assessed the environment through the dedicated runbook |
 | Official UI verification comes first | Deployment should validate the official frontend, task flow, state visibility, and archive views before claiming success |
 | Docker is out of scope | Do not treat Dockerfiles, container manifests, or legacy image notes as a supported deployment path |
 | English support is additive | English is an optional companion layer, not a replacement for the default Chinese deployment |
@@ -220,7 +220,7 @@ ls docs
 
 ### 3. Recommended path: let AI assess the environment first, then choose the minimal execution path
 
-If OpenClaw is already available in your environment, the **first-choice deployment path** is not to immediately run a repository script by hand. Instead, provide this README, the repository structure, and the current runtime status to a deployment-stage AI so it can determine whether the situation is a first-time attachment or an incremental update, and then choose the smallest safe set of actions.
+If OpenClaw is already available in your environment, the **first-choice deployment path** is not to immediately run a repository script by hand. Instead, provide `docs/opencode-ai-deployment-runbook.md`, this README, the repository structure, and the current runtime status to a deployment-stage AI so it can determine whether the situation is a first-time attachment or an incremental update, and then choose the smallest safe set of actions.
 
 Before any command is executed, the AI should evaluate the following points:
 
@@ -340,13 +340,13 @@ To keep the repository homepage, deployment path, and execution reality from dri
 
 ### 8. Minimum command set
 
-If you simply want to attach this repository to an OpenClaw environment that is already working, the shortest safe first-time path is to let deployment-stage AI inspect the environment first and then choose the execution entry.
+If you simply want to attach this repository to an OpenClaw environment that is already working, the shortest safe first-time path is to let deployment-stage AI read `docs/opencode-ai-deployment-runbook.md`, inspect the environment first, and then choose the execution entry.
 
 ```bash
 git clone https://github.com/JiangNanGenius/multi-agent-orchestrator.git
 cd multi-agent-orchestrator
-# Let deployment-stage AI inspect the environment first,
-# then choose a one-shot initialization script or the incremental update path.
+# Give docs/opencode-ai-deployment-runbook.md to opencode or another deployment-stage AI first,
+# then let it choose the one-shot initialization path or the incremental update path.
 ```
 
 If you are updating an existing deployment, the following command set is the preferred path.

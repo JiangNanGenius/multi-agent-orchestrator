@@ -113,12 +113,13 @@
 
 对大多数第一次接触这个仓库的人来说，最重要的问题通常不是“后端怎么组织”或“状态怎么落盘”，而是三件更直接的事情：**它到底能帮我做什么、我该怎么理解它、我应该从哪里开始使用**。因此，首页更适合先站在用户视角说明价值和使用逻辑，而把更细的实现机制留给专门的文档去展开。[1] [2] [3]
 
-如果你关心的是使用逻辑，建议先阅读用户文档；如果你想快速看界面效果，可以直接看截图目录说明；如果你后续需要研究底层结构、任务治理与实现方式，再进入技术文档会更顺手。如果你想查看阶段修复记录、设计留痕或专项 Todo，请直接进入新的项目留痕索引。[1] [3] [4] [8]
+如果你关心的是使用逻辑，建议先阅读用户文档；如果你想快速看界面效果，可以直接看截图目录说明；如果你准备让 AI，尤其是 opencode 之类的执行型代理直接负责部署，请先阅读新的 AI 部署执行手册；如果你后续需要研究底层结构、任务治理与实现方式，再进入技术文档会更顺手。如果你想查看阶段修复记录、设计留痕或专项 Todo，请直接进入新的项目留痕索引。[1] [3] [4] [8] [11]
 
 | 阅读目标 | 建议先看哪里 | 适合谁 |
 | --- | --- | --- |
 | 先判断这套系统是不是自己需要的 | [用户文档](./docs/user-guide.md) | 使用者、产品负责人、协作者 [1] |
 | 先快速看当前界面与模块分布 | [截图说明](./docs/screenshots/README.md) | 第一次浏览仓库的人 [4] |
+| 让 AI 或 opencode 按正式主链路部署并自检 | [Opencode 部署与自检执行手册](./docs/opencode-ai-deployment-runbook.md) | 部署执行者、自动化代理 [11] |
 | 了解当前架构和任务处理逻辑 | [当前架构总览](./docs/current_architecture_overview.md) | 需要理解整体设计的人 [3] |
 | 查找阶段修复记录、设计留痕与专项 Todo | [项目留痕索引](./docs/project-notes/README.md) | 需要回看过程文档的人 [8] |
 | 深入研究实现方式 | [技术文档](./docs/technical-architecture.md) | 开发者、维护者 [2] |
@@ -142,6 +143,7 @@
 
 | Date / 日期 | Change / 变更 |
 | --- | --- |
+| 2026-04-25 | Added a dedicated opencode/AI deployment runbook, made it the recommended execution path for deployment-stage agents, and aligned the homepage documentation entry with the single official deployment flow / 新增专门给 opencode 与 AI 执行器使用的部署与自检手册，并将其设为部署阶段代理的推荐入口，同时让首页文档导航与当前唯一正式部署主链路保持一致 [2] [11] |
 | 2026-04-11 | Bumped project version to `2.0.1`, aligned frontend/backend runtime version markers, and documented this release increment in the homepage changelog / 版本号提升至 `2.0.1`，统一前后端运行时版本标识，并在首页变更日志中记录此次发布增量 [1] [2] |
 | 2026-04-11 | Added a homepage interface showcase and a simplified task flow diagram so first-time visitors can understand the product from screens and flow before reading implementation details / 为首页补充界面展示区与简化任务流程图，让初次访问者先从界面和流程理解产品，再进入实现细节 [1] [2] [3] [4] [5] |
 | 2026-04-11 | Rewrote the homepage README into a more user-oriented entry, reduced implementation-heavy wording, and clarified product positioning, feature value, and the basic task flow logic / 将首页 README 改写为更用户导向的版本，弱化实现细节，强化产品定位、功能价值与任务基础逻辑说明 [1] [2] [3] [4] [5] |
@@ -162,3 +164,4 @@
 [8]: ./docs/project-notes/README.md "项目留痕与阶段文档索引"
 [9]: ./docs/project-reflections.md "项目感想与实践复盘"
 [10]: ./docs/architecture-reflection-notes.md "架构重写复盘记录"
+[11]: ./docs/opencode-ai-deployment-runbook.md "Opencode 部署与自检执行手册"

@@ -62,9 +62,9 @@ openclaw channels add --type feishu --agent control_center
 
 ## 部署前建议先做一轮 AI 检查
 
-在首次安装完成或执行增量更新之前，建议先按 `docs/ai_deployment_checklist_and_prompts_20260408.md` 做一轮部署前审计。核心顺序应是：先检查环境与风险，再执行构建与同步，最后做最终交付检查；如果仍有高风险操作、运行时配置覆盖风险或需要停机重启的动作，应先确认再执行。
+在首次安装完成或执行增量更新之前，建议先把 `docs/opencode-ai-deployment-runbook.md` 交给 AI，尤其是 opencode 之类的执行型代理，按其中的**预检 → 安装 → 启动 → 自检**主链路先做一轮部署前审计。旧的 `docs/ai_deployment_checklist_and_prompts_20260408.md` 可继续作为补充检查模板，但当前推荐入口已经切换为新的执行手册。如果仍有高风险操作、运行时配置覆盖风险或需要停机重启的动作，应先确认再执行。
 
-推荐最小验证顺序如下：
+推荐最小验证顺序如下；若交由 opencode 执行，仍应先严格遵循新手册中的正式入口与根路径自检要求：
 
 1. `python3 -m py_compile scripts/sync_agent_config.py`
 2. `python3 scripts/sync_agent_config.py`
