@@ -7,4 +7,6 @@
 # 可选依赖（按需安装）
 numpy             # scripts/linucb_router.py - AgentRec 模型推荐
 pydantic-settings>=2.6.0  # backend 配置依赖
+pytest>=8.0.0     # tests/*
+pytest-asyncio>=0.23.0  # tests/test_checkpoint_manager.py
 # playwright      # scripts/take_screenshots.py - 自动截图（需要额外安装浏览器: playwright install chromium）

@@ -9,9 +9,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export AGENTORCHESTRATOR_HOME="${AGENTORCHESTRATOR_HOME:-$(dirname "$SCRIPT_DIR")}"
 INTERVAL="${1:-15}"
-LOG="/tmp/agentorchestrator_refresh.log"
-PIDFILE="/tmp/agentorchestrator_refresh.pid"
+LOG="${AGENTORCHESTRATOR_REFRESH_LOG:-$AGENTORCHESTRATOR_HOME/logs/agentorchestrator_refresh.log}"
+PIDFILE="${AGENTORCHESTRATOR_REFRESH_PIDFILE:-$AGENTORCHESTRATOR_HOME/.pids/agentorchestrator_refresh.pid}"
 MAX_LOG_SIZE=$((10 * 1024 * 1024))  # 10MB
+mkdir -p "$(dirname "$LOG")" "$(dirname "$PIDFILE")"
 
 # ── 单实例保护 ──
 if [[ -f "$PIDFILE" ]]; then

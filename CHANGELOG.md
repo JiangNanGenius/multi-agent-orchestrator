@@ -100,4 +100,4 @@
 
 ## 部署
 - agentorchestrator.sh 使用venv Python
-- 打包到 /opt/1panel/www/sites/downloadcdn.cloudforzhao.com/index/asdikujlhfdhaeiosuyfbnlikadada/
+- 打包到公开下载目录（具体服务器路径已在公开版中脱敏）

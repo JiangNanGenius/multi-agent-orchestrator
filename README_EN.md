@@ -303,7 +303,7 @@ After deployment, do not begin by renaming everything, changing the default lang
 | Verification item | Expected result |
 | --- | --- |
 | The home page opens correctly | The root path serves the latest official frontend instead of an outdated fallback page |
-| Login and first-password-change flow work | The default `admin/admin` login works, and the first login forces a password change |
+| Login and first-password-change flow work | The locally initialized admin account works, and the first login forces a password change when that policy is enabled |
 | Task lists and task details work | Frontend and backend APIs are connected correctly |
 | The automation configuration panel is visible and saveable | Task-level automation management is active |
 | Automation action logs are visible | Log and status-summary flows are functioning |

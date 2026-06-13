@@ -33,14 +33,31 @@ from pathlib import Path
 # 添加脚本目录到路径
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
+OPENCLAW_HOME = Path(os.environ.get("OPENCLAW_HOME", Path.home() / ".openclaw")).expanduser()
+CONTROL_CENTER_SKILLS = Path(
+    os.environ.get(
+        "OPENCLAW_CONTROL_CENTER_SKILLS",
+        OPENCLAW_HOME / "workspace-control_center" / "skills",
+    )
+).expanduser()
 
 
 # 工具函数 - 内联实现，避免依赖问题
 def run_cmd(cmd, timeout=60):
     """执行命令并返回输出"""
+    input_text = None
+    if isinstance(cmd, dict):
+        input_text = cmd.get("input")
+        cmd = cmd.get("args", [])
+    use_shell = isinstance(cmd, str)
     try:
         result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, timeout=timeout
+            cmd,
+            shell=use_shell,
+            input=input_text,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
         )
         if result.returncode == 0:
             return result.stdout
@@ -110,7 +127,15 @@ def read_plan_md(workspace_path: str) -> str:
 
 def update_progress(task_id: str, content: str, agent: str):
     """更新看板进度"""
-    cmd = f'python3 {SCRIPT_DIR}/task_db.py progress "{task_id}" "{content}" --agent {agent}'
+    cmd = [
+        sys.executable,
+        str(SCRIPT_DIR / "task_db.py"),
+        "progress",
+        task_id,
+        content,
+        "--agent",
+        agent,
+    ]
     return run_cmd(cmd)
 
 
@@ -118,7 +143,17 @@ def patch_workspace(task_id: str, data: dict, agent: str, summary: str):
     """更新工作区元数据"""
     import json as json_module
     data_json = json_module.dumps(data, ensure_ascii=False)
-    cmd = f'python3 {SCRIPT_DIR}/task_db.py patch-workspace "{task_id}" \'{data_json}\' --agent {agent} --summary "{summary}"'
+    cmd = [
+        sys.executable,
+        str(SCRIPT_DIR / "task_db.py"),
+        "patch-workspace",
+        task_id,
+        data_json,
+        "--agent",
+        agent,
+        "--summary",
+        summary,
+    ]
     return run_cmd(cmd)
 
 
@@ -126,7 +161,7 @@ def get_available_search_engines() -> list:
     """获取所有可用的搜索引擎 - 不带硬编码优先级，让模型根据特性智能选择"""
     engines = []
 
-    skills_dir = Path("/root/.openclaw/workspace-control_center/skills")
+    skills_dir = CONTROL_CENTER_SKILLS
 
     # 检查 bocha-search
     bocha_script = skills_dir / "bocha-search-1.0.0" / "scripts" / "bocha_search.py"
@@ -287,32 +322,32 @@ def select_search_engines(plan_md: str, available_engines: list) -> list:
     return selected
 
 
-def build_search_command(engine: dict, query: str, time_range: str = None, count: int = 10) -> str:
+def build_search_command(engine: dict, query: str, time_range: str = None, count: int = 10):
     """根据搜索引擎构建搜索命令"""
     script = engine["script"]
 
     if engine["name"] == "bocha-search":
-        cmd = f'python3 {script} "{query}" --ai --count {count}'
-        return cmd
+        return [sys.executable, script, query, "--ai", "--count", str(count)]
 
     elif engine["name"] == "volc-search":
-        cmd = f'python3 {script} "{query}" --type web_summary --count {count} --need-summary'
+        cmd = [sys.executable, script, query, "--type", "web_summary", "--count", str(count), "--need-summary"]
         if time_range:
-            cmd += f' --time-range {time_range}'
+            cmd.extend(["--time-range", time_range])
         return cmd
 
     elif engine["name"] == "tencent-search":
-        cmd = f'python3 {script} "{query}" --count {count}'
         # 腾讯使用时间戳，暂时不加时间过滤
-        return cmd
+        return [sys.executable, script, query, "--count", str(count)]
 
     elif engine["name"] == "baidu-search":
-        # 百度搜索需要 JSON 请求体，使用简单调用
-        cmd = f'echo "{{\"query\":\"{query}\"}}" | python3 {script}'
-        return cmd
+        # 百度搜索需要 JSON 请求体，通过 stdin 传入，避免 shell 拼接。
+        return {
+            "args": [sys.executable, script],
+            "input": json.dumps({"query": query}, ensure_ascii=False),
+        }
 
     else:
-        return f'python3 {script} "{query}"'
+        return [sys.executable, script, query]
 
 
 def extract_search_queries(plan_md: str) -> list:

@@ -5,13 +5,27 @@
 import subprocess
 import time
 import json
+import os
+import sys
 from pathlib import Path
 
-def run_cmd(cmd, timeout=60):
+OPENCLAW_HOME = Path(os.environ.get("OPENCLAW_HOME", Path.home() / ".openclaw")).expanduser()
+CONTROL_WORKSPACE = Path(
+    os.environ.get("OPENCLAW_CONTROL_CENTER_WORKSPACE", OPENCLAW_HOME / "workspace-control_center")
+).expanduser()
+TEST_TASK_ID = os.environ.get("AGENTORCHESTRATOR_TEST_TASK_ID")
+
+
+def run_cmd(cmd, timeout=60, cwd=None, input_text=None):
     """执行命令并返回结果"""
     try:
         result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, timeout=timeout
+            cmd,
+            cwd=str(cwd) if cwd else None,
+            input=input_text,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
         )
         return result.returncode, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
@@ -23,13 +37,24 @@ def test_search_direct():
     print("测试1：直接调用搜索脚本")
     print("=" * 60)
 
-    script = Path("/root/.openclaw/workspace-control_center/skills/volc-search-1.0.0/scripts/search.py")
+    script = CONTROL_WORKSPACE / "skills" / "volc-search-1.0.0" / "scripts" / "search.py"
     if not script.exists():
         print(f"❌ 脚本不存在: {script}")
         return False
 
-    cmd = f'python3 {script} "2026年4月29日 AI新闻" --type web_summary --count 5 --time-range OneDay --need-summary'
-    print(f"执行命令: {cmd[:80]}...")
+    cmd = [
+        sys.executable,
+        str(script),
+        "2026年4月29日 AI新闻",
+        "--type",
+        "web_summary",
+        "--count",
+        "5",
+        "--time-range",
+        "OneDay",
+        "--need-summary",
+    ]
+    print(f"执行命令: {' '.join(cmd)[:80]}...")
 
     code, stdout, stderr = run_cmd(cmd, timeout=30)
 
@@ -49,11 +74,22 @@ def test_progress_update():
     print("测试2：看板进度更新")
     print("=" * 60)
 
-    task_id = "5fe8874d-7c95-4e6b-9827-53309f3af0f8"
-    cmd = f'cd /root/.openclaw/workspace-control_center && python3 scripts/task_db.py progress "{task_id}" "测试进度更新；计划：测试🔄" --agent search_specialist'
+    if not TEST_TASK_ID:
+        print("⏭️ 跳过：未设置 AGENTORCHESTRATOR_TEST_TASK_ID")
+        return True
+    task_id = TEST_TASK_ID
+    cmd = [
+        sys.executable,
+        "scripts/task_db.py",
+        "progress",
+        task_id,
+        "测试进度更新；计划：测试🔄",
+        "--agent",
+        "search_specialist",
+    ]
 
-    print(f"执行命令: {cmd[:100]}...")
-    code, stdout, stderr = run_cmd(cmd, timeout=10)
+    print(f"执行命令: {' '.join(cmd)[:100]}...")
+    code, stdout, stderr = run_cmd(cmd, timeout=10, cwd=CONTROL_WORKSPACE)
 
     if code == 0:
         print("✅ 进度更新成功")
@@ -70,12 +106,25 @@ def test_patch_workspace():
     print("测试3：工作区元数据更新")
     print("=" * 60)
 
-    task_id = "5fe8874d-7c95-4e6b-9827-53309f3af0f8"
+    if not TEST_TASK_ID:
+        print("⏭️ 跳过：未设置 AGENTORCHESTRATOR_TEST_TASK_ID")
+        return True
+    task_id = TEST_TASK_ID
     data = json.dumps({"latest_handoff": "测试更新", "test_field": "test_value"}, ensure_ascii=False)
-    cmd = f'cd /root/.openclaw/workspace-control_center && python3 scripts/task_db.py patch-workspace "{task_id}" \'{data}\' --agent search_specialist --summary "测试更新"'
+    cmd = [
+        sys.executable,
+        "scripts/task_db.py",
+        "patch-workspace",
+        task_id,
+        data,
+        "--agent",
+        "search_specialist",
+        "--summary",
+        "测试更新",
+    ]
 
-    print(f"执行命令: {cmd[:100]}...")
-    code, stdout, stderr = run_cmd(cmd, timeout=10)
+    print(f"执行命令: {' '.join(cmd)[:100]}...")
+    code, stdout, stderr = run_cmd(cmd, timeout=10, cwd=CONTROL_WORKSPACE)
 
     if code == 0:
         print("✅ 工作区更新成功")
@@ -100,7 +149,8 @@ def test_multi_engines():
         engines = get_available_search_engines()
         print(f"发现 {len(engines)} 个可用搜索引擎:")
         for e in engines:
-            print(f"  - {e['name']} (优先级: {e['priority']}) 特性: {', '.join(e['features'])}")
+            priority = e.get('priority', 'auto')
+            print(f"  - {e['name']} (优先级: {priority}) 特性: {', '.join(e['features'])}")
 
         if engines:
             # 测试引擎选择逻辑

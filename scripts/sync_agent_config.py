@@ -4,7 +4,7 @@
 支持自动发现 agent workspace 下的 Skills 目录
 输出多Agent智作中枢所需的现代中文节点标签与职责元数据
 """
-import json, os, pathlib, datetime, logging, sys, re
+import json, os, pathlib, datetime, logging, sys, re, shutil
 
 if __package__ in (None, ''):
     scripts_dir = pathlib.Path(__file__).resolve().parent
@@ -22,7 +22,8 @@ DATA = BASE / 'data'
 REGISTRY = BASE / 'registry'
 REGISTRY_SPECS = REGISTRY / 'specs'
 REGISTRY_GENERATED = REGISTRY / 'generated'
-OPENCLAW_CFG = pathlib.Path.home() / '.openclaw' / 'openclaw.json'
+OPENCLAW_HOME = pathlib.Path(os.environ.get('OPENCLAW_HOME', pathlib.Path.home() / '.openclaw')).expanduser()
+OPENCLAW_CFG = OPENCLAW_HOME / 'openclaw.json'
 SCHEMA_VERSION = '1.0.0'
 SOUL_TEMPLATE_VERSION = '1.0.0'
 
@@ -82,6 +83,19 @@ def is_center_agent(agent_id: str) -> bool:
 def _titleize_agent_token(text: str) -> str:
     parts = [part for part in text.replace('-', '_').split('_') if part]
     return ' '.join(part.capitalize() for part in parts) if parts else text
+
+
+def openclaw_workspace(agent_id: str) -> pathlib.Path:
+    return OPENCLAW_HOME / f'workspace-{agent_id}'
+
+
+def openclaw_agent_sessions(agent_id: str) -> pathlib.Path:
+    return OPENCLAW_HOME / 'agents' / agent_id / 'sessions'
+
+
+def public_openclaw_workspace_path(agent_id: str, filename: str | None = None) -> str:
+    base = f'<openclaw-home>/workspace-{agent_id}'
+    return f'{base}/{filename}' if filename else base
 
 KNOWN_MODELS = [
     {'id': 'anthropic/claude-sonnet-4-6', 'label': 'Claude Sonnet 4.6', 'provider': 'Anthropic'},
@@ -343,7 +357,7 @@ def build_registry_spec(agent: dict) -> dict:
         },
         'deployment': {
             'projectSourcePath': existing_deployment.get('projectSourcePath') or f'agents/{agent["id"]}/SOUL.md',
-            'workspaceTargetPath': existing_deployment.get('workspaceTargetPath') or str(pathlib.Path.home() / f'.openclaw/workspace-{agent["id"]}' / 'SOUL.md'),
+            'workspaceTargetPath': public_openclaw_workspace_path(agent["id"], 'SOUL.md'),
             'legacyTargets': [],
             'deployOnSync': existing_deployment.get('deployOnSync', True),
             'writeSpecSidecar': existing_deployment.get('writeSpecSidecar', True),
@@ -359,7 +373,7 @@ def build_registry_spec(agent: dict) -> dict:
             **existing_metadata,
             'generatedBy': 'scripts/sync_agent_config.py',
             'updatedAt': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'workspace': agent.get('workspace', ''),
+            'workspace': public_openclaw_workspace_path(agent["id"]),
             'model': agent.get('model', ''),
         },
     }
@@ -470,10 +484,14 @@ def normalize_model(model_value, fallback='unknown'):
 
 def normalize_workspace_path(agent_id: str, workspace_value: str) -> str:
     if not workspace_value:
-        return str(pathlib.Path.home() / f'.openclaw/workspace-{agent_id}')
+        return str(openclaw_workspace(agent_id))
     normalized = str(workspace_value).replace('\\', '/').lower()
-    if '<your_user>' in normalized or normalized.startswith('c:/users/'):
-        return str(pathlib.Path.home() / f'.openclaw/workspace-{agent_id}')
+    if (
+        '<your_user>' in normalized
+        or normalized.startswith('c:/users/')
+        or ('/.openclaw/agents/' in normalized and '/sessions' in normalized)
+    ):
+        return str(openclaw_workspace(agent_id))
     return workspace_value
 
 
@@ -812,7 +830,7 @@ def main():
 
 
 def _sync_script_symlink(src_file: pathlib.Path, dst_file: pathlib.Path) -> bool:
-    """Create a symlink dst_file → src_file (resolved).
+    """Sync dst_file to src_file, preferring a symlink and falling back to copy.
 
     Using symlinks instead of physical copies ensures that ``__file__`` in
     each script always resolves back to the project ``scripts/`` directory,
@@ -820,7 +838,10 @@ def _sync_script_symlink(src_file: pathlib.Path, dst_file: pathlib.Path) -> bool
     point to the correct project root regardless of which workspace runs the
     script.  (Fixes #56 — kanban data-path split)
 
-    Returns True if the link was (re-)created, False if already up-to-date.
+    On Windows without developer mode or symlink privileges, fall back to a
+    physical copy so fresh public checkouts still get usable workspace scripts.
+
+    Returns True if the destination was updated, False if already up-to-date.
     """
     src_resolved = src_file.resolve()
     # Guard: skip if dst resolves to the same real path as src.
@@ -840,23 +861,26 @@ def _sync_script_symlink(src_file: pathlib.Path, dst_file: pathlib.Path) -> bool
     # Remove stale file / old physical copy / broken symlink
     if dst_file.exists() or dst_file.is_symlink():
         dst_file.unlink()
-    os.symlink(src_resolved, dst_file)
+    try:
+        os.symlink(src_resolved, dst_file)
+    except OSError:
+        shutil.copy2(src_resolved, dst_file)
     return True
 
 
 def sync_scripts_to_workspaces(agents=None):
     """将项目 scripts/ 目录同步到各 agent workspace（保持 kanban_update.py 等最新）
 
-    Uses symlinks so that ``__file__`` in workspace copies resolves to the
-    project ``scripts/`` directory, keeping path-derived constants like
-    ``TASKS_FILE`` pointing to the canonical ``data/`` folder.
+    Prefers symlinks so that ``__file__`` in workspace copies resolves to the
+    project ``scripts/`` directory. Falls back to physical copies on platforms
+    where symlink creation is unavailable.
     """
     scripts_src = BASE / 'scripts'
     if not scripts_src.is_dir():
         return
     synced = 0
     for runtime_id in get_sync_target_ids(agents):
-        ws_scripts = pathlib.Path.home() / f'.openclaw/workspace-{runtime_id}' / 'scripts'
+        ws_scripts = openclaw_workspace(runtime_id) / 'scripts'
         ws_scripts.mkdir(parents=True, exist_ok=True)
         for src_file in scripts_src.iterdir():
             if src_file.suffix not in ('.py', '.sh') or src_file.stem.startswith('__'):
@@ -865,11 +889,12 @@ def sync_scripts_to_workspaces(agents=None):
             try:
                 if _sync_script_symlink(src_file, dst_file):
                     synced += 1
-            except Exception:
+            except Exception as exc:
+                log.warning('cannot sync script %s to %s: %s', src_file.name, ws_scripts, exc)
                 continue
 
     if synced:
-        log.info(f'{synced} script symlinks synced to workspaces')
+        log.info(f'{synced} scripts synced to workspaces')
 
 
 def deploy_soul_files(agents=None):
@@ -894,7 +919,7 @@ def deploy_soul_files(agents=None):
             src_text = generated_src.read_text(encoding='utf-8', errors='ignore')
         else:
             continue
-        ws_dst = pathlib.Path.home() / f'.openclaw/workspace-{runtime_id}' / 'SOUL.md'
+        ws_dst = openclaw_workspace(runtime_id) / 'SOUL.md'
         ws_dst.parent.mkdir(parents=True, exist_ok=True)
         try:
             dst_text = ws_dst.read_text(encoding='utf-8', errors='ignore')
@@ -907,7 +932,7 @@ def deploy_soul_files(agents=None):
             sidecar = ws_dst.parent / '.registry.json'
             atomic_json_write(sidecar, spec)
 
-        sess_dir = pathlib.Path.home() / f'.openclaw/agents/{runtime_id}/sessions'
+        sess_dir = openclaw_agent_sessions(runtime_id)
         sess_dir.mkdir(parents=True, exist_ok=True)
     if deployed:
         log.info(f'{deployed} SOUL.md files deployed')

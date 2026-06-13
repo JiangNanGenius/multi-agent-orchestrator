@@ -1,6 +1,8 @@
 """AgentOrchestrator 配置管理 — 从环境变量加载所有配置。"""
 from __future__ import annotations
 
+import secrets
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -32,7 +34,7 @@ class Settings(BaseSettings):
     backend_host: str = "0.0.0.0"
     backend_port: int = 38000
     port: int = 38000
-    secret_key: str = "change-me-in-production"
+    secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     debug: bool = False
 
     # ── OpenClaw ──
@@ -89,6 +91,8 @@ class Settings(BaseSettings):
 
     @property
     def project_root(self) -> Path:
+        if os.environ.get("AGENTORCHESTRATOR_HOME"):
+            return Path(os.environ["AGENTORCHESTRATOR_HOME"]).expanduser().resolve()
         return Path(__file__).resolve().parents[3]
 
     @property
