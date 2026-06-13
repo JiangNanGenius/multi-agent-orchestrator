@@ -1,132 +1,205 @@
 # Multi-Agent Orchestrator
 
-> Final public snapshot of a task-centered multi-agent orchestration system.
-> This repository is published as an archived, sanitized release rather than an actively maintained product.
+> **最终公开快照 / Final Public Snapshot**
+>
+> 这是一套围绕复杂任务生命周期设计的多智能体编排系统。它的重点不是“让很多 Agent 同时聊天”，而是把任务变成一个**可提交、可分派、可追踪、可恢复、可交付、可回看**的工作对象。
+>
+> 本仓库已经完成公开发布前脱敏，作为阶段性最终版本归档。后续不再按产品主线继续维护。
 
-Multi-Agent Orchestrator is a full-stack experiment in making multi-agent work visible, recoverable, and governable. It turns a request into a tracked task, routes that task through planning and specialist roles, exposes status in a web dashboard, and keeps enough history for review, continuation, and post-task reflection.
+[English README](./README_EN.md) / [日本語 README](./README_JA.md) / [最终 Release](https://github.com/JiangNanGenius/multi-agent-orchestrator/releases/tag/v1.0.1-final) / [项目感想与实践复盘](./docs/project-reflections.md)
 
-This final public version is released because the project reached a meaningful stage, but the surrounding tooling moved faster than this architecture could comfortably follow. The system can produce good results, and it can run in a target-mode style where work continues without constant manual steering. In practice, though, the orchestration overhead became too expensive: too many tokens, too much waiting, and too many recovery paths around stalled tool sessions. The project remains useful as a reference implementation and design record, but it is no longer the direction I would keep extending.
+## 这个项目是什么
 
-## Final Snapshot
+Multi-Agent Orchestrator 是一次把长任务、多角色协作、过程可视化和任务恢复机制放进同一个系统里的工程实验。
 
-This repository has been prepared for public release with runtime data removed. It is intended to show the architecture, interface, documents, scripts, and example workflow shape without exposing private task history or machine-specific state.
+它试图解决的问题很直接：复杂任务往往不是一次对话就能完成的。任务需要被理解、拆解、分派、执行、检查、返工、沉淀，也需要在中途卡住时能被发现和恢复。如果这些过程只散落在聊天记录、临时脚本和个人记忆里，任务越长，越容易失控。
 
-Included:
+因此这个项目把任务处理组织成一条更稳定的主线：
 
-- Backend and frontend source for the orchestrator.
-- Agent role definitions and registry specifications.
-- Public documentation, diagrams, examples, and tests.
-- Sanitized preview images for the final README.
-- Install and service scripts as implementation references.
+1. 用户提交任务。
+2. 总控中心接收并整理目标。
+3. 规划、评审、调度和专家角色按职责接力。
+4. 前端看板持续展示状态、进展、风险和结果位置。
+5. 任务完成后留下记录、工作区、记忆和可复盘材料。
 
-Excluded:
+如果用一句话概括，它更像是一个面向 AI 任务的“协作中枢”，而不是一个普通聊天界面。
 
-- Runtime databases, logs, ledgers, task workspaces, archives, snapshots, cache directories, process files, virtual environments, and dependency folders.
-- Auth/session material, cookies, local credentials, API keys, and machine-specific paths.
-- Private task outputs and internal release-preparation notes.
+## 为什么这是最终版本
 
-## What It Does
+这个项目不是因为效果差而停止。相反，它已经跑通过真实的任务链路，也能在目标模式下让任务自己推进，很多最终产物的效果并不差。
 
-The system is built around a task lifecycle:
+真正的问题在于：现在模型和工具发展太快，这套架构的外部编排成本已经越来越高。任务要整理、角色要分派、状态要同步、上下文要写入、结果要回收、异常要恢复，每一步都要消耗时间和 token。再加上底层 OpenClaw 运行环境本身容易出现卡停，一旦卡住，就要等待检测、恢复、续跑和重新对齐，任务会被拖得很慢。
 
-1. A user submits a task.
-2. The task is normalized into a trackable work item.
-3. Planning and dispatch roles decide how to route it.
-4. Specialist agents work on the assigned parts.
-5. The dashboard shows status, activity, risk, and handoff information.
-6. Results and memory are retained so later work can continue from context.
+所以它最后呈现出一种很可惜的状态：能完成，效果也不错，过程也可追踪，但效率太低、token 太重、等待太多。继续修补当然可以，但那已经不再是维护这个项目，而是要重新设计一套更适合新模型能力的新架构。
 
-The goal was not simply to put many agents in one chat. The goal was to make long-running agent work easier to inspect: who is handling the task, what stage it is in, where the working files are, whether it is stuck, and what can be resumed later.
+因此，这个仓库被整理成最终公开快照：保留代码、界面、文档、流程图和经验教训，让它作为一个阶段的工程样本留下来。
 
-## Preview Gallery
+## 一眼看懂界面
 
-The images below are sanitized screenshots from the final public snapshot.
+下面是经过裁切和必要脱敏后的最终公开预览图。它们展示的是这套系统最核心的用户路径：看全局、查任务、看协作、管 Agent、用技能、看记忆、做搜索。
 
-| Area | Preview |
+| 模块 | 预览 |
 | --- | --- |
-| Ready screen | ![Ready screen](docs/previews/preview-01.png) |
-| Task center | ![Task center](docs/previews/preview-02.png) |
-| Task detail and lifecycle | ![Task detail](docs/previews/preview-03.png) |
-| Workspace and handoff panel | ![Workspace panel](docs/previews/preview-04.png) |
-| Workspace files | ![Workspace files](docs/previews/preview-05.png) |
-| Watchdog and recovery settings | ![Watchdog settings](docs/previews/preview-06.png) |
-| Execution history | ![Execution history](docs/previews/preview-07.png) |
-| Automation control center | ![Automation control center](docs/previews/preview-08.png) |
-| Collaboration room | ![Collaboration room](docs/previews/preview-09.png) |
-| Task kanban | ![Task kanban](docs/previews/preview-10.png) |
-| System overview | ![System overview](docs/previews/preview-11.png) |
-| Agent management workbench | ![Agent management](docs/previews/preview-12.png) |
-| Meeting discussion view | ![Meeting discussion](docs/previews/preview-13.png) |
-| Agent grid | ![Agent grid](docs/previews/preview-14.png) |
-| Skill management | ![Skill management](docs/previews/preview-15.png) |
-| Meeting room | ![Meeting room](docs/previews/preview-16.png) |
-| Memory center list | ![Memory center list](docs/previews/preview-17.png) |
-| Memory detail | ![Memory detail](docs/previews/preview-18.png) |
-| Web search panel | ![Web search](docs/previews/preview-19.png) |
+| 启动与准备状态 | ![启动与准备状态](./docs/previews/preview-01.png) |
+| 任务中心 | ![任务中心](./docs/previews/preview-02.png) |
+| 任务详情与生命周期 | ![任务详情与生命周期](./docs/previews/preview-03.png) |
+| 工作区与交接信息 | ![工作区与交接信息](./docs/previews/preview-04.png) |
+| 工作区文件入口 | ![工作区文件入口](./docs/previews/preview-05.png) |
+| 看门狗与恢复设置 | ![看门狗与恢复设置](./docs/previews/preview-06.png) |
+| 执行历史 | ![执行历史](./docs/previews/preview-07.png) |
+| 自动化控制中心 | ![自动化控制中心](./docs/previews/preview-08.png) |
+| 协作房间 | ![协作房间](./docs/previews/preview-09.png) |
+| 任务看板 | ![任务看板](./docs/previews/preview-10.png) |
+| 系统总览 | ![系统总览](./docs/previews/preview-11.png) |
+| Agent 管理工作台 | ![Agent 管理工作台](./docs/previews/preview-12.png) |
+| 会议讨论视图 | ![会议讨论视图](./docs/previews/preview-13.png) |
+| Agent 网格 | ![Agent 网格](./docs/previews/preview-14.png) |
+| Skill 管理 | ![Skill 管理](./docs/previews/preview-15.png) |
+| 会议室 | ![会议室](./docs/previews/preview-16.png) |
+| 记忆中心列表 | ![记忆中心列表](./docs/previews/preview-17.png) |
+| 记忆详情 | ![记忆详情](./docs/previews/preview-18.png) |
+| Web 搜索面板 | ![Web 搜索面板](./docs/previews/preview-19.png) |
 
-## Repository Map
+## 基础流程图
 
-| Path | Purpose |
+下面几张图保留了原 README 中最重要的流程表达：任务如何进入系统、角色如何协作、状态如何推进，以及结果如何沉淀。
+
+### 首页基础流程
+
+![首页基础流程图](./docs/diagrams/homepage-basic-flow.png)
+
+### 用户任务流程
+
+![用户任务流程图](./docs/diagrams/user-task-flow.png)
+
+### 角色调用关系
+
+![角色调用关系图](./docs/diagrams/user-agent-call-graph.png)
+
+### 治理生命周期
+
+![治理生命周期图](./docs/diagrams/user-governance-lifecycle.png)
+
+### 工作区与账本关系
+
+![工作区与账本关系图](./docs/diagrams/user-workspace-ledger-map.png)
+
+## 核心能力
+
+| 能力 | 说明 |
 | --- | --- |
-| `agentorchestrator/backend` | FastAPI backend, task APIs, services, models, workers, and channel adapters. |
-| `agentorchestrator/frontend` | React/Vite dashboard for task status, agent workbenches, memory, skills, search, and monitoring. |
-| `agents` | Role prompts and operating contracts for coordination centers and specialists. |
-| `registry` | Agent registry specs and generated role artifacts. |
-| `scripts` | Operational helpers for task sync, config sync, refresh checks, and related workflows. |
-| `docs` | Architecture notes, public reflections, diagrams, runbooks, and user-facing explanations. |
-| `examples` | Example task patterns and sample use cases. |
-| `tests` | Focused regression tests for synchronization, state-machine, file-lock, and kanban behavior. |
+| 任务看板 | 集中展示任务状态、优先级、进展和结果线索。 |
+| 任务详情 | 查看单个任务的背景、状态、过程记录、工作区和恢复信息。 |
+| 角色编排 | 通过总控、规划、评审、调度和专家角色把复杂任务拆开推进。 |
+| 协作会议 | 让多个角色围绕同一目标讨论、推进、暂停、恢复和收束。 |
+| Agent 管理 | 查看和管理角色分组、职责、模型配置与协作关系。 |
+| Skill 管理 | 扫描、展示和复用 OpenClaw 工作区中的技能能力。 |
+| 记忆中心 | 读取长期记忆、日期记忆和任务沉淀材料，方便后续续接。 |
+| 工作区治理 | 为任务建立工作区、文件账本、上下文目录、归档和回迁入口。 |
+| 看门狗与恢复 | 检测卡停、超时、风险状态，并提供恢复、暂停和复盘线索。 |
+| Web 搜索 | 为研究型任务提供搜索、打开、推进和主题聚合入口。 |
 
-## Running Locally
+## 公开版包含什么
 
-This snapshot is best treated as a reference implementation. It may need adaptation before running on a fresh machine because the original system was tuned in a live environment.
+这个公开快照保留了可以帮助读者理解系统的内容：
 
-Typical setup shape:
+- 前后端源码。
+- Agent 角色定义、注册表和协作规范。
+- 用户文档、架构文档、流程图和复盘文档。
+- 示例、测试和安装脚本。
+- 经过裁切和脱敏的 README 预览图。
+
+同时，公开版删除了不适合进入公共仓库的运行态内容：
+
+- 数据库、日志、ledger、上下文快照、任务工作区、冷归档、PID 文件、缓存、虚拟环境和依赖目录。
+- API key、cookie、session、auth 配置、真实环境变量、私有路径和本机状态。
+- 私有任务历史、用户数据、内部发布准备记录和未脱敏运行材料。
+
+## 仓库结构
+
+| 路径 | 内容 |
+| --- | --- |
+| [`agentorchestrator/backend`](./agentorchestrator/backend) | FastAPI 后端、任务 API、服务层、模型、worker 和兼容接口。 |
+| [`agentorchestrator/frontend`](./agentorchestrator/frontend) | React / Vite 前端，看板、任务详情、会议、Agent、Skill、记忆和搜索界面。 |
+| [`agents`](./agents) | Agent 角色提示词、职责说明和运行约定。 |
+| [`registry`](./registry) | Agent 注册表、角色规范和生成物。 |
+| [`scripts`](./scripts) | 任务同步、配置同步、文件锁、刷新监听和运维辅助脚本。 |
+| [`docs`](./docs) | 用户指南、架构说明、流程图、复盘文章和专项设计文档。 |
+| [`examples`](./examples) | 示例任务和使用形态。 |
+| [`tests`](./tests) | 状态机、kanban、文件锁、同步和稳定记录相关测试。 |
+
+## 文档导航
+
+| 想了解什么 | 建议阅读 |
+| --- | --- |
+| 如何从用户角度理解系统 | [用户文档](./docs/user-guide.md) |
+| 如何启动和接入基础环境 | [快速开始](./docs/getting-started.md) |
+| 当前整体架构是什么 | [当前架构总览](./docs/current_architecture_overview.md) |
+| 底层技术结构如何组织 | [技术架构](./docs/technical-architecture.md) |
+| 自动化任务管理如何设计 | [自动化任务管理设计](./docs/automation-task-management-design.md) |
+| Agent 注册与角色体系 | [Agent Registry Spec](./docs/agent_registry_spec.md) |
+| 稳定记录机制 | [Stable Record Mechanism](./docs/stable_record_mechanism.md) |
+| 远程 Skill 使用方式 | [Remote Skills Guide](./docs/remote-skills-guide.md) |
+| 为什么项目停在这里 | [项目感想与实践复盘](./docs/project-reflections.md) |
+| 架构重写时的取舍 | [架构重写复盘记录](./docs/architecture-reflection-notes.md) |
+
+## 本地运行参考
+
+这个仓库是最终公开快照，主要用于学习、复盘和二次整理。由于真实运行环境曾经经过长期调校，在新机器上直接运行可能需要按自己的 OpenClaw、Python、Node.js 和服务部署方式重新适配。
+
+基础参考步骤如下：
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pip install -r agentorchestrator/backend/requirements.txt
 
 cd agentorchestrator/frontend
 npm install
 npm run build
 ```
 
-The included `install.sh`, `start.sh`, `uninstall.sh`, and `agentorchestrator.service` show the intended deployment shape. Review them before use, especially paths, ports, environment variables, and service-user assumptions.
+后端、worker、OpenClaw 工作区、Agent 配置和服务化脚本请结合以下文档阅读：
 
-## Why This Is Archived
+- [快速开始](./docs/getting-started.md)
+- [技术架构](./docs/technical-architecture.md)
+- [当前架构总览](./docs/current_architecture_overview.md)
 
-This project was valuable, but it also proved a limit.
+## 安全与隐私
 
-The architecture worked best when models needed more external structure: explicit roles, visible task state, watchdogs, recovery paths, and persistent memory. As tools and models improved, that same structure became heavier. Newer agent tools can often carry more context and execute more directly, while this system still pays the cost of routing, summarizing, reflecting, recording, and recovering each step.
+这个仓库已经按公开发布标准做过脱敏整理。后续如果基于它继续运行，请不要把本地运行态数据重新提交回来，尤其是：
 
-The result was a system that could do impressive work, but often inefficiently. It consumed many tokens, spent a lot of time moving context through the orchestration pipeline, and was vulnerable to slowdowns when the underlying tool runner stalled. Stalled sessions could recover, but recovery meant waiting, checking state, and continuing through extra control logic. For real work, that made many tasks much slower than the quality of the final output would suggest.
+- `data`
+- `logs`
+- `ledger`
+- `context`
+- `task_workspaces`
+- `cold_task_archives`
+- `.pids`
+- `.venv`
+- `node_modules`
+- 数据库、会话、cookie、token、auth 配置和真实环境变量
 
-So this repository is a final public snapshot: a record of the design, the working UI, the agent organization, and the lessons learned. The project is not abandoned because it failed to produce useful results. It is archived because the surrounding model and tool ecosystem moved past the architecture's efficiency envelope.
+如果你 fork 之后接入真实任务，也建议把工作区、日志、归档和记忆材料全部放在仓库外部。
 
-For the fuller reflection, see [Project Reflections](docs/project-reflections.md).
+## 开源来源与许可
 
-## Documentation
+本仓库按 MIT License 发布。公开整理过程中保留了与原始参考项目相关的许可与来源信息：
 
-- [Getting Started](docs/getting-started.md)
-- [Current Architecture Overview](docs/current_architecture_overview.md)
-- [Technical Architecture](docs/technical-architecture.md)
-- [User Guide](docs/user-guide.md)
-- [Project Reflections](docs/project-reflections.md)
-- [Architecture Reflection Notes](docs/architecture-reflection-notes.md)
-- [Remote Skills Guide](docs/remote-skills-guide.md)
-- [Security Policy](SECURITY.md)
+- [wanikua/danghuangshang](https://github.com/wanikua/danghuangshang)
+- [cft0808/agentorchestrator](https://github.com/cft0808/agentorchestrator)
 
-## Security And Privacy
+再分发或继续修改时，请保留对应的 MIT License 说明与来源引用。
 
-This public snapshot is sanitized. Do not commit local runtime state back into the repository. In particular, keep the following out of git:
+## 最后说明
 
-- `.env` files, credentials, tokens, cookies, sessions, and API keys.
-- `data`, `logs`, `ledger`, `context`, `task_workspaces`, `cold_task_archives`, `.pids`, `.venv`, `node_modules`, and frontend build output.
-- Databases, SQLite WAL files, generated task archives, private workspaces, and machine-specific absolute paths.
+这个项目最值得留下的，不只是代码本身，而是它在真实使用中验证过的一组判断：
 
-## License
+- 长任务必须可追踪。
+- 多角色协作必须有职责边界。
+- 任务过程必须可观察。
+- 结果和上下文必须能回看。
+- 恢复机制能救任务，但也会带来成本。
+- 当模型本身变强时，外部编排层必须变轻。
 
-See [LICENSE](LICENSE).
+所以，这不是一个“没做成”的项目，而是一份已经完成阶段使命的工程样本。它停在这里，是因为继续往前更应该换一种架构，而不是继续给旧架构加重量。
