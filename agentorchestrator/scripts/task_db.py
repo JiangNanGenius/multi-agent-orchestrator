@@ -173,7 +173,7 @@ async def watchdog_task(args: argparse.Namespace) -> None:
         bus = await get_event_bus()
         svc = TaskService(session, bus)
         if args.task_id:
-            task = await svc.run_watchdog(uuid.UUID(args.task_id), agent=args.agent)
+            task = await svc.run_watchdog(uuid.UUID(args.task_id), agent=args.agent, auto_recover=args.auto_recover)
             jprint(
                 {
                     "task_id": str(task.task_id),
@@ -183,23 +183,14 @@ async def watchdog_task(args: argparse.Namespace) -> None:
             )
             return
 
-        stmt = select(Task).order_by(Task.updated_at.desc()).limit(args.limit)
-        result = await session.execute(stmt)
-        tasks = list(result.scalars().all())
-        output = []
-        for task in tasks:
-            updated = await svc.run_watchdog(task.task_id, agent=args.agent)
-            watchdog = ((updated.meta or {}).get("workspace") or {}).get("watchdog", {})
-            output.append(
-                {
-                    "task_id": str(updated.task_id),
-                    "task_code": updated.to_dict().get("taskCode", ""),
-                    "status": watchdog.get("status", "unknown"),
-                    "issues": watchdog.get("issues", []),
-                    "repairs": watchdog.get("repairs", []),
-                }
-            )
-        jprint({"count": len(output), "items": output})
+        # 使用新的批量巡检方法
+        result = await svc.run_watchdog_all(
+            limit=args.limit,
+            only_active=args.only_active,
+            agent=args.agent,
+            auto_recover=args.auto_recover,
+        )
+        jprint(result)
 
 
 async def notify_task(args: argparse.Namespace) -> None:
@@ -262,6 +253,20 @@ async def transition_task(args: argparse.Namespace) -> None:
             reason=args.reason,
         )
         jprint({"message": "transitioned", "task_id": str(task.task_id), "state": task.state.value})
+
+
+async def done_task(args: argparse.Namespace) -> None:
+    """将任务标记为 Done，触发 task.completed 事件和飞书通知。"""
+    async with async_session() as session:
+        bus = await get_event_bus()
+        svc = TaskService(session, bus)
+        task = await svc.transition_state(
+            uuid.UUID(args.task_id),
+            TaskState.Done,
+            agent=args.agent,
+            reason=args.reason or "任务完成",
+        )
+        jprint({"message": "done", "task_id": str(task.task_id), "state": task.state.value})
 
 
 async def progress_task(args: argparse.Namespace) -> None:
@@ -360,8 +365,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=reactivate_task)
 
     p = sub.add_parser("watchdog", help="执行看门狗巡检")
-    p.add_argument("--task-id", default=None)
-    p.add_argument("--limit", type=int, default=20)
+    p.add_argument("--task-id", default=None, help="指定任务ID，不指定则批量巡检")
+    p.add_argument("--limit", type=int, default=50, help="批量巡检时最多检查多少个任务")
+    p.add_argument("--only-active", action="store_true", default=True, help="只检查未完成的活跃任务")
+    p.add_argument("--auto-recover", action="store_true", default=None, help="是否自动恢复卡停任务（默认使用配置项）")
     p.add_argument("--agent", default="watchdog")
     p.set_defaults(func=watchdog_task)
 
@@ -396,6 +403,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--agent", default="task_db")
     p.add_argument("--reason", default="")
     p.set_defaults(func=transition_task)
+
+    p = sub.add_parser("done", help="将任务标记为 Done（触发 task.completed 事件和飞书通知）")
+    p.add_argument("task_id")
+    p.add_argument("--agent", default="task_db")
+    p.add_argument("--reason", default="任务完成")
+    p.set_defaults(func=done_task)
 
     p = sub.add_parser("progress", help="添加任务进度")
     p.add_argument("task_id")

@@ -843,6 +843,8 @@ export interface SubConfig {
 
 export interface SystemSettings {
   scan_record_retention_days: number;
+  feishu_report_webhook?: string;
+  feishu_report_enabled?: boolean;
 }
 
 export interface ActivityEntry {

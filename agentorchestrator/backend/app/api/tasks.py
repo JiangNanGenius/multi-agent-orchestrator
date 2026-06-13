@@ -92,6 +92,14 @@ class TaskWorkspaceReactivateRequest(BaseModel):
 
 class TaskWatchdogRequest(BaseModel):
     agent: str = "watchdog"
+    auto_recover: bool | None = None
+
+
+class TaskWatchdogBatchRequest(BaseModel):
+    agent: str = "watchdog"
+    limit: int = 50
+    only_active: bool = True
+    auto_recover: bool | None = None
 
 
 class TaskWorkspaceTextSaveRequest(BaseModel):
@@ -539,7 +547,28 @@ async def run_workspace_watchdog(
 ):
     """执行单任务看门狗巡检。"""
     try:
-        task = await svc.run_watchdog(task_id, agent=body.agent)
+        task = await svc.run_watchdog(task_id, agent=body.agent, auto_recover=body.auto_recover)
         return {"message": "ok", "watchdog": ((task.meta or {}).get("workspace") or {}).get("watchdog", {})}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/watchdog/batch")
+async def run_workspace_watchdog_batch(
+    body: TaskWatchdogBatchRequest,
+    svc: TaskService = Depends(get_task_service),
+):
+    """批量执行所有任务的看门狗巡检。
+
+    这是看板看门狗自动化的核心接口，支持：
+    - 批量检测所有卡停任务
+    - 自动执行恢复策略
+    - 返回巡检统计结果
+    """
+    result = await svc.run_watchdog_all(
+        limit=body.limit,
+        only_active=body.only_active,
+        agent=body.agent,
+        auto_recover=body.auto_recover,
+    )
+    return {"message": "ok", **result}

@@ -42,9 +42,9 @@ def _backup_and_restore():
 # ── TEST 1: 脏标题(含文件路径+Conversation)应被清洗后创建
 def test_dirty_title_cleaned():
     cmd_create('JJC-TEST-E2E-01',
-        '全面审查/Users/bingsen/clawd/multi-agent-orchestrator/这个项目\nConversation info (xxx)',
+        '全面审查/workspace/example-project/这个项目\nConversation info (xxx)',
         'ControlCenter', '总控中心', '总控中心Agent',
-        '任务预建：全面审查/Users/bingsen/clawd/项目')
+        '任务预建：全面审查/workspace/example-project')
     t = _get_task('JJC-TEST-E2E-01')
     assert t is not None, "任务应被创建"
     assert '/Users' not in t['title'], f"标题不应含路径: {t['title']}"
@@ -55,7 +55,7 @@ def test_dirty_title_cleaned():
 
 # ── TEST 2: 纯文件路径标题被拒绝
 def test_pure_path_rejected():
-    cmd_create('JJC-TEST-E2E-02', '/Users/bingsen/clawd/multi-agent-orchestrator/', 'ControlCenter', '总控中心', '总控中心Agent')
+    cmd_create('JJC-TEST-E2E-02', '/workspace/example-project/', 'ControlCenter', '总控中心', '总控中心Agent')
     assert _get_task('JJC-TEST-E2E-02') is None, "纯路径标题应被拒绝"
 
 
@@ -70,7 +70,7 @@ def test_normal_title():
 # ── TEST 4: flow remark 清洗
 def test_flow_remark_cleaned():
     cmd_create('JJC-TEST-E2E-04', '调研工业数据分析大模型应用方案', 'ControlCenter', '总控中心', '总控中心Agent')
-    cmd_flow('JJC-TEST-E2E-04', '总控中心', '规划中心', '任务说明：审查/Users/bingsen/clawd/xxx项目 Conversation blah')
+    cmd_flow('JJC-TEST-E2E-04', '总控中心', '规划中心', '任务说明：审查/workspace/example-project Conversation blah')
     t = _get_task('JJC-TEST-E2E-04')
     assert t is not None
     last_flow = t['flow_log'][-1]

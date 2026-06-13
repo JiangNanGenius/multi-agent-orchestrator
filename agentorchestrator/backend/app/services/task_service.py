@@ -29,6 +29,7 @@ from .event_bus import (
 from .task_workspace import (
     archive_task_workspace,
     build_workspace_meta,
+    delete_from_indexes,
     generate_task_code,
     push_workspace_notification,
     reactivate_task_workspace,
@@ -57,7 +58,26 @@ class TaskService:
         allowed_agents = _split_csv_values(settings.feishu_report_agents)
         allowed_events = _split_csv_values(settings.feishu_report_events)
         normalized_agent = str(agent or "system").strip() or "system"
-        enabled = bool(settings.notification_enabled and settings.feishu_report_enabled and settings.feishu_report_webhook)
+
+        # 优先从 system_settings.json 读取飞书汇报配置
+        import json
+        from pathlib import Path
+        system_settings_path = Path(__file__).parents[4] / "data" / "system_settings.json"
+        system_feishu_enabled = None
+        system_feishu_webhook = None
+        if system_settings_path.exists():
+            try:
+                sys_settings = json.loads(system_settings_path.read_text())
+                system_feishu_enabled = sys_settings.get("feishu_report_enabled")
+                system_feishu_webhook = sys_settings.get("feishu_report_webhook") or sys_settings.get("feishu_webhook")
+            except Exception:
+                pass
+
+        # 决定最终配置：system_settings.json 优先，其次环境变量/默认值
+        notification_enabled = settings.notification_enabled
+        feishu_enabled = system_feishu_enabled if system_feishu_enabled is not None else settings.feishu_report_enabled
+        feishu_webhook = system_feishu_webhook if system_feishu_webhook else settings.feishu_report_webhook
+        enabled = bool(notification_enabled and feishu_enabled and feishu_webhook)
         if not enabled:
             return False, {
                 "enabled": False,
@@ -155,8 +175,21 @@ class TaskService:
             summary=summary,
             payload=payload,
         )
+
+        # 优先从 system_settings.json 获取 webhook
+        import json
+        from pathlib import Path
+        system_settings_path = Path(__file__).parents[4] / "data" / "system_settings.json"
+        webhook = settings.feishu_report_webhook
+        if system_settings_path.exists():
+            try:
+                sys_settings = json.loads(system_settings_path.read_text())
+                webhook = sys_settings.get("feishu_report_webhook") or sys_settings.get("feishu_webhook") or webhook
+            except Exception:
+                pass
+
         sent = FeishuChannel.send(
-            webhook=settings.feishu_report_webhook,
+            webhook=webhook,
             title=f"任务汇报｜{task.title[:40]}",
             content=content,
             extra={
@@ -371,15 +404,80 @@ class TaskService:
         self.db.add(outbox)
 
         await self.db.commit()
+        # Done/Cancelled 时用 task.completed 事件,触发主动通知
+        feishu_event = TOPIC_TASK_COMPLETED if new_state in TERMINAL_STATES else "task.state.changed"
         await self._maybe_send_feishu_report(
             task,
-            event="task.state.changed",
+            event=feishu_event,
             agent=agent,
             summary=reason or f"任务状态已从 {old_state.value} 更新为 {new_state.value}",
             payload={"from": old_state.value, "to": new_state.value},
         )
         log.info(f"Task {task_id} state: {old_state.value} → {new_state.value} by {agent}")
+
+        # ========== 稳定记录点集成钩子 ==========
+        # 状态变更后自动评估是否创建记录点
+        await self._try_create_stable_record(task, new_state, old_state, agent, reason)
+        # =========================================
+
         return task
+
+    async def _try_create_stable_record(
+        self, task: Task, new_state: TaskState, old_state: TaskState, agent: str, reason: str
+    ) -> None:
+        """尝试创建稳定记录点
+
+        在任务状态变更时自动评估，符合条件则创建记录点。
+        当前仅在任务完成(Done)时触发，其他状态可根据需要扩展。
+        """
+        try:
+            # 仅在任务完成时自动创建记录点
+            if new_state != TaskState.Done:
+                return
+
+            # 延迟导入避免循环依赖
+            from .stable_record_service import StableRecordService, RecordStatus
+
+            service = StableRecordService()
+
+            context = {
+                "task_id": str(task.task_id),
+                "task_code": task.task_code,
+                "task_title": task.title,
+                "task_state": new_state.value,
+                "task_progress": 100,  # Done状态默认100%完成
+                "node": agent,
+                "extra_info": {
+                    "old_state": old_state.value,
+                    "transition_reason": reason,
+                    "assignee_org": task.assignee_org,
+                }
+            }
+
+            created, record = service.auto_create_if_needed(
+                task_id=str(task.task_id),
+                context=context,
+                default_title=f"任务完成: {task.title}"
+            )
+
+            if created and record:
+                log.info(f"稳定记录点已创建: {record.record_id} - 任务 {task.task_code}")
+
+                # 更新任务元数据，记录记录点ID
+                if task.meta is None:
+                    task.meta = {}
+                if "stable_records" not in task.meta:
+                    task.meta["stable_records"] = []
+                task.meta["stable_records"].append({
+                    "record_id": record.record_id,
+                    "created_at": record.saved_at,
+                    "reason": record.reason,
+                })
+                await self.db.commit()
+
+        except Exception as e:
+            # 记录点创建失败不影响主流程，只记录警告
+            log.warning(f"创建稳定记录点失败 (task={task.task_code}): {e}")
 
     async def append_flow_log(
         self,
@@ -681,9 +779,24 @@ class TaskService:
         )
         return task
 
-    async def run_watchdog(self, task_id: uuid.UUID, agent: str = "watchdog") -> Task:
+    async def run_watchdog(self, task_id: uuid.UUID, agent: str = "watchdog", *, auto_recover: bool | None = None) -> Task:
+        """运行看门狗检查并自动处理卡停。
+
+        Args:
+            task_id: 任务ID
+            agent: 执行agent
+            auto_recover: 是否自动恢复卡停任务，None 表示使用配置项
+        """
+        from app.config import get_settings
+
+        settings = get_settings()
+        should_auto_recover = settings.workspace_watchdog_auto_recover if auto_recover is None else auto_recover
+
         task = await self._get_task(task_id)
-        task.updated_at = datetime.now(timezone.utc)
+        # 注意：不要在这里更新 updated_at，否则会重置卡停检测所需的时间戳
+        original_updated_at = task.updated_at
+
+        # 运行基础看门狗检测（包含卡停检测）
         task.meta = self._sync_workspace(
             task,
             event="task.watchdog.sync",
@@ -693,14 +806,169 @@ class TaskService:
             ledger_name="watchdog",
         )
         await self.db.commit()
+
+        watchdog_info = ((task.meta or {}).get("workspace") or {}).get("watchdog", {})
+        watchdog_status = watchdog_info.get("status", "unknown")
+        stuck_detection = watchdog_info.get("stuck_detection", [])
+        recovery_actions = []
+
+        # 如果检测到卡停且启用了自动恢复
+        if watchdog_status == "stuck" and should_auto_recover and stuck_detection:
+            try:
+                task_state = str(task.state.value) if hasattr(task.state, "value") else str(task.state)
+                recovery_summary = []
+
+                # 根据不同状态执行恢复策略
+                if task_state == "ControlCenter":
+                    # 卡在总控中心：添加进度提醒并自动流转
+                    await self.add_progress(
+                        task_id,
+                        agent="watchdog",
+                        content=f"🔧 【看门狗自动恢复】检测到任务卡在总控中心，正在执行自动恢复...\n卡停原因：{'; '.join(stuck_detection)}"
+                    )
+                    recovery_summary.append("已添加卡停提醒")
+
+                    # 尝试自动流转到规划中心
+                    try:
+                        await self.transition_state(
+                            task_id,
+                            TaskState.PlanCenter,
+                            agent="watchdog",
+                            reason=f"看门狗自动恢复: 卡停检测，自动流转到规划中心。原因：{'; '.join(stuck_detection)}"
+                        )
+                        recovery_summary.append("已自动流转到规划中心")
+                        recovery_actions.append("auto_transition_to_plan_center")
+                    except Exception as e:
+                        recovery_summary.append(f"自动流转失败: {str(e)}")
+
+                elif task_state == "PlanCenter":
+                    # 卡在规划中心：添加提醒
+                    await self.add_progress(
+                        task_id,
+                        agent="watchdog",
+                        content=f"⚠️ 【看门狗卡停提醒】检测到任务卡在规划中心，请及时处理。\n卡停原因：{'; '.join(stuck_detection)}"
+                    )
+                    recovery_summary.append("已添加卡停提醒")
+
+                elif task_state in ["DispatchCenter", "Doing", "ReviewCenter"]:
+                    # 其他执行阶段：添加提醒
+                    await self.add_progress(
+                        task_id,
+                        agent="watchdog",
+                        content=f"⚠️ 【看门狗卡停提醒】检测到任务在 {task_state} 状态停滞，请检查执行状态。\n卡停原因：{'; '.join(stuck_detection)}"
+                    )
+                    recovery_summary.append("已添加卡停提醒")
+
+                # 记录恢复操作
+                if recovery_summary:
+                    task.meta = self._sync_workspace(
+                        task,
+                        event="task.watchdog.recovered",
+                        summary="看门狗自动恢复卡停任务",
+                        agent="watchdog",
+                        payload={
+                            "stuck_detection": stuck_detection,
+                            "recovery_actions": recovery_summary,
+                            "original_state": task_state,
+                        },
+                        ledger_name="watchdog",
+                    )
+            except Exception as e:
+                recovery_actions.append(f"recovery_failed: {str(e)}")
+
         await self._maybe_send_feishu_report(
             task,
             event="task.watchdog.sync",
             agent=agent,
-            summary="任务看门狗巡检已完成。",
-            payload={"watchdog_status": ((task.meta or {}).get("workspace") or {}).get("watchdog", {}).get("status", "unknown")},
+            summary="任务看门狗巡检已完成。" + (" 检测到卡停并执行恢复" if recovery_actions else ""),
+            payload={
+                "watchdog_status": watchdog_status,
+                "stuck_detection": stuck_detection,
+                "recovery_actions": recovery_actions,
+                "auto_recover_enabled": should_auto_recover,
+            },
         )
         return task
+
+    async def run_watchdog_all(
+        self,
+        *,
+        limit: int = 50,
+        only_active: bool = True,
+        agent: str = "watchdog",
+        auto_recover: bool | None = None,
+    ) -> dict[str, Any]:
+        """批量巡检所有任务的看门狗。
+
+        Args:
+            limit: 最多检查多少个任务
+            only_active: 只检查未完成的活跃任务
+            agent: 执行agent
+            auto_recover: 是否自动恢复卡停
+
+        Returns:
+            巡检结果统计
+        """
+        from sqlalchemy import select, not_
+        from app.models.task import TaskState
+
+        stmt = select(Task).order_by(Task.updated_at.desc()).limit(limit)
+
+        if only_active:
+            # 只检查未完成的任务
+            stmt = stmt.where(
+                not_(Task.state.in_([
+                    TaskState.Done,
+                    TaskState.Cancelled,
+                ]))
+            )
+
+        result = await self.db.execute(stmt)
+        tasks = list(result.scalars().all())
+
+        total = len(tasks)
+        healthy = 0
+        stuck = 0
+        attention = 0
+        recovered = 0
+        failed = 0
+        stuck_tasks = []
+
+        for task in tasks:
+            try:
+                updated = await self.run_watchdog(task.task_id, agent=agent, auto_recover=auto_recover)
+                watchdog_info = ((updated.meta or {}).get("workspace") or {}).get("watchdog", {})
+                status = watchdog_info.get("status", "unknown")
+                recovery_actions = watchdog_info.get("recovery_actions", [])
+
+                if status == "healthy":
+                    healthy += 1
+                elif status == "stuck":
+                    stuck += 1
+                    stuck_tasks.append({
+                        "task_id": str(task.task_id),
+                        "task_code": ((task.meta or {}).get("workspace") or {}).get("task_code", ""),
+                        "title": task.title,
+                        "state": str(task.state.value) if hasattr(task.state, "value") else str(task.state),
+                        "stuck_detection": watchdog_info.get("stuck_detection", []),
+                        "recovery_actions": recovery_actions,
+                    })
+                    if recovery_actions:
+                        recovered += 1
+                elif status == "attention":
+                    attention += 1
+            except Exception as e:
+                failed += 1
+
+        return {
+            "total_checked": total,
+            "healthy": healthy,
+            "stuck": stuck,
+            "attention": attention,
+            "recovered": recovered,
+            "failed": failed,
+            "stuck_tasks": stuck_tasks,
+        }
 
     # ── 查询 ──
 
@@ -714,6 +982,7 @@ class TaskService:
     ) -> dict[str, Any]:
         task = await self._get_task(task_id)
         original_meta = dict(task.meta or {})
+        task_code = (original_meta.get("workspace") or {}).get("task_code", "")
         removed_workspace_paths: list[str] = []
         if delete_workspace:
             updated_meta = remove_task_workspace(task.to_dict())
@@ -721,8 +990,13 @@ class TaskService:
             task.meta = updated_meta
             task.updated_at = datetime.now(timezone.utc)
         task_data = task.to_dict()
+        task_id_str = str(task_id)
         await self.db.delete(task)
         await self.db.commit()
+
+        # 同步清理索引文件
+        delete_from_indexes(task_id_str, task_code)
+
         return {
             "task_id": str(task_id),
             "title": task.title,

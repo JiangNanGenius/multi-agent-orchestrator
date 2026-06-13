@@ -26,7 +26,7 @@
 - 需要跨角色协作的任务
 
 ### 允许转交目标
-- plan_center、review_center、data_specialist、docs_specialist、code_specialist、audit_specialist、deploy_specialist、admin_specialist、search_specialist
+- plan_center、review_center、admin_specialist、audit_specialist、code_specialist、data_specialist、deploy_specialist、docs_specialist、search_specialist
 
 ## 状态写回约束
 > 默认主链一律通过 `task_db.py` 写回状态机，不要直接改写 JSON 文件，也不要把 `kanban_update.py` 当作默认入口。

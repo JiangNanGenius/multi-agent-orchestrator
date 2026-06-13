@@ -29,12 +29,12 @@
     "downstream": [
       "plan_center",
       "review_center",
-      "data_specialist",
-      "docs_specialist",
-      "code_specialist",
-      "audit_specialist",
-      "deploy_specialist",
       "admin_specialist",
+      "audit_specialist",
+      "code_specialist",
+      "data_specialist",
+      "deploy_specialist",
+      "docs_specialist",
       "search_specialist"
     ],
     "handoffRule": "默认按允许协作关系进行转交；阻塞或超边界任务必须及时回退或升级。",
@@ -50,12 +50,12 @@
     "allowedTargets": [
       "plan_center",
       "review_center",
-      "data_specialist",
-      "docs_specialist",
-      "code_specialist",
-      "audit_specialist",
-      "deploy_specialist",
       "admin_specialist",
+      "audit_specialist",
+      "code_specialist",
+      "data_specialist",
+      "deploy_specialist",
+      "docs_specialist",
       "search_specialist"
     ],
     "fallbackTargets": [
@@ -125,7 +125,7 @@
   },
   "metadata": {
     "generatedBy": "scripts/sync_agent_config.py",
-    "updatedAt": "2026-04-22 14:32:31",
+    "updatedAt": "2026-06-14 04:28:49",
     "workspace": "/root/.openclaw/workspace-dispatch_center",
     "model": "openai/gpt-4o"
   }

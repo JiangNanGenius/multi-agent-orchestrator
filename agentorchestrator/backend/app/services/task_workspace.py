@@ -151,6 +151,7 @@ def _build_task_policy(task_kind: str, *, size_estimate_gb: float = 0.0) -> dict
                 "TODO.md",
                 "TASK_RECORD.json",
                 "context/latest_context.json",
+                "CALLBACK.md",
             ],
             "notes": "轻量任务优先短链路闭环，尽量减少中心间往返，并在完成后保留热盘归档以降低迁移成本。",
         }
@@ -168,6 +169,7 @@ def _build_task_policy(task_kind: str, *, size_estimate_gb: float = 0.0) -> dict
                 "TODO.md",
                 "TASK_RECORD.json",
                 "context/latest_context.json",
+                "CALLBACK.md",
             ],
             "notes": f"超大任务预计规模约 {size_estimate_gb:.2f} GB，优先冷盘处理，仅保留必要镜像与索引。",
         }
@@ -184,6 +186,7 @@ def _build_task_policy(task_kind: str, *, size_estimate_gb: float = 0.0) -> dict
             "TODO.md",
             "TASK_RECORD.json",
             "context/latest_context.json",
+            "CALLBACK.md",
         ],
         "notes": "标准任务按完整任务工作区、账本和冷热归档规则推进。",
     }
@@ -267,6 +270,7 @@ def _normalize_notifications(items: list[dict[str, Any]] | None) -> list[dict[st
     for item in items or []:
         if not isinstance(item, dict):
             continue
+        read = bool(item.get("read") or item.get("acknowledged") or False)
         normalized.append({
             "id": str(item.get("id") or "").strip() or f"note-{len(normalized) + 1}",
             "kind": str(item.get("kind") or "info").strip() or "info",
@@ -275,7 +279,8 @@ def _normalize_notifications(items: list[dict[str, Any]] | None) -> list[dict[st
             "source": str(item.get("source") or item.get("agent") or "system").strip() or "system",
             "severity": str(item.get("severity") or "info").strip() or "info",
             "requires_ack": bool(item.get("requires_ack", False)),
-            "acknowledged": bool(item.get("acknowledged", False)),
+            "acknowledged": read,
+            "read": read,
             "created_at": str(item.get("created_at") or item.get("at") or utc_now_iso()),
             "updated_at": str(item.get("updated_at") or item.get("created_at") or item.get("at") or utc_now_iso()),
             "task_id": str(item.get("task_id") or "").strip(),
@@ -329,6 +334,7 @@ def push_workspace_notification(
         "severity": severity,
         "requires_ack": requires_ack,
         "acknowledged": False,
+        "read": False,
         "created_at": timestamp,
         "updated_at": timestamp,
         "task_id": str(task.get("task_id") or ""),
@@ -648,13 +654,17 @@ def _build_new_refresh_advice(task: dict[str, Any], workspace: dict[str, Any]) -
     todos = task.get("todos") or []
     watchdog = workspace.get("watchdog") or {}
 
-    open_todos = [
+    completed_todos = [
         item for item in todos
-        if str(item.get("status") or "not-started") != "completed"
+        if str(item.get("status") or "") == "completed"
     ]
     in_progress_todos = [
         item for item in todos
-        if str(item.get("status") or "not-started") == "in-progress"
+        if str(item.get("status") or "") == "in-progress"
+    ]
+    pending_todos = [
+        item for item in todos
+        if str(item.get("status") or "not-started") not in {"completed", "in-progress"}
     ]
 
     trigger_codes: list[str] = []
@@ -708,10 +718,14 @@ def _build_new_refresh_advice(task: dict[str, Any], workspace: dict[str, Any]) -
         "severity": severity,
         "reason": reason_text,
         "trigger_codes": trigger_codes,
-        "open_todo_count": len(open_todos),
+        "open_todo_count": len(pending_todos) + len(in_progress_todos),
+        "pending_todo_count": len(pending_todos),
         "in_progress_todo_count": len(in_progress_todos),
+        "completed_todo_count": len(completed_todos),
         "progress_count": len(progress_log),
+        "progress_log_entries": len(progress_log),
         "flow_count": len(flow_log),
+        "flow_log_entries": len(flow_log),
         "recommended_action": action_text,
         "resume_order": [
             "README.md",
@@ -804,6 +818,44 @@ def refresh_workspace_snapshot(task: dict[str, Any]) -> dict[str, Any]:
     actual_root = Path(workspace["actual_workspace_path"])
     _ensure_actual_workspace_layout(actual_root)
     _ensure_logical_workspace_layout(logical_root)
+
+    # 生成 CALLBACK.md，约定 callback 机制
+    callback_rel_path = "artifacts/callback_result.json"
+    callback_file = actual_root / callback_rel_path
+    callback_md_content = f"""\
+# Callback 约定
+
+- task_id: {task.get('task_id', '')}
+- task_code: {task.get('task_code', '')}
+- callback_file: {callback_rel_path}
+- format: JSON
+- status: pending
+
+## 流程
+
+1. dispatch_center 执行完成后，将结果写入 `callback_file`，并将 status 设为 `completed`
+2. plan_center 读取 callback_file，整理后通过 sessions_send 回传给 control_center
+3. control_center 读取 callback_file，在飞书向用户汇报
+
+## callback_file JSON 格式
+
+```json
+{{
+  "task_id": "<task_id>",
+  "task_code": "<task_code>",
+  "result_summary": "<一句话结果摘要>",
+  "full_output": "<完整结果，可供飞书展示>",
+  "completed_at": "<ISO 时间戳>",
+  "artifacts": ["<产出文件路径列表>"]
+}}
+```
+
+## status 状态
+
+- `pending`: 等待执行
+- `completed`: 执行完成，结果已写入
+"""
+    (actual_root / "CALLBACK.md").write_text(callback_md_content)
 
     if workspace.get("metadata_mirror_path"):
         workspace["metadata_mirror_path"] = logical_paths["root"]
@@ -994,6 +1046,7 @@ def update_workspace_indexes(task: dict[str, Any]) -> None:
         "processing_location": workspace.get("processing_location", "hot"),
         "archive_status": workspace.get("archive_status", "hot"),
         "cold_archive_path": workspace.get("cold_archive_path", ""),
+        "state": task.get("state", ""),
         "task_kind": workspace.get("task_kind", "standard"),
         "refresh_recommended": bool(workspace.get("refresh_recommended", False)),
         "watchdog_status": watchdog.get("status", ""),
@@ -1022,6 +1075,53 @@ def update_workspace_indexes(task: dict[str, Any]) -> None:
 
     _write_json(task_index_path, task_index)
     _write_json(archive_index_path, archive_index)
+
+
+def delete_from_indexes(task_id: str, task_code: str | None = None) -> None:
+    """从索引文件中删除任务条目。"""
+    if not task_id:
+        return
+    task_index_path, archive_index_path = _index_paths()
+
+    # 更新 task_index
+    if task_index_path.exists():
+        with open(task_index_path) as f:
+            task_index = json.load(f)
+        modified = False
+        if task_id in task_index.get("by_task_id", {}):
+            del task_index["by_task_id"][task_id]
+            modified = True
+        if task_code and task_code in task_index.get("by_task_code", {}):
+            # 检查是否是同一个任务
+            if task_index["by_task_code"][task_code].get("task_id") == task_id:
+                del task_index["by_task_code"][task_code]
+                modified = True
+        if modified:
+            with open(task_index_path, "w") as f:
+                json.dump(task_index, f, indent=2)
+
+    # 更新 archive_index
+    if archive_index_path.exists():
+        with open(archive_index_path) as f:
+            archive_index = json.load(f)
+        modified = False
+        if task_id in archive_index.get("by_task_id", {}):
+            del archive_index["by_task_id"][task_id]
+            modified = True
+        if task_code and task_code in archive_index.get("by_task_code", {}):
+            if archive_index["by_task_code"][task_code].get("task_id") == task_id:
+                del archive_index["by_task_code"][task_code]
+                modified = True
+        if task_id in archive_index.get("items", {}):
+            # items 是按 task_code 索引的，需要找到对应的条目
+            for code, item in list(archive_index["items"].items()):
+                if item.get("task_id") == task_id:
+                    del archive_index["items"][code]
+                    modified = True
+                    break
+        if modified:
+            with open(archive_index_path, "w") as f:
+                json.dump(archive_index, f, indent=2)
 
 
 def append_workspace_event(
@@ -1064,6 +1164,14 @@ def append_workspace_event(
 
 
 def run_workspace_watchdog(task: dict[str, Any], auto_repair: bool = True) -> dict[str, Any]:
+    """增强版看门狗：智能检测卡停并自动恢复。
+
+    卡停检测规则：
+    1. 任务卡在ControlCenter超过15分钟且无flow流转 → 自动标记并告警
+    2. 任务卡在PlanCenter超过30分钟且无progress → 自动标记并告警
+    3. 任务停滞超过stale_minutes（默认30分钟）→ 标记为stale
+    4. 工作区文件缺失 → 自动修复
+    """
     settings = get_settings()
     meta = dict(task.get("meta") or {})
     workspace = dict(meta.get("workspace") or {})
@@ -1072,9 +1180,11 @@ def run_workspace_watchdog(task: dict[str, Any], auto_repair: bool = True) -> di
 
     issues: list[str] = []
     repairs: list[str] = []
+    stuck_detection_results: list[str] = []
     logical_root = Path(workspace["path"])
     actual_root = Path(workspace.get("actual_workspace_path") or workspace["path"])
 
+    # ── 1. 工作区文件检测与自动修复 ──
     if not actual_root.exists():
         issues.append(f"actual_workspace_missing:{actual_root}")
         if auto_repair:
@@ -1095,7 +1205,7 @@ def run_workspace_watchdog(task: dict[str, Any], auto_repair: bool = True) -> di
         workspace = dict(meta.get("workspace") or {})
         repairs.append("refreshed_workspace_snapshot")
 
-    stale_minutes = int(settings.workspace_watchdog_stale_minutes)
+    # ── 2. 智能卡停检测（核心增强） ──
     checked_at = utc_now_iso()
     updated_at_text = task.get("updated_at") or task.get("updatedAt") or workspace.get("last_event_at") or checked_at
     try:
@@ -1104,47 +1214,124 @@ def run_workspace_watchdog(task: dict[str, Any], auto_repair: bool = True) -> di
     except Exception:
         delta_minutes = 0.0
 
+    # 获取任务状态和日志
+    task_state = str(task.get("state") or "").strip()
+    progress_log = task.get("progress_log") or []
+    flow_log = task.get("flow_log") or []
+    created_at_text = task.get("created_at") or updated_at_text
+    try:
+        created_at = datetime.fromisoformat(str(created_at_text).replace("Z", "+00:00"))
+        age_minutes = max(0.0, (datetime.now(timezone.utc) - created_at).total_seconds() / 60)
+    except Exception:
+        age_minutes = delta_minutes
+
     status = "healthy"
     recommended_action = ""
-    if delta_minutes >= stale_minutes:
-        issues.append(f"stale_task:{int(delta_minutes)}m")
-        status = "warning"
-        recommended_action = "建议检查任务是否卡住，必要时补进展、重派发或触发 /new 刷新。"
+
+    # 卡停阈值配置（可通过settings扩展，当前使用硬编码合理值）
+    STUCK_THRESHOLDS = {
+        # 状态: (分钟阈值, 检测条件描述)
+        "ControlCenter": (15, "总控中心创建后未流转"),
+        "PlanCenter": (20, "规划中心接手后无进展"),
+        "DispatchCenter": (25, "调度中心未派发专家"),
+        "ReviewCenter": (30, "评审中心未评审"),
+        "default": (int(settings.workspace_watchdog_stale_minutes), "任务长时间无更新"),
+    }
+
+    # 针对不同状态的卡停检测
+    threshold, desc = STUCK_THRESHOLDS.get(task_state, STUCK_THRESHOLDS["default"])
+
+    # 检测卡停条件
+    is_stuck = False
+    stuck_reason = ""
+
+    if task_state == "ControlCenter":
+        # 总控中心卡停：创建后超过15分钟只有1条flow（创建记录）且无progress
+        if age_minutes >= threshold and len(flow_log) <= 1 and len(progress_log) == 0:
+            is_stuck = True
+            stuck_reason = f"{desc}（已停滞{int(age_minutes)}分钟，未转交规划中心）"
+        elif age_minutes >= threshold and len(progress_log) == 0:
+            is_stuck = True
+            stuck_reason = f"{desc}（已停滞{int(age_minutes)}分钟，无任何进展记录）"
+
+    elif task_state == "PlanCenter":
+        # 规划中心卡停：流转到规划中心后超过20分钟无进展
+        if delta_minutes >= threshold and len(progress_log) == 0:
+            is_stuck = True
+            stuck_reason = f"{desc}（已停滞{int(delta_minutes)}分钟）"
+
+    elif task_state in {"DispatchCenter", "ReviewCenter"}:
+        # 调度/评审中心卡停：超过25-30分钟无进展
+        if delta_minutes >= threshold and len(progress_log) == 0:
+            is_stuck = True
+            stuck_reason = f"{desc}（已停滞{int(delta_minutes)}分钟）"
+
+    else:
+        # 通用停滞检测
+        if delta_minutes >= int(settings.workspace_watchdog_stale_minutes):
+            is_stuck = True
+            stuck_reason = f"{desc}（已停滞{int(delta_minutes)}分钟）"
+
+    if is_stuck and stuck_reason:
+        issues.append(f"stuck_detected:{task_state}:{int(age_minutes)}m")
+        stuck_detection_results.append(stuck_reason)
+        status = "stuck"
+        recommended_action = f"🔴 检测到任务卡停：{stuck_reason}。建议：1) 人工检查任务状态 2) 重新拉起对应Agent执行 3) 必要时触发/new刷新。"
+
+    # ── 3. 文件缺失与上下文刷新检测 ──
     if any(item.startswith("missing_") or item.startswith("actual_workspace_missing") for item in issues):
-        status = "repairing" if repairs else "critical"
+        if status != "stuck":
+            status = "repairing" if repairs else "critical"
         if not recommended_action:
             recommended_action = "请优先修复工作区与账本文件，再继续流转。"
+
     if workspace.get("refresh_recommended") and settings.workspace_watchdog_auto_refresh_mark:
         if status == "healthy":
             status = "attention"
         if not recommended_action:
             recommended_action = "上下文已接近上限，建议在写完交接后触发 /new。"
 
-    new_refresh = workspace.get("new_refresh") or _build_new_refresh_advice(task, workspace)
-    if new_refresh.get("severity") == "required" and status not in {"critical", "repairing"}:
+    new_refresh = _build_new_refresh_advice(task, workspace)
+    if new_refresh.get("severity") == "required" and status not in {"critical", "repairing", "stuck"}:
         status = "attention" if status == "healthy" else status
         recommended_action = new_refresh.get("recommended_action") or recommended_action
     elif new_refresh.get("severity") == "recommended" and not recommended_action:
         recommended_action = new_refresh.get("recommended_action")
 
+    # ── 4. 写入看门狗结果（增强版） ──
     workspace["watchdog"] = {
         "status": status,
         "checked_at": checked_at,
         "issues": issues,
         "repairs": repairs,
+        "stuck_detection": stuck_detection_results,
+        "task_age_minutes": int(age_minutes),
+        "idle_since_minutes": int(delta_minutes),
+        "current_state": task_state,
+        "progress_count": len(progress_log),
+        "flow_count": len(flow_log),
         "last_error": issues[-1] if issues else "",
         "recommended_action": recommended_action,
+        "version": "2.0-enhanced",
     }
     meta["workspace"] = workspace
     task["meta"] = meta
     refreshed_meta = refresh_workspace_snapshot(task)
     task["meta"] = refreshed_meta
+
+    # 卡停时发送更明确的事件
+    event_type = "task.watchdog.checked"
+    summary_text = f"看门狗巡检完成，状态：{status}"
+    if status == "stuck":
+        event_type = "task.watchdog.stuck_detected"
+        summary_text = f"🔴 卡停检测：任务在{task_state}状态停滞{int(age_minutes)}分钟"
+
     append_workspace_event(
         task,
-        event="task.watchdog.checked",
-        summary=f"看门狗巡检完成，状态：{status}",
+        event=event_type,
+        summary=summary_text,
         agent="watchdog",
-        payload={"issues": issues, "repairs": repairs, "recommended_action": recommended_action},
+        payload={"issues": issues, "repairs": repairs, "recommended_action": recommended_action, "stuck_detection": stuck_detection_results},
         ledger_name="watchdog",
     )
     update_workspace_indexes(task)
@@ -1155,6 +1342,14 @@ def initialize_task_workspace(task: dict[str, Any]) -> dict[str, Any]:
     meta = refresh_workspace_snapshot(task)
     task["meta"] = meta
     append_workspace_event(task, "task.created", "任务工作区已初始化", agent="system")
+    task["meta"] = push_workspace_notification(
+        task,
+        title="工作区已就绪",
+        message="任务工作区初始化完成，文件结构与账本已就位，可开始执行任务流程。",
+        source="system",
+        kind="info",
+        severity="success",
+    )
     meta = run_workspace_watchdog(task, auto_repair=True)
     task["meta"] = meta
     update_workspace_indexes(task)

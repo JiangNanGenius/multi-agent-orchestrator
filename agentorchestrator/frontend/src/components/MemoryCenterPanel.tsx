@@ -43,7 +43,7 @@ export default function MemoryCenterPanel() {
   useEffect(() => { loadMemoryList(); }, []);
 
   const longTermFiles = useMemo(() => memoryFiles.filter(f => f.name === 'MEMORY.md'), [memoryFiles]);
-  
+
   const dailyFiles = useMemo(() => {
     if (!dateFilter) return memoryFiles.filter(f => f.name !== 'MEMORY.md');
     return memoryFiles.filter(f => f.name !== 'MEMORY.md' && f.name.includes(dateFilter));

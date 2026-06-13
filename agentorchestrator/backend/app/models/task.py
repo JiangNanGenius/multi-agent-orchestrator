@@ -87,6 +87,42 @@ STATE_ORG_MAP = {
 }
 
 
+import json
+from pathlib import Path
+
+
+def _enrich_feishu_reporting(task_reporting: dict) -> dict:
+    """用系统设置中的飞书 webhook 补全任务级飞书汇报配置，并兼容前端字段名。"""
+    try:
+        settings_path = Path(__file__).parents[4] / "data" / "system_settings.json"
+        if settings_path.exists():
+            sys_settings = json.loads(settings_path.read_text())
+            enabled = sys_settings.get("feishu_report_enabled", False)
+            webhook = sys_settings.get("feishu_report_webhook", "")
+            if enabled and webhook:
+                task_reporting = {
+                    **task_reporting,
+                    "enabled": True,
+                    "webhook_configured": True,
+                    "webhook_url": webhook,
+                }
+    except Exception:
+        pass
+
+    # 字段名兼容：后端内部字段 → 前端期望字段名
+    field_mapping = {
+        "last_status": "last_report_status",
+        "last_agent": "last_report_stage",
+        "last_summary": "last_report_message",
+        "last_reported_at": "last_report_at",
+    }
+    for old_key, new_key in field_mapping.items():
+        if old_key in task_reporting and new_key not in task_reporting:
+            task_reporting[new_key] = task_reporting[old_key]
+
+    return task_reporting
+
+
 class Task(Base):
     """AGENTORCHESTRATOR 中心/专家协作任务表。"""
 
@@ -228,5 +264,5 @@ class Task(Base):
             "workspaceWatchdog": workspace.get("watchdog", {}),
             "workspaceNotifications": workspace.get("notifications", []),
             "workspaceRiskControl": workspace.get("risk_control", {}),
-            "workspaceFeishuReporting": workspace.get("feishu_reporting", {}),
+            "workspaceFeishuReporting": _enrich_feishu_reporting(workspace.get("feishu_reporting", {})),
         }

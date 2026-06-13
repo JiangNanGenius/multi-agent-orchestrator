@@ -116,7 +116,7 @@ _REFRESH_SIGNAL_FILE = _BASE / 'data' / '.refresh_pending'
 
 def _trigger_refresh():
     """Debounced refresh — touch 信号文件，由独立 watcher 合并执行。
-    
+
     替代原来每次 fork subprocess 的方式，避免多 Agent 并发时产生数百个进程。
     如果 refresh_watcher 未运行，会 fallback 到直接 fork（保持向后兼容）。
     """

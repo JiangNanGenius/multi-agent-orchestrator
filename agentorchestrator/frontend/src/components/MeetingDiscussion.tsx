@@ -777,7 +777,7 @@ export default function CollaborationDiscussion() {
     stageAction?: string;
   }) => {
     if (!session || loading) return;
-    
+
     // 演示模式下不调用后端
     if (isDemoSessionId(session.session_id)) {
       setLoading(true);
@@ -802,7 +802,7 @@ export default function CollaborationDiscussion() {
       }, 800);
       return;
     }
-    
+
     setLoading(true);
     try {
       const res = await api.collabDiscussAdvance(
@@ -814,12 +814,12 @@ export default function CollaborationDiscussion() {
         stageAction,
       );
       if (!res.ok) throw new Error(res.error || pickLocaleText(locale, '推进失败', 'Failed to advance discussion'));
-      
+
       // 异步：后台在生成，前端轮询
       const sid = session.session_id;
       const currentRound = session.round || 0;
       setSession((prev) => prev ? { ...prev, stage: 'thinking' } : prev);
-      
+
       const pollTimer = setInterval(async () => {
         try {
           const status = await api.collabDiscussRunStatus(sid);

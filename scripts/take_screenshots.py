@@ -27,8 +27,8 @@ from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError, sy
 
 ROOT = Path(__file__).resolve().parent.parent
 SHOTS = ROOT / 'docs' / 'screenshots'
-URL = os.environ.get('SCREENSHOT_URL', 'http://localhost:38000/')
-USERNAME = os.environ.get('SCREENSHOT_USERNAME', 'admin')
+URL = os.environ.get('SCREENSHOT_URL', 'http://localhost:5173/')
+USERNAME = os.environ.get('SCREENSHOT_USERNAME')
 PASSWORD = os.environ.get('SCREENSHOT_PASSWORD')
 NEW_PASSWORD = os.environ.get('SCREENSHOT_NEW_PASSWORD')
 VIEWPORT = {'width': 1920, 'height': 1080}
@@ -81,14 +81,15 @@ def base_url() -> str:
     return f'{parsed.scheme}://{parsed.netloc}'
 
 
-def authenticate_via_api() -> str:
-    if not PASSWORD:
-        raise RuntimeError('必须通过 SCREENSHOT_PASSWORD 环境变量提供截图认证密码')
+def authenticate_via_api() -> tuple[str, str]:
+    if not USERNAME or not PASSWORD:
+        raise RuntimeError('SCREENSHOT_USERNAME and SCREENSHOT_PASSWORD are required')
 
     session = requests.Session()
     last_error = '未尝试登录'
+
     candidates = [PASSWORD]
-    if NEW_PASSWORD and NEW_PASSWORD != PASSWORD:
+    if NEW_PASSWORD:
         candidates.append(NEW_PASSWORD)
 
     for candidate in candidates:
@@ -104,20 +105,22 @@ def authenticate_via_api() -> str:
             continue
 
         token = login_result.get('token', '')
+        active_password = candidate
         if login_result.get('mustChangePassword'):
             first_change = api_post(
                 session,
                 '/api/auth/first-change',
                 {
                     'currentPassword': candidate,
-                    'newPassword': NEW_PASSWORD or PASSWORD,
+                    'newPassword': NEW_PASSWORD,
                     'newUsername': USERNAME,
                 },
             )
             token = first_change.get('token', token)
+            active_password = NEW_PASSWORD
 
         if token:
-            return token
+            return token, active_password
 
         last_error = str(login_result)
 
@@ -239,7 +242,7 @@ def capture_ceremony(page: Page) -> None:
 
 def main() -> None:
     SHOTS.mkdir(parents=True, exist_ok=True)
-    token = authenticate_via_api()
+    token, active_password = authenticate_via_api()
     parsed = urlparse(URL)
     cookie_domain = parsed.hostname or 'localhost'
 
@@ -263,7 +266,7 @@ def main() -> None:
         page = ctx.new_page()
 
         workspace_title = open_workspace(page)
-        print(f'🔐 authenticated as {USERNAME}')
+        print(f'authenticated as {USERNAME}; password value was not printed')
         print(f'🧭 workspace title: {workspace_title}')
 
         click_nav(page, '任务中枢')

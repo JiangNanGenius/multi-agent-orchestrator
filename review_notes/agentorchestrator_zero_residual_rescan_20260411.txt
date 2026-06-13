@@ -1,2 +1,0 @@
-## PATH_HITS
-## TEXT_HITS

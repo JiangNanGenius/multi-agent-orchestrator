@@ -25,7 +25,7 @@ from .config import get_settings
 from .db import init_db
 from .logging_utils import configure_process_logging
 from .services.event_bus import get_event_bus
-from .api import tasks, agents, events, admin, websocket, compat
+from .api import tasks, agents, events, admin, websocket, compat, stable_records
 from .api import legacy
 
 configure_process_logging("api")
@@ -76,6 +76,7 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(websocket.router, tags=["websocket"])
 app.include_router(legacy.router, prefix="/api/tasks", tags=["legacy"])
 app.include_router(compat.router, tags=["compat"])
+app.include_router(stable_records.router)  # 稳定记录点 API
 
 # 挂载前端静态文件
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"

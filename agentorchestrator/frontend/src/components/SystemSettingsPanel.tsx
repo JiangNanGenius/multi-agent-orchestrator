@@ -12,6 +12,8 @@ type Props = {
 
 const DEFAULT_SETTINGS: SystemSettings = {
   scan_record_retention_days: 7,
+  feishu_report_webhook: '',
+  feishu_report_enabled: false,
 };
 
 function clampRetentionDays(value: number) {
@@ -88,6 +90,8 @@ export default function SystemSettingsPanel({
         if (cancelled) return;
         setSettings({
           scan_record_retention_days: clampRetentionDays(Number(result.scan_record_retention_days || 7)),
+          feishu_report_webhook: result.feishu_report_webhook || '',
+          feishu_report_enabled: result.feishu_report_enabled === true,
         });
       })
       .catch(() => {
@@ -113,6 +117,8 @@ export default function SystemSettingsPanel({
     try {
       const payload = {
         scan_record_retention_days: retentionDays,
+        feishu_report_webhook: settings.feishu_report_webhook || '',
+        feishu_report_enabled: settings.feishu_report_enabled === true,
       };
       const result = await api.saveSystemSettings(payload);
       if (!result.ok) {
@@ -263,6 +269,36 @@ export default function SystemSettingsPanel({
                 {pickLocaleText(locale, '默认保留 7 天；最少 1 天，最多 30 天。超过保留期的历史记录会在本地展示时自动清理。', 'The default is 7 days; the minimum is 1 day and the maximum is 30 days. Records older than the retention window are automatically cleaned up when rendered locally.')}
               </div>
             </div>
+          </div>
+
+          <div style={subCardStyle}>
+            <div style={{ display: 'grid', gap: 6 }}>
+              <div style={{ fontSize: 14, fontWeight: 800 }}>{pickLocaleText(locale, '飞书汇报', 'Feishu Reporting')}</div>
+              <div style={helperTextStyle}>
+                {pickLocaleText(locale, '配置飞书机器人 Webhook，任务状态变更时自动推送到指定群。', 'Configure Feishu bot webhook for automatic task status push notifications.')}
+              </div>
+            </div>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 600 }}>Webhook URL</span>
+              <input
+                value={settings.feishu_report_webhook || ''}
+                onChange={(e) => setSettings((prev) => ({ ...prev, feishu_report_webhook: e.target.value }))}
+                placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."
+                style={{
+                  width: '100%', boxSizing: 'border-box', padding: '12px 14px',
+                  background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 12,
+                  color: 'var(--text)', fontSize: 13, minWidth: 0,
+                }}
+              />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={settings.feishu_report_enabled === true}
+                onChange={(e) => setSettings((prev) => ({ ...prev, feishu_report_enabled: e.target.checked }))}
+              />
+              <span style={{ fontSize: 12 }}>{pickLocaleText(locale, '启用飞书汇报', 'Enable Feishu Reporting')}</span>
+            </label>
           </div>
 
           <div style={{ ...actionRowStyle, justifyContent: 'flex-end' }}>

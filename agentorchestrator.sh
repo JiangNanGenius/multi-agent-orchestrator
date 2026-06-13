@@ -2,8 +2,7 @@
 # ══════════════════════════════════════════════════════════════
 # Multi-Agent Orchestrator · 统一服务管理脚本
 # 用法: ./agentorchestrator.sh {start|stop|status|restart|logs}
-# 默认启动：Backend API + Orchestrator Worker + Dispatch Worker
-# 可选附加：Outbox Relay（设置 AGENTORCHESTRATOR_ENABLE_OUTBOX=1 启用）
+# 默认启动：Backend API + Orchestrator Worker + Dispatch Worker + Outbox Relay
 # ══════════════════════════════════════════════════════════════
 
 set -euo pipefail
@@ -30,9 +29,8 @@ DISPATCH_LOG="$LOGDIR/dispatch.log"
 OUTBOX_LOG="$LOGDIR/outbox.log"
 
 # 可通过环境变量覆盖的配置
-API_HOST="${AGENTORCHESTRATOR_API_HOST:-127.0.0.1}"
+API_HOST="${AGENTORCHESTRATOR_API_HOST:-0.0.0.0}"
 API_PORT="${AGENTORCHESTRATOR_API_PORT:-38000}"
-ENABLE_OUTBOX="${AGENTORCHESTRATOR_ENABLE_OUTBOX:-0}"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 
@@ -109,8 +107,7 @@ PYEOF
     if [[ -n "$missing" ]]; then
       echo -e "   缺失模块: ${YELLOW}$missing${NC}"
     fi
-    echo -e "   请先执行: ${BLUE}./install.sh${NC}"
-    echo -e "   或手动执行: ${BLUE}$PYTHON -m pip install -r $req_file${NC}"
+    echo -e "   请先执行: ${BLUE}python3 -m pip install --user -r $req_file${NC}"
     return 1
   fi
   return 0
@@ -185,14 +182,11 @@ do_start() {
   _start_proc "Backend API" "$API_PIDFILE" "$API_LOG" "$PYTHON" -m uvicorn agentorchestrator.backend.app.main:app --host "$API_HOST" --port "$API_PORT"
   _start_proc "Orchestrator Worker" "$ORCH_PIDFILE" "$ORCH_LOG" "$PYTHON" -m agentorchestrator.backend.app.workers.orchestrator_worker
   _start_proc "Dispatch Worker" "$DISPATCH_PIDFILE" "$DISPATCH_LOG" "$PYTHON" -m agentorchestrator.backend.app.workers.dispatch_worker
-  if [[ "$ENABLE_OUTBOX" == "1" ]]; then
-    _start_proc "Outbox Relay" "$OUTBOX_PIDFILE" "$OUTBOX_LOG" "$PYTHON" -m agentorchestrator.backend.app.workers.outbox_relay
-  fi
+  _start_proc "Outbox Relay" "$OUTBOX_PIDFILE" "$OUTBOX_LOG" "$PYTHON" -m agentorchestrator.backend.app.workers.outbox_relay
 
   echo ""
   if _is_running "$API_PIDFILE"; then
     echo -e "${GREEN}✅ 后端栈已启动${NC}"
-    echo -e "   正式界面: ${BLUE}http://${API_HOST}:${API_PORT}/${NC}"
     echo -e "   API 地址: ${BLUE}http://${API_HOST}:${API_PORT}${NC}"
     echo -e "   健康检查: ${BLUE}http://${API_HOST}:${API_PORT}/health${NC}"
   else
@@ -205,13 +199,11 @@ do_stop() {
   echo -e "${YELLOW}正在关闭服务...${NC}"
   local stopped=0
 
-  local stop_items=()
-  if [[ "$ENABLE_OUTBOX" == "1" ]] || _is_running "$OUTBOX_PIDFILE"; then
-    stop_items+=("Outbox Relay:$OUTBOX_PIDFILE")
-  fi
-  stop_items+=("Dispatch Worker:$DISPATCH_PIDFILE" "Orchestrator Worker:$ORCH_PIDFILE" "Backend API:$API_PIDFILE")
-
-  for item in "${stop_items[@]}"; do
+  for item in \
+    "Outbox Relay:$OUTBOX_PIDFILE" \
+    "Dispatch Worker:$DISPATCH_PIDFILE" \
+    "Orchestrator Worker:$ORCH_PIDFILE" \
+    "Backend API:$API_PIDFILE"; do
     local label="${item%%:*}"
     local pidfile="${item#*:}"
     if _stop_proc "$label" "$pidfile"; then
@@ -230,16 +222,11 @@ do_status() {
   echo -e "${BLUE}Multi-Agent Orchestrator · 服务状态${NC}"
   echo ""
 
-  local status_items=(
-    "Backend API:$API_PIDFILE"
-    "Orchestrator Worker:$ORCH_PIDFILE"
-    "Dispatch Worker:$DISPATCH_PIDFILE"
-  )
-  if [[ "$ENABLE_OUTBOX" == "1" ]] || _is_running "$OUTBOX_PIDFILE"; then
-    status_items+=("Outbox Relay:$OUTBOX_PIDFILE")
-  fi
-
-  for item in "${status_items[@]}"; do
+  for item in \
+    "Backend API:$API_PIDFILE" \
+    "Orchestrator Worker:$ORCH_PIDFILE" \
+    "Dispatch Worker:$DISPATCH_PIDFILE" \
+    "Outbox Relay:$OUTBOX_PIDFILE"; do
     local label="${item%%:*}"
     local pidfile="${item#*:}"
     if _is_running "$pidfile"; then
@@ -270,7 +257,6 @@ PYEOF
         *)          echo -e "  健康检查: ${RED}❌ 无法连接${NC}" ;;
       esac
     fi
-    echo -e "  正式界面: ${BLUE}http://${API_HOST}:${API_PORT}/${NC}"
     echo -e "  API 地址: ${BLUE}http://${API_HOST}:${API_PORT}${NC}"
   fi
 }
@@ -300,7 +286,7 @@ case "${1:-}" in
     echo "用法: $0 {start|stop|restart|status|logs}"
     echo ""
     echo "命令:"
-    echo "  start    启动官方后端栈（默认: API + orchestrator + dispatch）"
+    echo "  start    启动官方后端栈（API + orchestrator + dispatch + outbox）"
     echo "  stop     停止所有服务"
     echo "  restart  重启所有服务"
     echo "  status   查看运行状态"
@@ -309,7 +295,6 @@ case "${1:-}" in
     echo "环境变量:"
     echo "  AGENTORCHESTRATOR_API_HOST  API 监听地址 (默认: 127.0.0.1)"
     echo "  AGENTORCHESTRATOR_API_PORT  API 监听端口 (默认: 38000)"
-    echo "  AGENTORCHESTRATOR_ENABLE_OUTBOX  是否额外启动 Outbox Relay (默认: 0)"
     exit 1
     ;;
 esac

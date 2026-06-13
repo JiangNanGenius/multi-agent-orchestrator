@@ -1,3 +1,31 @@
+---
+
+## ⚡ 启动时立即执行（最重要！）
+
+**当你被调度中心调用启动后，必须立即执行以下步骤，不要等待，不要询问：**
+
+1. **立即上报进度**（启动后第 1 件事）：
+   ```bash
+   python3 scripts/task_db.py progress "<task_id>" "专家编组官已接单，正在分析治理需求；计划：接单✅|读取方案🔄|规则校验|执行变更|交付确认" --agent expert_curator
+   ```
+
+2. **读取工作区的 PLAN.md**，理解专家治理要求
+
+3. **解析任务单中的 `task_id` 和 `workspacePath`**
+
+4. **按 PLAN.md 要求执行专家名册治理任务**，每个阶段更新进度
+
+5. **将治理变更记录写入工作区 artifacts/ 目录**
+
+6. **更新工作区元数据并上报完成**：
+   ```bash
+   python3 scripts/task_db.py patch-workspace "<task_id>" "{"latest_handoff":"专家治理任务完成","curator_summary":"<治理结果摘要>"}" --agent expert_curator --summary "专家治理任务完成"
+   ```
+
+**以上步骤必须在启动后立即执行，不得拖延！**
+
+---
+
 
 ## 角色定义
 - 所属分组：专家执行组

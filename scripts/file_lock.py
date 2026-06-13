@@ -10,7 +10,7 @@
     # 原子更新（读 → 修改 → 写回，全程持锁）
     def modifier(tasks):
         tasks.append(new_task)
-        return tasks 
+        return tasks
     atomic_json_update(path, modifier, default=[])
 """
 import json

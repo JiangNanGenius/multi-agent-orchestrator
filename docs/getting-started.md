@@ -62,9 +62,9 @@ openclaw channels add --type feishu --agent control_center
 
 ## 部署前建议先做一轮 AI 检查
 
-在首次安装完成或执行增量更新之前，建议先把 `docs/opencode-ai-deployment-runbook.md` 交给 AI，尤其是 opencode 之类的执行型代理，按其中的**预检 → 安装 → 启动 → 自检**主链路先做一轮部署前审计。旧的 `docs/ai_deployment_checklist_and_prompts_20260408.md` 可继续作为补充检查模板，但当前推荐入口已经切换为新的执行手册。如果仍有高风险操作、运行时配置覆盖风险或需要停机重启的动作，应先确认再执行。
+在首次安装完成或执行增量更新之前，建议先按 `docs/ai_deployment_checklist_and_prompts_20260408.md` 做一轮部署前审计。核心顺序应是：先检查环境与风险，再执行构建与同步，最后做最终交付检查；如果仍有高风险操作、运行时配置覆盖风险或需要停机重启的动作，应先确认再执行。
 
-推荐最小验证顺序如下；若交由 opencode 执行，仍应先严格遵循新手册中的正式入口与根路径自检要求：
+推荐最小验证顺序如下：
 
 1. `python3 -m py_compile scripts/sync_agent_config.py`
 2. `python3 scripts/sync_agent_config.py`
@@ -76,11 +76,8 @@ openclaw channels add --type feishu --agent control_center
 ## 第四步：启动服务
 
 ```bash
-# 官方本地启动入口（默认拉起 API + orchestrator + dispatch）
+# 官方本地启动入口（默认拉起 API + orchestrator + dispatch + outbox）
 ./agentorchestrator.sh start
-
-# 如需额外启动 outbox relay（仅高级场景）
-AGENTORCHESTRATOR_ENABLE_OUTBOX=1 ./agentorchestrator.sh start
 
 # 查看状态
 ./agentorchestrator.sh status
@@ -89,15 +86,20 @@ AGENTORCHESTRATOR_ENABLE_OUTBOX=1 ./agentorchestrator.sh start
 如果你没有先运行 `install.sh`，而是直接从仓库手动启动正式后端栈，请先补齐后端依赖：
 
 ```bash
-./install.sh
+python3 -m pip install --user -r agentorchestrator/backend/requirements.txt
 ./agentorchestrator.sh start
 ```
 
-默认正式访问地址：`http://127.0.0.1:38000/`
-
 默认 API 地址：`http://127.0.0.1:38000`
 
-> 当前主链路仅保留后端同源托管的正式前端入口。
+如果你在做前端联调，可另开一个终端进入开发模式：
+
+```bash
+cd agentorchestrator/frontend
+pnpm dev
+```
+
+> 默认开发地址：`http://127.0.0.1:35173`，并代理到 `http://127.0.0.1:38000`。
 
 
 ## 第五步：发送第一条任务
@@ -121,10 +123,10 @@ AGENTORCHESTRATOR_ENABLE_OUTBOX=1 ./agentorchestrator.sh start
 curl http://127.0.0.1:38000/health
 ```
 
-正式部署请直接打开 `http://127.0.0.1:38000/`，此时前端由后端同源托管。
+如果你正在联调前端，可打开开发界面 `http://127.0.0.1:35173`；正式部署与联调均以统一后端 API 和正式前端入口为准。
 
 1. **任务入口** — 通过统一 API 提交任务，确认任务已进入主链状态流转
-2. **运行调度** — 观察 API、orchestrator 与 dispatch 三条默认链路是否在线；只有在显式启用时才检查 outbox
+2. **运行调度** — 观察 orchestrator、dispatch 与 outbox 三条后台链路是否全部在线
 3. **结果归档** — 任务完成后检查结果写回、状态归档与最终交付是否一致
 
 任务流转路径：

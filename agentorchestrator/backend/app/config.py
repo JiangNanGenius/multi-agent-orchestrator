@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     postgres_db: str = "agentorchestrator"
     postgres_user: str = "agentorchestrator"
-    postgres_password: str = "agentorchestrator_secret_change_me"
+    postgres_password: str = "agentorchestrator_change_me"
     database_url_override: str | None = Field(default=None, alias="DATABASE_URL")
 
     # ── Event Bus / 可选 MySQL ──
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     mysql_port: int = 3306
     mysql_db: str = "agentorchestrator"
     mysql_user: str = "agentorchestrator"
-    mysql_password: str = "agentorchestrator_secret_change_me"
+    mysql_password: str = "agentorchestrator_change_me"
     mysql_url_override: str | None = Field(default=None, alias="MYSQL_URL")
     sqlite_db_path: str = "data/agentorchestrator.sqlite3"
     sqlite_event_bus_path: str = "data/event_bus.sqlite3"
@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     workspace_watchdog_stale_minutes: int = 30
     workspace_watchdog_missing_file_repair: bool = True
     workspace_watchdog_auto_refresh_mark: bool = True
+    workspace_watchdog_auto_recover: bool = True
     workspace_watchdog_feishu_webhook: str = ""
 
     # ── 消息通知 ──
@@ -82,7 +83,7 @@ class Settings(BaseSettings):
     feishu_report_webhook: str = ""
     feishu_report_enabled: bool = False
     feishu_report_agents: str = "control_center,plan_center,review_center,dispatch_center,watchdog"
-    feishu_report_events: str = "task.created,task.state.changed,task.progress.appended,task.workspace.archive.confirmed,task.workspace.reactivated.confirmed,task.watchdog.sync"
+    feishu_report_events: str = "task.created,task.state.changed,task.progress.appended,task.workspace.archive.confirmed,task.workspace.reactivated.confirmed,task.watchdog.sync,task.completed"
     feishu_report_include_summary_only: bool = True
     feishu_report_max_content_chars: int = 1200
 

@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from ..db import get_db
 from ..models.task import Task, TaskState
@@ -292,17 +293,17 @@ async def agent_config_compat():
     """Provide agent config, discovering skills from openclaw workspaces."""
     cfg_path = Path(__file__).parents[4] / "data" / "agent_config.json"
     payload: dict[str, Any] = {"agents": [], "knownModels": [], "dispatchChannel": "openclaw", "ok": True}
-    
+
     if cfg_path.exists():
         try:
             payload = json.loads(cfg_path.read_text(encoding="utf-8"))
             payload["ok"] = True
         except (json.JSONDecodeError, OSError):
             pass
-    
+
     # 从 openclaw workspace 发现 skills
     _inject_openclaw_skills(payload)
-    
+
     return payload
 
 
@@ -312,16 +313,16 @@ def _inject_openclaw_skills(payload: dict[str, Any]) -> None:
     openclaw_cfg_path = openclaw_home / "openclaw.json"
     if not openclaw_cfg_path.exists():
         return
-    
+
     try:
         oclaw_cfg = json.loads(openclaw_cfg_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return
-    
+
     agent_list = oclaw_cfg.get("agents", {}).get("list", [])
     if not agent_list:
         return
-    
+
     # 构建 agent_id → workspace 映射
     agent_workspace_map: dict[str, Path] = {}
     for ag in agent_list:
@@ -329,7 +330,7 @@ def _inject_openclaw_skills(payload: dict[str, Any]) -> None:
         ws = ag.get("workspace", "")
         if aid and ws:
             agent_workspace_map[aid] = Path(ws)
-    
+
     # 先从 main workspace 读取全局共享 skill
     global_skills: list[dict[str, Any]] = []
     main_ws = agent_workspace_map.get("main")
@@ -337,20 +338,20 @@ def _inject_openclaw_skills(payload: dict[str, Any]) -> None:
         skills_dir = main_ws / "skills"
         if skills_dir.is_dir():
             global_skills = _discover_skills_in_dir(skills_dir)
-    
+
     existing_agents = {a.get("id", ""): a for a in payload.get("agents", [])}
-    
+
     # 排除 main，其余 agent 继承全局 skill
     for aid, ws_path in agent_workspace_map.items():
         if aid == "main":
             continue
-        
+
         # 收集此 agent 自己拥有的本地 skill（不含全局共享）
         agent_skills: list[dict[str, Any]] = []
         own_skills_dir = ws_path / "skills"
         if own_skills_dir.is_dir():
             agent_skills.extend(_discover_skills_in_dir(own_skills_dir))
-        
+
         if agent_skills:
             if aid in existing_agents:
                 existing_agents[aid]["skills"] = agent_skills
@@ -360,7 +361,7 @@ def _inject_openclaw_skills(payload: dict[str, Any]) -> None:
                     "label": aid.replace("_", " ").title(),
                     "skills": agent_skills,
                 }
-    
+
     # 全局共享 skill 以 "global" 伪 agent 置顶
     if global_skills:
         final_agents = []
@@ -386,7 +387,7 @@ def _discover_skills_in_dir(skills_dir: Path) -> list[dict[str, Any]]:
         skill_md = skill_dir / "SKILL.md"
         if not skill_md.exists():
             continue
-        
+
         skill_name = skill_dir.name
         description = ""
         try:
@@ -415,7 +416,7 @@ def _discover_skills_in_dir(skills_dir: Path) -> list[dict[str, Any]]:
                         break
         except (OSError, UnicodeDecodeError):
             pass
-        
+
         skills.append({
             "name": skill_name,
             "description": description or skill_name,
@@ -613,7 +614,7 @@ async def advance_state_compat(
 async def global_agent_busy(db: AsyncSession = Depends(get_db)):
     """返回 Agent 忙碌状态，基于当前活跃任务的实际分配情况。"""
     from datetime import timezone as dt_timezone
-    
+
     try:
         result = await db.execute(
             select(Task).where(
@@ -622,11 +623,11 @@ async def global_agent_busy(db: AsyncSession = Depends(get_db)):
         )
         active_tasks = result.scalars().all()
         logger.info(f"global_agent_busy: found {len(active_tasks)} active tasks")
-        
+
         busy_entries: list[dict[str, Any]] = []
         sessions: list[dict[str, Any]] = []
         task_ids: list[str] = []
-        
+
         for task in active_tasks:
             agent_id = task.assignee_org or task.org or ""
             task_ids.append(str(task.task_id))
@@ -638,7 +639,7 @@ async def global_agent_busy(db: AsyncSession = Depends(get_db)):
                     "title": task.title or "",
                     "updated_at": task.updated_at.isoformat() if task.updated_at else "",
                 })
-        
+
         # 检查直接搜索状态
         with _search_lock:
             if _search_state.get("status") == "searching":
@@ -649,7 +650,7 @@ async def global_agent_busy(db: AsyncSession = Depends(get_db)):
                     "title": _search_state.get("query", ""),
                     "updated_at": datetime.fromtimestamp(_search_state.get("started_at", 0), tz=timezone.utc).isoformat(),
                 })
-        
+
         # 检查活跃的协作会议（仅当前发言者标记为忙碌）
         collab_dir = Path(__file__).parents[4] / "data" / "collab_sessions"
         if collab_dir.is_dir():
@@ -679,7 +680,7 @@ async def global_agent_busy(db: AsyncSession = Depends(get_db)):
                     })
                 except (json.JSONDecodeError, OSError):
                     pass
-        
+
         return {
             "ok": True,
             "busy": busy_entries,
@@ -789,7 +790,8 @@ async def scheduler_state(task_id: str, db: AsyncSession = Depends(get_db)):
         return {"ok": False, "error": "Task not found", "scheduler": {}, "stalledSec": 0}
 
     meta = task.meta or {}
-    scheduler = meta.get("scheduler", {})
+    # 优先从独立的 scheduler 列获取，其次从 meta 中获取（兼容旧数据）
+    scheduler = task.scheduler if hasattr(task, 'scheduler') and task.scheduler else meta.get("scheduler", {})
     updated_at = task.updated_at
     if updated_at and updated_at.tzinfo is None:
         from datetime import timezone
@@ -968,7 +970,50 @@ async def agent_search_status():
 
 @router.post("/api/set-model")
 async def set_model(body: dict):
-    return {"ok": True, "message": "Model change queued"}
+    """设置 Agent 使用的模型。"""
+    agent_id = body.get("agentId", body.get("agent_id", ""))
+    model = body.get("model", "")
+
+    if not agent_id or not model:
+        return {"ok": False, "error": "agentId 和 model 必填"}
+
+    cfg_path = Path(__file__).parents[4] / "data" / "agent_config.json"
+
+    try:
+        cfg = _read_json_file("agent_config.json", {})
+        agents = cfg.get("agents", [])
+        found = False
+        old_model = ""
+
+        for ag in agents:
+            if ag.get("id") == agent_id:
+                old_model = ag.get("model", "")
+                ag["model"] = model
+                found = True
+                break
+
+        if not found:
+            return {"ok": False, "error": f"未找到 Agent: {agent_id}"}
+
+        cfg["agents"] = agents
+        _write_json_file("agent_config.json", cfg)
+
+        # 记录变更日志
+        change_log = _read_json_file("model_change_log.json", [])
+        if not isinstance(change_log, list):
+            change_log = []
+
+        change_log.append({
+            "at": datetime.now(timezone.utc).isoformat(),
+            "agentId": agent_id,
+            "oldModel": old_model,
+            "newModel": model,
+        })
+        _write_json_file("model_change_log.json", change_log)
+
+        return {"ok": True, "message": f"已将 {agent_id} 的模型更新为 {model}"}
+    except Exception as e:
+        return {"ok": False, "error": f"保存失败: {str(e)}"}
 
 
 @router.post("/api/set-dispatch-channel")
@@ -987,33 +1032,216 @@ async def agent_command(body: dict):
 
 
 @router.post("/api/archive-task")
-async def archive_task(body: dict):
-    return {"ok": True}
+async def archive_task(body: dict, db: AsyncSession = Depends(get_db)):
+    """归档任务。
+
+    - 传入 taskId: 归档/取消归档单个任务
+    - 传入 archiveAllDone: true: 批量归档所有已完成/已取消任务
+    """
+    svc = TaskService(db, await get_event_bus())
+
+    # 批量归档已完成任务
+    if body.get("archiveAllDone"):
+        result = await db.execute(
+            select(Task)
+            .where(Task.state.in_(["Done", "Cancelled"]))
+            .where((Task.archived == False) | (Task.archived.is_(None)))
+        )
+        tasks_to_archive = result.scalars().all()
+        count = 0
+        errors = []
+        for task in tasks_to_archive:
+            try:
+                await svc.archive_workspace(task.task_id, "dashboard")
+                count += 1
+            except Exception as e:
+                errors.append(f"{task.task_id}: {str(e)}")
+                logger.error(f"归档任务失败: {task.task_id} - {str(e)}")
+        await db.commit()
+        return {"ok": True, "count": count, "errors": errors[:5] if errors else None}
+
+    # 单个任务归档/取消归档
+    task_id = body.get("taskId")
+    archived = bool(body.get("archived", True))
+    if not task_id:
+        raise HTTPException(status_code=400, detail="缺少 taskId")
+
+    try:
+        if archived:
+            await svc.archive_workspace(uuid.UUID(task_id), "dashboard")
+        else:
+            await svc.reactivate_workspace(uuid.UUID(task_id), "dashboard")
+        await db.commit()
+        return {"ok": True, "message": f"任务已{'归档' if archived else '取消归档'}"}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="无效的任务 ID")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/api/scheduler-scan")
-async def scheduler_scan(body: dict):
-    return {"ok": True, "count": 0, "actions": []}
+async def scheduler_scan(body: dict, db: AsyncSession = Depends(get_db)):
+    """扫描停滞任务，生成待处理动作列表。"""
+    from datetime import datetime, timezone
+    from sqlalchemy import select
+    from ..models.task import Task, TaskState
+    from ..services.task_service import TaskService
+
+    threshold = int(body.get("threshold", 180))
+    now = datetime.now(timezone.utc)
+
+    # 查找非终止状态且停滞超过阈值的任务
+    from ..models.task import TaskState
+    terminal_states = [TaskState.Done, TaskState.Cancelled]
+    stmt = select(Task).where(Task.state.not_in(terminal_states))
+    result = await db.execute(stmt)
+    tasks = result.scalars().all()
+
+    actions = []
+    svc = TaskService(db, None)  # 无 event bus
+
+    for task in tasks:
+        if not task.updated_at:
+            continue
+        updated_at = task.updated_at
+        if updated_at.tzinfo is None:
+            updated_at = updated_at.replace(tzinfo=timezone.utc)
+        stalled_sec = int((now - updated_at).total_seconds())
+        if stalled_sec > threshold:
+            actions.append({
+                "task_id": str(task.task_id),
+                "title": task.title,
+                "state": task.state,
+                "stalled_sec": stalled_sec,
+                "suggestion": "schedule_review"
+            })
+
+    return {"ok": True, "count": len(actions), "actions": actions}
 
 
 @router.post("/api/scheduler-retry")
-async def scheduler_retry(body: dict):
-    return {"ok": True}
+async def scheduler_retry(body: dict, db: AsyncSession = Depends(get_db)):
+    """重试指定任务。"""
+    from sqlalchemy import select
+    from ..models.task import Task
+    from ..services.task_service import TaskService
+
+    try:
+        task_id = body.get("taskId", body.get("task_id"))
+        if not task_id:
+            return {"ok": False, "error": "缺少 taskId"}
+
+        task_uuid = uuid.UUID(task_id)
+        task = await db.get(Task, task_uuid)
+        if not task:
+            return {"ok": False, "error": "任务不存在"}
+
+        svc = TaskService(db, None)
+
+        # 更新 scheduler 信息
+        if not task.scheduler:
+            task.scheduler = {}
+        task.scheduler["last_escalation"] = None
+        task.scheduler["escalation_count"] = 0
+        flag_modified(task, "scheduler")
+
+        await db.commit()
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 @router.post("/api/scheduler-escalate")
-async def scheduler_escalate(body: dict):
-    return {"ok": True}
+async def scheduler_escalate(body: dict, db: AsyncSession = Depends(get_db)):
+    """提升任务关注级别。"""
+    from sqlalchemy import select
+    from ..models.task import Task
+
+    try:
+        task_id = body.get("taskId", body.get("task_id"))
+        if not task_id:
+            return {"ok": False, "error": "缺少 taskId"}
+
+        task_uuid = uuid.UUID(task_id)
+        task = await db.get(Task, task_uuid)
+        if not task:
+            return {"ok": False, "error": "任务不存在"}
+
+        if not task.scheduler:
+            task.scheduler = {}
+
+        count = task.scheduler.get("escalation_count", 0) + 1
+        task.scheduler["escalation_count"] = count
+        task.scheduler["last_escalation"] = datetime.now(timezone.utc).isoformat()
+        task.scheduler["priority_boost"] = True
+        flag_modified(task, "scheduler")
+
+        await db.commit()
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 @router.post("/api/scheduler-rollback")
-async def scheduler_rollback(body: dict):
-    return {"ok": True}
+async def scheduler_rollback(body: dict, db: AsyncSession = Depends(get_db)):
+    """回滚到最近稳定状态。"""
+    from sqlalchemy import select
+    from ..models.task import Task
+
+    try:
+        task_id = body.get("taskId", body.get("task_id"))
+        if not task_id:
+            return {"ok": False, "error": "缺少 taskId"}
+
+        task_uuid = uuid.UUID(task_id)
+        task = await db.get(Task, task_uuid)
+        if not task:
+            return {"ok": False, "error": "任务不存在"}
+
+        if not task.scheduler:
+            task.scheduler = {}
+
+        # 更新回滚计数
+        task.scheduler["rollback_count"] = task.scheduler.get("rollback_count", 0) + 1
+        task.scheduler["last_rollback"] = datetime.now(timezone.utc).isoformat()
+        flag_modified(task, "scheduler")
+
+        await db.commit()
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 @router.post("/api/scheduler-config")
-async def scheduler_config(body: dict):
-    return {"ok": True}
+async def scheduler_config(body: dict, db: AsyncSession = Depends(get_db)):
+    """更新任务调度器配置。"""
+    from sqlalchemy import select
+    from ..models.task import Task
+
+    try:
+        task_id = body.get("taskId", body.get("task_id"))
+        if not task_id:
+            return {"ok": False, "error": "缺少 taskId"}
+
+        task_uuid = uuid.UUID(task_id)
+        task = await db.get(Task, task_uuid)
+        if not task:
+            return {"ok": False, "error": "任务不存在"}
+
+        # 更新配置（不包含 snapshot）
+        if not task.scheduler:
+            task.scheduler = {}
+
+        config_fields = ['enabled', 'stallThresholdSec', 'maxRetry', 'autoRollback', 'maxRollback']
+        for field in config_fields:
+            if field in body:
+                task.scheduler[field] = body[field]
+
+        flag_modified(task, "scheduler")
+        await db.commit()
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 @router.post("/api/add-skill")
@@ -1031,26 +1259,26 @@ async def collab_discuss_start(body: dict):
     """启动一次多 Agent 协作讨论（异步，立即返回）。"""
     import subprocess
     from ..config import get_settings
-    
+
     settings = get_settings()
     topic = body.get("topic", "")
     agent_ids = body.get("agentIds", body.get("agent_ids", body.get("agents", [])))
     intent = body.get("intent", body.get("preferredMode", "auto"))
     moderator_id = body.get("moderatorId", body.get("moderator_id", agent_ids[0] if agent_ids else "control_center"))
     select_all = body.get("selectAll", body.get("select_all", True))
-    
+
     if not topic or len(agent_ids) < 2:
         return {"ok": False, "error": "Need topic and at least 2 agents"}
-    
+
     session_id = f"collab-{uuid.uuid4().hex[:12]}"
-    
+
     speakers = [aid for aid in agent_ids if aid != moderator_id]
-    
+
     # 预创建 session 文件（preparing 状态）
     session_dir = Path(__file__).parents[4] / "data" / "collab_sessions"
     session_dir.mkdir(parents=True, exist_ok=True)
     session_file = session_dir / f"{session_id}.json"
-    
+
     session = {
         "session_id": session_id,
         "topic": topic,
@@ -1066,7 +1294,7 @@ async def collab_discuss_start(body: dict):
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     session_file.write_text(json.dumps(session, ensure_ascii=False, default=str))
-    
+
     # 后台线程执行开场
     def _run_opening():
         try:
@@ -1080,15 +1308,15 @@ async def collab_discuss_start(body: dict):
                 prompt = f"现在是{', '.join(agent_ids)}之间的群聊。话题：{topic}。你是{moderator_id}，用自然的、聊天的语气发起对话。回复控制在200字以内。"
             else:
                 prompt = f"[协作讨论] 主题：{topic}。参与方：{', '.join(agent_ids)}。你是主持人{moderator_id}，请做开场发言，说明讨论目标，然后邀请{', '.join(speakers) if speakers else '其他参与者'}发言。回复控制在200字以内。"
-            
+
             proc = subprocess.run(
                 [settings.openclaw_bin, "agent", "--agent", moderator_id, "-m", prompt, "--json"],
                 capture_output=True, text=True, timeout=120,
                 cwd=settings.openclaw_project_dir or None,
             )
-            
+
             fallback = f"大家好，今天我们来讨论：{topic}。请各位发表意见。" if intent in ("auto", "meeting") else f"大家好，今天聊聊：{topic}。"
-            
+
             msg_text = f"大家好，今天我们讨论：{topic}。有请 {speakers[0] if speakers else '下一位'} 先发言。"
             if proc.returncode == 0 and proc.stdout.strip():
                 try:
@@ -1098,7 +1326,7 @@ async def collab_discuss_start(body: dict):
                         fallback = payloads[0]["text"]
                 except json.JSONDecodeError:
                     fallback = proc.stdout.strip()[:500]
-            
+
             if session_file.exists():
                 s = json.loads(session_file.read_text())
                 s["messages"] = [{
@@ -1124,10 +1352,10 @@ async def collab_discuss_start(body: dict):
                 s["stage"] = "discussion"
                 s["round"] = 1
                 session_file.write_text(json.dumps(s, ensure_ascii=False, default=str))
-    
+
     thread = threading.Thread(target=_run_opening, daemon=True)
     thread.start()
-    
+
     return {
         "ok": True,
         "session_id": session_id,
@@ -1150,31 +1378,31 @@ async def collab_discuss_advance(body: dict, db: AsyncSession = Depends(get_db))
     """推进讨论（异步，立即返回）。"""
     import subprocess
     from ..config import get_settings
-    
+
     settings = get_settings()
     session_id = body.get("session_id", body.get("sessionId", ""))
     user_message = body.get("userMessage", body.get("user_message", ""))
     constraint = body.get("constraint", "")
     intent = body.get("intent", "auto")
     speaker_ids = body.get("speakerIds", body.get("speaker_ids", []))
-    
+
     if not session_id:
         return {"ok": False, "error": "Session ID required"}
-    
+
     session_dir = Path(__file__).parents[4] / "data" / "collab_sessions"
     session_file = session_dir / f"{session_id}.json"
-    
+
     if not session_file.exists():
         return {"ok": False, "error": "Session not found"}
-    
+
     session = json.loads(session_file.read_text())
-    
+
     speakers = session.get("speaker_queue", [])
     if not speakers:
         return {"ok": False, "error": "No speakers in queue"}
-    
+
     idx = session.get("current_speaker_index", 0)
-    
+
     # 查询忙碌的 agent（有活跃任务）
     result = await db.execute(
         select(Task.assignee_org, Task.org).where(
@@ -1187,7 +1415,7 @@ async def collab_discuss_advance(body: dict, db: AsyncSession = Depends(get_db))
             busy_agents.add(row[0])
         if row[1]:
             busy_agents.add(row[1])
-    
+
     # 跳过忙碌的 speaker，找第一个空闲的
     original_idx = idx
     found = False
@@ -1199,20 +1427,20 @@ async def collab_discuss_advance(body: dict, db: AsyncSession = Depends(get_db))
             current_speaker = candidate
             found = True
             break
-    
+
     if not found:
         return {"ok": False, "error": "所有参与成员均忙碌中，请稍后再试"}
-    
+
     # 如果跳过了，备注说明
     skip_note = ""
     if idx != original_idx:
         skipped = speakers[original_idx] if original_idx < len(speakers) else "unknown"
         skip_note = f"（{skipped} 正忙，已跳过）"
-    
+
     # 标记为 thinking 状态
     session["stage"] = "thinking"
     session_file.write_text(json.dumps(session, ensure_ascii=False, default=str))
-    
+
     # 后台线程执行发言
     def _run_advance():
         try:
@@ -1221,11 +1449,11 @@ async def collab_discuss_advance(body: dict, db: AsyncSession = Depends(get_db))
                 f"[{m.get('agent_name', m.get('agent_id', '?'))}]: {m.get('content', '')}"
                 for m in recent_msgs
             )
-            
+
             mode = session.get("mode", "auto")
             topic = session.get("topic", "")
             moderator_id_s = session.get("moderator_id", "")
-            
+
             if mode == "auto":
                 prompt = (
                     f"你是{current_speaker}，正在参加一场关于「{topic}」的讨论。\n\n"
@@ -1252,13 +1480,13 @@ async def collab_discuss_advance(body: dict, db: AsyncSession = Depends(get_db))
                 if constraint:
                     prompt += f"\n要求：{constraint}"
                 prompt += "\n\n请发表你的意见。回复控制在200字以内。"
-            
+
             proc = subprocess.run(
                 [settings.openclaw_bin, "agent", "--agent", current_speaker, "-m", prompt, "--json"],
                 capture_output=True, text=True, timeout=120,
                 cwd=settings.openclaw_project_dir or None,
             )
-            
+
             msg_text = f"[{current_speaker}] 收到，思考中..."
             if proc.returncode == 0 and proc.stdout.strip():
                 try:
@@ -1268,7 +1496,7 @@ async def collab_discuss_advance(body: dict, db: AsyncSession = Depends(get_db))
                         msg_text = payloads[0]["text"]
                 except json.JSONDecodeError:
                     msg_text = proc.stdout.strip()[:500]
-            
+
             if session_file.exists():
                 s = json.loads(session_file.read_text())
                 new_msg = {
@@ -1288,10 +1516,10 @@ async def collab_discuss_advance(body: dict, db: AsyncSession = Depends(get_db))
                 s = json.loads(session_file.read_text())
                 s["stage"] = "discussion"
                 session_file.write_text(json.dumps(s, ensure_ascii=False, default=str))
-    
+
     thread = threading.Thread(target=_run_advance, daemon=True)
     thread.start()
-    
+
     return {
         "ok": True,
         "session_id": session_id,
@@ -1307,13 +1535,13 @@ async def collab_discuss_run_status(session_id: str):
     """获取协作讨论的当前状态。"""
     session_dir = Path(__file__).parents[4] / "data" / "collab_sessions"
     session_file = session_dir / f"{session_id}.json"
-    
+
     if not session_file.exists():
         # 尝试旧格式
         old_file = Path(__file__).parents[4] / "data" / "collab_sessions" / f"{session_id}.json"
         if not old_file.exists():
             return {"ok": False, "error": "Session not found"}
-    
+
     session = json.loads(session_file.read_text())
     return {
         "ok": True,
@@ -1351,90 +1579,76 @@ async def collab_discuss_resume(body: dict):
     return {"ok": True, "run_state": "running", "session_id": session_id}
 
 
-def _collect_collab_discuss_agent_ids(session_id: str) -> tuple[list[str], Path | None]:
-    if not session_id:
-        return [], None
-    session_dir = Path(__file__).parents[4] / "data" / "collab_sessions"
-    session_file = session_dir / f"{session_id}.json"
-    if not session_file.exists():
-        return [], session_file
-    try:
-        session = json.loads(session_file.read_text())
-    except (json.JSONDecodeError, OSError):
-        return [], session_file
-    agent_ids = session.get("agent_ids", []) + [session.get("moderator_id", "")]
-    agent_ids = list(dict.fromkeys(aid for aid in agent_ids if aid))
-    return agent_ids, session_file
-
-
-def _clear_collab_sessions_async(agent_ids: list[str], message: str) -> None:
-    if not agent_ids:
-        return
-
-    def _worker() -> None:
-        import subprocess
-        from ..config import get_settings
-
-        settings = get_settings()
-        for aid in agent_ids:
-            try:
-                subprocess.run(
-                    [settings.openclaw_bin, "agent", "--agent", aid, "-m", message, "--json"],
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
-                    cwd=settings.openclaw_project_dir or None,
-                )
-            except Exception:
-                logger.exception("清理协作讨论会话失败: %s", aid)
-
-    threading.Thread(target=_worker, daemon=True).start()
-
-
 @router.post("/api/collab-discuss/conclude")
 async def collab_discuss_conclude(body: dict):
     session_id = body.get("session_id", body.get("sessionId", ""))
-    agent_ids, session_file = _collect_collab_discuss_agent_ids(session_id)
+    agent_ids: list[str] = []
 
-    if session_file and session_file.exists():
-        try:
+    if session_id:
+        session_dir = Path(__file__).parents[4] / "data" / "collab_sessions"
+        session_file = session_dir / f"{session_id}.json"
+        if session_file.exists():
             session = json.loads(session_file.read_text())
             session["stage"] = "completed"
             session_file.write_text(json.dumps(session, ensure_ascii=False, default=str))
-        except (json.JSONDecodeError, OSError):
-            logger.exception("写入协作讨论完成状态失败: %s", session_id)
+            agent_ids = session.get("agent_ids", []) + [session.get("moderator_id", "")]
+            agent_ids = list(set(agent_ids))
 
-    _clear_collab_sessions_async(
-        agent_ids,
-        "/new 会议已结束。除非用户明确要求，不要将本次会议的任何内容写入MEMORY.md或memory目录。",
-    )
+    # 后台线程清除会话（不阻塞请求）
+    if agent_ids:
+        def _clear_sessions():
+            import subprocess
+            from ..config import get_settings
+            settings = get_settings()
+            for aid in agent_ids:
+                if not aid:
+                    continue
+                try:
+                    subprocess.run(
+                        [settings.openclaw_bin, "agent", "--agent", aid, "-m", "/new 会议结束，除非用户明确要求，不要写入MEMORY.md。", "--json"],
+                        capture_output=True, text=True, timeout=30,
+                        cwd=settings.openclaw_project_dir or None,
+                    )
+                except Exception:
+                    pass
+        threading.Thread(target=_clear_sessions, daemon=True).start()
 
-    return {
-        "ok": True,
-        "summary": "讨论已结束",
-        "stage": "completed",
-        "cleared_agents": agent_ids,
-        "clear_mode": "background",
-    }
+    return {"ok": True, "summary": "讨论已结束", "stage": "completed"}
 
 
 @router.post("/api/collab-discuss/destroy")
 async def collab_discuss_destroy(body: dict):
     session_id = body.get("session_id", body.get("sessionId", ""))
-    agent_ids, session_file = _collect_collab_discuss_agent_ids(session_id)
+    agent_ids: list[str] = []
 
-    if session_file and session_file.exists():
-        try:
+    if session_id:
+        session_dir = Path(__file__).parents[4] / "data" / "collab_sessions"
+        session_file = session_dir / f"{session_id}.json"
+        if session_file.exists():
+            session = json.loads(session_file.read_text())
+            agent_ids = session.get("agent_ids", []) + [session.get("moderator_id", "")]
+            agent_ids = list(set(agent_ids))
             session_file.unlink()
-        except OSError:
-            logger.exception("删除协作讨论会话文件失败: %s", session_id)
 
-    _clear_collab_sessions_async(
-        agent_ids,
-        "/new 会议已结束。除非用户明确要求，不要将本次会议的任何内容写入MEMORY.md或memory目录。",
-    )
+    if agent_ids:
+        def _clear_sessions_d():
+            import subprocess
+            from ..config import get_settings
+            settings = get_settings()
+            for aid in agent_ids:
+                if not aid:
+                    continue
+                try:
+                    subprocess.run(
+                        [settings.openclaw_bin, "agent", "--agent", aid, "-m", "/new 会议结束，除非用户明确要求，不要写入MEMORY.md。", "--json"],
+                        capture_output=True, text=True, timeout=30,
+                        cwd=settings.openclaw_project_dir or None,
+                    )
+                except Exception:
+                    pass
+        threading.Thread(target=_clear_sessions_d, daemon=True).start()
 
-    return {"ok": True, "cleared_agents": agent_ids, "clear_mode": "background"}
+    return {"ok": True}
 
 
 @router.get("/api/memory-files")
@@ -1442,9 +1656,9 @@ async def memory_files():
     """列出 OpenClaw 系统中的全局和 Agent 记忆文件。"""
     import pathlib as _pl
     openclaw_home = _pl.Path.home() / ".openclaw"
-    
+
     files: list[dict[str, Any]] = []
-    
+
     shared_ws = openclaw_home / "workspace"
     if shared_ws.is_dir():
         mem_dir = shared_ws / "memory"
@@ -1455,7 +1669,7 @@ async def memory_files():
             f = shared_ws / name
             if f.is_file():
                 _scan_mem_dir(files, shared_ws, "共享工作区", "shared", filter_names=[name])
-    
+
     main_ws = openclaw_home / "workspace-main"
     if main_ws.is_dir():
         mem_dir = main_ws / "memory"
@@ -1465,7 +1679,7 @@ async def memory_files():
             f = main_ws / name
             if f.is_file():
                 _scan_mem_dir(files, main_ws, "主 Agent", "main", filter_names=[name])
-    
+
     for ws_dir in sorted(openclaw_home.glob("workspace-*")):
         aid = ws_dir.name.replace("workspace-", "")
         if aid == "main":
@@ -1477,7 +1691,7 @@ async def memory_files():
             f = ws_dir / name
             if f.is_file():
                 _scan_mem_dir(files, ws_dir, aid, "agent", filter_names=[name])
-    
+
     return {"ok": True, "files": files}
 
 
@@ -1509,17 +1723,17 @@ async def memory_file(path: str = ""):
     """读取指定 OpenClaw 工作区记忆文件内容。"""
     import pathlib as _pl
     openclaw_home = _pl.Path.home() / ".openclaw"
-    
+
     if not path:
         return {"ok": False, "error": "path required"}
-    
+
     full_path = (openclaw_home / path).resolve()
     if not str(full_path).startswith(str(openclaw_home.resolve())):
         return {"ok": False, "error": "路径不在允许范围内"}
-    
+
     if not full_path.is_file():
         return {"ok": False, "error": "文件不存在"}
-    
+
     try:
         content = full_path.read_text(encoding="utf-8")
         return {"ok": True, "path": path, "content": content}

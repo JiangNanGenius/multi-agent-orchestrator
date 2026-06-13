@@ -35,7 +35,7 @@
 - `sourceUrl` (string, 必需): 远程 URL 或本地文件路径
   - GitHub: `https://raw.githubusercontent.com/user/repo/branch/path/SKILL.md`
   - 任意 HTTPS: `https://example.com/skills/my_skill.md`
-  - 本地: `file:///Users/bingsen/skills/code_review.md` 或 `/Users/bingsen/skills/code_review.md`
+  - 本地: `file:///path/to/skills/code_review.md` 或 `/path/to/skills/code_review.md`
 - `description` (string, 可选): skill 的中文描述
 
 **响应成功 (200)：**
@@ -46,7 +46,7 @@
   "skillName": "code_review",
   "agentId": "plan_center",
   "source": "https://raw.githubusercontent.com/...",
-  "localPath": "/Users/bingsen/.openclaw/workspace-plan_center/skills/code_review/SKILL.md",
+  "localPath": "/path/to/.openclaw/workspace-plan_center/skills/code_review/SKILL.md",
   "size": 2048,
   "addedAt": "2026-03-02T14:30:00Z"
 }
@@ -75,7 +75,7 @@
       "agentId": "plan_center",
       "sourceUrl": "https://raw.githubusercontent.com/org/skills-repo/main/code_review/SKILL.md",
       "description": "代码审查专项技能",
-      "localPath": "/Users/bingsen/.openclaw/workspace-plan_center/skills/code_review/SKILL.md",
+      "localPath": "/path/to/.openclaw/workspace-plan_center/skills/code_review/SKILL.md",
       "lastUpdated": "2026-03-02T14:30:00Z",
       "status": "valid"  // valid | invalid | not-found
     }
@@ -161,7 +161,7 @@ python3 scripts/skill_manager.py remove-remote \
 
 ### ClawHub（OpenClaw 官方注册表）
 
-> **官方站点**: https://clawhub.ai  
+> **官方站点**: https://clawhub.ai
 > **官方文档**: https://docs.openclaw.ai/tools/clawhub
 
 ClawHub 是 OpenClaw 当前公开的 **skills / plugins 注册表**。与旧版文档中的 GitHub 仓库式地址不同，当前更推荐直接通过 **ClawHub** 或原生命令完成搜索、安装、更新与同步，而不是依赖已经失效的 `openclaw-ai/skills-hub` 静态仓库链接。

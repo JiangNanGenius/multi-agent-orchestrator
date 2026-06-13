@@ -185,7 +185,7 @@ def _resolve_agents_dir() -> pathlib.Path:
 
 def _build_soul_context(agent_id: str) -> str:
     """返回 Agent 角色提示的简要引用，而非全文注入。
-    
+
     OpenClaw Agent 启动时会自动读取工作区中的 SOUL.md、GLOBAL.md 等文件，
     不需要在消息里重复注入完整内容。这里只保留简短的身份提示。
     """

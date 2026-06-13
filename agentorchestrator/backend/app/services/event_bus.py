@@ -42,6 +42,9 @@ TOPIC_TASK_REPLAN = "task.replan"
 TOPIC_TASK_STALLED = "task.stalled"
 TOPIC_TASK_ESCALATED = "task.escalated"
 
+TOPIC_STABLE_RECORD_CREATED = "stable_record.created"
+TOPIC_STABLE_RECORD_AUTO = "stable_record.auto"
+
 TOPIC_AGENT_THOUGHTS = "agent.thoughts"
 TOPIC_AGENT_TODO_UPDATE = "agent.todo.update"
 TOPIC_AGENT_HEARTBEAT = "agent.heartbeat"

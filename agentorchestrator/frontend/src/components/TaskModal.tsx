@@ -545,7 +545,7 @@ export default function TaskModal() {
                 <div className={`mp-node ${s.status}`}>
                   {s.status === 'done' && <div className="mp-done-tick">✓</div>}
                   <div className="mp-icon">{s.icon}</div>
-                  <div className="mp-dept" style={s.status === 'active' ? { color: 'var(--acc)' } : s.status === 'done' ? { color: 'var(--ok)' } : {}}>
+                  <div className="mp-dept" style={s.status === 'active' ? { color: 'var(--acc)' } : s.status === 'done' ? { color: '#fff' } : {}}>
                     {s.dept}
                   </div>
                   <div className="mp-action">{s.action}</div>
@@ -698,9 +698,23 @@ export default function TaskModal() {
                             <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 11 }}>{reactivationTargetPath}</code>
                             <button className="sched-btn" style={{ padding: '6px 10px' }} onClick={() => copyWorkspaceValue(reactivationTargetPath, '回迁目标')}>复制</button>
                           </div>
-                        )}
-                      </div>
-                    </div>
+                  )}
+                </div>
+                <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', background: 'var(--panel)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>飞书汇报</div>
+                    <span style={{ fontSize: 11, color: toneColor(feishuReporting.last_report_status || (feishuReporting.enabled ? 'enabled' : 'disabled')), fontWeight: 700 }}>{feishuReporting.last_report_status || (feishuReporting.enabled ? 'enabled' : 'disabled')}</span>
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
+                    节点：{feishuReporting.last_report_stage || '—'}
+                    <br />
+                    最近汇报：{fmtDateTime(feishuReporting.last_report_at)}
+                    <br />
+                    结果：{shortText(feishuReporting.last_report_message || (feishuReporting.webhook_configured ? '已配置 webhook' : '未配置 webhook'), 80)}
+                  </div>
+                </div>
+
+              </div>
                   )}
                 </div>
               )}

@@ -873,7 +873,7 @@ def sync_scripts_to_workspaces(agents=None):
 
 
 def deploy_soul_files(agents=None):
-    """将项目 agents/xxx/SOUL.md 部署到 ~/.openclaw/workspace-xxx/SOUL.md，并写入 registry sidecar。 
+    """将项目 agents/xxx/SOUL.md 部署到 ~/.openclaw/workspace-xxx/SOUL.md，并写入 registry sidecar。
 
     当前阶段采用无兼容的一一对应目录与 agent_id；
     用户可见名称与职责定义由现代中文元数据统一输出。若正式 SOUL 文件尚不存在，

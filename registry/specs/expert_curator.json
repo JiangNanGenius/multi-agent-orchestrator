@@ -26,9 +26,7 @@
     ],
     "systemRepairScope": [],
     "upstream": [],
-    "downstream": [
-      "dispatch_center"
-    ],
+    "downstream": [],
     "handoffRule": "默认按允许协作关系进行转交；阻塞或超边界任务必须及时回退或升级。",
     "tone": "直接、稳定、清晰，避免封建化措辞。"
   },
@@ -39,12 +37,8 @@
     ],
     "rejectTaskTypes": [],
     "preferredSources": [],
-    "allowedTargets": [
-      "dispatch_center"
-    ],
-    "fallbackTargets": [
-      "dispatch_center"
-    ],
+    "allowedTargets": [],
+    "fallbackTargets": [],
     "priorityClass": "standard"
   },
   "runtimePolicy": {
@@ -109,7 +103,7 @@
   },
   "metadata": {
     "generatedBy": "scripts/sync_agent_config.py",
-    "updatedAt": "2026-04-22 14:32:31",
+    "updatedAt": "2026-06-14 04:28:49",
     "workspace": "/root/.openclaw/workspace-expert_curator",
     "model": "openai/gpt-4o"
   }
