@@ -190,7 +190,7 @@ The source tree keeps several historical directory names for engineering continu
 
 ## Deployment Guide
 
-This section assumes that **your OpenClaw environment is already basically usable**. In other words, OpenClaw can already start, model credentials can already be configured, and your environment already has the minimum capability required to run agents. Under that assumption, this repository is not primarily about installing OpenClaw from scratch. The real deployment task is to connect this project’s **official frontend, backend, SOUL assets, and synchronization scripts** to an existing OpenClaw runtime.
+This section assumes that **your OpenClaw environment is already basically usable**. In other words, OpenClaw can already start, model credentials can already be configured, and your environment already has the minimum capability required to run agents. If you are using OpenClaw v2026.5.19 or later, keep Node.js at `22.19+` so the frontend tooling and runtime expectations stay aligned. Under that assumption, this repository is not primarily about installing OpenClaw from scratch. The real deployment task is to connect this project’s **official frontend, backend, SOUL assets, and synchronization scripts** to an existing OpenClaw runtime.
 
 > **Current boundary:** this project **does not provide or maintain Docker images, `docker-compose` workflows, or containerized deployment support**. If Docker-related files still exist in the repository, treat them as historical leftovers rather than the recommended deployment path.
 

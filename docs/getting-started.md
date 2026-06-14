@@ -6,7 +6,7 @@
 
 ## 第一步：安装 OpenClaw
 
-多Agent智作中枢基于 [OpenClaw](https://openclaw.ai) 运行，请先安装：
+多Agent智作中枢基于 [OpenClaw](https://openclaw.ai) 运行，请先安装。若使用 OpenClaw v2026.5.19 或更新版本，建议同时确认 Node.js 已升级到 `22.19+`：
 
 ```bash
 # macOS
@@ -41,7 +41,7 @@ chmod +x install.sh && ./install.sh
 - ✅ 基于 `agents/` 目录与现有 Registry 自动发现角色并同步最新配置
 - ✅ 配置任务数据清洗规则
 - ✅ 初始化上下文窗口管理目录、压缩归档落点与续写衔接所需元数据
-- ✅ 构建 React 前端并发布到正式版静态资源目录（需 Node.js 18+）
+- ✅ 构建 React 前端并发布到正式版静态资源目录（需 Node.js 22.19+）
 - ✅ 初始化数据目录
 - ✅ 执行首次数据同步
 - ✅ 重启 Gateway 使配置生效

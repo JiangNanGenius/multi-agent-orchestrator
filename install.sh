@@ -7,6 +7,8 @@ set -e
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OC_HOME="$HOME/.openclaw"
 OC_CFG="$OC_HOME/openclaw.json"
+NODE_MIN_MAJOR=22
+NODE_MIN_MINOR=19
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 
@@ -23,6 +25,22 @@ log()   { echo -e "${GREEN}✅ $1${NC}"; }
 warn()  { echo -e "${YELLOW}⚠️  $1${NC}"; }
 error() { echo -e "${RED}❌ $1${NC}"; }
 info()  { echo -e "${BLUE}ℹ️  $1${NC}"; }
+
+node_meets_frontend_floor() {
+  local ver major minor
+  ver="$(node -v 2>/dev/null | sed 's/^v//')" || return 1
+  major="${ver%%.*}"
+  minor="${ver#*.}"
+  minor="${minor%%.*}"
+
+  if [ "${major:-0}" -gt "$NODE_MIN_MAJOR" ] 2>/dev/null; then
+    return 0
+  fi
+  if [ "${major:-0}" -eq "$NODE_MIN_MAJOR" ] && [ "${minor:-0}" -ge "$NODE_MIN_MINOR" ] 2>/dev/null; then
+    return 0
+  fi
+  return 1
+}
 
 load_agents_from_specs() {
   mapfile -t AGENTS < <(REPO_DIR="$REPO_DIR" python3 << 'PYEOF'
@@ -473,7 +491,7 @@ sync_auth() {
   # Fallback: search across all agents for either filename
   if [ -z "$MAIN_AUTH" ]; then
     for candidate in models.json auth-profiles.json; do
-      MAIN_AUTH=$(find "$OC_HOME/agents" -name "$candidate" -maxdepth 3 2>/dev/null | head -1)
+      MAIN_AUTH=$(find "$OC_HOME/agents" -maxdepth 3 -name "$candidate" 2>/dev/null | head -1)
       if [ -n "$MAIN_AUTH" ] && [ -f "$MAIN_AUTH" ]; then
         AUTH_FILENAME="$candidate"
         break
@@ -517,7 +535,13 @@ build_frontend() {
 
   if ! command -v node &>/dev/null; then
     warn "未找到 node，跳过前端构建。看板将使用预构建版本（如果存在）"
-    warn "请安装 Node.js 18+ 后运行: cd agentorchestrator/frontend && npm install && npm run build"
+    warn "请安装 Node.js ${NODE_MIN_MAJOR}.${NODE_MIN_MINOR}+ 后运行: cd agentorchestrator/frontend && npm install && npm run build"
+    return
+  fi
+
+  if ! node_meets_frontend_floor; then
+    warn "当前 Node.js $(node -v) 低于 OpenClaw v2026.5.19+ 建议门槛 ${NODE_MIN_MAJOR}.${NODE_MIN_MINOR}+，跳过前端构建。"
+    warn "请升级 Node.js ${NODE_MIN_MAJOR}.${NODE_MIN_MINOR}+ 后运行: cd agentorchestrator/frontend && npm install && npm run build"
     return
   fi
 
