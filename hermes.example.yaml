@@ -1,0 +1,71 @@
+# =============================================================================
+# Multi-Agent Orchestrator - Hermes Agent example config
+# =============================================================================
+# This template is intentionally secret-free. Copy it to:
+#
+#   ~/.hermes/config.yaml
+#
+# Runtime tokens and model keys should live in:
+#
+#   ~/.hermes/.env
+#
+# The companion install script can generate Hermes personalities from the
+# repository's existing agents/*/SOUL.md files, so the public snapshot does not
+# duplicate role prompts in a second runtime-specific tree.
+# =============================================================================
+
+model:
+  default: "anthropic/claude-sonnet-4-20250514"
+
+  # Common values include auto, openrouter, anthropic, openai-codex, gemini,
+  # lmstudio, custom, and other providers supported by Hermes Agent.
+  provider: "auto"
+
+  # For OpenAI-compatible gateways, configure this in ~/.hermes/.env instead:
+  # OPENAI_BASE_URL=https://your-llm-provider-api-url
+  # OPENAI_API_KEY=...
+
+terminal:
+  # local is the least surprising default for an archived public snapshot.
+  # For stronger isolation, change this to docker, ssh, modal, or another
+  # backend supported by your Hermes Agent installation.
+  backend: "local"
+  cwd: "."
+  timeout: 180
+  lifetime_seconds: 300
+
+# Helps keep concurrent agent work isolated when Hermes uses git worktrees.
+worktree: true
+
+compression:
+  enabled: true
+  threshold: 0.50
+  target_ratio: 0.20
+  protect_last_n: 20
+
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+  memory_char_limit: 2200
+  user_char_limit: 1375
+  nudge_interval: 10
+  flush_min_turns: 6
+
+group_sessions_per_user: true
+
+session_reset:
+  mode: both
+  idle_minutes: 1440
+  at_hour: 4
+
+tool_loop_guardrails:
+  warnings_enabled: true
+  hard_stop_enabled: false
+
+# Hermes Agent reads channel tokens from ~/.hermes/.env. Keep real values out
+# of this repository. See configs/hermes/env.example for a safe starter file.
+#
+# Example next commands:
+#   hermes setup
+#   hermes
+#   hermes gateway start

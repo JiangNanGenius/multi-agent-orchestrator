@@ -27,8 +27,8 @@ openclaw init
 ## 第二步：克隆并安装多Agent智作中枢
 
 ```bash
-git clone https://github.com/cft0808/agentorchestrator.git
-cd agentorchestrator
+git clone https://github.com/JiangNanGenius/multi-agent-orchestrator.git
+cd multi-agent-orchestrator
 chmod +x install.sh && ./install.sh
 ```
 
@@ -45,6 +45,13 @@ chmod +x install.sh && ./install.sh
 - ✅ 初始化数据目录
 - ✅ 执行首次数据同步
 - ✅ 重启 Gateway 使配置生效
+
+如果只是刷新一个已经接好的本地 checkout，也可以使用更保守的部署包装脚本：
+
+```bash
+./deploy.sh
+./deploy.sh --start
+```
 
 ## 第三步：配置消息渠道
 
@@ -100,6 +107,24 @@ pnpm dev
 ```
 
 > 默认开发地址：`http://127.0.0.1:35173`，并代理到 `http://127.0.0.1:38000`。
+
+## 可选：准备 Hermes Agent 并行 runtime
+
+如果你想把这套 Agent 角色提示词同步到 Hermes Agent，可使用无密钥模板和安装助手：
+
+```bash
+./install-hermes.sh --non-interactive
+```
+
+它会把 `agents/*/SOUL.md` 生成到 `~/.hermes/personalities/*.md`，并把 `agents/GLOBAL.md` 同步到 `~/.hermes/context/AGENTS.md`。真实模型密钥和消息机器人 token 只应写入 `~/.hermes/.env`，不要提交到仓库。
+
+如果要在刷新部署时同时准备 Hermes profile：
+
+```bash
+./deploy.sh --hermes
+```
+
+详细说明见 [Hermes Agent 并行支持](hermes-agent-support.md)。
 
 
 ## 第五步：发送第一条任务
@@ -278,10 +303,11 @@ openclaw gateway restart
 
 ## 📚 更多资源
 
-- [🏠 项目首页](https://github.com/cft0808/agentorchestrator)
+- [🏠 项目首页](https://github.com/JiangNanGenius/multi-agent-orchestrator)
 - [📖 README](../README.md)
 - [🤝 贡献指南](../CONTRIBUTING.md)
 - [💬 OpenClaw 文档](https://docs.openclaw.ai)
+- [🧩 Hermes Agent 并行支持](hermes-agent-support.md)
 - [📝 项目感想与实践复盘](project-reflections.md) — 项目演进中的关键判断、踩坑记录与文档收口说明
 - [🧭 架构重写复盘记录](architecture-reflection-notes.md) — 这次协作链路重写的背景、取舍与实现思路
 - [🏗️ 当前架构总览](current_architecture_overview.md) — 任务治理链路、面板职责与系统分层说明
